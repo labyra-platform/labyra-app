@@ -31,12 +31,16 @@ Charts: Tremor (dashboard) + Plotly.js (scientific) + Three.js (3D Phase D) + D3
 - [x] R160-i18n-3b — Sidebar nav migration via nav-config.ts
 - [x] R160-i18n-3c — Dashboard KPI cards migration
 - [ ] R160-i18n-3d — Breadcrumb i18n (next, ~20 min)
+- [x] R160-i18n-3d — Breadcrumb i18n
+- [x] R160-i18n-3e — Fix proxy.ts redirect loop
 
 ### Phase 3: Shell + Dashboard
 
 - [ ] R160-shell-2 — Sidebar nav rewrite cho LabBook domains
-  Replace template's Product/Users with: Materials, Samples, Experiments,
-  DataAssets, Lineage, Chemicals, Equipment, Bookings, Members, AI Assistant
+-  Replace template's Product/Users with: Materials, Samples, Experiments,
+-  DataAssets, Lineage, Chemicals, Equipment, Bookings, Members, AI Assistant
+- [x] R160-shell-2 — Sidebar nav rewrite cho LabBook domains
+  4 groups (Workspace / Lab Resources / AI / Admin), 10 stub pages
 - [ ] R160-dashboard — Tremor KPI cards + charts + Firebase data integration
 
 ### Phase 4: Core domain pages

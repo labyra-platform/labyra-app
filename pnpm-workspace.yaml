@@ -1,6 +1,8 @@
 allowBuilds:
   '@clerk/shared': true
   '@firebase/util': true
+  '@parcel/watcher': true
   '@sentry/cli': true
+  '@swc/core': true
   protobufjs: true
   sharp: true

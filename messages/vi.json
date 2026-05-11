@@ -27,7 +27,15 @@
     "aiAssistant": "Trợ lý AI",
     "account": "Tài khoản",
     "notifications": "Thông báo",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "product": "Sản phẩm",
+    "users": "Người dùng",
+    "login": "Đăng nhập",
+    "groups": {
+      "overview": "Tổng quan",
+      "elements": "Thành phần",
+      "account": "Tài khoản"
+    }
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",
@@ -41,7 +49,8 @@
     "noAccount": "Chưa có tài khoản?",
     "haveAccount": "Đã có tài khoản?",
     "signingIn": "Đang đăng nhập...",
-    "creatingAccount": "Đang tạo tài khoản..."
+    "creatingAccount": "Đang tạo tài khoản...",
+    "signInToManage": "Đăng nhập để quản lý tài khoản"
   },
   "dashboard": {
     "totalRevenue": "Tổng doanh thu",
@@ -50,7 +59,16 @@
     "growthRate": "Tỷ lệ tăng trưởng",
     "recentSales": "Doanh thu gần đây",
     "trendingUp": "Tăng trong tháng này",
-    "trendingDown": "Giảm 20% trong kỳ này"
+    "trendingDown": "Giảm 20% trong kỳ này",
+    "trendingUpMonth": "Tăng trong tháng này",
+    "trendingDownPeriod": "Giảm 20% trong kỳ này",
+    "strongRetention": "Mức giữ chân người dùng tốt",
+    "steadyIncrease": "Hiệu suất tăng ổn định",
+    "visitorsLast6Months": "Lượt truy cập 6 tháng gần nhất",
+    "acquisitionAttention": "Cần chú ý thu hút khách hàng",
+    "engagementTargets": "Mức tương tác vượt chỉ tiêu",
+    "meetsGrowthProjections": "Đạt dự báo tăng trưởng",
+    "recentSalesSubtitle": "Bạn đã có 265 giao dịch tháng này."
   },
   "locale": {
     "english": "English",

@@ -10,6 +10,7 @@ export interface PermissionCheck {
 
 export interface NavItem {
   title: string;
+  titleKey?: string;
   url: string;
   disabled?: boolean;
   external?: boolean;
@@ -24,6 +25,7 @@ export interface NavItem {
 
 export interface NavGroup {
   label: string;
+  labelKey?: string;
   items: NavItem[];
 }
 

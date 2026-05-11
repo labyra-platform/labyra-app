@@ -36,9 +36,11 @@ import { NavGroup } from '@/types';
 export const navGroups: NavGroup[] = [
   {
     label: 'Overview',
+    labelKey: 'nav.groups.overview',
     items: [
       {
         title: 'Dashboard',
+        titleKey: 'nav.dashboard',
         url: '/dashboard/overview',
         icon: 'dashboard',
         isActive: false,
@@ -47,6 +49,7 @@ export const navGroups: NavGroup[] = [
       },
       {
         title: 'Product',
+        titleKey: 'nav.product',
         url: '/dashboard/product',
         icon: 'product',
         shortcut: ['p', 'p'],
@@ -55,6 +58,7 @@ export const navGroups: NavGroup[] = [
       },
       {
         title: 'Users',
+        titleKey: 'nav.users',
         url: '/dashboard/users',
         icon: 'teams',
         shortcut: ['u', 'u'],
@@ -65,6 +69,7 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: 'Elements',
+    labelKey: 'nav.groups.elements',
     items: []
   },
   {
@@ -72,18 +77,21 @@ export const navGroups: NavGroup[] = [
     items: [
       {
         title: 'Account',
+        titleKey: 'nav.account',
         url: '#',
         icon: 'account',
         isActive: true,
         items: [
           {
             title: 'Notifications',
+            titleKey: 'nav.notifications',
             url: '/dashboard/notifications',
             icon: 'notification',
             shortcut: ['n', 'n']
           },
           {
             title: 'Login',
+            titleKey: 'nav.login',
             shortcut: ['l', 'l'],
             url: '/',
             icon: 'login'

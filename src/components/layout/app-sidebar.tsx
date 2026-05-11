@@ -27,6 +27,7 @@ import { navGroups } from '@/config/nav-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
 import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
@@ -35,6 +36,9 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
   const filteredGroups = useFilteredNavGroups(navGroups);
+  const t = useTranslations();
+  const resolveLabel = (key: string | undefined, fallback: string): string =>
+    key ? t(key) : fallback;
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
@@ -46,7 +50,9 @@ export default function AppSidebar() {
       <SidebarContent className='overflow-x-hidden'>
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label || 'ungrouped'} className='py-0'>
-            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+            {(group.labelKey || group.label) && (
+              <SidebarGroupLabel>{resolveLabel(group.labelKey, group.label)}</SidebarGroupLabel>
+            )}
             <SidebarMenu>
               {group.items.map((item) => {
                 const Icon = item.icon ? Icons[item.icon] : Icons.logo;
@@ -59,9 +65,12 @@ export default function AppSidebar() {
                   >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
-                        <SidebarMenuButton tooltip={item.title} isActive={pathname === item.url}>
+                        <SidebarMenuButton
+                          tooltip={resolveLabel(item.titleKey, item.title)}
+                          isActive={pathname === item.url}
+                        >
                           {item.icon && <Icon />}
-                          <span>{item.title}</span>
+                          <span>{resolveLabel(item.titleKey, item.title)}</span>
                           <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
@@ -71,7 +80,7 @@ export default function AppSidebar() {
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
                                 <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
+                                  <span>{resolveLabel(subItem.titleKey, subItem.title)}</span>
                                 </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -84,12 +93,12 @@ export default function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      tooltip={item.title}
+                      tooltip={resolveLabel(item.titleKey, item.title)}
                       isActive={pathname === item.url}
                     >
                       <Link href={item.url}>
                         <Icon />
-                        <span>{item.title}</span>
+                        <span>{resolveLabel(item.titleKey, item.title)}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -108,7 +117,7 @@ export default function AppSidebar() {
                   size='lg'
                   className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                 >
-                  <span className='truncate'>Account</span>
+                  <span className='truncate'>{t('nav.groups.account')}</span>
                   <Icons.chevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -120,13 +129,13 @@ export default function AppSidebar() {
               >
                 <DropdownMenuLabel className='p-0 font-normal'>
                   <div className='text-muted-foreground px-1 py-1.5 text-sm'>
-                    Sign in to manage your account
+                    {t('auth.signInToManage')}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Icons.notification className='mr-2 h-4 w-4' />
-                  Notifications
+                  {t('nav.notifications')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -1,0 +1,59 @@
+{
+  "common": {
+    "welcomeBack": "Chào mừng trở lại",
+    "signIn": "Đăng nhập",
+    "signUp": "Đăng ký",
+    "signOut": "Đăng xuất",
+    "loading": "Đang tải...",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "search": "Tìm kiếm",
+    "actions": "Tác vụ"
+  },
+  "nav": {
+    "dashboard": "Bảng điều khiển",
+    "overview": "Tổng quan",
+    "materials": "Vật liệu",
+    "samples": "Mẫu",
+    "experiments": "Thí nghiệm",
+    "dataAssets": "Phổ dữ liệu",
+    "lineage": "Liên kết",
+    "chemicals": "Hóa chất",
+    "equipment": "Thiết bị",
+    "bookings": "Đặt lịch",
+    "members": "Thành viên",
+    "aiAssistant": "Trợ lý AI",
+    "account": "Tài khoản",
+    "notifications": "Thông báo",
+    "settings": "Cài đặt"
+  },
+  "auth": {
+    "signInTitle": "Đăng nhập vào Labyra",
+    "signInSubtitle": "Đăng nhập để vào lab dashboard",
+    "signUpTitle": "Tạo tài khoản Labyra",
+    "signUpSubtitle": "Tạo tài khoản để truy cập lab platform",
+    "continueWithGoogle": "Tiếp tục với Google",
+    "or": "Hoặc",
+    "emailPlaceholder": "email@example.com",
+    "passwordPlaceholder": "Mật khẩu",
+    "noAccount": "Chưa có tài khoản?",
+    "haveAccount": "Đã có tài khoản?",
+    "signingIn": "Đang đăng nhập...",
+    "creatingAccount": "Đang tạo tài khoản..."
+  },
+  "dashboard": {
+    "totalRevenue": "Tổng doanh thu",
+    "newCustomers": "Khách hàng mới",
+    "activeAccounts": "Tài khoản hoạt động",
+    "growthRate": "Tỷ lệ tăng trưởng",
+    "recentSales": "Doanh thu gần đây",
+    "trendingUp": "Tăng trong tháng này",
+    "trendingDown": "Giảm 20% trong kỳ này"
+  },
+  "locale": {
+    "english": "English",
+    "vietnamese": "Tiếng Việt"
+  }
+}

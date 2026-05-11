@@ -1,5 +1,4 @@
 import Providers from '@/components/layout/providers';
-import { AuthProvider } from '@/lib/auth';
 import { Toaster } from '@/components/ui/sonner';
 import { fontVariables } from '@/components/themes/font.config';
 import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
@@ -64,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           >
             <Providers activeThemeValue={themeToApply}>
               <Toaster />
-              <AuthProvider>{children}</AuthProvider>
+              {children}
             </Providers>
           </ThemeProvider>
         </NuqsAdapter>

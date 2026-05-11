@@ -1,0 +1,59 @@
+{
+  "common": {
+    "welcomeBack": "Welcome back",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "actions": "Actions"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "overview": "Overview",
+    "materials": "Materials",
+    "samples": "Samples",
+    "experiments": "Experiments",
+    "dataAssets": "Data Assets",
+    "lineage": "Lineage",
+    "chemicals": "Chemicals",
+    "equipment": "Equipment",
+    "bookings": "Bookings",
+    "members": "Members",
+    "aiAssistant": "AI Assistant",
+    "account": "Account",
+    "notifications": "Notifications",
+    "settings": "Settings"
+  },
+  "auth": {
+    "signInTitle": "Sign in to Labyra",
+    "signInSubtitle": "Sign in to access your lab dashboard",
+    "signUpTitle": "Create your Labyra account",
+    "signUpSubtitle": "Create an account to access the lab platform",
+    "continueWithGoogle": "Continue with Google",
+    "or": "Or",
+    "emailPlaceholder": "email@example.com",
+    "passwordPlaceholder": "Password",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "signingIn": "Signing in...",
+    "creatingAccount": "Creating account..."
+  },
+  "dashboard": {
+    "totalRevenue": "Total Revenue",
+    "newCustomers": "New Customers",
+    "activeAccounts": "Active Accounts",
+    "growthRate": "Growth Rate",
+    "recentSales": "Recent Sales",
+    "trendingUp": "Trending up this month",
+    "trendingDown": "Down 20% this period"
+  },
+  "locale": {
+    "english": "English",
+    "vietnamese": "Tiếng Việt"
+  }
+}

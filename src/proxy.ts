@@ -1,41 +1,57 @@
+import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
+import { routing } from '@/i18n/routing';
+
+const handleI18nRouting = createMiddleware(routing);
 
 /**
- * Next.js 16 proxy (renamed from middleware) — auth protection.
+ * Combined proxy: next-intl locale routing + auth protection.
  *
- * Note: Firebase Auth ID token verification chỉ work trong Node.js runtime,
- * không phải Edge runtime. Proxy này chỉ check session cookie existence.
- * Full token verification ở Server Components qua getCurrentUser() từ
- * '@/lib/auth/server'.
+ * Order matters:
+ * 1. next-intl handles locale detection + URL rewrite first
+ * 2. Auth check runs after locale resolution
  *
- * Protected routes: /dashboard/*
- * Auth routes (redirect away if authed): /sign-in, /sign-up
+ * Routes protected: /[locale]/dashboard/*
+ * Auth routes (redirect away if authed): /[locale]/sign-in, /[locale]/sign-up
+ *
+ * Note: Edge runtime — chỉ check cookie existence.
+ * Full token verification ở Server Components qua getCurrentUser().
  */
-export function proxy(request: NextRequest): NextResponse {
+export default async function proxy(request: NextRequest): Promise<NextResponse> {
+  // Step 1: Let next-intl handle locale routing first
+  const response = handleI18nRouting(request);
+
+  // Step 2: Auth checks (only after locale resolved)
   const sessionCookie = request.cookies.get('__session');
+  const pathname = request.nextUrl.pathname;
+
+  // Strip locale prefix for path matching
+  const pathnameWithoutLocale = routing.locales.find((locale) => pathname.startsWith(`/${locale}/`))
+    ? pathname.replace(/^\/[^/]+/, '')
+    : pathname;
+
   const isAuthRoute =
-    request.nextUrl.pathname.startsWith('/sign-in') ||
-    request.nextUrl.pathname.startsWith('/sign-up');
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard');
+    pathnameWithoutLocale.startsWith('/sign-in') || pathnameWithoutLocale.startsWith('/sign-up');
+  const isProtectedRoute = pathnameWithoutLocale.startsWith('/dashboard');
 
   // Redirect authenticated users away from auth pages
   if (sessionCookie && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const locale = pathname.split('/')[1] || routing.defaultLocale;
+    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }
 
   // Redirect unauthenticated users to sign-in
   if (!sessionCookie && isProtectedRoute) {
-    const signInUrl = new URL('/sign-in', request.url);
-    signInUrl.searchParams.set('redirect', request.nextUrl.pathname);
+    const locale = pathname.split('/')[1] || routing.defaultLocale;
+    const signInUrl = new URL(`/${locale}/sign-in`, request.url);
+    signInUrl.searchParams.set('redirect', pathnameWithoutLocale);
     return NextResponse.redirect(signInUrl);
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)'
-  ]
+  // Match all pathnames except for assets + api routes
+  matcher: ['/((?!api|trpc|_next|_vercel|.*\\..*).*)']
 };

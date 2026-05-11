@@ -57,6 +57,7 @@
     "firebase-admin": "^13.9.0",
     "input-otp": "^1.4.2",
     "kbar": "^0.1.0-beta.48",
+    "lucide-react": "^1.14.0",
     "match-sorter": "^8.2.0",
     "motion": "^11.18.2",
     "next": "16.2.1",

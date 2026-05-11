@@ -4,7 +4,7 @@ import ProductListingPage from '@/features/products/components/product-listing';
 import { searchParamsCache } from '@/lib/searchparams';
 import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { SearchParams } from 'nuqs/server';
 import { productInfoContent } from '@/config/infoconfig';
 

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import type React from 'react';
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,6 +9,8 @@ import { signInWithEmail, signInWithGoogle } from '@/lib/auth';
 
 export default function SignInPage(): React.ReactElement {
   const router = useRouter();
+  const t = useTranslations('auth');
+  const tCommon = useTranslations('common');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -42,8 +46,8 @@ export default function SignInPage(): React.ReactElement {
   return (
     <div className='space-y-6'>
       <div className='text-center'>
-        <h1 className='text-2xl font-semibold tracking-tight'>Sign in to Labyra</h1>
-        <p className='text-sm text-muted-foreground'>Đăng nhập để vào lab dashboard</p>
+        <h1 className='text-2xl font-semibold tracking-tight'>{t('signInTitle')}</h1>
+        <p className='text-sm text-muted-foreground'>{t('signInSubtitle')}</p>
       </div>
 
       <button
@@ -51,7 +55,7 @@ export default function SignInPage(): React.ReactElement {
         disabled={loading}
         className='w-full rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50'
       >
-        Continue with Google
+        {t('continueWithGoogle')}
       </button>
 
       <div className='relative'>
@@ -59,7 +63,7 @@ export default function SignInPage(): React.ReactElement {
           <span className='w-full border-t' />
         </div>
         <div className='relative flex justify-center text-xs uppercase'>
-          <span className='bg-background px-2 text-muted-foreground'>Or</span>
+          <span className='bg-background px-2 text-muted-foreground'>{t('or')}</span>
         </div>
       </div>
 
@@ -90,12 +94,12 @@ export default function SignInPage(): React.ReactElement {
           disabled={loading}
           className='w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50'
         >
-          {loading ? 'Signing in...' : 'Sign in'}
+          {loading ? t('signingIn') : tCommon('signIn')}
         </button>
       </form>
 
       <p className='text-center text-sm text-muted-foreground'>
-        Don&apos;t have an account?{' '}
+        {t('noAccount')}{' '}
         <a href='/sign-up' className='font-medium text-primary hover:underline'>
           Sign up
         </a>

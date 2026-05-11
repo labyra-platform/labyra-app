@@ -1,4 +1,6 @@
 allowBuilds:
   '@clerk/shared': true
+  '@firebase/util': true
   '@sentry/cli': true
+  protobufjs: true
   sharp: true

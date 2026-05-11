@@ -1,0 +1,110 @@
+# Labyra App — Roadmap
+
+> Long-term planning. Update sau mỗi phase complete.
+> See CLAUDE.md cho coding rules.
+
+## Vision
+
+Labyra Platform = AI-native lab management SaaS for materials science research.
+Multi-tenant từ đầu (user's lab = tenant #1, commercial scale sau).
+
+## Stack
+
+Next.js 16 + TypeScript strict + shadcn/ui + Tremor + Firebase + next-intl + Vercel.
+Charts: Tremor (dashboard) + Plotly.js (scientific) + Three.js (3D Phase D) + D3 (lineage).
+
+## Round 160 — Foundation (in progress)
+
+### Phase 1: Infrastructure ✅
+
+- [x] R160-setup — Clone Kiranism template
+- [x] R160-setup-2 — Cleanup template (removed clerk/kanban/chat/sentry/examples)
+- [x] R160-firebase — Firebase SDKs (lib/firebase client + admin)
+- [x] R160-auth — Firebase Auth foundation (lib/auth + sign-in/up + proxy)
+- [x] R160-shell-1 — Branding metadata + remove emoji
+- [x] R160-i18n-1 — next-intl path-based routing + folder restructure
+- [x] R160-i18n-2 — String migration auth + LocaleSwitcher component
+
+### Phase 2: i18n completion (current)
+
+- [x] R160-i18n-3a — Mount LocaleSwitcher into header
+- [x] R160-i18n-3b — Sidebar nav migration via nav-config.ts
+- [x] R160-i18n-3c — Dashboard KPI cards migration
+- [ ] R160-i18n-3d — Breadcrumb i18n (next, ~20 min)
+
+### Phase 3: Shell + Dashboard
+
+- [ ] R160-shell-2 — Sidebar nav rewrite cho LabBook domains
+  Replace template's Product/Users with: Materials, Samples, Experiments,
+  DataAssets, Lineage, Chemicals, Equipment, Bookings, Members, AI Assistant
+- [ ] R160-dashboard — Tremor KPI cards + charts + Firebase data integration
+
+### Phase 4: Core domain pages
+
+- [ ] R160-materials — Materials list + CRUD
+- [ ] R160-samples — Samples + lineage links
+- [ ] R160-experiments — Experiments unified
+- [ ] R160-data-assets — Gallery + classifier + Plotly analyzers
+- [ ] R160-lineage — D3 force-directed graph port từ labbook-bku R154
+- [ ] R160-inventory — Chemicals + Equipment + Ink CRUD
+- [ ] R160-bookings — Equipment booking calendar
+- [ ] R160-members — User management + role admin
+
+### Phase 5: AI features
+
+- [ ] R160-ai-chat — AI sidetab + RAG + tool calling
+  Port từ labbook-bku R130-R142 (paper RAG, searchPapers tool, citation chips)
+
+### Phase 6: Quality + Deploy
+
+- [ ] R160-tests — Vitest unit + Playwright e2e
+- [ ] R160-deploy — Vercel CI/CD + env vars + preview deployments
+
+## Timeline
+
+Current: 10/22 sub-rounds done (~45%).
+Realistic full R160: 8-12 weeks.
+
+## Post-R160 (future phases)
+
+### Phase D — Advanced scientific viz
+
+- 3D crystal structure viewer (Three.js)
+- Band structure plots
+- Phase diagrams interactive
+- DOS/PDOS plots
+
+### Phase E — Commercial readiness
+
+- Multi-tenant data migration (lab-manager-268a6 → labyra-app-prod)
+- Billing integration (Stripe)
+- Tenant signup flow + email verification
+- Super-admin dashboard (manage tenants + analytics)
+- Re-enable Sentry error tracking
+- Custom domain per-tenant
+
+### Phase F — Enterprise features
+
+- SSO/SAML integration
+- Audit logs
+- Data export (CSV/Excel/PDF)
+- Public API access
+- Integrations (Benchling, ELN tools, etc.)
+
+## Behavior conventions
+
+Sau khi complete bất kỳ sub-round nào:
+1. Run `pnpm build` + tests
+2. Commit + push (Conventional Commits, max 400 LOC diff)
+3. **Auto-suggest next sub-round** (don't wait for user instruct)
+4. Update ROADMAP.md checkbox tương ứng
+
+Reference materials:
+- CLAUDE.md — coding rules (read FIRST)
+- package.json — dependencies
+- .env.example — env vars template
+- messages/en.json, messages/vi.json — i18n translations
+
+Source repos cũ (reference only, không port code):
+- github.com/emnam009009/labbook-bku — Vite + vanilla TS legacy
+- github.com/emnam009009/labyra-landing — Astro marketing site

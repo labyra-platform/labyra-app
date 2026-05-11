@@ -34,8 +34,13 @@
     "groups": {
       "overview": "Tổng quan",
       "elements": "Thành phần",
-      "account": "Tài khoản"
-    }
+      "account": "Tài khoản",
+      "workspace": "Không gian làm việc",
+      "labResources": "Tài nguyên Lab",
+      "ai": "AI",
+      "admin": "Quản trị"
+    },
+    "employee": "Nhân viên"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",

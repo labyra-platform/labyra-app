@@ -1,80 +1,134 @@
 import { NavGroup } from '@/types';
 
 /**
- * Navigation configuration with RBAC support
+ * Navigation configuration with RBAC support.
  *
- * This configuration is used for both the sidebar navigation and Cmd+K bar.
- * Items are organized into groups, each rendered with a SidebarGroupLabel.
+ * Groups:
+ *   - Workspace: primary research workflow surfaces
+ *   - Lab Resources: inventory + booking + lineage views
+ *   - AI: AI Assistant (differentiator, intentionally standalone)
+ *   - Admin: members + account settings
  *
- * RBAC Access Control:
- * Each navigation item can have an `access` property that controls visibility
- * based on permissions, plans, features, roles, and organization context.
+ * Used for both the sidebar navigation and Cmd+K bar.
  *
+ * RBAC: each item may declare an `access` property — see types/index.ts.
  * Examples:
- *
- * 1. Require organization:
- *    access: { requireOrg: true }
- *
- * 2. Require specific permission:
- *    access: { requireOrg: true, permission: 'org:teams:manage' }
- *
- * 3. Require specific plan:
- *    access: { plan: 'pro' }
- *
- * 4. Require specific feature:
- *    access: { feature: 'premium_access' }
- *
- * 5. Require specific role:
- *    access: { role: 'admin' }
- *
- * 6. Multiple conditions (all must be true):
- *    access: { requireOrg: true, permission: 'org:teams:manage', plan: 'pro' }
- *
- * Note: The `visible` function is deprecated but still supported for backward compatibility.
- * Use the `access` property for new items.
+ *   access: { requireOrg: true }
+ *   access: { permission: 'org:teams:manage' }
+ *   access: { plan: 'pro' }
+ *   access: { role: 'admin' }
  */
 export const navGroups: NavGroup[] = [
   {
-    label: 'Overview',
-    labelKey: 'nav.groups.overview',
+    label: 'Workspace',
+    labelKey: 'nav.groups.workspace',
     items: [
       {
         title: 'Dashboard',
         titleKey: 'nav.dashboard',
         url: '/dashboard/overview',
         icon: 'dashboard',
-        isActive: false,
         shortcut: ['d', 'd'],
         items: []
       },
       {
-        title: 'Product',
-        titleKey: 'nav.product',
-        url: '/dashboard/product',
-        icon: 'product',
-        shortcut: ['p', 'p'],
-        isActive: false,
+        title: 'Materials',
+        titleKey: 'nav.materials',
+        url: '/dashboard/materials',
+        icon: 'materials',
+        shortcut: ['m', 'a'],
         items: []
       },
       {
-        title: 'Users',
-        titleKey: 'nav.users',
-        url: '/dashboard/users',
-        icon: 'teams',
-        shortcut: ['u', 'u'],
-        isActive: false,
+        title: 'Samples',
+        titleKey: 'nav.samples',
+        url: '/dashboard/samples',
+        icon: 'samples',
+        shortcut: ['s', 'a'],
+        items: []
+      },
+      {
+        title: 'Experiments',
+        titleKey: 'nav.experiments',
+        url: '/dashboard/experiments',
+        icon: 'experiments',
+        shortcut: ['e', 'x'],
+        items: []
+      },
+      {
+        title: 'Data Assets',
+        titleKey: 'nav.dataAssets',
+        url: '/dashboard/data-assets',
+        icon: 'dataAssets',
+        shortcut: ['d', 'a'],
         items: []
       }
     ]
   },
   {
-    label: 'Elements',
-    labelKey: 'nav.groups.elements',
-    items: []
+    label: 'Lab Resources',
+    labelKey: 'nav.groups.labResources',
+    items: [
+      {
+        title: 'Chemicals',
+        titleKey: 'nav.chemicals',
+        url: '/dashboard/chemicals',
+        icon: 'chemicals',
+        shortcut: ['c', 'h'],
+        items: []
+      },
+      {
+        title: 'Equipment',
+        titleKey: 'nav.equipment',
+        url: '/dashboard/equipment',
+        icon: 'equipment',
+        shortcut: ['e', 'q'],
+        items: []
+      },
+      {
+        title: 'Bookings',
+        titleKey: 'nav.bookings',
+        url: '/dashboard/bookings',
+        icon: 'bookings',
+        shortcut: ['b', 'o'],
+        items: []
+      },
+      {
+        title: 'Lineage',
+        titleKey: 'nav.lineage',
+        url: '/dashboard/lineage',
+        icon: 'lineage',
+        shortcut: ['l', 'i'],
+        items: []
+      }
+    ]
   },
   {
-    label: '',
+    label: 'AI',
+    labelKey: 'nav.groups.ai',
     items: [
+      {
+        title: 'AI Assistant',
+        titleKey: 'nav.aiAssistant',
+        url: '/dashboard/ai-assistant',
+        icon: 'aiAssistant',
+        shortcut: ['a', 'i'],
+        items: []
+      }
+    ]
+  },
+  {
+    label: 'Admin',
+    labelKey: 'nav.groups.admin',
+    items: [
+      {
+        title: 'Members',
+        titleKey: 'nav.members',
+        url: '/dashboard/members',
+        icon: 'members',
+        shortcut: ['m', 'e'],
+        items: []
+      },
       {
         title: 'Account',
         titleKey: 'nav.account',

@@ -87,7 +87,16 @@ import {
   IconUsers,
   IconVideo,
   IconCrown,
-  IconX
+  IconX,
+  IconAtom2,
+  IconCalendarEvent,
+  IconChartHistogram,
+  IconDeviceDesktopAnalytics,
+  IconFlask,
+  IconFlask2,
+  IconHierarchy,
+  IconTestPipe,
+  IconUsersGroup
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -219,5 +228,16 @@ export const Icons = {
   slash: IconSlash,
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
-  moreHorizontal: IconDots
+  moreHorizontal: IconDots,
+  // Lab domains
+  materials: IconAtom2,
+  samples: IconTestPipe,
+  experiments: IconFlask,
+  dataAssets: IconChartHistogram,
+  lineage: IconHierarchy,
+  chemicals: IconFlask2,
+  equipment: IconDeviceDesktopAnalytics,
+  bookings: IconCalendarEvent,
+  members: IconUsersGroup,
+  aiAssistant: IconSparkles
 };

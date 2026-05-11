@@ -34,8 +34,13 @@
     "groups": {
       "overview": "Overview",
       "elements": "Elements",
-      "account": "Account"
-    }
+      "account": "Account",
+      "workspace": "Workspace",
+      "labResources": "Lab Resources",
+      "ai": "AI",
+      "admin": "Admin"
+    },
+    "employee": "Employee"
   },
   "auth": {
     "signInTitle": "Sign in to Labyra",

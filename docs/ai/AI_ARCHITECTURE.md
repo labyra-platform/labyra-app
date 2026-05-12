@@ -1439,4 +1439,180 @@ strategy: ship ai-1 working, abstract when there's a real second use case.
 
 ---
 
+
+## 21. Fine-tuning policy
+
+**Position**: Labyra does NOT fine-tune Claude (Anthropic doesn't offer it) and avoids
+fine-tuning third-party models for materials science domain. We rely on prompt
+engineering + RAG instead.
+
+### Why no fine-tuning
+
+| Approach | Considered | Verdict |
+|---|---|---|
+| Fine-tune Claude | Not available — Anthropic does not offer this | N/A |
+| Fine-tune OpenAI (gpt-4o-mini) | Cost $50-500 + serving overhead | Reject — prompt + RAG matches quality |
+| Fine-tune Gemini Flash | Available via Google AI Platform | Reject — same reason |
+| Fine-tune open model (Llama, Qwen, MatSciBERT) | Cheap, self-host possible | Defer — only if Phase E scale needs |
+
+### Where prompt engineering + RAG wins
+
+For Labyra's domain (electrochemical materials science), the following alternatives
+match or beat fine-tuning quality:
+
+- **Few-shot examples in cached system prompt** (5-20 examples)
+  → matches FT quality for classification/extraction tasks at 0 training cost
+- **Domain glossary as cached context** (chemical formulas, units, methods table)
+  → eliminates "model doesn't know WO₃" failures
+- **RAG with reranking** (Voyage rerank-2.5 + BM25 hybrid)
+  → grounds answers in actual papers, FT can't compete with grounded retrieval
+- **Tool calling for structured output**
+  → forces JSON-valid output without FT for format consistency
+
+### Exception scenarios (deferred far-future)
+
+Re-evaluate fine-tuning if Phase E reaches:
+
+- **>100 paying labs** with similar query patterns → batch routing model (FT Llama 3.1 8B)
+- **Vietnamese scientific writing style** required for output → FT for tone matching
+- **Specialized NER for chemistry** if Haiku 4.5 accuracy drops below 90% on entity extraction
+
+Owner of this policy: AI Architecture lead. Review trigger: corpus exceeds 50,000 docs
+OR commercial scale exceeds 100 tenants.
+
+---
+
+## 22. GraphRAG layer
+
+**Status**: deferred to phase ai-6 (after vanilla RAG in ai-5 establishes baseline).
+
+**Decision rationale**: At corpus scale 5,000+ papers in a controlled domain
+(electrochemical materials), vanilla RAG hits a recall ceiling around 70-80% on
+relational and aggregation queries. GraphRAG adds 15-30% accuracy at +20% indexing
+cost. The ROI tips toward GraphRAG above the 1,000-paper mark in a structured domain.
+
+### Why Labyra's corpus is well-suited
+
+Labyra's seed corpus covers 4 electrochemical applications (energy storage, supercaps,
+gas sensors, water splitting). Properties:
+
+- **Controlled vocabulary**: ~500 chemical formulas, 50 methods, 100 measurable
+  properties. Compare to general-purpose corpus (Wikipedia) with millions of entities.
+- **Measurable properties**: capacity (mAh/g), specific capacitance (F/g),
+  overpotential (mV @ 10 mA/cm²), photocurrent (mA/cm²), bandgap (eV). All numeric,
+  unit-tagged, comparable across papers.
+- **Stable relations**: `material → exhibits → property`, `property → measured_by →
+  method`, `material → synthesized_by → method`, `material A → heterojunction_with →
+  material B`.
+
+These properties make entity extraction tractable and relation extraction high-precision.
+
+### Query patterns that need GraphRAG
+
+| Query type | Vanilla RAG | GraphRAG |
+|---|---|---|
+| "Tell me about WO₃ properties" (lookup) | ✓ Good | ✓ Good (no advantage) |
+| "What's the bandgap of WO₃?" (fact) | ✓ Good | ✓ Good |
+| "Which materials beat 30% IPCE at 400 nm?" (filter+aggregate) | ✗ 40% recall | ✓ 85% recall |
+| "How does WO₃/WS₂ heterojunction affect photocurrent?" (relational) | ✗ 50% recall | ✓ 85% recall |
+| "Survey supercaps with capacitance > 200 F/g" (enumerate) | ✗ 45% recall | ✓ 90% recall |
+
+Half of research queries are filter/aggregate/relational — exactly where GraphRAG wins.
+
+### Graph schema (Labyra-specific)
+
+Stored under `/tenants/{tenantId}/aiGraph/...`. Schema:
+
+```typescript
+// Nodes
+interface Entity {
+  id: string;                         // 'mat:WO3' or 'prop:bandgap_eV'
+  type: 'material' | 'property' | 'method' | 'application' | 'paper';
+  name: string;                       // 'WO₃' (display)
+  aliases: string[];                  // ['tungsten trioxide', 'WO3', 'W-oxide']
+  canonical_formula?: string;         // for materials: 'WO3'
+  unit?: string;                      // for properties: 'eV', 'mAh/g'
+  papers: string[];                   // chunkIds referencing this entity
+}
+
+// Edges
+interface Relation {
+  id: string;
+  from_entity_id: string;
+  to_entity_id: string;
+  type:
+    | 'exhibits'              // material → property
+    | 'measured_by'           // property → method
+    | 'synthesized_by'        // material → method
+    | 'heterojunction_with'   // material → material
+    | 'doped_with'            // material → material/element
+    | 'applied_to'            // material → application
+    | 'reported_in';          // entity → paper
+  evidence_chunks: string[];  // chunk IDs supporting this claim
+  value?: number;             // for property edges: '3.05'
+  confidence: number;         // 0.0-1.0 from NER extraction
+  paper_count: number;        // how many papers support this
+}
+```
+
+### Building the graph
+
+Pipeline per new paper (after vanilla chunking + embedding):
+
+```
+For each chunk:
+  1. NER via Claude Haiku 4.5 (cached system prompt with domain examples)
+     → extract: materials, properties, methods, numeric values
+  2. Coreference resolution (link 'this material' to entity from context)
+  3. Relation extraction via Claude Haiku
+     → identify which entity-pairs co-occur with relation verbs
+  4. Entity resolution (merge 'WO3' === 'WO₃' === 'tungsten trioxide')
+     → use canonical_formula + aliases
+  5. Confidence scoring: chunk evidence + paper count
+  6. Upsert nodes + edges to Firestore
+```
+
+Estimated cost: $0.03/paper (Haiku NER + relation extract, cached system prompt).
+For 5,000 papers: **~$150 one-time graph build**.
+
+### Query-time integration
+
+```
+User query
+  ↓
+NER on query → mentioned entities (Haiku, $0.0001)
+  ↓
+Two-stage retrieval:
+  Stage A: Vector + BM25 (vanilla) → top 30 chunks
+  Stage B: Graph traverse from query entities (1-2 hops) → subgraph + connected chunks
+  ↓
+Merge results (RRF fusion across both)
+  ↓
+Voyage rerank-2.5 → top 8 chunks + graph context summary
+  ↓
+LLM with structured context (entities, relations, chunks)
+```
+
+### Phase plan
+
+| Phase | Deliverable |
+|---|---|
+| **ai-5** | Vanilla RAG (BM25 + vector + rerank) — establish baseline accuracy |
+| **ai-6** | GraphRAG layer:<br>- NER pipeline<br>- Graph schema in Firestore<br>- Entity resolution<br>- Hybrid query strategy<br>- Eval framework comparing vanilla vs +graph |
+| **Phase 6+** | Re-evaluate after collecting query patterns from real users |
+
+### Risks
+
+1. **Entity resolution errors** — `WO₃` (chemistry) vs `WO3` (abbreviation) vs `tungsten oxide` (full name). Mitigation: pymatgen formula canonicalization + alias table.
+2. **Stale graph** — papers re-chunked → entities reshuffled. Mitigation: incremental updates with paper_id provenance.
+3. **Query NER false positives** — "blue" in "blue-shift" mistaken for color entity. Mitigation: domain-tuned NER prompt with negative examples.
+4. **Cost overrun** — 5,000 papers × 50 chunks/paper × Haiku ≈ $50, but if relation extraction expensive could 10x. Mitigation: batch processing, prompt caching.
+
+### Owner
+
+GraphRAG implementation owner: AI Architecture lead. Implementation in phase ai-6
+(after ai-5 vanilla RAG baseline is measured).
+
+---
+
 *This is a living document. Update with each architectural decision.*

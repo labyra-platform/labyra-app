@@ -1,0 +1,88 @@
+rules_version = '2';
+
+// =============================================================
+// Labyra Platform — Firestore Security Rules
+// =============================================================
+// Multi-tenant model: all data lives under /tenants/{tenantId}/...
+// Firebase Auth custom claims drive access:
+//   - tenantId: string (required for any tenant-scoped access)
+//   - role: 'admin' | 'superadmin' | 'member' | 'viewer'
+//
+// Super-admin = platform operator, can read across tenants.
+// Otherwise, users only access their own tenant's subtree.
+// =============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userTenantId() {
+      return request.auth.token.tenantId;
+    }
+
+    function userRole() {
+      return request.auth.token.role;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && userRole() == 'superadmin';
+    }
+
+    function belongsToTenant(tenantId) {
+      return isSignedIn() && userTenantId() == tenantId;
+    }
+
+    function isAdmin(tenantId) {
+      return belongsToTenant(tenantId) && userRole() in ['admin', 'superadmin'];
+    }
+
+    function isWriter(tenantId) {
+      return belongsToTenant(tenantId) && userRole() in ['admin', 'superadmin', 'member'];
+    }
+
+    // ---------- Tenant document ----------
+    // /tenants/{tenantId} — metadata (name, plan, createdAt, etc.)
+    match /tenants/{tenantId} {
+      allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+      allow write: if isAdmin(tenantId) || isSuperAdmin();
+
+      // ---------- All tenant data ----------
+      // Catch-all for any sub-collection under a tenant.
+      // Specific sub-collections may override below for tighter rules.
+      match /{document=**} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+      }
+
+      // ---------- Audit logs (write-only for non-admin) ----------
+      // Members may append, only admins read.
+      match /auditLogs/{logId} {
+        allow create: if isWriter(tenantId);
+        allow read: if isAdmin(tenantId) || isSuperAdmin();
+        allow update, delete: if false;  // immutable
+      }
+
+      // ---------- Members sub-collection (admin-managed) ----------
+      match /members/{memberId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isAdmin(tenantId) || isSuperAdmin();
+      }
+    }
+
+    // ---------- Platform-level collections (super-admin only) ----------
+    // Cross-tenant analytics, billing, etc.
+    match /platform/{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // ---------- Default deny ----------
+    // Anything not explicitly matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

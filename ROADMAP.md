@@ -11,7 +11,7 @@ Multi-tenant từ đầu (user's lab = tenant #1, commercial scale sau).
 ## Stack
 
 Next.js 16 + TypeScript strict + shadcn/ui + Tremor + Firebase + next-intl + Vercel.
-Charts: Tremor (dashboard) + Plotly.js (scientific) + Three.js (3D Phase D) + D3 (lineage).
+Charts: recharts (dashboard) + Plotly.js (scientific) + Three.js (3D Phase D) + D3 (lineage).
 
 ## Round 160 — Foundation (in progress)
 
@@ -41,7 +41,11 @@ Charts: Tremor (dashboard) + Plotly.js (scientific) + Three.js (3D Phase D) + D3
 -  DataAssets, Lineage, Chemicals, Equipment, Bookings, Members, AI Assistant
 - [x] R160-shell-2 — Sidebar nav rewrite cho LabBook domains
   4 groups (Workspace / Lab Resources / AI / Admin), 10 stub pages
-- [ ] R160-dashboard — Tremor KPI cards + charts + Firebase data integration
+- [ ] R160-dashboard — KPI cards + charts + Firebase data integration
+  - [x] R160-dashboard-1 — Foundation: CLAUDE.md update + firestore.rules + firebase.json
+  - [ ] R160-dashboard-2 — Seed mock data (5 collections × 10 records under /tenants/{id}/)
+  - [ ] R160-dashboard-3 — Wire Firebase Auth custom claims (tenantId, role)
+  - [ ] R160-dashboard-4 — Replace KPI mock + charts with Firestore queries via TanStack Query
 
 ### Phase 4: Core domain pages
 
@@ -66,7 +70,7 @@ Charts: Tremor (dashboard) + Plotly.js (scientific) + Three.js (3D Phase D) + D3
 
 ## Timeline
 
-Current: 10/22 sub-rounds done (~45%).
+Current: 14/25 sub-rounds done (~56%).
 Realistic full R160: 8-12 weeks.
 
 ## Post-R160 (future phases)

@@ -11,7 +11,7 @@
 | Framework | Next.js 15 App Router |
 | Language | TypeScript strict (no `any`, no `@ts-nocheck`) |
 | Styling | Tailwind 4 + CSS Variables |
-| UI Kit | shadcn/ui + Tremor |
+| UI Kit | shadcn/ui |
 | State | Zustand |
 | Data fetching | TanStack Query v5 |
 | Auth | Firebase Auth (Google + email/password) |
@@ -19,7 +19,7 @@
 | Database | Firestore + RTDB |
 | Storage | Firebase Storage |
 | Cloud Functions | 11 functions, asia-southeast1, giữ nguyên |
-| Charts | Tremor (dashboard) + Plotly (scientific) + D3 (graph) |
+| Charts | recharts (dashboard) + Plotly (scientific) + D3 (graph) |
 | Icons | Lucide React only — NO emoji in UI |
 | Deploy | Vercel + Firebase backend |
 | Monorepo | pnpm workspaces |
@@ -343,16 +343,24 @@ const PlotlyChart = dynamic(() => import("@/components/charts/plotly-chart"), {
 - Tất cả secrets qua environment variables
 - Server-side: verify Firebase ID token trước mọi API route
 - Client-side: không expose Admin SDK credentials
-- Firestore queries PHẢI có `tenantId` filter (multi-tenant)
+- Firestore data PHẢI nằm dưới path `/tenants/{tenantId}/...` (sub-collection model)
+- Cross-tenant queries (super-admin) dùng `collectionGroup()` — không phải code path thông thường
+- Firebase Auth custom claims: `tenantId` (required), `role` (admin/superadmin/member/viewer)
 
 ```typescript
-// ❌ NEVER — lộ data giữa tenants
+// ❌ NEVER — top-level collection
 db.collection("experiments").get()
 
-// ✅ ALWAYS — tenant-scoped
+// ❌ NEVER — top-level với tenantId filter (security rules đơn giản hơn nhiều với sub-collection)
 db.collection("experiments")
   .where("tenantId", "==", currentTenantId)
   .get()
+
+// ✅ ALWAYS — sub-collection scoped
+db.collection(`tenants/${currentTenantId}/experiments`).get()
+
+// ✅ Cross-tenant (super-admin only)
+db.collectionGroup("experiments").get()
 ```
 
 ---

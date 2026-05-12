@@ -73,16 +73,47 @@ function normalizeNumber(n: number): string {
 /**
  * Check whether AI response contains numbers not in whitelist.
  */
+const NEGATION_TOKENS = ['không', 'chưa', 'no', 'not', 'never', 'absent', 'lacking', 'without'];
+
+function isInNegationContext(responseText: string, position: number): boolean {
+  const lookbackStart = Math.max(0, position - 80);
+  const before = responseText.slice(lookbackStart, position).toLowerCase();
+  for (const neg of NEGATION_TOKENS) {
+    const re = new RegExp('\\b' + neg + '\\b', 'i');
+    if (re.test(before)) {
+      const lastNegIdx = before.toLowerCase().lastIndexOf(neg);
+      if (lastNegIdx >= 0) {
+        const distance = before.length - lastNegIdx;
+        if (distance <= 50) return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Check whether AI response contains numbers not in whitelist.
+ * Skips: page numbers (large ints), years (with corpus match), negated context.
+ */
 export function findUnverifiedNumbers(responseText: string, whitelist: Set<string>): NumberMatch[] {
   const responseNumbers = extractNumbers(responseText);
   const unverified: NumberMatch[] = [];
+  let searchStart = 0;
   for (const n of responseNumbers) {
     const norm = normalizeNumber(n.value);
     if (whitelist.has(norm)) continue;
 
-    // Allow common years (current-ish)
+    // Skip large integers (>10000, no unit suffix) — page numbers, DOIs
+    if (
+      Number.isInteger(n.value) &&
+      Math.abs(n.value) > 10000 &&
+      !/[%a-zA-Z\u00B0\u00B5]/.test(n.raw)
+    ) {
+      continue;
+    }
+
+    // Years: allow if corpus has nearby year
     if (n.value >= 1900 && n.value <= 2100 && Number.isInteger(n.value)) {
-      // year-like, allow if in any whitelist sibling within ±5
       let yearMatch = false;
       for (let y = n.value - 5; y <= n.value + 5; y++) {
         if (whitelist.has(y.toString())) {
@@ -91,6 +122,15 @@ export function findUnverifiedNumbers(responseText: string, whitelist: Set<strin
         }
       }
       if (yearMatch) continue;
+    }
+
+    // Negation context check
+    const idx = responseText.indexOf(n.raw, searchStart);
+    if (idx !== -1) {
+      searchStart = idx + n.raw.length;
+      if (isInNegationContext(responseText, idx)) {
+        continue;
+      }
     }
 
     unverified.push(n);

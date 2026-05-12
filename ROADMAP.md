@@ -140,3 +140,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-5d-3d — Copy-as-LaTeX: Ctrl+C on equations → clipboard receives LaTeX source for Word Equation paste
 - [x] R160-ai-5d-4 — Polish: LaTeX delim strict, metadata extract from OCR, Toaster mount check, Word dotted minus fix
 - [x] R160-ai-5e-1 — Anti-hallucination L2+L3+L4: citation enforcement, numerical guard, rerank score threshold
+- [x] R160-ai-5e-1b — Grounding polish: skip page numbers (>10K), skip negated context ("không 92%")

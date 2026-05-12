@@ -13,10 +13,10 @@ AI-native lab management SaaS for materials science research. Next.js 16 + TypeS
 2. **`.claude/snapshot.md`** — current codebase state (gitignored, regenerate with `pnpm snapshot`)
 3. **`CLAUDE.md`** — coding rules (non-negotiable)
 4. **`ROADMAP.md`** — phases, progress, what's next
-5. **`AI_ARCHITECTURE.md`** — AI layer design (inherited from labbook-bku, port plan)
+5. **`docs/ai/AI_ARCHITECTURE.md`** — AI layer design (inherited from labbook-bku, port plan)
 6. **`docs/handoff.md`** — last session state, open decisions
-7. **`ARCHITECTURE.md`** — system overview *(planned: R160-meta-2)*
-8. **`WORKFLOW.md`** — dev process *(planned: R160-meta-2)*
+7. **`docs/ARCHITECTURE.md`** — system overview *(planned: R160-meta-2)*
+8. **`docs/WORKFLOW.md`** — dev process *(planned: R160-meta-2)*
 
 ## How this project is built
 

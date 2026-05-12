@@ -99,5 +99,27 @@
   "locale": {
     "english": "English",
     "vietnamese": "Tiếng Việt"
+  },
+  "ai": {
+    "title": "Trợ lý AI",
+    "subtitle": "Hỏi bất cứ điều gì về phòng lab của bạn",
+    "placeholder": "Nhập câu hỏi... (Enter để gửi, Shift+Enter xuống dòng)",
+    "reset": "Bắt đầu lại",
+    "error": "Lỗi",
+    "usage": "Tokens: {input} in / {output} out · ${usd}",
+    "newChat": "Cuộc trò chuyện mới",
+    "untitled": "Chưa đặt tên",
+    "groupToday": "Hôm nay",
+    "groupYesterday": "Hôm qua",
+    "groupLast7Days": "7 ngày qua",
+    "groupLast30Days": "30 ngày qua",
+    "groupEarlier": "Trước đó",
+    "emptyHistory": "Chưa có cuộc trò chuyện nào",
+    "loading": "Đang tải...",
+    "loadError": "Không tải được danh sách",
+    "delete": "Xóa",
+    "confirmDelete": "Nhấn lần nữa để xác nhận",
+    "collapse": "Thu gọn",
+    "expand": "Mở rộng"
   }
 }

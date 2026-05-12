@@ -120,3 +120,9 @@ Source repos cũ (reference only, không port code):
 ## R160 Cleanup phases
 
 - [x] R160-cleanup-1 — Template residue (marketing routes, sample API, overview.tsx dead code, mock-api, bun.lock)
+
+## R160 AI phases
+
+- [x] R160-ai-1 — Chat foundation: Anthropic SDK, Route Handler, streaming SSE, basic chat UI (no tools/RAG/history yet)
+- [x] R160-ai-2a — Persist conversations + provenance writes + auto-title (Haiku 4.5)
+- [x] R160-ai-2b — Conversation history panel (time-grouped, collapsible)

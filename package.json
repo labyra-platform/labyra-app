@@ -18,6 +18,7 @@
     "snapshot": "node scripts/generate-context-snapshot.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -74,9 +75,11 @@
     "react-day-picker": "^9.14.0",
     "react-dom": "19.2.4",
     "react-dropzone": "^14.4.1",
+    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.9",
     "react-responsive": "^10.0.1",
     "recharts": "^2.15.4",
+    "remark-gfm": "^4.0.1",
     "sharp": "^0.33.5",
     "sonner": "^1.7.4",
     "sort-by": "^1.2.0",
@@ -111,7 +114,7 @@
       "oxfmt --write"
     ]
   },
-  "description": "Labyra Platform \u2014 AI-native lab management for materials science",
+  "description": "Labyra Platform — AI-native lab management for materials science",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/labyra-platform/labyra-app.git"

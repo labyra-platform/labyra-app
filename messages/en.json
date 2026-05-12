@@ -99,5 +99,27 @@
   "locale": {
     "english": "English",
     "vietnamese": "Tiếng Việt"
+  },
+  "ai": {
+    "title": "AI Assistant",
+    "subtitle": "Ask anything about your lab",
+    "placeholder": "Type your question... (Enter to send, Shift+Enter for new line)",
+    "reset": "Reset",
+    "error": "Error",
+    "usage": "Tokens: {input} in / {output} out · ${usd}",
+    "newChat": "New chat",
+    "untitled": "Untitled",
+    "groupToday": "Today",
+    "groupYesterday": "Yesterday",
+    "groupLast7Days": "Last 7 days",
+    "groupLast30Days": "Last 30 days",
+    "groupEarlier": "Earlier",
+    "emptyHistory": "No conversations yet",
+    "loading": "Loading...",
+    "loadError": "Could not load conversations",
+    "delete": "Delete",
+    "confirmDelete": "Click again to confirm",
+    "collapse": "Collapse",
+    "expand": "Expand"
   }
 }

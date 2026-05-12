@@ -4,7 +4,7 @@ AI-native lab management platform for materials science research. Multi-tenant S
 of [labbook-bku](https://github.com/emnam009009/labbook-bku) on Next.js 16 + Firebase.
 
 > **For developers**: start with [`AGENTS.md`](./AGENTS.md) to bootstrap your understanding.
-> Then read [`ARCHITECTURE.md`](./ARCHITECTURE.md), [`WORKFLOW.md`](./WORKFLOW.md), and
+> Then read [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), [`docs/WORKFLOW.md`](./docs/WORKFLOW.md), and
 > [`CLAUDE.md`](./CLAUDE.md).
 
 ## Stack
@@ -35,7 +35,7 @@ pnpm snapshot                             # generate agent context
 pnpm dev                                  # localhost:3000
 ```
 
-See [`WORKFLOW.md`](./WORKFLOW.md) for full setup, patch workflow, and troubleshooting.
+See [`docs/WORKFLOW.md`](./docs/WORKFLOW.md) for full setup, patch workflow, and troubleshooting.
 
 ## Status
 

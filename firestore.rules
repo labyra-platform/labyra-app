@@ -84,5 +84,22 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+    // AI conversations and messages (R160-ai-2a)
+    match /tenants/{tenantId}/aiConversations/{conversationId} {
+      allow read, write: if isWriter(tenantId);
+      allow read, write: if isSuperAdmin();
+
+      match /messages/{messageId} {
+        allow read, write: if isWriter(tenantId);
+        allow read, write: if isSuperAdmin();
+      }
+    }
+
+    // AI provenance (audit trail — immutable from client)
+    match /tenants/{tenantId}/aiProvenance/{messageId} {
+      allow read: if isWriter(tenantId) || isSuperAdmin();
+      allow write: if false; // server only via Admin SDK
+    }
+
   }
 }

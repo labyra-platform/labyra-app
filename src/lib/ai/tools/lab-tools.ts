@@ -44,7 +44,7 @@ async function countExperimentsHandler(input: Record<string, unknown>, ctx: Tool
 export const countExperiments: RegisteredTool = {
   name: 'countExperiments',
   description:
-    'Count experiments in the lab. Optionally filter by status (running, completed, draft). Returns total count, breakdown by status, and up to 10 recent experiments.',
+    'Count experiments in the lab. CALL THIS whenever user asks about experiment numbers, counts, list of experiments, or experiment status. Vietnamese triggers: "thí nghiệm", "experiment đang chạy", "có bao nhiêu", "liệt kê experiments". Optional status filter (running/completed/draft). Returns total count, breakdown by status, and list of recent experiments.',
   parameters: {
     type: 'object',
     properties: {
@@ -101,7 +101,7 @@ async function findSampleHandler(input: Record<string, unknown>, ctx: ToolContex
 export const findSample: RegisteredTool = {
   name: 'findSample',
   description:
-    'Find a sample by ID or name. Returns up to 5 matching samples with full details (material, synthesis method, morphology, status).',
+    'Find/lookup a specific sample in the lab by ID or name. CALL THIS when user mentions a sample name or ID. Vietnamese triggers: "tìm sample", "tìm mẫu", "sample [name]". Returns up to 5 matching samples with full details (material, synthesis method, morphology, mass, status, notes).',
   parameters: {
     type: 'object',
     properties: {
@@ -143,7 +143,7 @@ async function recentMaterialsHandler(input: Record<string, unknown>, ctx: ToolC
 export const recentMaterials: RegisteredTool = {
   name: 'recentMaterials',
   description:
-    'List the most recently added materials in the lab. Returns id, name, formula, category, bandgap, and tags. Useful when user asks about lab inventory or wants to know what materials are available.',
+    'List materials/chemicals/compounds available in the lab inventory. CALL THIS whenever user asks to list, browse, show, see, or enumerate materials. Vietnamese triggers: "liệt kê vật liệu", "có vật liệu gì", "danh sách vật liệu", "vật liệu trong lab", "list materials". Returns id, name, formula, category, bandgap, and tags. Always call this when user wants an overview of materials, even without a specific filter.',
   parameters: {
     type: 'object',
     properties: {

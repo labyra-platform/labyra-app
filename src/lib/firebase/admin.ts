@@ -67,11 +67,24 @@ export function getAdminAuthService(): AdminAuth {
 }
 
 let _adminFirestore: AdminFirestore | undefined;
+let _firestoreSettingsApplied = false;
 export function getAdminFirestoreService(): AdminFirestore {
   if (_adminFirestore) return _adminFirestore;
-  _adminFirestore = getAdminFirestore(getFirebaseAdminApp());
-  // Allow undefined fields in writes (skip them instead of rejecting)
-  _adminFirestore.settings({ ignoreUndefinedProperties: true });
+  const fs = getAdminFirestore(getFirebaseAdminApp());
+  // Race-safe: settings() can only be called once per Firestore instance.
+  // Multiple concurrent first-call paths can hit this; guard with try/catch.
+  if (!_firestoreSettingsApplied) {
+    try {
+      fs.settings({ ignoreUndefinedProperties: true });
+      _firestoreSettingsApplied = true;
+    } catch (err) {
+      // Settings already applied by a parallel caller — safe to ignore
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('already been initialized')) throw err;
+      _firestoreSettingsApplied = true;
+    }
+  }
+  _adminFirestore = fs;
   return _adminFirestore;
 }
 

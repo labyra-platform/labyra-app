@@ -134,3 +134,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-5b-2 — Processing pipeline (OCR/chunk/enrich/embed/index) + paper list/detail UI + cancel/reprocess endpoints
 - [x] R160-ai-5b-3 — Bug fixes: indexed timeline ✓ icon, Firestore Timestamp handling, silence expected Pinecone 404
 - [x] R160-ai-5d-1 — Retrieval backend: Voyage rerank-2.5 provider + searchPapers() cascade (vector top-20 → rerank top-5)
+- [x] R160-ai-5d-2 — BM25 hybrid retrieval: wink-nlp + hybrid VI/EN tokenizer + RRF fusion + daily cron refit

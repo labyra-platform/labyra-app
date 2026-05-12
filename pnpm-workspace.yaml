@@ -4,5 +4,7 @@ allowBuilds:
   '@parcel/watcher': true
   '@sentry/cli': true
   '@swc/core': true
+  crfsuite: set this to true or false
+  fasttext: set this to true or false
   protobufjs: true
   sharp: true

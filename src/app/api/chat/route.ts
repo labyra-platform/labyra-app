@@ -22,6 +22,7 @@ import { executeToolCall } from '@/lib/ai/tools/dispatch';
 import type { ChatRequestBodyV2, ChatStreamEventV2, AiTier, AiCostBreakdown } from '@/types/ai';
 import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
 import { checkGrounding } from '@/lib/ai/grounding';
+import { loadConversationHistory } from '@/lib/ai/conversation-history';
 
 export const runtime = 'nodejs';
 
@@ -33,6 +34,21 @@ interface ToolCallRecord {
   input: Record<string, unknown>;
   result?: unknown;
   isError?: boolean;
+}
+
+// R160-ai-5e-1c: Strip $word$ wrappers around non-math text
+// Math has: numbers, Greek/Latin letters with backslash commands, operators
+// Non-math: Vietnamese words, English words alone — strip the $
+function stripVietnameseDollar(text: string): string {
+  // Match $...$ where content has no math indicators (no \\, no _, no ^, no digits)
+  // and contains Vietnamese diacritics or pure letters
+  return text.replace(/\$([^$\n]{1,30})\$/g, (match, inner) => {
+    // Has math indicators? Keep as-is
+    if (/[\\_^{}]/.test(inner)) return match;
+    if (/\d/.test(inner)) return match; // contains digit = likely math
+    // Pure text wrap = strip dollars
+    return inner;
+  });
 }
 
 function addUsage(a: AiCostBreakdown, b: AiCostBreakdown): AiCostBreakdown {
@@ -272,8 +288,22 @@ export async function POST(request: Request) {
           return;
         }
 
+        // R160-ai-5e-1c: Multi-turn — load past messages from Firestore for context
+        let priorHistory: LLMMessage[] = [];
+        try {
+          priorHistory = await loadConversationHistory(
+            tenantId!,
+            conversationId!,
+            userMessageRef.id // exclude the just-saved pending user message
+          );
+        } catch (err) {
+          console.error('history_load_failed', err);
+        }
         // Multi-round conversation: each round may emit tool_use → execute → feed back
-        let conversationMessages: LLMMessage[] = [{ role: 'user', content: userText }];
+        let conversationMessages: LLMMessage[] = [
+          ...priorHistory,
+          { role: 'user', content: userText }
+        ];
         let pendingToolResults:
           | Array<{ toolCallId: string; result: unknown; isError?: boolean }>
           | undefined;
@@ -294,9 +324,10 @@ export async function POST(request: Request) {
             toolResults: pendingToolResults
           })) {
             if (event.type === 'text_delta') {
-              roundText += event.delta;
-              fullText += event.delta;
-              send({ type: 'text_delta', delta: event.delta });
+              const cleanDelta = stripVietnameseDollar(event.delta);
+              roundText += cleanDelta;
+              fullText += cleanDelta;
+              send({ type: 'text_delta', delta: cleanDelta });
             } else if (event.type === 'tool_use') {
               pendingCalls.push(event.toolCall);
               send({

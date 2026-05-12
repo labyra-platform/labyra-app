@@ -12,7 +12,9 @@
     "lint:strict": "oxlint --deny-warnings",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "seed": "node --env-file=.env.local scripts/seed-dev-tenant.mjs",
+    "seed:claims": "node --env-file=.env.local scripts/seed-dev-tenant.mjs --claims-only"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -108,7 +110,7 @@
       "oxfmt --write"
     ]
   },
-  "description": "Labyra Platform — AI-native lab management for materials science",
+  "description": "Labyra Platform \u2014 AI-native lab management for materials science",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/labyra-platform/labyra-app.git"

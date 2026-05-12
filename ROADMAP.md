@@ -43,7 +43,7 @@ Charts: recharts (dashboard) + Plotly.js (scientific) + Three.js (3D Phase D) + 
   4 groups (Workspace / Lab Resources / AI / Admin), 10 stub pages
 - [ ] R160-dashboard — KPI cards + charts + Firebase data integration
   - [x] R160-dashboard-1 — Foundation: CLAUDE.md update + firestore.rules + firebase.json
-  - [ ] R160-dashboard-2 — Seed mock data (5 collections × 10 records under /tenants/{id}/)
+  - [x] R160-dashboard-2 — Seed mock data (5 collections × 10 records under /tenants/{id}/)
   - [ ] R160-dashboard-3 — Wire Firebase Auth custom claims (tenantId, role)
   - [ ] R160-dashboard-4 — Replace KPI mock + charts with Firestore queries via TanStack Query
 

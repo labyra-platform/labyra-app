@@ -106,7 +106,6 @@
     "placeholder": "Type your question... (Enter to send, Shift+Enter for new line)",
     "reset": "Reset",
     "error": "Error",
-    "usage": "Tokens: {input} in / {output} out · ${usd}",
     "newChat": "New chat",
     "untitled": "Untitled",
     "groupToday": "Today",
@@ -120,6 +119,8 @@
     "delete": "Delete",
     "confirmDelete": "Click again to confirm",
     "collapse": "Collapse",
-    "expand": "Expand"
+    "expand": "Expand",
+    "lastUsage": "This message: {input} in / {output} out · ${usd}",
+    "sessionUsage": "Session total: {input} in / {output} out · ${usd}"
   }
 }

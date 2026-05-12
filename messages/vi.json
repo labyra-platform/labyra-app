@@ -106,7 +106,6 @@
     "placeholder": "Nhập câu hỏi... (Enter để gửi, Shift+Enter xuống dòng)",
     "reset": "Bắt đầu lại",
     "error": "Lỗi",
-    "usage": "Tokens: {input} in / {output} out · ${usd}",
     "newChat": "Cuộc trò chuyện mới",
     "untitled": "Chưa đặt tên",
     "groupToday": "Hôm nay",
@@ -120,6 +119,8 @@
     "delete": "Xóa",
     "confirmDelete": "Nhấn lần nữa để xác nhận",
     "collapse": "Thu gọn",
-    "expand": "Mở rộng"
+    "expand": "Mở rộng",
+    "lastUsage": "Tin nhắn này: {input} in / {output} out · ${usd}",
+    "sessionUsage": "Tổng phiên: {input} in / {output} out · ${usd}"
   }
 }

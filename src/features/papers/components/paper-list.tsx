@@ -25,7 +25,29 @@ const STATUS_COLORS: Record<PaperStatus, string> = {
   cancelled: 'bg-muted text-muted-foreground'
 };
 
-function formatDate(ms: number): string {
+// Firestore Timestamp may arrive as { _seconds, _nanoseconds } or { seconds, nanoseconds }
+// depending on serialization path. Normalize to epoch ms.
+type FirestoreTimestampLike =
+  | number
+  | {
+      _seconds?: number;
+      _nanoseconds?: number;
+      seconds?: number;
+      nanoseconds?: number;
+      toMillis?: () => number;
+    };
+
+function toEpochMs(value: FirestoreTimestampLike | undefined | null): number {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  const sec = value._seconds ?? value.seconds ?? 0;
+  const nano = value._nanoseconds ?? value.nanoseconds ?? 0;
+  return sec * 1000 + Math.floor(nano / 1_000_000);
+}
+
+function formatDate(value: FirestoreTimestampLike | undefined | null): string {
+  const ms = toEpochMs(value);
   if (!ms) return '—';
   return new Date(ms).toLocaleDateString();
 }

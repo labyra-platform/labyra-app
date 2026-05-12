@@ -55,7 +55,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   try {
     await getVectorStore().deleteByPaperId(tenantId, paperId);
   } catch (err) {
-    console.error('reprocess: pinecone cleanup failed', err);
+    // 404 is expected when namespace empty / first reprocess — silence
+    const errName = (err as { name?: string }).name;
+    if (errName !== 'PineconeNotFoundError') {
+      console.error(
+        JSON.stringify({
+          level: 'warn',
+          event: 'reprocess_pinecone_cleanup_failed',
+          paperId,
+          error: err instanceof Error ? err.message : String(err)
+        })
+      );
+    }
   }
 
   const chunksSnap = await db.collection(`tenants/${tenantId}/papers/${paperId}/chunks`).get();

@@ -42,8 +42,10 @@ export function ProcessingTimeline({ paper }: { paper: Paper }) {
     <div className='space-y-1'>
       {STEPS.map((step) => {
         const stepOrder = STEP_ORDER[step.status];
-        const isCurrent = paper.status === step.status;
-        const isPast = currentOrder > stepOrder && currentOrder >= 0;
+        // Hotfix-5b-3: indexed terminal state shows ALL steps as past (incl. itself)
+        const isIndexed = paper.status === 'indexed';
+        const isCurrent = !isIndexed && paper.status === step.status;
+        const isPast = isIndexed ? true : currentOrder > stepOrder && currentOrder >= 0;
         const isPending = currentOrder < stepOrder && !isFailed && !isCancelled;
 
         let icon = <IconCircle className='size-4 text-muted-foreground/40' />;

@@ -132,3 +132,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-5a — RAG foundation: Voyage embedding + Pinecone vector store + Mistral OCR (with provider abstraction)
 - [x] R160-ai-5b-1 — Foundation: papers types + governance (quota/tiers) + JobQueue interface + Storage rules + upload UI/endpoint
 - [x] R160-ai-5b-2 — Processing pipeline (OCR/chunk/enrich/embed/index) + paper list/detail UI + cancel/reprocess endpoints
+- [x] R160-ai-5b-3 — Bug fixes: indexed timeline ✓ icon, Firestore Timestamp handling, silence expected Pinecone 404

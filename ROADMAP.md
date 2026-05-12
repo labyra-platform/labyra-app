@@ -116,3 +116,7 @@ Reference materials:
 Source repos cũ (reference only, không port code):
 - github.com/emnam009009/labbook-bku — Vite + vanilla TS legacy
 - github.com/emnam009009/labyra-landing — Astro marketing site
+
+## R160 Cleanup phases
+
+- [x] R160-cleanup-1 — Template residue (marketing routes, sample API, overview.tsx dead code, mock-api, bun.lock)

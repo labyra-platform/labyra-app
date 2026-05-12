@@ -66,19 +66,30 @@ function toGeminiTools(tools: LLMToolDefinition[]) {
           properties: Object.fromEntries(
             Object.entries(t.parameters.properties).map(([k, v]) => {
               const prop = v as { type: string; description: string; enum?: string[] };
+              if (prop.enum && prop.type === 'string') {
+                return [
+                  k,
+                  {
+                    type: SchemaType.STRING,
+                    format: 'enum' as const,
+                    description: prop.description,
+                    enum: prop.enum
+                  }
+                ];
+              }
               return [
                 k,
                 {
                   type: mapJsonSchemaTypeToGemini(prop.type),
-                  description: prop.description,
-                  ...(prop.enum ? { enum: prop.enum } : {})
+                  description: prop.description
                 }
               ];
             })
           ),
           required: t.parameters.required ?? []
         }
-      }))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      })) as any
     }
   ];
 }
@@ -114,7 +125,7 @@ export class GeminiProvider implements LLMProvider {
         }));
 
         const result = await chat.sendMessageStream(functionResponses);
-        yield* this.consumeGeminiStream(result, request.model);
+        yield* this.consumeGeminiStream(result as any, request.model);
         return;
       }
 
@@ -141,7 +152,7 @@ export class GeminiProvider implements LLMProvider {
       });
 
       const result = await chat.sendMessageStream(lastMessage.content);
-      yield* this.consumeGeminiStream(result, request.model);
+      yield* this.consumeGeminiStream(result as any, request.model);
     } catch (e) {
       yield {
         type: 'error',

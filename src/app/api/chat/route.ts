@@ -292,7 +292,11 @@ export async function POST(request: Request) {
           model: config.model,
           provider: provider.id === 'anthropic' ? 'anthropic-direct' : 'gcp-vertex',
           region: provider.region,
-          toolsCalled: toolCallRecords.map((r) => r.name),
+          toolsCalled: toolCallRecords.map((r) => ({
+            id: r.id,
+            name: r.name,
+            inputJson: JSON.stringify(r.input)
+          })),
           ragChunksUsed: [],
           reflectionIterations: 0,
           cost: totalUsage,

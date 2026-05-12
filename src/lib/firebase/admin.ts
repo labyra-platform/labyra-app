@@ -66,8 +66,13 @@ export function getAdminAuthService(): AdminAuth {
   return getAdminAuth(getFirebaseAdminApp());
 }
 
+let _adminFirestore: AdminFirestore | undefined;
 export function getAdminFirestoreService(): AdminFirestore {
-  return getAdminFirestore(getFirebaseAdminApp());
+  if (_adminFirestore) return _adminFirestore;
+  _adminFirestore = getAdminFirestore(getFirebaseAdminApp());
+  // Allow undefined fields in writes (skip them instead of rejecting)
+  _adminFirestore.settings({ ignoreUndefinedProperties: true });
+  return _adminFirestore;
 }
 
 export function getAdminDatabaseService(): AdminDatabase {

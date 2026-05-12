@@ -91,9 +91,7 @@ export class AnthropicProvider implements LLMProvider {
         params.tools = toAnthropicTools(request.tools);
       }
 
-      const stream = await getClient().messages.stream(
-        params as Parameters<typeof getClient.prototype.messages.stream>[0]
-      );
+      const stream = await getClient().messages.stream(params as any);
 
       // Accumulate tool_use blocks (they arrive across multiple events)
       const toolUseBuffer: Map<number, { id: string; name: string; jsonStr: string }> = new Map();
@@ -169,9 +167,7 @@ export class AnthropicProvider implements LLMProvider {
     if (request.tools && request.tools.length > 0) {
       params.tools = toAnthropicTools(request.tools);
     }
-    const response = await getClient().messages.create(
-      params as Parameters<typeof getClient.prototype.messages.create>[0]
-    );
+    const response = await getClient().messages.create(params as any);
 
     const textBlock = response.content.find((b) => b.type === 'text');
     const text = textBlock?.type === 'text' ? textBlock.text : '';

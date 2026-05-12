@@ -54,3 +54,6 @@ next-env.d.ts
 firebase-admin-key.json
 firebase-service-account.json
 *.bak*
+
+# Agent context snapshots (regenerated via `pnpm snapshot`)
+.claude/

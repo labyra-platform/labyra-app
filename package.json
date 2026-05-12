@@ -14,7 +14,8 @@
     "format:check": "oxfmt --check .",
     "prepare": "husky",
     "seed": "node --env-file=.env.local scripts/seed-dev-tenant.mjs",
-    "seed:claims": "node --env-file=.env.local scripts/seed-dev-tenant.mjs --claims-only"
+    "seed:claims": "node --env-file=.env.local scripts/seed-dev-tenant.mjs --claims-only",
+    "snapshot": "node scripts/generate-context-snapshot.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

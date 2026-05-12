@@ -25,7 +25,7 @@ Charts: recharts (dashboard) + Plotly.js (scientific) + Three.js (3D Phase D) + 
 - [x] R160-i18n-1 — next-intl path-based routing + folder restructure
 - [x] R160-i18n-2 — String migration auth + LocaleSwitcher component
 
-### Phase 2: i18n completion (current)
+### Phase 2: i18n completion
 
 - [x] R160-i18n-3a — Mount LocaleSwitcher into header
 - [x] R160-i18n-3b — Sidebar nav migration via nav-config.ts

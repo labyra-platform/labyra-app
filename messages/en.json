@@ -121,6 +121,10 @@
     "collapse": "Collapse",
     "expand": "Expand",
     "lastUsage": "This message: {input} in / {output} out · ${usd}",
-    "sessionUsage": "Session total: {input} in / {output} out · ${usd}"
+    "sessionUsage": "Session total: {input} in / {output} out · ${usd}",
+    "tierFlash": "T1 Flash",
+    "tierSonnet": "T2 Sonnet",
+    "tierOpus": "T3 Opus",
+    "deleting": "Deleting..."
   }
 }

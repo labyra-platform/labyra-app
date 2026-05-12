@@ -46,11 +46,13 @@ function conversationFromSnapshot(snap: DocumentSnapshot): AiConversation {
 
 function messageFromSnapshot(snap: DocumentSnapshot): AiMessage {
   const d = snap.data();
+  const tier = d?.tier;
   return {
     id: snap.id,
     role: d?.role ?? 'assistant',
     content: d?.content ?? '',
-    createdAt: d?.createdAt?.toMillis?.() ?? Date.now()
+    createdAt: d?.createdAt?.toMillis?.() ?? Date.now(),
+    ...(tier === 1 || tier === 2 || tier === 3 ? { tier } : {})
   };
 }
 
@@ -122,7 +124,42 @@ export function useDeleteConversation() {
       // Then delete the conversation doc
       await deleteDoc(doc(db(), `tenants/${tenantId}/aiConversations/${conversationId}`));
     },
-    onSuccess: () => {
+    // Optimistic update — remove from cache immediately
+    onMutate: async (conversationId: string) => {
+      // Cancel ongoing refetches so they don't overwrite optimistic update
+      await qc.cancelQueries({ queryKey: ['aiConversations'] });
+
+      // Snapshot all conversation-list query caches (any maxResults variant)
+      const snapshot = qc.getQueriesData<unknown[]>({
+        queryKey: ['aiConversations']
+      });
+
+      // Optimistically remove from all matching caches
+      snapshot.forEach(([key, data]) => {
+        if (!Array.isArray(data)) return;
+        qc.setQueryData(
+          key,
+          data.filter(
+            (c) =>
+              typeof c === 'object' &&
+              c !== null &&
+              'id' in c &&
+              (c as { id: string }).id !== conversationId
+          )
+        );
+      });
+
+      // Return snapshot for rollback
+      return { snapshot };
+    },
+    onError: (_err, _conversationId, context) => {
+      // Rollback: restore each cached query
+      context?.snapshot.forEach(([key, data]) => {
+        qc.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
+      // Final reconciliation with server
       qc.invalidateQueries({ queryKey: ['aiConversations'] });
     }
   });

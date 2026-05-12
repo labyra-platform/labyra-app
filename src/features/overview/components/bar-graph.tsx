@@ -9,45 +9,29 @@ import {
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart';
-import { Badge } from '@/components/ui/badge';
-import { Icons } from '@/components/icons';
-
-const chartData = [
-  { month: 'January', desktop: 186, mobile: 80 },
-  { month: 'February', desktop: 305, mobile: 200 },
-  { month: 'March', desktop: 237, mobile: 120 },
-  { month: 'April', desktop: 73, mobile: 190 },
-  { month: 'May', desktop: 209, mobile: 130 },
-  { month: 'June', desktop: 214, mobile: 140 }
-];
+import { useExperimentsByStatus } from '@/lib/firestore/queries/dashboard';
+import { useTranslations } from 'next-intl';
 
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
+  count: {
+    label: 'Experiments',
     color: 'var(--chart-1)'
-  },
-  mobile: {
-    label: 'Mobile',
-    color: 'var(--chart-2)'
   }
 } satisfies ChartConfig;
 
 export function BarGraph() {
+  const t = useTranslations('dashboard.charts');
+  const { data, isLoading } = useExperimentsByStatus();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          Bar Chart - Multiple
-          <Badge variant='outline'>
-            <Icons.trendingDown />
-            -5.2%
-          </Badge>
-        </CardTitle>
-        <CardDescription>January - June 2025</CardDescription>
+        <CardTitle>{t('experimentsByStatus')}</CardTitle>
+        <CardDescription>{t('experimentsByStatusDescription')}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <BarChart accessibilityLayer data={chartData}>
+          <BarChart accessibilityLayer data={data}>
             <rect
               x='0'
               y='0'
@@ -58,32 +42,20 @@ export function BarGraph() {
             <defs>
               <DottedBackgroundPattern />
             </defs>
-            <XAxis
-              dataKey='month'
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
+            <XAxis dataKey='status' tickLine={false} tickMargin={10} axisLine={false} />
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator='dashed' hideLabel />}
             />
             <Bar
-              dataKey='desktop'
-              color='var(--chart-1)'
-              fill='var(--color-desktop)'
-              shape={<CustomHatchedBar isHatched={false} />}
-              radius={4}
-            />
-            <Bar
-              dataKey='mobile'
-              fill='var(--color-mobile)'
+              dataKey='count'
+              fill='var(--color-count)'
               shape={<CustomHatchedBar />}
               radius={4}
             />
           </BarChart>
         </ChartContainer>
+        {isLoading && <p className='text-muted-foreground mt-2 text-xs'>Loading…</p>}
       </CardContent>
     </Card>
   );
@@ -92,12 +64,9 @@ export function BarGraph() {
 const CustomHatchedBar = (
   props: React.SVGProps<SVGRectElement> & {
     dataKey?: string;
-    isHatched?: boolean;
   }
 ) => {
   const { fill, x, y, width, height, dataKey } = props;
-
-  const isHatched = props.isHatched ?? true;
 
   return (
     <>
@@ -108,7 +77,7 @@ const CustomHatchedBar = (
         width={width}
         height={height}
         stroke='none'
-        fill={isHatched ? `url(#hatched-bar-pattern-${dataKey})` : fill}
+        fill={`url(#hatched-bar-pattern-${dataKey})`}
       />
       <defs>
         <pattern
@@ -128,6 +97,7 @@ const CustomHatchedBar = (
     </>
   );
 };
+
 const DottedBackgroundPattern = () => {
   return (
     <pattern

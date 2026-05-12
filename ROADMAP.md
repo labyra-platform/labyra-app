@@ -136,3 +136,5 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-5d-1 — Retrieval backend: Voyage rerank-2.5 provider + searchPapers() cascade (vector top-20 → rerank top-5)
 - [x] R160-ai-5d-2 — BM25 hybrid retrieval: wink-nlp + hybrid VI/EN tokenizer + RRF fusion + daily cron refit
 - [x] R160-ai-5d-3 — searchPapers tool + citation UI (chips inline, sources panel auto-expanded)
+- [x] R160-ai-5d-3b — Citation UI: click chip → modal popover (replaced inline sources panel)
+- [x] R160-ai-5d-3d — Copy-as-LaTeX: Ctrl+C on equations → clipboard receives LaTeX source for Word Equation paste

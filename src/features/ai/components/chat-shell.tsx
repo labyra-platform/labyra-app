@@ -20,8 +20,13 @@ import { MessageList } from './message-list';
 import { MessageInput } from './message-input';
 import { ConversationPanel } from './conversation-panel';
 import { useTranslations } from 'next-intl';
+import { useCopyAsLatex } from '../hooks/use-copy-as-latex';
 
 export function ChatShell() {
+  // R160-ai-5d-3d: copy math equations as LaTeX source
+  const containerRef = useRef<HTMLDivElement>(null);
+  useCopyAsLatex(containerRef);
+
   const t = useTranslations('ai');
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -79,7 +84,7 @@ export function ChatShell() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className='flex h-[calc(100vh-7rem)] w-full overflow-hidden'>
+    <div ref={containerRef} className='flex h-[calc(100vh-7rem)] w-full overflow-hidden'>
       <ConversationPanel />
 
       <div className='flex min-w-0 flex-1 flex-col px-4 py-4'>

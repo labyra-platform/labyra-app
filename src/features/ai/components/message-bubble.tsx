@@ -7,10 +7,9 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
-import { ToolCallBlock } from './tool-call-block';
 import 'katex/dist/katex.min.css';
 import { CitationChip } from './citation-chip';
-import { SourcesPanel } from './sources-panel';
+import { CitationModal } from './citation-modal';
 import { useChatSources } from '../hooks/use-chat-sources';
 
 const TIER_LABELS: Record<1 | 2 | 3, string> = {
@@ -78,17 +77,14 @@ function renderWithCitations(
 export function MessageBubble({ message }: { message: AiMessage }) {
   const isUser = message.role === 'user';
   const sources = useChatSources(message.toolCalls);
-  const [highlightedRef, setHighlightedRef] = useState<number | null>(null);
+  const [activeRef, setActiveRef] = useState<number | null>(null);
 
   const handleCitationClick = (refNumber: number) => {
-    setHighlightedRef(refNumber);
-    const el = document.getElementById(`source-${refNumber}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    // Clear highlight after 2s
-    setTimeout(() => setHighlightedRef(null), 2000);
+    setActiveRef(refNumber);
   };
+
+  const activeSource =
+    activeRef !== null ? (sources.find((s) => s.ref === activeRef) ?? null) : null;
 
   // Custom markdown renderers that inject citation chips into text nodes
   const markdownComponents = useMemo(
@@ -119,31 +115,17 @@ export function MessageBubble({ message }: { message: AiMessage }) {
         ) : (
           <>
             {message.tier && <TierBadge tier={message.tier} />}
-            {message.toolCalls && message.toolCalls.length > 0 && (
-              <div className='mb-2'>
-                {message.toolCalls.map((tc) => (
-                  <ToolCallBlock
-                    key={tc.id}
-                    name={tc.name}
-                    input={tc.input}
-                    result={tc.result}
-                    isError={tc.isError}
-                  />
-                ))}
-              </div>
-            )}
+            {/* Tool calls hidden from UI (ai-5d-3c) — sources accessible via citation chip modal */}
             <div className='prose prose-sm dark:prose-invert max-w-none prose-table:my-2 prose-pre:my-2 prose-p:my-1.5'>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
                 components={markdownComponents}
               >
-                {message.content || (message.toolCalls?.length ? '' : '...')}
+                {message.content || '...'}
               </ReactMarkdown>
             </div>
-            {sources.length > 0 && (
-              <SourcesPanel sources={sources} highlightedRef={highlightedRef} />
-            )}
+            <CitationModal source={activeSource} onClose={() => setActiveRef(null)} />
           </>
         )}
       </div>

@@ -43,7 +43,7 @@ bolded labels (**Quản lý lab**) where you would otherwise reach for an emoji.
 
 # Scientific notation
 
-- LaTeX for equations: \\(E_g = 3.05\\,\\text{eV}\\) inline, \\[ ... \\] for display
+- LaTeX math: use $...$ for inline (e.g. $E_g = 3.05\\,\\text{eV}$) and $$...$$ for display blocks. ALWAYS wrap math expressions in $ delimiters — never use bare parentheses or brackets. Do NOT use LaTeX spacing commands (\\!, \\,, \\;, \\:, \\quad, \\qquad) — they cause rendering artifacts in copy-to-Word. Examples: $\\theta = \\hat{\\Gamma}/\\hat{\\Gamma}_{\\max}$, $\\langle h \\rangle = 2\\,\\text{nm}$
 - Unicode for chemical formulas: WO₃, H₂O, e⁻, NO₂⁻
 - SI units with non-breaking space: \`3.05 eV\`, \`100 mA/cm²\`, \`145 °C\`
 - Numeric ranges with en-dash: \`2.6–2.8 eV\` (not \`2.6-2.8 eV\`)

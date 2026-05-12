@@ -125,6 +125,10 @@
     "tierFlash": "T1 Flash",
     "tierSonnet": "T2 Sonnet",
     "tierOpus": "T3 Opus",
-    "deleting": "Đang xóa..."
+    "deleting": "Đang xóa...",
+    "toolInput": "Đầu vào",
+    "toolResult": "Kết quả",
+    "toolError": "Lỗi",
+    "toolNoArgs": "(không tham số)"
   }
 }

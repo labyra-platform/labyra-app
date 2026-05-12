@@ -1,10 +1,16 @@
 /**
- * Anthropic Claude provider implementation.
- * @phase R160-ai-3a
+ * Anthropic Claude provider — with tool calling.
+ * @phase R160-ai-3c1
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { calculateCost } from './cost-calculator';
-import type { LLMProvider, LLMStreamEvent, LLMStreamRequest, LLMProviderId } from './types';
+import type {
+  LLMProvider,
+  LLMStreamEvent,
+  LLMStreamRequest,
+  LLMProviderId,
+  LLMToolDefinition
+} from './types';
 
 let _client: Anthropic | null = null;
 
@@ -38,23 +44,92 @@ function toAnthropicSystem(blocks: LLMStreamRequest['system']): AnthropicSystemB
   });
 }
 
+function toAnthropicTools(tools: LLMToolDefinition[]) {
+  return tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    input_schema: t.parameters
+  }));
+}
+
+/** Build Anthropic messages array including tool_use + tool_result blocks */
+function buildAnthropicMessages(request: LLMStreamRequest) {
+  // If toolResults supplied, attach to the last assistant message as tool_result blocks
+  // The caller is responsible for including the assistant tool_use turn in messages.
+  if (request.toolResults && request.toolResults.length > 0) {
+    return [
+      ...request.messages,
+      {
+        role: 'user' as const,
+        content: request.toolResults.map((tr) => ({
+          type: 'tool_result' as const,
+          tool_use_id: tr.toolCallId,
+          content: typeof tr.result === 'string' ? tr.result : JSON.stringify(tr.result),
+          is_error: tr.isError ?? false
+        }))
+      }
+    ];
+  }
+  return request.messages;
+}
+
 export class AnthropicProvider implements LLMProvider {
   readonly id: LLMProviderId = 'anthropic';
   readonly region = 'us-east-1';
 
   async *streamChat(request: LLMStreamRequest): AsyncIterable<LLMStreamEvent> {
     try {
-      const stream = await getClient().messages.stream({
+      const messages = buildAnthropicMessages(request);
+      const params: Record<string, unknown> = {
         model: request.model,
         max_tokens: request.maxTokens ?? 2048,
         temperature: request.temperature,
         system: toAnthropicSystem(request.system),
-        messages: request.messages
-      });
+        messages
+      };
+      if (request.tools && request.tools.length > 0) {
+        params.tools = toAnthropicTools(request.tools);
+      }
+
+      const stream = await getClient().messages.stream(
+        params as Parameters<typeof getClient.prototype.messages.stream>[0]
+      );
+
+      // Accumulate tool_use blocks (they arrive across multiple events)
+      const toolUseBuffer: Map<number, { id: string; name: string; jsonStr: string }> = new Map();
 
       for await (const event of stream) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          yield { type: 'text_delta', delta: event.delta.text };
+        if (event.type === 'content_block_start') {
+          const block = event.content_block;
+          if (block.type === 'tool_use') {
+            toolUseBuffer.set(event.index, {
+              id: block.id,
+              name: block.name,
+              jsonStr: ''
+            });
+          }
+        } else if (event.type === 'content_block_delta') {
+          if (event.delta.type === 'text_delta') {
+            yield { type: 'text_delta', delta: event.delta.text };
+          } else if (event.delta.type === 'input_json_delta') {
+            const buf = toolUseBuffer.get(event.index);
+            if (buf) buf.jsonStr += event.delta.partial_json;
+          }
+        } else if (event.type === 'content_block_stop') {
+          const buf = toolUseBuffer.get(event.index);
+          if (buf) {
+            let parsed: Record<string, unknown> = {};
+            try {
+              parsed = buf.jsonStr ? JSON.parse(buf.jsonStr) : {};
+            } catch {
+              parsed = { _parseError: buf.jsonStr };
+            }
+            yield {
+              type: 'tool_use',
+              toolCall: { id: buf.id, name: buf.name, input: parsed }
+            };
+            toolUseBuffer.delete(event.index);
+          }
         }
       }
 
@@ -67,7 +142,13 @@ export class AnthropicProvider implements LLMProvider {
         u.cache_read_input_tokens ?? 0,
         u.cache_creation_input_tokens ?? 0
       );
-      yield { type: 'message_complete', usage };
+      const stopReason =
+        final.stop_reason === 'tool_use'
+          ? 'tool_use'
+          : final.stop_reason === 'max_tokens'
+            ? 'max_tokens'
+            : 'end_turn';
+      yield { type: 'message_complete', usage, stopReason };
     } catch (e) {
       yield {
         type: 'error',
@@ -77,16 +158,23 @@ export class AnthropicProvider implements LLMProvider {
   }
 
   async complete(request: LLMStreamRequest) {
-    const response = await getClient().messages.create({
+    const messages = buildAnthropicMessages(request);
+    const params: Record<string, unknown> = {
       model: request.model,
       max_tokens: request.maxTokens ?? 1024,
       temperature: request.temperature,
       system: toAnthropicSystem(request.system),
-      messages: request.messages
-    });
+      messages
+    };
+    if (request.tools && request.tools.length > 0) {
+      params.tools = toAnthropicTools(request.tools);
+    }
+    const response = await getClient().messages.create(
+      params as Parameters<typeof getClient.prototype.messages.create>[0]
+    );
 
-    const block = response.content[0];
-    const text = block?.type === 'text' ? block.text : '';
+    const textBlock = response.content.find((b) => b.type === 'text');
+    const text = textBlock?.type === 'text' ? textBlock.text : '';
     const u = response.usage;
     const usage = calculateCost(
       request.model,

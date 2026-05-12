@@ -25,10 +25,40 @@ export interface LLMSystemBlock {
   cacheTtl?: '5m' | '1h';
 }
 
+/** Tool definition passed to provider */
+export interface LLMToolDefinition {
+  name: string;
+  description: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
+}
+
+/** Tool call emitted by LLM in stream */
+export interface LLMToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+/** Tool result passed back in followup messages */
+export interface LLMToolResult {
+  toolCallId: string;
+  result: unknown;
+  isError?: boolean;
+}
+
 /** Stream event emitted by every provider */
 export type LLMStreamEvent =
   | { type: 'text_delta'; delta: string }
-  | { type: 'message_complete'; usage: AiCostBreakdown }
+  | { type: 'tool_use'; toolCall: LLMToolCall }
+  | {
+      type: 'message_complete';
+      usage: AiCostBreakdown;
+      stopReason?: 'end_turn' | 'tool_use' | 'max_tokens';
+    }
   | { type: 'error'; message: string };
 
 /** Provider identifier for provenance + routing */
@@ -46,6 +76,10 @@ export interface LLMStreamRequest {
   maxTokens?: number;
   /** Temperature (0.0-1.0). Some models (Opus extended thinking) ignore this. */
   temperature?: number;
+  /** Tools available for the LLM to call */
+  tools?: LLMToolDefinition[];
+  /** Tool results from previous turn (for multi-turn tool conversations) */
+  toolResults?: Array<{ toolCallId: string; result: unknown; isError?: boolean }>;
 }
 
 /** Provider interface — every LLM backend implements this */

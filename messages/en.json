@@ -125,6 +125,10 @@
     "tierFlash": "T1 Flash",
     "tierSonnet": "T2 Sonnet",
     "tierOpus": "T3 Opus",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "toolInput": "Input",
+    "toolResult": "Result",
+    "toolError": "Error",
+    "toolNoArgs": "(no arguments)"
   }
 }

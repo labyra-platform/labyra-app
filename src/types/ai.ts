@@ -13,6 +13,16 @@ export interface AiMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   createdAt: number; // epoch ms
+  /** Tier used for assistant message (R160-ai-3b). undefined for user messages. */
+  tier?: 1 | 2 | 3;
+  /** Tool calls made during this assistant message (R160-ai-3c1) */
+  toolCalls?: Array<{
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
+    result?: unknown;
+    isError?: boolean;
+  }>;
 }
 
 /** Cost breakdown — tracks cache hits separately (Anthropic prompt caching) */
@@ -41,6 +51,13 @@ export interface AiProvenance {
   cost: AiCostBreakdown;
   latencyMs: number;
   timestamp: number; // epoch ms
+  /** Intent classifier decision that picked this tier (R160-ai-3b) */
+  intentDecision?: {
+    reason: string;
+    confidence: number;
+    classifierCostUsd: number;
+    classifierLatencyMs: number;
+  };
 }
 
 export interface ToolCall {
@@ -92,6 +109,8 @@ export type ChatStreamEventV2 =
   | { type: 'conversation_init'; conversationId: string; isNew: boolean }
   | { type: 'message_start'; messageId: string }
   | { type: 'text_delta'; delta: string }
+  | { type: 'tool_call'; toolCallId: string; toolName: string; input: Record<string, unknown> }
+  | { type: 'tool_result'; toolCallId: string; toolName: string; result: unknown; isError: boolean }
   | { type: 'message_complete'; usage: AiCostBreakdown; messageId: string }
   | { type: 'title_update'; conversationId: string; title: string }
   | { type: 'error'; message: string };

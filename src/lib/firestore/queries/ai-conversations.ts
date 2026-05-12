@@ -47,12 +47,14 @@ function conversationFromSnapshot(snap: DocumentSnapshot): AiConversation {
 function messageFromSnapshot(snap: DocumentSnapshot): AiMessage {
   const d = snap.data();
   const tier = d?.tier;
+  const toolCalls = Array.isArray(d?.toolCalls) ? d.toolCalls : undefined;
   return {
     id: snap.id,
     role: d?.role ?? 'assistant',
     content: d?.content ?? '',
     createdAt: d?.createdAt?.toMillis?.() ?? Date.now(),
-    ...(tier === 1 || tier === 2 || tier === 3 ? { tier } : {})
+    ...(tier === 1 || tier === 2 || tier === 3 ? { tier } : {}),
+    ...(toolCalls ? { toolCalls } : {})
   };
 }
 

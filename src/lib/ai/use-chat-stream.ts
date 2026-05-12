@@ -154,6 +154,39 @@ export function useChatStream(): UseChatStreamResult {
                     : m
                 )
               );
+            } else if (event.type === 'tool_call') {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === (realAssistantId ?? assistantMsg.id)
+                    ? {
+                        ...m,
+                        toolCalls: [
+                          ...(m.toolCalls ?? []),
+                          {
+                            id: event.toolCallId,
+                            name: event.toolName,
+                            input: event.input
+                          }
+                        ]
+                      }
+                    : m
+                )
+              );
+            } else if (event.type === 'tool_result') {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === (realAssistantId ?? assistantMsg.id)
+                    ? {
+                        ...m,
+                        toolCalls: (m.toolCalls ?? []).map((tc) =>
+                          tc.id === event.toolCallId
+                            ? { ...tc, result: event.result, isError: event.isError }
+                            : tc
+                        )
+                      }
+                    : m
+                )
+              );
             } else if (event.type === 'message_complete') {
               setLastUsage(event.usage);
               setSessionUsage((prev) => addUsage(prev, event.usage));

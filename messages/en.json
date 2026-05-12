@@ -132,5 +132,16 @@
     "conversationRestored": "Conversation restored",
     "undo": "Undo",
     "deleteFailed": "Failed to delete"
+  },
+  "papers": {
+    "uploadPageTitle": "Upload paper",
+    "uploadPageSubtitle": "Upload a research paper PDF to add it to your lab's searchable library.",
+    "dragOrClick": "Drag a PDF here, or click to browse",
+    "dropToUpload": "Drop PDF to upload",
+    "uploading": "Uploading...",
+    "pdfOnlyMax": "PDF only, max {mb} MB",
+    "uploadStarted": "Upload started. Processing begins shortly.",
+    "uploadFailed": "Upload failed",
+    "duplicateDetected": "This paper already exists in your library."
   }
 }

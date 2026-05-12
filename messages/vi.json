@@ -132,5 +132,16 @@
     "conversationRestored": "Đã khôi phục cuộc trò chuyện",
     "undo": "Hoàn tác",
     "deleteFailed": "Xóa thất bại"
+  },
+  "papers": {
+    "uploadPageTitle": "Tải lên paper",
+    "uploadPageSubtitle": "Tải lên PDF paper nghiên cứu để thêm vào thư viện có thể tìm kiếm của lab.",
+    "dragOrClick": "Kéo PDF vào đây, hoặc click để chọn file",
+    "dropToUpload": "Thả PDF để tải lên",
+    "uploading": "Đang tải lên...",
+    "pdfOnlyMax": "Chỉ PDF, tối đa {mb} MB",
+    "uploadStarted": "Đã bắt đầu tải lên. Sắp xử lý.",
+    "uploadFailed": "Tải lên thất bại",
+    "duplicateDetected": "Paper này đã có trong thư viện."
   }
 }

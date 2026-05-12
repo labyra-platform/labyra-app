@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Papers: tenant-scoped, authenticated users in their tenant only
+    match /papers/{tenantId}/{paperFile} {
+      allow read: if isAuthenticated() && isTenantMember(tenantId);
+      // Writes only through API route (Admin SDK bypasses rules)
+      allow write: if false;
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isTenantMember(tenantId) {
+      return request.auth.token.tenantId == tenantId;
+    }
+  }
+}

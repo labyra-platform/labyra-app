@@ -130,3 +130,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-3b — Tier dispatcher (Haiku 4.5 intent classifier, balanced 20/60/20 distribution, tier badge UI)
 - [x] R160-ai-3c1 — Tool calling foundation (Anthropic + Gemini, 3 read-only lab tools)
 - [x] R160-ai-5a — RAG foundation: Voyage embedding + Pinecone vector store + Mistral OCR (with provider abstraction)
+- [x] R160-ai-5b-1 — Foundation: papers types + governance (quota/tiers) + JobQueue interface + Storage rules + upload UI/endpoint

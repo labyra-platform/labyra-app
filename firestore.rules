@@ -101,5 +101,23 @@ service cloud.firestore {
       allow write: if false; // server only via Admin SDK
     }
 
+
+    // ── Papers (R160-ai-5b-1) ─────────────────────────────────────
+    match /tenants/{tenantId}/papers/{paperId} {
+      allow read: if isAuthenticated() && belongsToTenant(tenantId);
+      // Writes through API + Admin SDK only
+      allow create, update, delete: if false;
+
+      match /chunks/{chunkId} {
+        allow read: if isAuthenticated() && belongsToTenant(tenantId);
+        allow create, update, delete: if false;
+      }
+    }
+
+    // ── Monthly usage (R160-ai-5b-1) ──────────────────────────────
+    match /tenants/{tenantId}/usage/{yearMonth} {
+      allow read: if isAuthenticated() && belongsToTenant(tenantId);
+      allow create, update, delete: if false;
+    }
   }
 }

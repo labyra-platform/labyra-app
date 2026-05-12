@@ -110,6 +110,16 @@ export function useConversation(conversationId: string | null) {
 }
 
 /** Delete a conversation + all its messages (client-side recursive) */
+/** Hard delete from Firestore (used after Undo window expires) */
+async function hardDeleteConversation(tenantId: string, conversationId: string): Promise<void> {
+  const msgsQ = query(
+    collection(db(), `tenants/${tenantId}/aiConversations/${conversationId}/messages`)
+  );
+  const msgsSnap = await getDocs(msgsQ);
+  await Promise.all(msgsSnap.docs.map((m) => deleteDoc(m.ref)));
+  await deleteDoc(doc(db(), `tenants/${tenantId}/aiConversations/${conversationId}`));
+}
+
 export function useDeleteConversation() {
   const tenantId = useTenantId();
   const qc = useQueryClient();
@@ -117,26 +127,11 @@ export function useDeleteConversation() {
   return useMutation({
     mutationFn: async (conversationId: string) => {
       if (!tenantId) throw new Error('no_tenant');
-      // Delete all messages first
-      const msgsQ = query(
-        collection(db(), `tenants/${tenantId}/aiConversations/${conversationId}/messages`)
-      );
-      const msgsSnap = await getDocs(msgsQ);
-      await Promise.all(msgsSnap.docs.map((m) => deleteDoc(m.ref)));
-      // Then delete the conversation doc
-      await deleteDoc(doc(db(), `tenants/${tenantId}/aiConversations/${conversationId}`));
+      await hardDeleteConversation(tenantId, conversationId);
     },
-    // Optimistic update — remove from cache immediately
     onMutate: async (conversationId: string) => {
-      // Cancel ongoing refetches so they don't overwrite optimistic update
       await qc.cancelQueries({ queryKey: ['aiConversations'] });
-
-      // Snapshot all conversation-list query caches (any maxResults variant)
-      const snapshot = qc.getQueriesData<unknown[]>({
-        queryKey: ['aiConversations']
-      });
-
-      // Optimistically remove from all matching caches
+      const snapshot = qc.getQueriesData<unknown[]>({ queryKey: ['aiConversations'] });
       snapshot.forEach(([key, data]) => {
         if (!Array.isArray(data)) return;
         qc.setQueryData(
@@ -150,19 +145,28 @@ export function useDeleteConversation() {
           )
         );
       });
-
-      // Return snapshot for rollback
       return { snapshot };
     },
     onError: (_err, _conversationId, context) => {
-      // Rollback: restore each cached query
       context?.snapshot.forEach(([key, data]) => {
         qc.setQueryData(key, data);
       });
     },
     onSettled: () => {
-      // Final reconciliation with server
       qc.invalidateQueries({ queryKey: ['aiConversations'] });
     }
   });
+}
+
+/** Restore conversation back into cache (used by Undo). Doesn't touch Firestore. */
+export function useRestoreConversationCache() {
+  const qc = useQueryClient();
+  return (conversation: AiConversation) => {
+    qc.setQueriesData<AiConversation[] | undefined>({ queryKey: ['aiConversations'] }, (old) => {
+      if (!Array.isArray(old)) return old;
+      if (old.some((c) => c.id === conversation.id)) return old;
+      // Insert sorted by updatedAt desc
+      return [...old, conversation].sort((a, b) => b.updatedAt - a.updatedAt);
+    });
+  };
 }

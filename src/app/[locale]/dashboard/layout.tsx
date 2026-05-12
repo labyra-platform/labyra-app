@@ -6,6 +6,7 @@ import { InfobarProvider } from '@/components/ui/infobar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import { Toaster } from '@/components/ui/sonner';
 
 export const metadata: Metadata = {
   title: 'Next Shadcn Dashboard Starter',
@@ -28,6 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Header />
           <InfobarProvider defaultOpen={false}>
             {children}
+            <Toaster richColors position='bottom-right' />
             <InfoSidebar side='right' />
           </InfobarProvider>
         </SidebarInset>

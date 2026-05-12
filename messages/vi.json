@@ -117,7 +117,6 @@
     "loading": "Đang tải...",
     "loadError": "Không tải được danh sách",
     "delete": "Xóa",
-    "confirmDelete": "Nhấn lần nữa để xác nhận",
     "collapse": "Thu gọn",
     "expand": "Mở rộng",
     "lastUsage": "Tin nhắn này: {input} in / {output} out · ${usd}",
@@ -125,10 +124,13 @@
     "tierFlash": "T1 Flash",
     "tierSonnet": "T2 Sonnet",
     "tierOpus": "T3 Opus",
-    "deleting": "Đang xóa...",
     "toolInput": "Đầu vào",
     "toolResult": "Kết quả",
     "toolError": "Lỗi",
-    "toolNoArgs": "(không tham số)"
+    "toolNoArgs": "(không tham số)",
+    "conversationDeleted": "Đã xóa cuộc trò chuyện",
+    "conversationRestored": "Đã khôi phục cuộc trò chuyện",
+    "undo": "Hoàn tác",
+    "deleteFailed": "Xóa thất bại"
   }
 }

@@ -1,4 +1,13 @@
 # Labyra Platform — Coding Rules & Conventions
+
+
+## Required reading
+
+**Before making architectural decisions**, read:
+- `docs/labyra-strategy.md` — Strategic guidance (positioning, stages, risks)
+- `docs/architecture-decisions.md` — ADR log (past decisions with rationale)
+- `docs/ai/ai-5b-pipeline.md` — Paper pipeline design (if working on RAG)
+
 > This file is read by AI agents (Claude, Copilot, Cursor) before making any changes.
 > Follow ALL rules below strictly. No exceptions unless explicitly noted.
 

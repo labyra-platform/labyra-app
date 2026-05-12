@@ -12,6 +12,7 @@
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { selectProvider } from '@/lib/ai/providers';
+import { runReflection } from '@/lib/ai/reflection/orchestrator';
 import { classifyIntent } from '@/lib/ai/dispatcher/intent-classifier';
 import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { writeProvenance } from '@/lib/ai/provenance-writer';
@@ -164,6 +165,111 @@ export async function POST(request: Request) {
           usd: 0
         };
         const toolCallRecords: ToolCallRecord[] = [];
+
+        // Branch for Tier 3 (Opus) reflection
+        if (tier === 3) {
+          const reflectionHistory: Array<{
+            round: number;
+            response: string;
+            critique: { sufficient: boolean; issues: string[]; summary: string };
+          }> = [];
+
+          const result = await runReflection({
+            userMessage: userText,
+            onRoundStart: (round) => {
+              send({ type: 'reflection_start', round });
+            },
+            onFinalDelta: (delta) => {
+              fullText += delta;
+              send({ type: 'text_delta', delta });
+            },
+            onRoundComplete: (round) => {
+              reflectionHistory.push({
+                round: round.round,
+                response: round.response,
+                critique: {
+                  sufficient: round.critique.sufficient,
+                  issues: round.critique.issues,
+                  summary: round.critique.summary
+                }
+              });
+              send({
+                type: 'reflection_round_complete',
+                round: round.round,
+                response: round.response,
+                critique: {
+                  sufficient: round.critique.sufficient,
+                  issues: round.critique.issues,
+                  summary: round.critique.summary
+                }
+              });
+            }
+          });
+
+          fullText = result.finalResponse;
+          totalUsage = result.totalCost;
+          const latencyMs = Date.now() - startedAt;
+
+          await convRef.collection('messages').doc(assistantMessageId).set({
+            role: 'assistant',
+            content: fullText,
+            createdAt: Timestamp.now(),
+            tier,
+            reflectionHistory
+          });
+
+          const { FieldValue } = await import('firebase-admin/firestore');
+          await convRef.update({
+            updatedAt: Timestamp.now(),
+            messageCount: FieldValue.increment(2),
+            'totalCost.inputTokens': FieldValue.increment(totalUsage.inputTokens),
+            'totalCost.outputTokens': FieldValue.increment(totalUsage.outputTokens),
+            'totalCost.cacheReadTokens': FieldValue.increment(totalUsage.cacheReadTokens),
+            'totalCost.cacheWriteTokens': FieldValue.increment(totalUsage.cacheWriteTokens),
+            'totalCost.usd': FieldValue.increment(totalUsage.usd + intentDecision.classifierCostUsd)
+          });
+
+          await writeProvenance({
+            tenantId,
+            userId,
+            userEmail,
+            conversationId: conversationId!,
+            messageId: assistantMessageId,
+            tier,
+            model: config.model,
+            provider: provider.id === 'anthropic' ? 'anthropic-direct' : 'gcp-vertex',
+            region: provider.region,
+            toolsCalled: [],
+            ragChunksUsed: [],
+            reflectionIterations: result.iterations,
+            cost: totalUsage,
+            latencyMs,
+            timestamp: Date.now(),
+            intentDecision: {
+              reason: intentDecision.reason,
+              confidence: intentDecision.confidence,
+              classifierCostUsd: intentDecision.classifierCostUsd,
+              classifierLatencyMs: intentDecision.classifierLatencyMs
+            }
+          });
+
+          send({
+            type: 'message_complete',
+            usage: totalUsage,
+            messageId: assistantMessageId
+          });
+
+          if (isNewConversation) {
+            try {
+              const title = await generateConversationTitle(userText);
+              await convRef.update({ title });
+              send({ type: 'title_update', conversationId: conversationId!, title });
+            } catch {
+              // keep Untitled
+            }
+          }
+          return;
+        }
 
         // Multi-round conversation: each round may emit tool_use → execute → feed back
         let conversationMessages: LLMMessage[] = [{ role: 'user', content: userText }];

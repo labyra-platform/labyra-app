@@ -23,6 +23,12 @@ export interface AiMessage {
     result?: unknown;
     isError?: boolean;
   }>;
+  /** Reflection iterations for T3 messages (R160-ai-4) */
+  reflectionHistory?: Array<{
+    round: number;
+    response: string;
+    critique: { sufficient: boolean; issues: string[]; summary: string };
+  }>;
 }
 
 /** Cost breakdown — tracks cache hits separately (Anthropic prompt caching) */
@@ -111,6 +117,13 @@ export type ChatStreamEventV2 =
   | { type: 'text_delta'; delta: string }
   | { type: 'tool_call'; toolCallId: string; toolName: string; input: Record<string, unknown> }
   | { type: 'tool_result'; toolCallId: string; toolName: string; result: unknown; isError: boolean }
+  | { type: 'reflection_start'; round: number }
+  | {
+      type: 'reflection_round_complete';
+      round: number;
+      response: string;
+      critique: { sufficient: boolean; issues: string[]; summary: string };
+    }
   | { type: 'message_complete'; usage: AiCostBreakdown; messageId: string }
   | { type: 'title_update'; conversationId: string; title: string }
   | { type: 'error'; message: string };

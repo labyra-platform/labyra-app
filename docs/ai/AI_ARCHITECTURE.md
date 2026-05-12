@@ -1615,4 +1615,20 @@ GraphRAG implementation owner: AI Architecture lead. Implementation in phase ai-
 
 ---
 
+
+## 23. RAG enhancements (Contextual chunking + HyDE)
+
+Two retrieval improvements from `docs/ai/labbook-ai-architecture-report.md` are
+documented in detail in `docs/ai/RAG_STRATEGY.md`:
+
+- **Contextual chunking** (PRIORITY HIGH) — see RAG_STRATEGY Section 2.3.
+  Anthropic technique, +49-67% retrieval recall, integrated in phase ai-5 indexing pipeline.
+- **HyDE query rewriting** (PRIORITY MEDIUM) — see RAG_STRATEGY Section 3.3.
+  Hypothetical document embeddings for vector search; deferred to phase ai-6,
+  feature-flagged per tenant.
+
+Both share Claude Haiku 4.5 as the worker model with prompt caching enabled.
+
+---
+
 *This is a living document. Update with each architectural decision.*

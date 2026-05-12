@@ -93,6 +93,73 @@ Firestore writes:
 For comparison: 1 hour of researcher time saved = $5-25 USD value. ROI < 1 month at
 single-lab scale.
 
+
+### 2.3 Contextual chunking detail
+
+> Reference: Anthropic, "Introducing Contextual Retrieval" (2024).
+> [Original report]: docs/ai/labbook-ai-architecture-report.md, Gap 1.
+
+**Problem with naive chunking**: scientific paper chunks lose context once isolated.
+A chunk containing `"Eg = 3.05 eV at room temperature, measured via Tauc plot"`
+won't match a query about "WO₃ bandgap" because the chunk doesn't mention WO₃.
+
+**Solution**: before embedding each chunk, use a cheap LLM to generate 1-2 sentences
+describing the chunk's context within the paper, then prepend that context to the
+chunk text.
+
+Example:
+
+```
+BEFORE (naive chunk):
+  "Eg = 3.05 eV at room temperature, measured via Tauc plot."
+
+AFTER (contextually enriched):
+  "[From Park 2023, WO₃/WS₂ heterojunction study, Results section on
+   optical properties.] Eg = 3.05 eV at room temperature, measured via Tauc plot."
+```
+
+**Implementation** (in ai-5 indexing pipeline):
+
+```typescript
+// functions/src/rag/contextual-enrich.ts
+async function enrichChunk(
+  paperText: string,
+  paperTitle: string,
+  chunkText: string,
+  claude: Anthropic
+): Promise<string> {
+  const response = await claude.messages.create({
+    model: 'claude-haiku-4-5-20251001',     // cheapest tier
+    max_tokens: 150,
+    system: [
+      { type: 'text', text: SYSTEM_CONTEXTUAL_ENRICH },
+      {
+        type: 'text',
+        text: `Paper: ${paperTitle}\\n\\nFull text:\\n${paperText}`,
+        cache_control: { type: 'ephemeral' },   // ← key trick
+      },
+    ],
+    messages: [{ role: 'user', content: `Chunk:\\n${chunkText}` }],
+  });
+  const context = (response.content[0] as TextBlock).text;
+  return `[${context}]\\n${chunkText}`;
+}
+```
+
+**Cache savings** — paper text is cached after first chunk, all subsequent chunks
+of the same paper hit 10% cost:
+
+| Scenario | Without cache | With cache (90% saving on read) |
+|---|---|---|
+| 1 paper × 20 chunks × 8000 tokens | 160K tokens | 8K (write) + 19×800 (read) = 23K tokens |
+| 5000 papers × 20 chunks | 800M tokens, ~$800 | ~$20 |
+
+**Expected improvement** (Anthropic benchmark):
+- Retrieval failure rate: -49% to -67% across diverse corpora
+- Especially effective for short chunks with specific numerical values
+
+**Status**: implementation deferred to ai-5. Specs locked here for that phase.
+
 ---
 
 ## 3. Retrieval strategy
@@ -138,6 +205,77 @@ Pass to LLM
 - Lookup queries: +0-5% (no major gain)
 - Aggregation queries: +35-40%
 - Relational queries: +30-35%
+
+
+### 3.3 HyDE query rewriting
+
+> Reference: Gao et al. 2022, "Precise Zero-Shot Dense Retrieval without Relevance Labels".
+> [Original report]: docs/ai/labbook-ai-architecture-report.md, Gap 3.
+
+**Problem**: user queries are short, sometimes vague. Scientific paper chunks are
+detailed, technical. Embedding-space distance between query and chunk is large even
+when semantically related.
+
+Example query: `"bandgap của vật liệu đó là bao nhiêu"`
+- Embedding doesn't match well with: `"Eg = 3.05 eV at RT measured via Tauc plot..."`
+
+**Solution**: instead of embedding the user query directly, ask an LLM to generate
+a hypothetical answer paragraph (as if it were a paper excerpt), then embed THAT
+for the dense vector search. BM25 still uses the original query (HyDE doesn't help
+keyword search).
+
+```typescript
+// functions/src/rag/hyde.ts
+async function hydeRewrite(
+  query: string,
+  claude: Anthropic
+): Promise<string> {
+  const response = await claude.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 200,
+    system: [
+      {
+        type: 'text',
+        text: \`You are an expert materials scientist. Write a hypothetical 100-word
+paragraph as if it were excerpted from a scientific paper, answering the user's
+query. Return only the paragraph, no preamble.\`,
+        cache_control: { type: 'ephemeral', ttl: '1h' },
+      },
+    ],
+    messages: [{ role: 'user', content: query }],
+  });
+  return (response.content[0] as TextBlock).text;
+}
+
+// In retrieval pipeline:
+const hypotheticalDoc = await hydeRewrite(query, claude);
+const hypoEmbedding = await voyage.embed(hypotheticalDoc);   // for vector search
+// BM25 still uses original query
+const bm25Results = bm25Search(query);
+const vectorResults = vectorSearch(hypoEmbedding);
+// RRF fusion as before
+```
+
+**Status**: implementation deferred to ai-6 (alongside GraphRAG). Reasons to defer:
+1. Vanilla RAG (ai-5) establishes baseline first.
+2. HyDE helps most on complex multi-clause queries — needs query patterns from real users.
+3. Cost overhead: every query gets +$0.0001 (Haiku call) regardless of whether HyDE helps.
+
+**Feature flag pattern** (when shipping):
+
+```typescript
+// src/lib/firestore/queries/ai-settings.ts
+interface TenantAiSettings {
+  // ... existing fields
+  useHyDE: boolean;             // default false until proven on tenant's queries
+  hyDEPromptStyle?: 'scientific' | 'tutorial';   // tuning knob
+}
+```
+
+**Expected improvement**:
+- Complex queries: +15-25% recall
+- Simple lookup queries: 0-5% (HyDE may even hurt — adds noise)
+- → A/B test before enabling per-tenant.
 
 ---
 

@@ -1,10 +1,9 @@
 /**
- * Generate a conversation title from the first user message using Haiku 4.5.
- * Cost: ~$0.0001 per call. Non-blocking — called after streaming completes.
+ * Generate a conversation title using Haiku 4.5 via provider abstraction.
  * Fallback to first 6 words on error.
- * @phase R160-ai-2a
+ * @phase R160-ai-3a
  */
-import { getAnthropicClient, MODELS } from '@/lib/anthropic/client';
+import { getHaikuDispatcher } from '@/lib/ai/providers';
 
 const TITLE_SYSTEM = `Generate a concise 3-7 word title for a chat conversation
 based on the user's first message. The title should describe the topic, not the
@@ -17,24 +16,14 @@ Examples:
 
 export async function generateConversationTitle(firstUserMessage: string): Promise<string> {
   try {
-    const client = getAnthropicClient();
-    const response = await client.messages.create({
-      model: MODELS.tier1Dispatcher, // Haiku 4.5
-      max_tokens: 30,
-      system: [
-        {
-          type: 'text',
-          text: TITLE_SYSTEM,
-          cache_control: { type: 'ephemeral', ttl: '1h' }
-        }
-      ],
+    const { provider, config } = getHaikuDispatcher();
+    const { text } = await provider.complete({
+      model: config.model,
+      maxTokens: 30,
+      system: [{ text: TITLE_SYSTEM, cache: true, cacheTtl: '1h' }],
       messages: [{ role: 'user', content: firstUserMessage }]
     });
-    const block = response.content[0];
-    if (block.type === 'text') {
-      return block.text.trim().slice(0, 80);
-    }
-    throw new Error('unexpected_response_type');
+    return text.trim().slice(0, 80) || fallbackTitle(firstUserMessage);
   } catch {
     return fallbackTitle(firstUserMessage);
   }

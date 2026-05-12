@@ -1632,3 +1632,33 @@ Both share Claude Haiku 4.5 as the worker model with prompt caching enabled.
 ---
 
 *This is a living document. Update with each architectural decision.*
+
+
+## Section 24: RAG Provider Stack (R160-ai-5a)
+
+Final stack decisions for SaaS → Enterprise scale:
+
+### Embedding: Voyage AI
+- Model: `voyage-3-large` (1024 dim, $0.18/M tokens)
+- Rerank: `rerank-2.5` ($0.05/M tokens)
+- Rationale: Anthropic preferred partner, SOTA retrieval accuracy, domain-specific models
+- Free trial: 200M tokens
+
+### Vector store: Pinecone Serverless
+- Multi-tenant: one namespace per tenant
+- Index: `labyra-papers`, dimension 1024, cosine metric, AWS us-east-1
+- Cost: Starter free (5GB, 100K vectors), Standard $50/m
+- Rationale: Million-scale namespaces (Std/Ent), BYOC available, time-to-market
+
+### OCR: Provider abstraction (Mistral active)
+- Active: Mistral OCR 3 — $1/1000 pages batch, 96.6% table accuracy, native LaTeX
+- Abstraction interface (`OcrProvider`): future-proof for Chandra, Textract, on-prem
+- Rationale: 97% cheaper than Textract, scientific paper SOTA, swap-ready for enterprise
+
+### Note on plan deviation
+Original AI_ARCHITECTURE plan specified Chandra OCR. Replaced with Mistral OCR 3 because:
+1. Mistral OCR 3 SOTA scientific paper accuracy (Dec 2025 release)
+2. 97% cost savings ($1 vs $65/1000 pages Textract baseline)
+3. Multi-lingual support stronger (Vietnamese papers)
+4. Provider abstraction preserves swap-ability for enterprise on-prem requirements
+

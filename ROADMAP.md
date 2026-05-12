@@ -129,3 +129,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-3a — Provider abstraction (LLMProvider interface, Anthropic + Gemini implementations, cost calculator)
 - [x] R160-ai-3b — Tier dispatcher (Haiku 4.5 intent classifier, balanced 20/60/20 distribution, tier badge UI)
 - [x] R160-ai-3c1 — Tool calling foundation (Anthropic + Gemini, 3 read-only lab tools)
+- [x] R160-ai-5a — RAG foundation: Voyage embedding + Pinecone vector store + Mistral OCR (with provider abstraction)

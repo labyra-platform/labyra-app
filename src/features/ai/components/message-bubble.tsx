@@ -1,5 +1,5 @@
 'use client';
-
+import { useMemo, useState, type ReactNode } from 'react';
 import type { AiMessage } from '@/types/ai';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,13 +9,15 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import { ToolCallBlock } from './tool-call-block';
 import 'katex/dist/katex.min.css';
+import { CitationChip } from './citation-chip';
+import { SourcesPanel } from './sources-panel';
+import { useChatSources } from '../hooks/use-chat-sources';
 
 const TIER_LABELS: Record<1 | 2 | 3, string> = {
   1: 'tierFlash',
   2: 'tierSonnet',
   3: 'tierOpus'
 };
-
 const TIER_COLORS: Record<1 | 2 | 3, string> = {
   1: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   2: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
@@ -36,8 +38,74 @@ function TierBadge({ tier }: { tier: 1 | 2 | 3 }) {
   );
 }
 
+/**
+ * Parse text containing [N] markers and replace with CitationChip components.
+ * Returns array of React nodes (string segments + chips).
+ */
+function renderWithCitations(
+  text: string,
+  totalSources: number,
+  onClickRef: (ref: number) => void
+): ReactNode[] {
+  if (totalSources === 0 || !text) return [text];
+
+  const regex = /\[(\d+)\]/g;
+  const nodes: ReactNode[] = [];
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      nodes.push(text.slice(lastIdx, match.index));
+    }
+    const refNum = Number(match[1]);
+    nodes.push(
+      <CitationChip
+        key={`cite-${match.index}-${refNum}`}
+        refNumber={refNum}
+        totalSources={totalSources}
+        onClick={onClickRef}
+      />
+    );
+    lastIdx = match.index + match[0].length;
+  }
+  if (lastIdx < text.length) {
+    nodes.push(text.slice(lastIdx));
+  }
+  return nodes;
+}
+
 export function MessageBubble({ message }: { message: AiMessage }) {
   const isUser = message.role === 'user';
+  const sources = useChatSources(message.toolCalls);
+  const [highlightedRef, setHighlightedRef] = useState<number | null>(null);
+
+  const handleCitationClick = (refNumber: number) => {
+    setHighlightedRef(refNumber);
+    const el = document.getElementById(`source-${refNumber}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // Clear highlight after 2s
+    setTimeout(() => setHighlightedRef(null), 2000);
+  };
+
+  // Custom markdown renderers that inject citation chips into text nodes
+  const markdownComponents = useMemo(
+    () => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      p: ({ children, ...props }: any) => (
+        <p {...props}>{processChildren(children, sources.length, handleCitationClick)}</p>
+      ),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      li: ({ children, ...props }: any) => (
+        <li {...props}>{processChildren(children, sources.length, handleCitationClick)}</li>
+      )
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sources.length]
+  );
+
   return (
     <div className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
       <div
@@ -65,13 +133,43 @@ export function MessageBubble({ message }: { message: AiMessage }) {
               </div>
             )}
             <div className='prose prose-sm dark:prose-invert max-w-none prose-table:my-2 prose-pre:my-2 prose-p:my-1.5'>
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={markdownComponents}
+              >
                 {message.content || (message.toolCalls?.length ? '' : '...')}
               </ReactMarkdown>
             </div>
+            {sources.length > 0 && (
+              <SourcesPanel sources={sources} highlightedRef={highlightedRef} />
+            )}
           </>
         )}
       </div>
     </div>
   );
+}
+
+/**
+ * Walk markdown children, finding string nodes and replacing [N] with chips.
+ * Non-string nodes (other React elements) pass through unchanged.
+ */
+function processChildren(
+  children: ReactNode,
+  totalSources: number,
+  onClickRef: (ref: number) => void
+): ReactNode {
+  if (typeof children === 'string') {
+    return renderWithCitations(children, totalSources, onClickRef);
+  }
+  if (Array.isArray(children)) {
+    return children.map((child, i) => {
+      if (typeof child === 'string') {
+        return <span key={i}>{renderWithCitations(child, totalSources, onClickRef)}</span>;
+      }
+      return child;
+    });
+  }
+  return children;
 }

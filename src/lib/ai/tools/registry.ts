@@ -5,9 +5,15 @@
  */
 import { countExperiments, findSample, recentMaterials } from './lab-tools';
 import type { RegisteredTool, ToolDefinition } from './types';
+import { paperTools } from './paper-tools';
 
 /** All tools available to LLMs */
-export const ALL_TOOLS: RegisteredTool[] = [countExperiments, findSample, recentMaterials];
+export const ALL_TOOLS: RegisteredTool[] = [
+  countExperiments,
+  findSample,
+  recentMaterials,
+  ...paperTools
+];
 
 const TOOLS_BY_NAME = new Map<string, RegisteredTool>(ALL_TOOLS.map((t) => [t.name, t]));
 

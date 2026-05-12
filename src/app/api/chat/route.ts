@@ -344,14 +344,30 @@ export async function POST(request: Request) {
           }
 
           // Update conversation context for next round
-          // For Anthropic: insert assistant turn with tool_use, then user turn with tool_result.
+          // For Anthropic: insert assistant turn containing BOTH text and tool_use blocks.
           // Our provider abstraction handles tool_result via the toolResults param.
-          // We need to also include the assistant tool_use turn in messages for context.
+          // Hotfix R160-ai-5d-3: include tool_use blocks (Anthropic requires matching tool_use_id).
+          type AssistantBlock =
+            | { type: 'text'; text: string }
+            | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
+          const assistantBlocks: AssistantBlock[] = [];
+          if (roundText.trim().length > 0) {
+            assistantBlocks.push({ type: 'text', text: roundText });
+          }
+          for (const call of pendingCalls) {
+            assistantBlocks.push({
+              type: 'tool_use',
+              id: call.id,
+              name: call.name,
+              input: call.input
+            });
+          }
           conversationMessages = [
             ...conversationMessages,
             {
               role: 'assistant',
-              content: roundText || '[tool calls]'
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              content: assistantBlocks as any
             }
           ];
           pendingToolResults = results.map((r) => ({

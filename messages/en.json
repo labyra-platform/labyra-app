@@ -74,7 +74,27 @@
     "acquisitionAttention": "Acquisition needs attention",
     "engagementTargets": "Engagement exceed targets",
     "meetsGrowthProjections": "Meets growth projections",
-    "recentSalesSubtitle": "You made 265 sales this month."
+    "recentSalesSubtitle": "You made 265 sales this month.",
+    "kpi": {
+      "totalExperiments": "Total Experiments",
+      "totalExperimentsCaption": "All-time experiments",
+      "activeSamples": "Active Samples",
+      "activeSamplesCaption": "Samples in the lab",
+      "equipmentInUse": "Equipment In Use",
+      "equipmentInUseCaption": "Currently occupied",
+      "experimentsThisWeek": "Experiments This Week",
+      "experimentsThisWeekCaption": "Started in last 7 days"
+    },
+    "recentExperiments": "Recent Experiments",
+    "recentExperimentsSubtitle": "Last 5 experiments",
+    "charts": {
+      "experimentsByStatus": "Experiments by Status",
+      "experimentsByStatusDescription": "Distribution across pipeline stages",
+      "chemicalsByHazard": "Chemicals by Hazard",
+      "chemicalsByHazardDescription": "Inventory hazard breakdown",
+      "equipmentByType": "Equipment by Type",
+      "equipmentByTypeDescription": "Microscopy / spectroscopy / analysis"
+    }
   },
   "locale": {
     "english": "English",

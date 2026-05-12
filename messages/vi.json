@@ -74,7 +74,27 @@
     "acquisitionAttention": "Cần chú ý thu hút khách hàng",
     "engagementTargets": "Mức tương tác vượt chỉ tiêu",
     "meetsGrowthProjections": "Đạt dự báo tăng trưởng",
-    "recentSalesSubtitle": "Bạn đã có 265 giao dịch tháng này."
+    "recentSalesSubtitle": "Bạn đã có 265 giao dịch tháng này.",
+    "kpi": {
+      "totalExperiments": "Tổng số thí nghiệm",
+      "totalExperimentsCaption": "Toàn bộ thí nghiệm",
+      "activeSamples": "Mẫu đang hoạt động",
+      "activeSamplesCaption": "Mẫu hiện có trong lab",
+      "equipmentInUse": "Thiết bị đang dùng",
+      "equipmentInUseCaption": "Đang được sử dụng",
+      "experimentsThisWeek": "Thí nghiệm tuần này",
+      "experimentsThisWeekCaption": "7 ngày gần nhất"
+    },
+    "recentExperiments": "Thí nghiệm gần đây",
+    "recentExperimentsSubtitle": "5 thí nghiệm mới nhất",
+    "charts": {
+      "experimentsByStatus": "Thí nghiệm theo trạng thái",
+      "experimentsByStatusDescription": "Phân bố theo giai đoạn",
+      "chemicalsByHazard": "Hóa chất theo độ nguy hiểm",
+      "chemicalsByHazardDescription": "Phân loại tồn kho theo cảnh báo",
+      "equipmentByType": "Thiết bị theo loại",
+      "equipmentByTypeDescription": "Hiển vi / phổ / phân tích"
+    }
   },
   "locale": {
     "english": "English",

@@ -9,6 +9,15 @@ export { AuthProvider, AuthContext } from './auth-provider';
 export type { AuthClaims, AuthContextValue } from './auth-provider';
 export { useAuth } from './use-auth';
 export {
+  useTenantId,
+  useRole,
+  useIsAdmin,
+  useIsSuperAdmin,
+  useIsAuthenticated
+} from './use-claims';
+export type { AuthRole } from './use-claims';
+export { refreshAuthClaims } from './refresh-claims';
+export {
   signInWithEmail,
   signInWithGoogle,
   signUpWithEmail,

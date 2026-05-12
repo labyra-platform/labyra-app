@@ -40,7 +40,8 @@
       "ai": "AI",
       "admin": "Admin"
     },
-    "employee": "Employee"
+    "employee": "Employee",
+    "debugAuth": "Auth Debug"
   },
   "auth": {
     "signInTitle": "Sign in to Labyra",

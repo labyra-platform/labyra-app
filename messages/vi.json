@@ -40,7 +40,8 @@
       "ai": "AI",
       "admin": "Quản trị"
     },
-    "employee": "Nhân viên"
+    "employee": "Nhân viên",
+    "debugAuth": "Debug Auth"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",

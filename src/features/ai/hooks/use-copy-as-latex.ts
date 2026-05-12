@@ -168,6 +168,27 @@ export function useCopyAsLatex(containerRef: RefObject<HTMLElement | null>): voi
             el.remove();
           }
         });
+        // Bug 5: Word renders <mo>−</mo> at start of <mrow> as dotted placeholder.
+        // Fix: wrap leading minus in mrow with empty mn so Word treats as unary minus.
+        wrapper.querySelectorAll('mrow').forEach((mrow) => {
+          const firstReal = Array.from(mrow.children).find((c) => {
+            const tag = c.tagName.toLowerCase();
+            // Skip opening fence parens etc
+            return !(tag === 'mo' && c.getAttribute('fence') === 'true');
+          });
+          if (firstReal?.tagName.toLowerCase() === 'mo') {
+            const sign = firstReal.textContent?.trim();
+            if (sign === '−' || sign === '-' || sign === '+') {
+              // leading minus operator — insert empty mrow before for Word
+              const placeholder = document.createElementNS(
+                'http://www.w3.org/1998/Math/MathML',
+                'mn'
+              );
+              placeholder.textContent = '\u200B'; // zero-width space (invisible)
+              firstReal.parentNode?.insertBefore(placeholder, firstReal);
+            }
+          }
+        });
         html = wrapper.innerHTML;
       } catch {
         html = escapeHtml(text);

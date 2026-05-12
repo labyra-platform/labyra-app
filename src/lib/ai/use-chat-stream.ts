@@ -154,6 +154,21 @@ export function useChatStream(): UseChatStreamResult {
                     : m
                 )
               );
+            } else if (event.type === 'grounding') {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === (realAssistantId ?? assistantMsg.id)
+                    ? {
+                        ...m,
+                        grounding: {
+                          unverifiedNumbers: event.unverifiedNumbers,
+                          unsourcedClaims: event.unsourcedClaims,
+                          details: event.details
+                        }
+                      }
+                    : m
+                )
+              );
             } else if (event.type === 'tool_call') {
               setMessages((prev) =>
                 prev.map((m) =>

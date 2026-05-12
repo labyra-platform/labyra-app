@@ -21,6 +21,7 @@ import { getToolDefinitions } from '@/lib/ai/tools/registry';
 import { executeToolCall } from '@/lib/ai/tools/dispatch';
 import type { ChatRequestBodyV2, ChatStreamEventV2, AiTier, AiCostBreakdown } from '@/types/ai';
 import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
+import { checkGrounding } from '@/lib/ai/grounding';
 
 export const runtime = 'nodejs';
 
@@ -362,19 +363,52 @@ export async function POST(request: Request) {
               input: call.input
             });
           }
+          // Build tool_result blocks for the user turn following this assistant
+          const toolResultBlocks = results.map((r) => ({
+            type: 'tool_result' as const,
+            tool_use_id: r.toolCallId,
+            content: typeof r.result === 'string' ? r.result : JSON.stringify(r.result),
+            is_error: r.isError ?? false
+          }));
           conversationMessages = [
             ...conversationMessages,
             {
               role: 'assistant',
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               content: assistantBlocks as any
+            },
+            {
+              role: 'user',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              content: toolResultBlocks as any
             }
           ];
-          pendingToolResults = results.map((r) => ({
-            toolCallId: r.toolCallId,
-            result: r.result,
-            isError: r.isError
-          }));
+          // Clear pendingToolResults — they're now embedded in conversationMessages
+          pendingToolResults = undefined;
+        }
+
+        // R160-ai-5e-1: grounding check on final response
+        try {
+          const chunks = toolCallRecords
+            .filter((tc) => tc.name === 'searchPapers')
+            .flatMap((tc) => {
+              const result = tc.result as { hits?: Array<{ excerpt: string }> } | undefined;
+              return result?.hits?.map((h) => ({ text: h.excerpt })) ?? [];
+            });
+          const grounding = checkGrounding(fullText, chunks);
+          if (grounding.totalWarnings > 0) {
+            send({
+              type: 'grounding',
+              unverifiedNumbers: grounding.unverifiedNumbers.length,
+              unsourcedClaims: grounding.unsourcedClaims.length,
+              details: {
+                numbers: grounding.unverifiedNumbers.slice(0, 5),
+                claims: grounding.unsourcedClaims.slice(0, 5)
+              }
+            });
+          }
+        } catch (err) {
+          console.error('grounding_check_failed', err);
         }
 
         const latencyMs = Date.now() - startedAt;

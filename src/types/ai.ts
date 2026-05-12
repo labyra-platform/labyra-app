@@ -8,6 +8,15 @@
 export type AiTier = 1 | 2 | 3;
 
 /** Single message in a chat thread */
+export interface GroundingDetails {
+  unverifiedNumbers: number;
+  unsourcedClaims: number;
+  details: {
+    numbers: Array<{ value: number; raw: string; context: string }>;
+    claims: Array<{ sentence: string; reason: string; line: number }>;
+  };
+}
+
 export interface AiMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -24,6 +33,8 @@ export interface AiMessage {
     isError?: boolean;
   }>;
   /** Reflection iterations for T3 messages (R160-ai-4) */
+  /** Grounding warnings (R160-ai-5e-1) */
+  grounding?: GroundingDetails;
   reflectionHistory?: Array<{
     round: number;
     response: string;
@@ -123,6 +134,15 @@ export type ChatStreamEventV2 =
       round: number;
       response: string;
       critique: { sufficient: boolean; issues: string[]; summary: string };
+    }
+  | {
+      type: 'grounding';
+      unverifiedNumbers: number;
+      unsourcedClaims: number;
+      details: {
+        numbers: Array<{ value: number; raw: string; context: string }>;
+        claims: Array<{ sentence: string; reason: string; line: number }>;
+      };
     }
   | { type: 'message_complete'; usage: AiCostBreakdown; messageId: string }
   | { type: 'title_update'; conversationId: string; title: string }

@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import 'katex/dist/katex.min.css';
 import { CitationChip } from './citation-chip';
 import { CitationModal } from './citation-modal';
+import { GroundingWarning } from './grounding-warning';
 import { useChatSources } from '../hooks/use-chat-sources';
 
 const TIER_LABELS: Record<1 | 2 | 3, string> = {
@@ -126,6 +127,7 @@ export function MessageBubble({ message }: { message: AiMessage }) {
               </ReactMarkdown>
             </div>
             <CitationModal source={activeSource} onClose={() => setActiveRef(null)} />
+            {message.grounding && <GroundingWarning grounding={message.grounding} />}
           </>
         )}
       </div>

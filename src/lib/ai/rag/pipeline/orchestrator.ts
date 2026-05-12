@@ -13,6 +13,7 @@ import { runIndexStep } from './index-step';
 import { updatePaperStatus, setPaperError, setPaperCancelled, CancelledError } from './state';
 import type { PaperProcessingJob } from '@/lib/ai/rag/jobs/types';
 import type { Paper } from '@/types/papers';
+import { extractMetadata } from './metadata-extract';
 
 function backoffDelayMs(retryCount: number): number {
   const base = Math.pow(2, retryCount) * 1000;
@@ -88,6 +89,32 @@ export async function processPaperJob(job: PaperProcessingJob, signal: AbortSign
       signal
     });
     log('step_ocr_done', { pages: ocrResult.pageCount, costUsd: ocrResult.costUsd });
+
+    // Hotfix-5d-4: extract real title/year/DOI from first page (~$0.001/paper)
+    try {
+      const firstPageText = ocrResult.pages?.[0]?.text ?? '';
+      const meta = await extractMetadata(firstPageText);
+      // Persist to paper doc
+      const db = getAdminFirestoreService();
+      const paperRef = db.doc(`tenants/${tenantId}/papers/${paperId}`);
+      await paperRef.update({
+        title: meta.title,
+        authors: meta.authors,
+        year: meta.year,
+        doi: meta.doi,
+        metadataExtractedAt: Timestamp.now()
+      });
+      // Update local paper for downstream steps (so index-step uses real metadata)
+      paper.title = meta.title;
+      paper.authors = meta.authors;
+      paper.year = meta.year;
+      paper.doi = meta.doi;
+    } catch (err) {
+      log('metadata_extract_skipped', {
+        paperId,
+        error: err instanceof Error ? err.message : String(err)
+      });
+    }
 
     // ── STEP 2: Chunking ────────────────────────────────────
     await updatePaperStatus(tenantId, paperId, 'chunking');

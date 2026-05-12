@@ -28,12 +28,53 @@ function toGeminiSystemInstruction(blocks: LLMStreamRequest['system']): string {
   return blocks.map((b) => b.text).join('\n\n');
 }
 
-function toGeminiHistory(messages: LLMStreamRequest['messages']) {
+function toGeminiHistory(messages: LLMStreamRequest['messages']): unknown[] {
   const all = messages.slice(0, -1);
-  return all.map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }]
-  }));
+  type Block = {
+    type: string;
+    text?: string;
+    id?: string;
+    name?: string;
+    input?: unknown;
+    tool_use_id?: string;
+    content?: unknown;
+  };
+  return all.map((m) => {
+    const role = m.role === 'assistant' ? 'model' : 'user';
+    if (typeof m.content === 'string') {
+      return { role, parts: [{ text: m.content }] };
+    }
+    // Block array — convert Anthropic-style to Gemini parts
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const blocks = m.content as any as Block[];
+    const parts: Array<Record<string, unknown>> = [];
+    for (const b of blocks) {
+      if (b.type === 'text' && typeof b.text === 'string') {
+        parts.push({ text: b.text });
+      } else if (b.type === 'tool_use') {
+        parts.push({
+          functionCall: {
+            name: b.name ?? '',
+            args: (b.input as object) ?? {}
+          }
+        });
+      } else if (b.type === 'tool_result') {
+        parts.push({
+          functionResponse: {
+            name: b.tool_use_id ?? '',
+            response:
+              typeof b.content === 'string'
+                ? { result: b.content }
+                : { result: JSON.stringify(b.content ?? {}) }
+          }
+        });
+      }
+    }
+    if (parts.length === 0) {
+      parts.push({ text: '' });
+    }
+    return { role, parts };
+  });
 }
 
 function mapJsonSchemaTypeToGemini(type: string): SchemaType {
@@ -111,7 +152,7 @@ export class GeminiProvider implements LLMProvider {
         });
 
         const chat = model.startChat({
-          history: toGeminiHistory(request.messages)
+          history: toGeminiHistory(request.messages) as never
         });
 
         const functionResponses = request.toolResults.map((tr) => ({
@@ -144,14 +185,43 @@ export class GeminiProvider implements LLMProvider {
       });
 
       const chat = model.startChat({
-        history: toGeminiHistory(request.messages),
+        history: toGeminiHistory(request.messages) as never,
         generationConfig: {
           maxOutputTokens: request.maxTokens ?? 2048,
           temperature: request.temperature
         }
       });
 
-      const result = await chat.sendMessageStream(lastMessage.content);
+      // R160-ai-5e-2: lastMessage.content may be block array (user with tool_result blocks).
+      // Convert blocks → Gemini parts before sending. block_array_in_last_message.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lastContent: any = lastMessage.content;
+      let sendPayload: unknown;
+      if (typeof lastContent === 'string') {
+        sendPayload = lastContent;
+      } else if (Array.isArray(lastContent)) {
+        const parts: Array<Record<string, unknown>> = [];
+        for (const b of lastContent) {
+          if (b?.type === 'tool_result') {
+            parts.push({
+              functionResponse: {
+                name: b.tool_use_id ?? '',
+                response:
+                  typeof b.content === 'string'
+                    ? { result: b.content }
+                    : { result: JSON.stringify(b.content ?? {}) }
+              }
+            });
+          } else if (b?.type === 'text' && typeof b.text === 'string') {
+            parts.push({ text: b.text });
+          }
+        }
+        sendPayload = parts.length > 0 ? parts : '';
+      } else {
+        sendPayload = String(lastContent ?? '');
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await chat.sendMessageStream(sendPayload as any);
       yield* this.consumeGeminiStream(result as any, request.model);
     } catch (e) {
       yield {
@@ -236,7 +306,7 @@ export class GeminiProvider implements LLMProvider {
     });
 
     const chat = model.startChat({
-      history: toGeminiHistory(request.messages),
+      history: toGeminiHistory(request.messages) as never,
       generationConfig: {
         maxOutputTokens: request.maxTokens ?? 1024,
         temperature: request.temperature

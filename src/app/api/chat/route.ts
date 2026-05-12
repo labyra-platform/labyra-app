@@ -23,6 +23,7 @@ import type { ChatRequestBodyV2, ChatStreamEventV2, AiTier, AiCostBreakdown } fr
 import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
 import { checkGrounding } from '@/lib/ai/grounding';
 import { loadConversationHistory } from '@/lib/ai/conversation-history';
+import { classifyOnTopic, offTopicResponse } from '@/lib/ai/grounding/on-topic-check';
 
 export const runtime = 'nodejs';
 
@@ -148,6 +149,58 @@ export async function POST(request: Request) {
     createdAt: now,
     userId
   });
+
+  // R160-ai-5e-2 L6: OOD check — bail early on off-topic queries
+  const onTopic = await classifyOnTopic(userText);
+  if (!onTopic.onTopic) {
+    // Persist a short refusal as assistant message and stream it
+    const refusal = offTopicResponse(userText, 'vi');
+    const stream = new ReadableStream({
+      async start(controller) {
+        const enc = new TextEncoder();
+        const send = (event: object) => {
+          controller.enqueue(enc.encode(`data: ${JSON.stringify(event)}\n\n`));
+        };
+        const assistantMsgRefRefusal = convRef.collection('messages').doc();
+        send({
+          type: 'conversation_init',
+          conversationId: conversationId!,
+          isNew: isNewConversation
+        });
+        send({ type: 'message_start', messageId: assistantMsgRefRefusal.id });
+        // Stream refusal as a single text_delta
+        send({ type: 'text_delta', delta: refusal });
+        send({
+          type: 'message_complete',
+          messageId: assistantMsgRefRefusal.id,
+          usage: {
+            inputTokens: 0,
+            outputTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            usd: onTopic.costUsd
+          }
+        });
+        // Persist
+        await assistantMsgRefRefusal.set({
+          role: 'assistant',
+          content: refusal,
+          createdAt: Timestamp.now(),
+          tier: 1,
+          offTopic: true,
+          offTopicReason: onTopic.reason
+        });
+        controller.close();
+      }
+    });
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive'
+      }
+    });
+  }
 
   // Tier dispatch
   const intentDecision = await classifyIntent(userText);

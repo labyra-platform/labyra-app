@@ -108,6 +108,14 @@ export const navGroups: NavGroup[] = [
     labelKey: 'nav.groups.ai',
     items: [
       {
+        title: 'Papers',
+        titleKey: 'nav.papers',
+        url: '/dashboard/papers',
+        icon: 'papers',
+        shortcut: ['p', 'a'],
+        items: []
+      },
+      {
         title: 'AI Assistant',
         titleKey: 'nav.aiAssistant',
         url: '/dashboard/ai-assistant',

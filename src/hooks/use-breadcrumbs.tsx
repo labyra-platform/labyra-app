@@ -34,6 +34,15 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
   '/dashboard/notifications': [
     { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
     { title: 'Notifications', titleKey: 'nav.notifications', link: '/dashboard/notifications' }
+  ],
+  '/dashboard/papers': [
+    { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
+    { title: 'Papers', titleKey: 'nav.papers', link: '/dashboard/papers' }
+  ],
+  '/dashboard/papers/upload': [
+    { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
+    { title: 'Papers', titleKey: 'nav.papers', link: '/dashboard/papers' },
+    { title: 'Upload', titleKey: 'nav.upload', link: '/dashboard/papers/upload' }
   ]
   // Add more mappings as new routes land
 };
@@ -48,6 +57,27 @@ function segmentToKey(segment: string): string {
   return `nav.${camel}`;
 }
 
+/**
+ * Detect dynamic segment (ID/hash) vs static slug.
+ * Dynamic if: long hex (>= 16 chars), UUID-like, or numeric-only.
+ * Static routes have known names, no need to i18n-translate IDs.
+ */
+function isDynamicSegment(segment: string): boolean {
+  // Hex hash (SHA-256 = 64 chars, MD5 = 32, etc.)
+  if (/^[0-9a-f]{16,}$/i.test(segment)) return true;
+  // UUID
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)) return true;
+  // Numeric ID
+  if (/^\d{6,}$/.test(segment)) return true;
+  return false;
+}
+
+/** Truncate dynamic ID for display: keep first 8 chars + ellipsis */
+function truncateId(segment: string): string {
+  if (segment.length <= 12) return segment;
+  return `${segment.slice(0, 8)}…`;
+}
+
 export function useBreadcrumbs(): BreadcrumbItem[] {
   // `usePathname` from `@/i18n/navigation` returns path WITHOUT locale prefix.
   const pathname = usePathname();
@@ -56,10 +86,30 @@ export function useBreadcrumbs(): BreadcrumbItem[] {
     if (routeMapping[pathname]) {
       return routeMapping[pathname];
     }
+
     // Fallback: derive from URL segments
     const segments = pathname.split('/').filter(Boolean);
+
+    // Special handling for known prefixes with dynamic detail pages
+    // e.g. /dashboard/papers/{paperId}
+    if (segments[0] === 'dashboard' && segments[1] === 'papers' && segments.length === 3) {
+      const paperId = segments[2];
+      return [
+        { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
+        { title: 'Papers', titleKey: 'nav.papers', link: '/dashboard/papers' },
+        { title: truncateId(paperId), link: pathname }
+      ];
+    }
+
     return segments.map((segment, index) => {
       const path = `/${segments.slice(0, index + 1).join('/')}`;
+      if (isDynamicSegment(segment)) {
+        // No titleKey — use truncated raw value
+        return {
+          title: truncateId(segment),
+          link: path
+        };
+      }
       return {
         title: segment.charAt(0).toUpperCase() + segment.slice(1),
         titleKey: segmentToKey(segment),

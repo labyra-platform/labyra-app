@@ -131,3 +131,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-3c1 — Tool calling foundation (Anthropic + Gemini, 3 read-only lab tools)
 - [x] R160-ai-5a — RAG foundation: Voyage embedding + Pinecone vector store + Mistral OCR (with provider abstraction)
 - [x] R160-ai-5b-1 — Foundation: papers types + governance (quota/tiers) + JobQueue interface + Storage rules + upload UI/endpoint
+- [x] R160-ai-5b-2 — Processing pipeline (OCR/chunk/enrich/embed/index) + paper list/detail UI + cancel/reprocess endpoints

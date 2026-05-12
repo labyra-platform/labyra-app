@@ -41,7 +41,9 @@
       "admin": "Admin"
     },
     "employee": "Employee",
-    "debugAuth": "Auth Debug"
+    "debugAuth": "Auth Debug",
+    "papers": "Papers",
+    "upload": "Upload"
   },
   "auth": {
     "signInTitle": "Sign in to Labyra",
@@ -142,6 +144,42 @@
     "pdfOnlyMax": "PDF only, max {mb} MB",
     "uploadStarted": "Upload started. Processing begins shortly.",
     "uploadFailed": "Upload failed",
-    "duplicateDetected": "This paper already exists in your library."
+    "duplicateDetected": "This paper already exists in your library.",
+    "listPageTitle": "Papers",
+    "listPageSubtitle": "Research papers in your lab's knowledge base.",
+    "detailPageTitle": "Paper",
+    "uploadNew": "Upload",
+    "noPapersYet": "No papers yet",
+    "uploadToStart": "Upload a PDF to start building your lab's knowledge base.",
+    "uploadFirstPaper": "Upload first paper",
+    "untitled": "Untitled",
+    "paperNotFound": "Paper not found",
+    "backToList": "Back to papers",
+    "processingStatus": "Processing status",
+    "processingFailed": "Processing failed",
+    "cost": "Cost",
+    "enrichment": "Enrichment",
+    "embedding": "Embedding",
+    "total": "Total",
+    "cancel": "Cancel",
+    "reprocess": "Reprocess",
+    "cancelRequested": "Cancellation requested",
+    "cancelFailed": "Cancel failed",
+    "reprocessStarted": "Reprocess started",
+    "reprocessFailed": "Reprocess failed",
+    "nPages": "{count, plural, =0 {0 pages} one {1 page} other {# pages}}",
+    "nChunks": "{count, plural, =0 {0 chunks} one {1 chunk} other {# chunks}}",
+    "status": {
+      "queued": "Queued",
+      "ocr": "OCR",
+      "chunking": "Chunking",
+      "enriching": "Enriching",
+      "embedding": "Embedding",
+      "indexing": "Indexing",
+      "indexed": "Indexed",
+      "failed": "Failed",
+      "cancelling": "Cancelling",
+      "cancelled": "Cancelled"
+    }
   }
 }

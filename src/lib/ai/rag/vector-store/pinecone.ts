@@ -59,14 +59,51 @@ export interface UpsertVector {
  * Batch size: Pinecone recommends ≤100 vectors per call.
  */
 export async function pineconeUpsert(tenantId: string, vectors: UpsertVector[]): Promise<void> {
-  if (vectors.length === 0) return;
+  if (vectors.length === 0) {
+    console.warn(JSON.stringify({ level: 'warn', event: 'pinecone_upsert_empty', tenantId }));
+    return;
+  }
   const index = getIndex();
   const ns = index.namespace(tenantId);
+
+  // Validate first vector to catch malformed data early
+  const v0 = vectors[0];
+  console.log(
+    JSON.stringify({
+      level: 'info',
+      event: 'pinecone_upsert_start',
+      tenantId,
+      count: vectors.length,
+      sampleId: v0.id,
+      valuesLen: v0.values?.length,
+      valuesType: typeof v0.values,
+      valuesIsArray: Array.isArray(v0.values),
+      firstValue: v0.values?.[0],
+      metadataKeys: Object.keys(v0.metadata ?? {}),
+      paperAuthorsLen: v0.metadata?.paperAuthors?.length
+    })
+  );
+
   // Batch in chunks of 100
   for (let i = 0; i < vectors.length; i += 100) {
     const batch = vectors.slice(i, i + 100);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await ns.upsert(batch as any);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await ns.upsert({ records: batch } as any);
+    } catch (err) {
+      console.error(
+        JSON.stringify({
+          level: 'error',
+          event: 'pinecone_upsert_batch_failed',
+          batchIdx: i,
+          batchSize: batch.length,
+          error: err instanceof Error ? err.message : String(err),
+          firstVectorId: batch[0]?.id,
+          firstVectorValuesLen: batch[0]?.values?.length
+        })
+      );
+      throw err;
+    }
   }
 }
 
@@ -110,8 +147,15 @@ export async function pineconeDeleteByPaperId(tenantId: string, paperId: string)
   const index = getIndex();
   const ns = index.namespace(tenantId);
   // Pinecone serverless: delete by metadata filter
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await ns.deleteMany({ filter: { paperId } } as any);
+  // 404 returned when namespace is empty — treat as no-op
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await ns.deleteMany({ filter: { paperId } } as any);
+  } catch (err) {
+    const errName = (err as { name?: string }).name;
+    if (errName === 'PineconeNotFoundError') return;
+    throw err;
+  }
 }
 
 /**

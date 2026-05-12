@@ -170,7 +170,9 @@ export async function POST(request: Request) {
   // For now, paper sits in 'queued' status. Status update tested via UI realtime listener.
   const jobId = randomUUID();
   try {
-    await getJobQueue().enqueue({
+    await (
+      await getJobQueue()
+    ).enqueue({
       jobId,
       paperId,
       tenantId,

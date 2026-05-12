@@ -14,20 +14,33 @@
 import 'server-only';
 import type { JobQueue, PaperProcessingJob } from './types';
 
-const activeJobs = new Map<string, AbortController>();
-
-// Processor function injected to avoid circular imports
 type Processor = (job: PaperProcessingJob, signal: AbortSignal) => Promise<void>;
-let processorFn: Processor | null = null;
+
+// Use globalThis to share state across module instances (Next.js module isolation).
+// Otherwise instrumentation registers into one module instance, API routes see another.
+type GlobalState = {
+  __labyraJobProcessor?: Processor | null;
+  __labyraActiveJobs?: Map<string, AbortController>;
+};
+const globalState = globalThis as unknown as GlobalState;
+if (!globalState.__labyraActiveJobs) {
+  globalState.__labyraActiveJobs = new Map();
+}
+const activeJobs = globalState.__labyraActiveJobs;
 
 export function setJobProcessor(fn: Processor): void {
-  processorFn = fn;
+  globalState.__labyraJobProcessor = fn;
+}
+
+function getProcessor(): Processor | null {
+  return globalState.__labyraJobProcessor ?? null;
 }
 
 export class InProcessQueue implements JobQueue {
   readonly id = 'in-process';
 
   async enqueue(job: PaperProcessingJob): Promise<void> {
+    const processorFn = getProcessor();
     if (!processorFn) {
       throw new Error('InProcessQueue: processor not registered. Call setJobProcessor() first.');
     }
@@ -43,7 +56,7 @@ export class InProcessQueue implements JobQueue {
     // Fire-and-forget: do not await. Errors handled inside processor.
     void (async () => {
       try {
-        await processorFn!(job, controller.signal);
+        await processorFn(job, controller.signal);
       } catch (err) {
         console.error(
           JSON.stringify({

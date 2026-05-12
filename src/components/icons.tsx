@@ -96,7 +96,8 @@ import {
   IconFlask2,
   IconHierarchy,
   IconTestPipe,
-  IconUsersGroup
+  IconUsersGroup,
+  IconFileDescription
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -239,5 +240,6 @@ export const Icons = {
   equipment: IconDeviceDesktopAnalytics,
   bookings: IconCalendarEvent,
   members: IconUsersGroup,
+  papers: IconFileDescription,
   aiAssistant: IconSparkles
 };

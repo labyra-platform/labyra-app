@@ -41,7 +41,9 @@
       "admin": "Quản trị"
     },
     "employee": "Nhân viên",
-    "debugAuth": "Debug Auth"
+    "debugAuth": "Debug Auth",
+    "papers": "Papers",
+    "upload": "Tải lên"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",
@@ -142,6 +144,42 @@
     "pdfOnlyMax": "Chỉ PDF, tối đa {mb} MB",
     "uploadStarted": "Đã bắt đầu tải lên. Sắp xử lý.",
     "uploadFailed": "Tải lên thất bại",
-    "duplicateDetected": "Paper này đã có trong thư viện."
+    "duplicateDetected": "Paper này đã có trong thư viện.",
+    "listPageTitle": "Papers",
+    "listPageSubtitle": "Các paper nghiên cứu trong thư viện của lab.",
+    "detailPageTitle": "Paper",
+    "uploadNew": "Tải lên",
+    "noPapersYet": "Chưa có paper nào",
+    "uploadToStart": "Tải lên PDF để bắt đầu xây dựng thư viện.",
+    "uploadFirstPaper": "Tải paper đầu tiên",
+    "untitled": "Không tiêu đề",
+    "paperNotFound": "Không tìm thấy paper",
+    "backToList": "Quay lại danh sách",
+    "processingStatus": "Trạng thái xử lý",
+    "processingFailed": "Xử lý thất bại",
+    "cost": "Chi phí",
+    "enrichment": "Enrichment",
+    "embedding": "Embedding",
+    "total": "Tổng",
+    "cancel": "Hủy",
+    "reprocess": "Xử lý lại",
+    "cancelRequested": "Đã yêu cầu hủy",
+    "cancelFailed": "Hủy thất bại",
+    "reprocessStarted": "Bắt đầu xử lý lại",
+    "reprocessFailed": "Xử lý lại thất bại",
+    "nPages": "{count} trang",
+    "nChunks": "{count} chunks",
+    "status": {
+      "queued": "Đang chờ",
+      "ocr": "OCR",
+      "chunking": "Chunking",
+      "enriching": "Enriching",
+      "embedding": "Embedding",
+      "indexing": "Indexing",
+      "indexed": "Đã index",
+      "failed": "Thất bại",
+      "cancelling": "Đang hủy",
+      "cancelled": "Đã hủy"
+    }
   }
 }

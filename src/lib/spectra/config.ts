@@ -253,8 +253,12 @@ export function detectSpectrumType(filename: string): SpectrumType | null {
   if (/\.spe$|\.wdf$/.test(lower)) return 'raman';
   if (/xrd/.test(lower)) return 'xrd';
   if (/raman/.test(lower)) return 'raman';
+  if (/drs|diffuse|reflect/.test(lower)) return 'uvvis_drs';
   if (/uvvis|uv-vis|uvv/.test(lower)) return 'uvvis';
   if (/ftir/.test(lower)) return 'ftir';
+  if (/tga|thermograv/.test(lower)) return 'tga';
+  if (/dsc|calorim/.test(lower)) return 'dsc';
+  if (/(^|[_-])ocp([_-]|\.)|opencircuit|open-circuit/.test(lower)) return 'ocp';
   if (/(^|[_-])pl([_-]|\.)/.test(lower)) return 'pl';
   if (/(^|[_-])cv([_-]|\.)/.test(lower)) return 'cv';
   if (/eis/.test(lower)) return 'eis';

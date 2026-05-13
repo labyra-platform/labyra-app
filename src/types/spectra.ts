@@ -11,6 +11,7 @@ export type SpectrumType =
   | 'hrtem'
   // Optical (4)
   | 'uvvis'
+  | 'uvvis_drs'
   | 'pl'
   | 'raman'
   | 'ftir'

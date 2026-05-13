@@ -48,6 +48,14 @@ export const SPECTRA_CONFIG: Record<SpectrumType, SpectrumTypeConfig> = {
     defaultUnits: { x: 'Wavelength (nm)', y: 'Absorbance' },
     isImage: false
   },
+  uvvis_drs: {
+    type: 'uvvis_drs',
+    group: 'optical',
+    acceptedExtensions: ['.csv', '.txt', '.dpt'],
+    maxSizeBytes: 5 * MB,
+    defaultUnits: { x: 'Wavelength (nm)', y: 'Reflectance (%)' },
+    isImage: false
+  },
   pl: {
     type: 'pl',
     group: 'optical',

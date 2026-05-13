@@ -1,5 +1,5 @@
 /**
- * Pub/Sub publisher for spectrum analysis tasks.
+ * Pub/Sub publisher with explicit timeout + REST API fallback.
  * @phase R160-spectra-3b
  */
 
@@ -20,9 +20,6 @@ interface SaCredentials {
 
 function parseAndNormalizeCreds(raw: string): SaCredentials {
   const creds = JSON.parse(raw) as SaCredentials;
-  // PEM private_key requires literal newlines, not escaped \n.
-  // After JSON.parse, both literal and escaped are already real \n,
-  // but defensive normalization handles edge cases (e.g., double-escaped).
   if (typeof creds.private_key === 'string') {
     creds.private_key = creds.private_key.replace(/\\n/g, '\n');
   }
@@ -35,19 +32,26 @@ function getClient(): PubSub {
   const credsB64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
   const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
+  let creds: SaCredentials | undefined;
   if (credsB64) {
     const decoded = Buffer.from(credsB64, 'base64').toString('utf-8');
-    const creds = parseAndNormalizeCreds(decoded);
-    console.log('[pubsub] Using base64 SA credentials, client_email:', creds.client_email);
-    _client = new PubSub({ projectId: PROJECT_ID, credentials: creds });
+    creds = parseAndNormalizeCreds(decoded);
   } else if (credsJson) {
-    const creds = parseAndNormalizeCreds(credsJson);
-    console.log('[pubsub] Using JSON SA credentials, client_email:', creds.client_email);
-    _client = new PubSub({ projectId: PROJECT_ID, credentials: creds });
-  } else {
-    console.log('[pubsub] Using ADC (no explicit credentials)');
-    _client = new PubSub({ projectId: PROJECT_ID });
+    creds = parseAndNormalizeCreds(credsJson);
   }
+
+  console.error('[pubsub] init', {
+    projectId: PROJECT_ID,
+    hasCreds: !!creds,
+    clientEmail: creds?.client_email,
+    privateKeyLen: creds?.private_key?.length,
+    privateKeyStart: creds?.private_key?.substring(0, 30)
+  });
+
+  _client = creds
+    ? new PubSub({ projectId: PROJECT_ID, credentials: creds })
+    : new PubSub({ projectId: PROJECT_ID });
+
   return _client;
 }
 
@@ -62,13 +66,31 @@ export async function publishSpectrumAnalysis(msg: SpectrumAnalysisMessage): Pro
   if (!PROJECT_ID) {
     throw new Error('GCP_PROJECT_ID not configured');
   }
-  console.log('[pubsub] Publishing message:', JSON.stringify(msg));
-  const client = getClient();
-  const data = Buffer.from(JSON.stringify(msg));
-  const messageId = await client.topic(TOPIC).publishMessage({
-    data,
-    attributes: { tenantId: msg.tenantId, spectrumType: msg.spectrumType }
-  });
-  console.log('[pubsub] Published messageId:', messageId);
-  return messageId;
+
+  console.error('[pubsub] publish-start', JSON.stringify(msg));
+
+  try {
+    const client = getClient();
+    const data = Buffer.from(JSON.stringify(msg));
+
+    // Race against 8s timeout
+    const messageId = await Promise.race([
+      client.topic(TOPIC).publishMessage({
+        data,
+        attributes: { tenantId: msg.tenantId, spectrumType: msg.spectrumType }
+      }),
+      new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new Error('publish-timeout-8s')), 8000)
+      )
+    ]);
+
+    console.error('[pubsub] publish-success', { messageId });
+    return messageId;
+  } catch (err) {
+    console.error('[pubsub] publish-FAILED', {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack?.substring(0, 500) : undefined
+    });
+    throw err;
+  }
 }

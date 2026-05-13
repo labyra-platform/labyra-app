@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { SciText, formatSciText } from '@/features/spectra/utils/format-units';
+import { CitationChip } from '@/features/spectra/components/citation-chip';
 import { TGABody, DSCBody, OCPBody } from '@/features/spectra/components/analysis-bodies-ext';
 import type { TGAAIOutput, DSCAIOutput, OCPAIOutput } from '@/types/spectra-analysis-ext';
 import type {
@@ -129,8 +130,11 @@ function XRDBody({ ai, parsed }: { ai: XRDAIOutput; parsed: AnalysisResult['pars
         <div className='mt-2 space-y-2'>
           {ai.phases.map((phase, i) => (
             <div key={`${phase.name}-${i}`} className='rounded-md border p-3'>
-              <div className='flex items-center justify-between gap-2'>
-                <span className='font-medium'>{phase.name}</span>
+              <div className='flex flex-wrap items-center justify-between gap-2'>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <span className='font-medium'>{phase.name}</span>
+                  {phase.source && <CitationChip source={phase.source} />}
+                </div>
                 <div className='flex items-center gap-2'>
                   <ConfidencePill level={phase.confidence} />
                   <span className='text-xs text-muted-foreground'>

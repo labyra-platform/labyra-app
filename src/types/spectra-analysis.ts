@@ -15,6 +15,14 @@ import type {
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
 
+export type CitationSourceType = 'COD' | 'MP' | 'internal' | 'web' | 'unverified';
+
+export interface PhaseSource {
+  type: CitationSourceType;
+  id: string | null;
+  doi?: string | null;
+}
+
 export interface SpectrumCurve {
   x: number[];
   y: number[];
@@ -60,6 +68,7 @@ export interface PhaseIdentification {
   confidence: ConfidenceLevel;
   matched_peaks: number;
   note: string;
+  source?: PhaseSource | null;
 }
 
 export interface XRDAIOutput {

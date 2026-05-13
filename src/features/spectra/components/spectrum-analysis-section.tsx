@@ -62,6 +62,15 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
 
   const { parsed } = result;
 
+  // Defensive: skip render if parsed missing critical fields (worker partial fail)
+  if (!parsed || typeof parsed !== 'object') {
+    return (
+      <div className='rounded-lg border bg-card p-4 text-sm text-muted-foreground'>
+        Analysis data incomplete or malformed.
+      </div>
+    );
+  }
+
   return (
     <div className='space-y-6'>
       <AnalysisResultCard result={result} />

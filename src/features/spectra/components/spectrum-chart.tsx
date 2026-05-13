@@ -246,6 +246,13 @@ function getLayoutConfig(parsed: SpectrumParsedData): ChartLayout {
 }
 
 export function SpectrumChart({ parsed }: SpectrumChartProps) {
+  // Defensive: missing curve data — uvvis_drs has reflectance_curve, not spectrum_curve
+  if (parsed.spectrum_type === 'uvvis_drs') {
+    return <div className='text-sm text-muted-foreground'>DRS rendered separately</div>;
+  }
+  if (!parsed.spectrum_curve?.x || !parsed.spectrum_curve.y) {
+    return <div className='text-sm text-muted-foreground'>No spectrum data to display</div>;
+  }
   let traces: PlotData[] = [];
   if (parsed.spectrum_type === 'xrd') traces = getXRDTraces(parsed);
   else if (parsed.spectrum_type === 'uvvis') traces = getUVVisTraces(parsed);

@@ -311,16 +311,18 @@ export function SpectrumUploadDropzone({
             )}
           </div>
 
-          <div className='max-h-[28rem] space-y-2 overflow-y-auto overscroll-contain rounded-md border p-2 pr-3'>
-            {items.map((item) => (
-              <UploadRow
-                key={item.id}
-                item={item}
-                disabled={isUploading}
-                onTypeChange={(type) => changeType(item.id, type)}
-                onRemove={() => removeItem(item.id)}
-              />
-            ))}
+          <div className='rounded-md border p-1'>
+            <div className='max-h-[28rem] space-y-2 overflow-y-auto overscroll-contain p-1 pr-2'>
+              {items.map((item) => (
+                <UploadRow
+                  key={item.id}
+                  item={item}
+                  disabled={isUploading}
+                  onTypeChange={(type) => changeType(item.id, type)}
+                  onRemove={() => removeItem(item.id)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}

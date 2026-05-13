@@ -9,6 +9,7 @@ import PageContainer from '@/components/layout/page-container';
 import { useSpectrum } from '@/lib/firestore/queries/spectra';
 import { SpectrumDetailCard } from '@/features/spectra/components/spectrum-detail-card';
 
+import { SpectrumAnalysisSection } from '@/features/spectra/components/spectrum-analysis-section';
 export default function SpectrumDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -61,6 +62,8 @@ export default function SpectrumDetailPage({ params }: { params: Promise<{ id: s
       }
     >
       <SpectrumDetailCard spectrum={spectrum} />
+      {/* R160-spectra-3b-analysis-render */}
+      <SpectrumAnalysisSection spectrumId={spectrum.id} status={spectrum.status} />
     </PageContainer>
   );
 }

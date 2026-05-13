@@ -523,6 +523,24 @@
       "preparing": "Đang chuẩn bị...",
       "error": "Lỗi",
       "analysisPending": "Phổ đã được tải lên. Phân tích AI sẽ được kích hoạt khi worker sẵn sàng (Phase 2)."
+    },
+    "analysis": {
+      "title": "Phân tích AI",
+      "summary": "Tóm tắt",
+      "phases": "Pha được nhận dạng",
+      "crystalliteSize": "Kích thước tinh thể",
+      "microstrain": "Microstrain",
+      "warnings": "Cảnh báo",
+      "nextSteps": "Đề xuất bước tiếp theo",
+      "matchedPeaks": "{count} đỉnh khớp",
+      "confidence": {
+        "low": "Độ tin cậy thấp",
+        "medium": "Độ tin cậy trung bình",
+        "high": "Độ tin cậy cao"
+      }
+    },
+    "chart": {
+      "peaks": "Đỉnh đã phát hiện"
     }
   }
 }

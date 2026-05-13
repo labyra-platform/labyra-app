@@ -523,6 +523,24 @@
       "preparing": "Preparing...",
       "error": "Error",
       "analysisPending": "Spectrum uploaded. AI analysis will trigger when worker is available (Phase 2)."
+    },
+    "analysis": {
+      "title": "AI Analysis",
+      "summary": "Summary",
+      "phases": "Identified Phases",
+      "crystalliteSize": "Crystallite Size",
+      "microstrain": "Microstrain",
+      "warnings": "Warnings",
+      "nextSteps": "Recommended Next Steps",
+      "matchedPeaks": "{count} matched peaks",
+      "confidence": {
+        "low": "Low confidence",
+        "medium": "Medium confidence",
+        "high": "High confidence"
+      }
+    },
+    "chart": {
+      "peaks": "Detected Peaks"
     }
   }
 }

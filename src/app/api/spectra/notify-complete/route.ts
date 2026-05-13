@@ -11,6 +11,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { publishSpectrumAnalysis } from '@/lib/pubsub/publisher';
 import { fileExists, getFileMetadata } from '@/lib/firebase/storage';
 import { SPECTRA_CONFIG } from '@/lib/spectra/config';
 import type { SpectrumMetadata, SpectrumType } from '@/types/spectra';
@@ -101,7 +102,27 @@ export async function POST(req: NextRequest) {
     const db = getAdminFirestoreService();
     await db.doc(`tenants/${tenantId}/spectra/${spectrumId}`).set(metadata);
 
-    return NextResponse.json({ id: spectrumId, status: 'uploaded' });
+    // R160-spectra-3b: publish analysis task to worker.
+    // On failure, spectrum stays 'uploaded' for manual retry.
+    let queueStatus: 'uploaded' | 'queued' = 'uploaded';
+    try {
+      await publishSpectrumAnalysis({
+        tenantId,
+        spectrumId,
+        spectrumType: spectrumType as SpectrumType,
+        experimentId
+      });
+      await db.doc(`tenants/${tenantId}/spectra/${spectrumId}`).update({
+        status: 'queued',
+        updatedAt: Date.now()
+      });
+      queueStatus = 'queued';
+    } catch (pubErr) {
+      console.error('Pub/Sub publish failed', pubErr);
+      // intentional: continue with 'uploaded' — admin/cron can retry
+    }
+
+    return NextResponse.json({ id: spectrumId, status: queueStatus });
   } catch (err) {
     console.error('POST /api/spectra/notify-complete error', err);
     return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });

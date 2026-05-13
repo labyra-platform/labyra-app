@@ -20,7 +20,7 @@ export const SPECTRA_CONFIG: Record<SpectrumType, SpectrumTypeConfig> = {
   xrd: {
     type: 'xrd',
     group: 'structural',
-    acceptedExtensions: ['.xy', '.csv', '.raw', '.txt'],
+    acceptedExtensions: ['.xy', '.csv', '.xlsx', '.txt'],
     maxSizeBytes: 10 * MB,
     defaultUnits: { x: '2θ (°)', y: 'Intensity (counts)' },
     isImage: false

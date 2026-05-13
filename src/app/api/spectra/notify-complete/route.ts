@@ -105,8 +105,9 @@ export async function POST(req: NextRequest) {
     // R160-spectra-3b: publish analysis task to worker.
     // On failure, spectrum stays 'uploaded' for manual retry.
     let queueStatus: 'uploaded' | 'queued' = 'uploaded';
+    let publishError: string | undefined;
     try {
-      await publishSpectrumAnalysis({
+      const messageId = await publishSpectrumAnalysis({
         tenantId,
         spectrumId,
         spectrumType: spectrumType as SpectrumType,
@@ -114,15 +115,26 @@ export async function POST(req: NextRequest) {
       });
       await db.doc(`tenants/${tenantId}/spectra/${spectrumId}`).update({
         status: 'queued',
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        debugMessageId: messageId
       });
       queueStatus = 'queued';
     } catch (pubErr) {
-      console.error('Pub/Sub publish failed', pubErr);
-      // intentional: continue with 'uploaded' — admin/cron can retry
+      publishError = pubErr instanceof Error ? pubErr.message : String(pubErr);
+      console.error('Pub/Sub publish failed:', publishError);
+      // Write the error to Firestore so we can see it in the UI
+      try {
+        await db.doc(`tenants/${tenantId}/spectra/${spectrumId}`).update({
+          status: 'failed',
+          errorMessage: `publish: ${publishError.substring(0, 400)}`,
+          updatedAt: Date.now()
+        });
+      } catch {
+        // ignore
+      }
     }
 
-    return NextResponse.json({ id: spectrumId, status: queueStatus });
+    return NextResponse.json({ id: spectrumId, status: queueStatus, publishError });
   } catch (err) {
     console.error('POST /api/spectra/notify-complete error', err);
     return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });

@@ -408,3 +408,162 @@ firebase deploy --only functions                # when functions exist
 - `docs/handoff.md` — session continuity
 
 *Living document. Update with each architectural decision.*
+
+---
+
+## 10. R160 Phase Additions (May 13, 2026)
+
+This section captures structural additions since the last update of this doc.
+For chronological ADRs see `architecture-decisions.md`.
+For session continuity see `docs/handoff-r160-spectra.md`.
+
+### 10.1 Lab data entities (R160-data-1 + R160-data-2)
+
+Five new domain collections under `tenants/{tenantId}/`:
+
+| Collection | Schema | Composite indexes |
+|---|---|---|
+| `materials` | name, formula, category, cas, quantity+unit, location, hazardLevel | `(category, updatedAt desc)` |
+| `samples` | sampleCode, name, parentMaterialIds[], derivedFromSampleId, mass/volume/concentration, status, location | `(status, preparedAt desc)` |
+| `experiments` | experimentCode, title, experimentType, status, sampleIds[], equipmentUsed[], conditions (T, P, duration) | `(status, updatedAt desc)` |
+| `equipment` | equipmentCode, name, category, manufacturer/model/serial, location, status, maintenance dates | `(status, updatedAt desc)`, `(category, updatedAt desc)` |
+| `bookings` | equipmentId (FK), userId, startAt, endAt, purpose, status | `(equipmentId, startAt asc)`, `(userId, startAt desc)`, `(status, startAt asc)` |
+
+All schemas include `schemaVersion: 1`, audit fields (`createdAt`/`updatedAt`/`createdBy`), and `tenantId`.
+
+**Backward-compat:** Pre-R160 data (legacy) lacks `id` field and may use old field names
+(`type` instead of `experimentType`, no `experimentCode`). Tables and queries inject
+`{...doc.data(), id: doc.id}` and fall back via `data.X ?? data.legacyField` patterns.
+
+### 10.2 Spectrum data pipeline (R160-spectra-1 + R160-spectra-2) — Stage 2 Phase 1
+
+24 spectrum types across 6 analyzer groups per `docs/labrya-experiment-database-report.md`:
+
+```
+Browser                            Backend                       Storage
+─────────────────────────────────────────────────────────────────────────
+[Dropzone]                                                       
+   │                                                             
+   ├── client compute SHA-256                                    
+   │                                                             
+   ├──► POST /api/spectra/signed-upload ──► Admin SDK ──► Firebase Storage
+   │                                        getSignedUrl()       (signed URL)
+   │   ◄── { spectrumId, signedUrl, storagePath }                
+   │                                                             
+   ├──► PUT file directly to GCS  ──────────────────────────────►[raw/file]
+   │   (bypasses Next.js backend bandwidth)                      
+   │                                                             
+   └──► POST /api/spectra/notify-complete ──► Admin SDK          
+                                              ├── verify file exists
+                                              ├── verify size matches  
+                                              └── create SpectrumMetadata doc ──► Firestore
+                                                  status: 'uploaded'           
+                                                                                
+                                                  ┌──── Phase 2 (deferred) ───┐
+                                                  │ Cloud Pub/Sub             │
+                                                  │   ↓                       │
+                                                  │ Cloud Run Python worker   │
+                                                  │   ├── download from GCS   │
+                                                  │   ├── parse (pymatgen)    │
+                                                  │   ├── AI analysis (Sonnet)│
+                                                  │   └── status: 'analyzed'  │
+                                                  └───────────────────────────┘
+```
+
+**Storage path convention** (immutable raw, versioned processed):
+```
+tenants/{tenantId}/spectra/{spectrumId}/
+  raw/<original-filename>           ← write-once, no overwrite
+  processed/<derived-files>         ← Phase 2 writes here
+  thumbnail.jpg                      ← image types only
+```
+
+**Tenant isolation enforcement points:**
+- Firebase Storage rules: `tenants/{tenantId}/spectra/{spectrumId}/{path=**}` allows reads only when `request.auth.token.tenantId == tenantId`; writes denied (Admin SDK signed URL only)
+- API routes verify `decoded.tenantId === path.tenantId` before issuing signed URL or creating doc
+- Firestore composite indexes scoped to tenant collection
+
+**Composite indexes deployed for `spectra`:**
+- `(experimentId, measuredAt desc)` — list spectra of experiment
+- `(sampleId, spectrumType asc)` — compare samples by spectrum type
+- `(spectrumType, createdAt desc)` — type-wide listing
+- `(status, createdAt asc)` — analysis queue (used by Phase 2 worker)
+
+### 10.3 UI architecture (R160-data-1c + R160-ui-1 + R160-spectra-2)
+
+All forms migrated to **shadcn Form pattern**:
+```
+<Form {...form}>
+  <FormField name="x" render={({field}) => (
+    <FormItem>
+      <FormLabel>{t('x')}</FormLabel>
+      <FormControl><Input {...field} /></FormControl>
+      <FormMessage />  ← auto-render Zod errors
+    </FormItem>
+  )}/>
+</Form>
+```
+
+All tables use **shadcn Table** (`<Table><TableHeader><TableBody><TableRow>...`). No raw HTML
+`<table>` allowed.
+
+All list pages use `<PageContainer pageTitle pageDescription pageHeaderAction>` for design
+system consistency.
+
+WCAG 2.3.3 reduced-motion respected globally via `globals.css` media query.
+
+Standards reference: `docs/uiux-international-standards.md` (also available as
+`.claude/skills/ui-ux-standards/` for Claude Code auto-discovery).
+
+### 10.4 i18n architecture
+
+next-intl path-based routing (`/en`, `/vi`). Messages tree mirrors namespace structure:
+- `materials.{title, subtitle, form.*, category.*, hazard.*}`
+- Same pattern for `samples`, `experiments`, `equipment`, `bookings`, `spectra`
+- All enum values translated (e.g. `materials.category.chemical` → "Hóa chất" / "Chemical")
+
+**Critical pattern:** Use `t.has(key) ? t(key) : key` for any key that may not exist
+(dynamic route segments in breadcrumbs, legacy enum values in tables). `try/catch` does NOT
+suppress next-intl's MISSING_MESSAGE error events.
+
+---
+
+## 11. Updated Decision Log (R160)
+
+Continued from Section 8 above.
+
+| Date | Decision | Rationale |
+|---|---|---|
+| 2026-05-13 | shadcn Form/Table mandatory for all UI | UI/UX standards compliance, accessibility automatic via Radix |
+| 2026-05-13 | Doc ID injection `{...d.data(), id: d.id}` everywhere | Legacy docs missing `id` field break React keys; defensive pattern |
+| 2026-05-13 | Stage 2 Phase 1 uses Firebase Storage (not native GCS bucket) | Existing infra (Admin SDK, signed URLs, rules) — same GCS under hood, faster to ship |
+| 2026-05-13 | 24 spectrum types in 6 groups (XRD/UV-Vis/Raman/FTIR/CV/EIS/GCD/LSV/CA/PEC-JV/IPCE/XPS/EDS/BET/SEM/TEM/AFM/...) | Authoritative per database report; covers full materials science range |
+| 2026-05-13 | Composite indexes pre-deployed in patch | Avoid runtime "missing index" failures in production; declarative IaC |
+| 2026-05-13 | Backward-compat tables with `data.X ?? data.legacyField` | Tolerate pre-R160 data without forcing migration |
+| 2026-05-13 | Multi-turn AI history loaded from Firestore subcollection | Stateless API routes; explicit 20-message limit; Anthropic/Gemini block reconstruction |
+| 2026-05-13 | Anti-hallucination expanded to 7 layers (L2-L4 + L6-L7) | L2 citation, L3 numerical, L4 rerank threshold, L6 OOD classifier (Haiku), L7 empty result guard |
+
+---
+
+## 12. R160 Phase Status (May 13, 2026)
+
+### Shipped phases
+- ai-3, ai-4, ai-5a (RAG foundation), ai-5b (paper pipeline)
+- ai-5e-1/1b/1c (anti-hallucination L2+L3+L4 + multi-turn + Việt-$)
+- ai-5e-2 (L6 OOD + L7 empty guard + Gemini block conversion)
+- data-1 / data-1b / data-1c (Materials/Samples/Experiments CRUD + shadcn refactor)
+- data-2 (Equipment + Bookings + 8 composite indexes)
+- ai-tools-1 (lab tools schema align)
+- ui-1 (Papers PageContainer + reduced-motion + Stage 2 plan docs)
+- spectra-1 (24 spectrum types + signed URL upload + SHA-256)
+- spectra-2 (experiment Tabs + standalone /spectra route + detail view)
+
+### Pending phases
+- **Phase 2 (spectra worker):** Cloud Run + Pub/Sub + Python parsers + Sonnet AI analysis
+- **Phase 3 (time-series):** BigQuery for GCD/CA traces with row-level security
+- **Dashboard widgets:** KPI cards + recent activity (deferred per session decision)
+- **Lineage graph:** Material → Sample → Experiment D3 viz
+- **Members + RBAC:** invite flow
+- **Settings page:** tenant config
+
+See `ROADMAP.md` for the full ordered plan and `docs/handoff-r160-spectra.md` for session continuity.

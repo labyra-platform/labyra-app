@@ -203,3 +203,142 @@
 3. Date YYYY-MM-DD
 4. Status: Accepted / Superseded by ADR-NNN / Rejected
 5. Sections: Context, Decision, Consequences, Alternatives considered
+
+---
+
+## ADR-010: shadcn Form + Table mandatory for all UI
+
+**Date**: 2026-05-13 (R160-data-1c)
+**Status**: Accepted
+
+**Context**: Initial CRUD pages (R160-data-1) used hand-rolled `<label>` + `<input>` + `<table>`
+with hardcoded Vietnamese text. User feedback: inconsistent with rest of app, hard to enforce
+accessibility, mixed Vietnamese/English in `/en` locale.
+
+**Decision**: All forms MUST use shadcn `Form/FormField/FormItem/FormLabel/FormControl/FormMessage`
+pattern. All tables MUST use shadcn `Table/TableHeader/TableBody/TableRow/TableHead/TableCell`.
+Buttons wrapping `Link` use `Button asChild`.
+
+**Consequences**:
+- Accessibility (WCAG 2.2 AA) automatic via Radix UI primitives
+- Validation errors render inline via `FormMessage` (no custom error UI)
+- Forms feel professional, consistent with rest of app
+- Slightly more verbose than raw HTML (but boilerplate is mechanical)
+
+**Alternatives considered**:
+- Headless UI + custom styling — rejected: more work, no a11y guarantee
+- Mantine — rejected: would diverge from existing shadcn investments
+- Keep hand-rolled — rejected: failed user expectation of "professional UI"
+
+---
+
+## ADR-011: Doc ID injection pattern `{...doc.data(), id: doc.id}`
+
+**Date**: 2026-05-13 (R160-spectra-2 hotfix)
+**Status**: Accepted
+
+**Context**: Legacy Firestore documents (pre-R160) lack `id` field. When mapping
+`snap.docs.map(d => d.data() as Entity)`, the resulting objects have `id: undefined`.
+React then sees `<TableRow key={undefined}>` for all rows → "duplicate key" warning.
+
+**Decision**: All Firestore query functions inject `doc.id` when reading data:
+```typescript
+snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Entity)
+return { ...snap.data(), id: snap.id } as Entity;
+```
+
+**Consequences**:
+- React keys always present, no warnings
+- Legacy data continues to work without migration
+- Field `id` in document body becomes redundant for new writes, but kept for type contract
+
+**Alternatives considered**:
+- Migration script to add `id` field to all legacy docs — rejected: more risk, requires
+  one-time orchestration; defensive pattern preferred
+- Skip `id` in interfaces, expose only at query layer — rejected: breaks contracts
+
+---
+
+## ADR-012: Stage 2 Phase 1 uses Firebase Storage (not native GCS bucket)
+
+**Date**: 2026-05-13 (R160-spectra-1)
+**Status**: Accepted, revisitable
+
+**Context**: Database report (`docs/labrya-experiment-database-report.md`) prescribes
+native GCS bucket with custom IAM for tenant isolation. Labyra already has Firebase Storage
+configured (papers use it) with Admin SDK + storage.rules + Signed URLs.
+
+**Decision**: Use Firebase Storage for Phase 1. Path convention follows the report
+(`tenants/{tenantId}/spectra/{spectrumId}/...`). Tenant isolation via Firebase Storage rules
+(declarative) instead of native GCS IAM conditions.
+
+**Consequences**:
+- Same GCS under the hood — no real architectural difference
+- Faster to ship: ~1 day vs ~1 week native GCS setup
+- Existing Admin SDK helpers reused (`getSignedUrl`, `getSignedDownloadUrl`)
+- Migration to native GCS bucket possible later if multi-region or per-tenant bucket needed
+  for compliance/sovereignty
+
+**Alternatives considered**:
+- Native GCS bucket with per-tenant IAM — rejected for Phase 1: 5x infra time, no immediate benefit
+- Skip storage entirely, in-memory upload to Firestore — rejected: 1MB doc limit, doesn't scale
+
+---
+
+## ADR-013: 24 spectrum types in 6 groups, full taxonomy from day one
+
+**Date**: 2026-05-13 (R160-spectra-1)
+**Status**: Accepted
+
+**Context**: Database report defines 24 spectrum types (XRD, SAED, HRTEM, UV-Vis, PL, Raman,
+FTIR, CV, EIS, GCD, LSV, CA, PEC J-V, IPCE, EIS-light, XPS, EDS, BET, Contact Angle, SEM,
+TEM, AFM, Optical microscopy) in 6 analyzer groups. Initial scope discussion: ship 6 common
+types first vs full 24.
+
+**Decision**: Ship full taxonomy from day one in `src/lib/spectra/config.ts` with per-type
+config (acceptedExtensions, maxSizeBytes, defaultUnits, isImage). Type detection heuristic
+from filename auto-suggests type in upload UI.
+
+**Consequences**:
+- No artificial limits: any materials science lab can upload their spectra
+- i18n catalog has 24 type labels per locale (vi + en)
+- Type-specific Phase 2 analyzers (pymatgen, lmfit, impedance.py) will be wired one at a time
+
+**Alternatives considered**:
+- 6 types Phase 1 (XRD, UV-Vis, Raman, FTIR, CV, EIS) — rejected: arbitrary cutoff,
+  user said full 24 explicitly
+- Single type POC (XRD only) — rejected: limits initial user value too much
+
+---
+
+## ADR-014: Anti-hallucination 7-layer architecture (L2 + L3 + L4 + L6 + L7)
+
+**Date**: 2026-05-13 (R160-ai-5e-1/2)
+**Status**: Accepted
+
+**Context**: Original AI_ARCHITECTURE Section 6 specified 9 layers. Building all 9 not
+practical for Phase 1. Need pragmatic subset that catches common hallucination patterns
+(fabricated numbers, fake citations, off-topic engagement, empty-library invention).
+
+**Decision**: Ship 5 layers from the 9-layer plan:
+- **L2** Citation enforcement (sentence-level claim → require `[N]` marker)
+- **L3** Numerical guard (regex extract → match vs retrieved chunks, with negation context)
+- **L4** Rerank score threshold (0.5 cutoff → empty hits if all below)
+- **L6** On-topic classifier (Haiku → polite refusal for off-topic)
+- **L7** Empty result guard (system prompt rule + post-process)
+
+L1 (input filtering), L5 (refusal training), L8 (provenance UI), L9 (cross-source verify)
+remain deferred.
+
+**Consequences**:
+- 4/4 fake numerical claims caught in adversarial test
+- Empty library queries properly refuse with hedged fallback
+- Off-topic queries cost ~$0.0002/query (Haiku classifier) — affordable
+- False positives exist on L2 (especially with quotes); accepted for recall
+
+**Alternatives considered**:
+- Ship all 9 layers — rejected: 4x effort for diminishing returns at current scale
+- Skip post-process layers entirely, rely on system prompt — rejected: insufficient
+  enforcement on numerical guard especially
+
+---

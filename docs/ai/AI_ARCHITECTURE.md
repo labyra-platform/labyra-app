@@ -1662,3 +1662,198 @@ Original AI_ARCHITECTURE plan specified Chandra OCR. Replaced with Mistral OCR 3
 3. Multi-lingual support stronger (Vietnamese papers)
 4. Provider abstraction preserves swap-ability for enterprise on-prem requirements
 
+
+## Section 25: Anti-Hallucination Layers 2-7 (R160-ai-5e)
+
+### Context
+Section 6 of this document describes the original 9-layer plan (inherited from labbook-bku).
+The Labyra implementation shipped a focused subset across `ai-5e-1`, `ai-5e-1b`, `ai-5e-1c`,
+and `ai-5e-2`. This section captures what was actually built.
+
+### Architecture
+
+```
+User query
+    ↓
+[L6] On-topic classifier (Haiku) ──► off-topic → polite refusal, no tools
+    ↓ on-topic
+[Tier dispatch: 20% Haiku / 60% Sonnet / 20% Opus]
+    ↓
+Tool calls (paperTools.searchPapers + lab tools)
+    ↓
+[L4] Rerank score threshold ──► hits=[] if all below 0.5 → searchPapers returns
+                                  empty + thresholdFailed flag
+    ↓
+[L7] System prompt EMPTY RESULT GUARD ──► AI must say "Tôi không tìm thấy..."
+                                            before any general-knowledge fallback
+    ↓
+Tier response generation
+    ↓
+[L2 + L3] Grounding check post-process
+    ├── L2 citation enforcement (claim sentences without [N] markers flagged)
+    ├── L3 numerical guard (numbers in response not in retrieved chunks flagged)
+    └── Emit 'grounding' SSE event with details for UI banner
+    ↓
+[L7 alt] Vietnamese-$ stripping (post-process text_delta)
+    └── Strip `$word$` wrapping non-math Vietnamese words
+    ↓
+Stream to client → GroundingWarning modal if violations
+```
+
+### L2 — Citation enforcement (`src/lib/ai/grounding/citation-check.ts`)
+
+Sentence-level claim detection:
+- **claim patterns:** author + year, specific values + units, direct quotes, percentages, years
+- For each claim sentence, require `[N]` marker referencing a retrieved chunk
+- False positives mitigated by exemption list (common phrases, hedged language)
+
+### L3 — Numerical guard (`src/lib/ai/grounding/extract-numbers.ts`)
+
+Regex-based number extraction with:
+- **Unit detection:** values followed by units (%, °C, eV, mol, nm, etc.) treated as claims
+- **Page number skip:** large integers (>10000) without units assumed to be page refs
+- **Negation context:** 80-char lookback for negation tokens (không, chưa, no, not, never,
+  absent, lacking, without) — if found within 50 chars, skip the number
+- **Whitelist matching:** numbers present (with same unit) in retrieved chunks pass
+
+### L4 — Rerank score threshold (`src/lib/ai/rag/search.ts`)
+
+`RERANK_SCORE_THRESHOLD = 0.5`. If all reranked hits below threshold:
+- Return `hits: []` with `thresholdFailed: true` flag
+- AI must enter Empty Result Guard mode (see L7)
+
+### L6 — On-topic classifier (`src/lib/ai/grounding/on-topic-check.ts`)
+
+- Model: `claude-haiku-4-5-20251001`
+- Classes: `materials` / `lab` / `general_science` / `off_topic`
+- Cost: ~$0.0002/query
+- Skip if query < 8 chars (too ambiguous)
+- Off-topic → polite refusal in Vietnamese, no tool calls, no tier dispatch
+- `offTopic: true` field saved in conversation doc for analytics
+
+### L7 — Empty Result Guard (system prompt rule)
+
+System prompt explicit rule:
+> Khi `searchPapers` trả về `hits: []`, AI MUST:
+> 1. Say "Tôi không tìm thấy nội dung liên quan trong thư viện paper của bạn"
+> 2. Optional: offer general knowledge clearly marked "Từ kiến thức chung..."
+> 3. NEVER invent citations or fabricate paper references
+
+### Multi-turn conversation handling (`src/lib/ai/conversation-history.ts`)
+
+Load last 20 messages from `tenants/{tid}/aiConversations/{cid}/messages` subcollection,
+prepend to current request `conversationMessages` array.
+
+**Critical reconstruction:**
+- Text-only assistant turn → `{ role: 'assistant', content: string }`
+- Assistant with toolCalls → `{ role: 'assistant', content: [text + tool_use blocks] }`
+- Followed by user(tool_result blocks) → `{ role: 'user', content: [tool_result blocks] }`
+
+### Gemini provider block conversion (`src/lib/ai/providers/gemini.ts`)
+
+Gemini SDK expects `Content[]` with `parts: Part[]`. When messages contain Anthropic-style
+content blocks (from multi-turn history), convert in two places:
+
+1. `toGeminiHistory(messages)` — convert each block:
+   - `text` → `{ text: ... }`
+   - `tool_use` → `{ functionCall: { name, args } }`
+   - `tool_result` → `{ functionResponse: { name, response: { result } } }`
+
+2. `sendMessageStream(lastContent)` — if `lastContent` is block array, convert same way
+
+Cast call sites with `as Content[]` or `as never` to bypass TS strict checking.
+
+### Verification
+
+Test cases that passed:
+- "Tìm paper về graphene quantum dots" (empty library) → L7 fires correctly
+- "Hiệu suất WO3 là 92% với mật độ dòng 500 mA/cm²" (fake numbers) → L3 catches 4/4
+- "cách nấu phở" (off-topic) → L6 polite refusal, no tools called
+- Multi-turn round 3 with tool_result → both providers handle correctly
+
+
+---
+
+## Section 26: Spectrum Data Pipeline (R160-spectra-1 + R160-spectra-2)
+
+### Context
+Stage 2 Phase 1 ships the spectrum upload pipeline. Phase 2 (Cloud Run worker + AI analysis)
+remains deferred. This section captures the shipped state for new contributors / agents.
+
+See also `docs/labrya-experiment-database-report.md` and `.claude/skills/database-architecture/`.
+
+### Scope
+
+**24 spectrum types in 6 groups**, all type-aware (acceptedExtensions, maxSizeBytes,
+defaultUnits, isImage flag) declared in `src/lib/spectra/config.ts`.
+
+### Storage architecture (Firebase Storage / GCS)
+
+Path: `tenants/{tenantId}/spectra/{spectrumId}/raw/<sanitized-filename>`
+
+**Helpers** (`src/lib/firebase/storage.ts`):
+- `spectrumRawPath(tenantId, spectrumId, filename)` — sanitized path builder
+- `getSignedUploadUrl(path, contentType, expiresInMs=15min)` — V4 signed PUT URL
+- `getSignedDownloadUrl(path, expiresInMs=15min)` — V4 signed GET URL
+- `fileExists(path)` — verify upload completed
+- `getFileMetadata(path)` — size/contentType/sha256 from GCS metadata
+
+### Upload flow (3 API routes)
+
+```
+POST /api/spectra/signed-upload
+  body: { spectrumType, originalFilename, mimeType, sizeBytes, experimentId, sampleId }
+  ↓ validates: size ≤ config.maxSizeBytes, extension in config.acceptedExtensions
+  returns: { spectrumId, signedUrl, storagePath, expiresAt }
+
+[CLIENT] PUT bytes to signedUrl (direct to GCS, bypasses backend)
+
+POST /api/spectra/notify-complete
+  body: { spectrumId, storagePath, sha256, sizeBytes, ... }
+  ↓ guards:
+  │   • storagePath must start with `tenants/{tenantId}/spectra/{spectrumId}/raw/`
+  │   • file must exist in GCS (fileExists)
+  │   • size in GCS must match reported size (tampering check)
+  ↓ creates SpectrumMetadata doc with status: 'uploaded'
+
+GET /api/spectra/[id]/signed-download
+  returns: { url, expiresAt }
+  ↓ generates 15-min signed read URL
+
+DELETE /api/spectra/[id]
+  ↓ deletes Firestore doc + raw/processed/thumbnail files (best-effort)
+```
+
+### SpectrumMetadata schema (`src/types/spectra.ts`)
+
+```typescript
+interface SpectrumMetadata {
+  schemaVersion: 1;
+  id, tenantId, experimentId, sampleId, sampleLabel?;
+  spectrumType: SpectrumType;           // 24 enum values
+  group: SpectrumGroup;                 // 6 enum values
+  storage: { raw, processed?, thumbnail? };  // gs:// URIs
+  originalFilename, mimeType, sizeBytes, sha256;
+  instrument?, operator, measuredAt;
+  status: 'uploaded' | 'queued' | 'processing' | 'analyzed' | 'failed';
+  analyzedAt?, analysisVersion?, errorMessage?;
+  quickStats?: { rowCount?, xRange?, yRange?, peakCount? };
+  createdAt, updatedAt, createdBy;
+}
+```
+
+### Phase 2 plan (deferred)
+
+When ready, Pub/Sub topic `spectrum-upload-complete` → Cloud Run worker:
+1. Download file from GCS
+2. Parse by type:
+   - pymatgen for XRD (peak fit, phase ID, crystallite size via Scherrer)
+   - lmfit for Voigt profile fitting (Raman, FTIR)
+   - impedance.py for EIS circuit fitting
+   - Custom for UV-Vis (Tauc plot, bandgap)
+3. AI analysis (Sonnet 4.6) for interpretation + peak assignment
+4. Write AnalysisResult to Firestore subcollection `experiments/{eid}/results/{sid}`
+5. Time-series (GCD, CA) streamed to BigQuery
+6. Update SpectrumMetadata.status → 'analyzed'
+
+See `docs/database-stage-2-plan.md` Phase 2 for full plan.

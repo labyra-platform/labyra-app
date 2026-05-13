@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { getAuth } from 'firebase/auth';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ interface SampleFormProps {
 export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('samples');
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<SampleFormValues>({
@@ -65,10 +66,10 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
         body: JSON.stringify(values)
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success(sampleId ? 'Đã cập nhật' : 'Đã tạo sample mới');
+      toast.success(sampleId ? t('toastUpdated') : t('toastCreated'));
       router.push(`/${locale}/dashboard/samples`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Lỗi');
+      toast.error(err instanceof Error ? err.message : t('toastUpdated'));
     } finally {
       setSubmitting(false);
     }

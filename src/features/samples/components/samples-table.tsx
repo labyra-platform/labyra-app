@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { useSamples } from '@/lib/firestore/queries/samples';
 import type { SampleStatus } from '@/types/samples';
@@ -16,17 +16,14 @@ const statusColor: Record<SampleStatus, string> = {
 export function SamplesTable() {
   const { samples, loading } = useSamples();
   const locale = useLocale();
+  const t = useTranslations('samples');
 
   if (loading) {
-    return <div className='text-muted-foreground py-8 text-center text-sm'>Đang tải...</div>;
+    return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
   }
 
   if (samples.length === 0) {
-    return (
-      <div className='text-muted-foreground py-12 text-center text-sm'>
-        Chưa có sample nào. Click &quot;Thêm mới&quot; để bắt đầu.
-      </div>
-    );
+    return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
   return (
@@ -34,11 +31,11 @@ export function SamplesTable() {
       <table className='w-full text-sm'>
         <thead className='bg-muted/50 text-xs uppercase'>
           <tr>
-            <th className='px-3 py-2 text-left'>Mã sample</th>
-            <th className='px-3 py-2 text-left'>Tên</th>
-            <th className='px-3 py-2 text-right'>Khối lượng / Thể tích</th>
-            <th className='px-3 py-2 text-left'>Trạng thái</th>
-            <th className='px-3 py-2 text-left'>Vị trí</th>
+            <th className='px-3 py-2 text-left'>{t('colCode')}</th>
+            <th className='px-3 py-2 text-left'>{t('colName')}</th>
+            <th className='px-3 py-2 text-right'>{t('colMassVolume')}</th>
+            <th className='px-3 py-2 text-left'>{t('colStatus')}</th>
+            <th className='px-3 py-2 text-left'>{t('colLocation')}</th>
           </tr>
         </thead>
         <tbody>

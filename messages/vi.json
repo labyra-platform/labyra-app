@@ -43,7 +43,9 @@
     "employee": "Nhân viên",
     "debugAuth": "Debug Auth",
     "papers": "Papers",
-    "upload": "Tải lên"
+    "upload": "Tải lên",
+    "new": "Thêm mới",
+    "edit": "Chỉnh sửa"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",
@@ -181,5 +183,65 @@
       "cancelling": "Đang hủy",
       "cancelled": "Đã hủy"
     }
+  },
+  "materials": {
+    "title": "Vật liệu",
+    "subtitle": "Quản lý danh sách vật liệu trong lab",
+    "newPageTitle": "Thêm vật liệu mới",
+    "editPageTitle": "Chỉnh sửa vật liệu",
+    "addNew": "Thêm mới",
+    "loading": "Đang tải...",
+    "empty": "Chưa có vật liệu nào. Click \"Thêm mới\" để bắt đầu.",
+    "notFound": "Không tìm thấy vật liệu",
+    "deleteConfirm": "Xóa vật liệu này?",
+    "delete": "Xóa",
+    "toastCreated": "Đã tạo vật liệu mới",
+    "toastUpdated": "Đã cập nhật",
+    "toastDeleted": "Đã xóa",
+    "colName": "Tên",
+    "colCategory": "Loại",
+    "colQuantity": "Số lượng",
+    "colLocation": "Vị trí",
+    "colHazard": "Nguy hiểm"
+  },
+  "samples": {
+    "title": "Mẫu",
+    "subtitle": "Quản lý danh sách mẫu trong lab",
+    "newPageTitle": "Thêm mẫu mới",
+    "editPageTitle": "Chỉnh sửa mẫu",
+    "addNew": "Thêm mới",
+    "loading": "Đang tải...",
+    "empty": "Chưa có mẫu nào. Click \"Thêm mới\" để bắt đầu.",
+    "notFound": "Không tìm thấy mẫu",
+    "deleteConfirm": "Xóa mẫu này?",
+    "delete": "Xóa",
+    "toastCreated": "Đã tạo mẫu mới",
+    "toastUpdated": "Đã cập nhật",
+    "toastDeleted": "Đã xóa",
+    "colCode": "Mã",
+    "colName": "Tên",
+    "colMassVolume": "Khối lượng / Thể tích",
+    "colStatus": "Trạng thái",
+    "colLocation": "Vị trí"
+  },
+  "experiments": {
+    "title": "Thí nghiệm",
+    "subtitle": "Quản lý danh sách thí nghiệm trong lab",
+    "newPageTitle": "Thêm thí nghiệm mới",
+    "editPageTitle": "Chỉnh sửa thí nghiệm",
+    "addNew": "Thêm mới",
+    "loading": "Đang tải...",
+    "empty": "Chưa có thí nghiệm nào. Click \"Thêm mới\" để bắt đầu.",
+    "notFound": "Không tìm thấy thí nghiệm",
+    "deleteConfirm": "Xóa thí nghiệm này?",
+    "delete": "Xóa",
+    "toastCreated": "Đã tạo thí nghiệm mới",
+    "toastUpdated": "Đã cập nhật",
+    "toastDeleted": "Đã xóa",
+    "colCode": "Mã",
+    "colTitle": "Tiêu đề",
+    "colType": "Loại",
+    "colStatus": "Trạng thái",
+    "colStarted": "Bắt đầu"
   }
 }

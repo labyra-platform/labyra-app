@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { getAuth } from 'firebase/auth';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ interface MaterialFormProps {
 export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('materials');
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<MaterialFormValues>({
@@ -65,10 +66,10 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
         body: JSON.stringify(values)
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success(materialId ? 'Đã cập nhật' : 'Đã tạo material mới');
+      toast.success(materialId ? t('toastUpdated') : t('toastCreated'));
       router.push(`/${locale}/dashboard/materials`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Lỗi');
+      toast.error(err instanceof Error ? err.message : t('toastUpdated'));
     } finally {
       setSubmitting(false);
     }

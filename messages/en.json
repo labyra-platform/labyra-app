@@ -43,7 +43,9 @@
     "employee": "Employee",
     "debugAuth": "Auth Debug",
     "papers": "Papers",
-    "upload": "Upload"
+    "upload": "Upload",
+    "new": "New",
+    "edit": "Edit"
   },
   "auth": {
     "signInTitle": "Sign in to Labyra",
@@ -181,5 +183,65 @@
       "cancelling": "Cancelling",
       "cancelled": "Cancelled"
     }
+  },
+  "materials": {
+    "title": "Materials",
+    "subtitle": "Manage lab materials inventory",
+    "newPageTitle": "Add new material",
+    "editPageTitle": "Edit material",
+    "addNew": "Add new",
+    "loading": "Loading...",
+    "empty": "No materials yet. Click \"Add new\" to start.",
+    "notFound": "Material not found",
+    "deleteConfirm": "Delete this material?",
+    "delete": "Delete",
+    "toastCreated": "Material created",
+    "toastUpdated": "Updated",
+    "toastDeleted": "Deleted",
+    "colName": "Name",
+    "colCategory": "Category",
+    "colQuantity": "Quantity",
+    "colLocation": "Location",
+    "colHazard": "Hazard"
+  },
+  "samples": {
+    "title": "Samples",
+    "subtitle": "Manage lab samples",
+    "newPageTitle": "Add new sample",
+    "editPageTitle": "Edit sample",
+    "addNew": "Add new",
+    "loading": "Loading...",
+    "empty": "No samples yet. Click \"Add new\" to start.",
+    "notFound": "Sample not found",
+    "deleteConfirm": "Delete this sample?",
+    "delete": "Delete",
+    "toastCreated": "Sample created",
+    "toastUpdated": "Updated",
+    "toastDeleted": "Deleted",
+    "colCode": "Code",
+    "colName": "Name",
+    "colMassVolume": "Mass / Volume",
+    "colStatus": "Status",
+    "colLocation": "Location"
+  },
+  "experiments": {
+    "title": "Experiments",
+    "subtitle": "Manage lab experiments",
+    "newPageTitle": "Add new experiment",
+    "editPageTitle": "Edit experiment",
+    "addNew": "Add new",
+    "loading": "Loading...",
+    "empty": "No experiments yet. Click \"Add new\" to start.",
+    "notFound": "Experiment not found",
+    "deleteConfirm": "Delete this experiment?",
+    "delete": "Delete",
+    "toastCreated": "Experiment created",
+    "toastUpdated": "Updated",
+    "toastDeleted": "Deleted",
+    "colCode": "Code",
+    "colTitle": "Title",
+    "colType": "Type",
+    "colStatus": "Status",
+    "colStarted": "Started"
   }
 }

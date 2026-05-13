@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { useMaterials } from '@/lib/firestore/queries/materials';
@@ -17,17 +17,14 @@ const hazardColor: Record<HazardLevel, string> = {
 export function MaterialsTable() {
   const { materials, loading } = useMaterials();
   const locale = useLocale();
+  const t = useTranslations('materials');
 
   if (loading) {
-    return <div className='text-muted-foreground py-8 text-center text-sm'>Đang tải...</div>;
+    return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
   }
 
   if (materials.length === 0) {
-    return (
-      <div className='text-muted-foreground py-12 text-center text-sm'>
-        Chưa có material nào. Click &quot;Thêm mới&quot; để bắt đầu.
-      </div>
-    );
+    return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
   return (
@@ -35,11 +32,11 @@ export function MaterialsTable() {
       <table className='w-full text-sm'>
         <thead className='bg-muted/50 text-xs uppercase'>
           <tr>
-            <th className='px-3 py-2 text-left'>Tên</th>
-            <th className='px-3 py-2 text-left'>Loại</th>
-            <th className='px-3 py-2 text-right'>Số lượng</th>
-            <th className='px-3 py-2 text-left'>Vị trí</th>
-            <th className='px-3 py-2 text-left'>Hazard</th>
+            <th className='px-3 py-2 text-left'>{t('colName')}</th>
+            <th className='px-3 py-2 text-left'>{t('colCategory')}</th>
+            <th className='px-3 py-2 text-right'>{t('colQuantity')}</th>
+            <th className='px-3 py-2 text-left'>{t('colLocation')}</th>
+            <th className='px-3 py-2 text-left'>{t('colHazard')}</th>
           </tr>
         </thead>
         <tbody>

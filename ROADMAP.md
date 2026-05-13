@@ -144,3 +144,5 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-5e-1c — Multi-turn conversation context + strip Vietnamese words in $ wrappers
 - [x] R160-ai-5e-2 — L6 OOD detection (Haiku classifier) + L7 empty result guard (system prompt + early refusal)
 - [x] R160-data-1 — Materials + Samples + Experiments full CRUD (pages, forms, API routes)
+- [x] R160-ai-tools-1 — Lab tools polish: align countExperiments/findSample/recentMaterials with data-1 schemas (experimentCode, sampleCode, hazardLevel, quantity/unit)
+- [x] R160-data-1b — i18n + UI polish: full Vietnamese keys for materials/samples/experiments, experiments table backward-compat (legacy schema fallback)

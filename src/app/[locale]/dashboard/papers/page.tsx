@@ -15,7 +15,7 @@ export default async function PapersListPage() {
   const locale = await getLocale();
   return (
     <PageContainer>
-      <div className='max-w-4xl mx-auto space-y-6'>
+      <div className='w-full space-y-6 px-4 md:px-6 lg:px-8'>
         <header className='flex items-center justify-between'>
           <div>
             <h1 className='text-2xl font-semibold tracking-tight'>{t('listPageTitle')}</h1>

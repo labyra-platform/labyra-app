@@ -7,6 +7,11 @@
 - `docs/labyra-strategy.md` — Strategic guidance (positioning, stages, risks)
 - `docs/architecture-decisions.md` — ADR log (past decisions with rationale)
 - `docs/ai/ai-5b-pipeline.md` — Paper pipeline design (if working on RAG)
+- `docs/uiux-international-standards.md` — UI/UX standards (WCAG 2.2 AA, ISO 9241, Nielsen, Gestalt, Tufte data viz)
+- `docs/labrya-experiment-database-report.md` — Database architecture for experiment data (storage tier per data type)
+- `docs/database-stage-2-plan.md` — Stage 2 migration roadmap (GCS + BigQuery + spectra pipeline)
+- `docs/accessibility-audit.md` — WCAG 2.2 AA checklist
+- `docs/handoff-r160-spectra.md` — Latest session handoff (Phase 1 spectra shipped)
 
 > This file is read by AI agents (Claude, Copilot, Cursor) before making any changes.
 > Follow ALL rules below strictly. No exceptions unless explicitly noted.
@@ -29,7 +34,7 @@
 | Storage | Firebase Storage |
 | Cloud Functions | 11 functions, asia-southeast1, giữ nguyên |
 | Charts | recharts (dashboard) + Plotly (scientific) + D3 (graph) |
-| Icons | Lucide React only — NO emoji in UI |
+| Icons | @tabler/icons-react via `src/components/icons.tsx` — NO emoji in UI |
 | Deploy | Vercel + Firebase backend |
 | Monorepo | pnpm workspaces |
 
@@ -382,6 +387,43 @@ db.collectionGroup("experiments").get()
 
 ---
 
+## Current Phase Status (R160)
+
+**Latest shipped:** R160-spectra-2 (May 13, 2026)
+
+### Completed phases
+- **AI Foundation:** ai-3 (provider abstraction), ai-4 (tool calling), ai-5a (RAG foundation), ai-5b (paper pipeline)
+- **Anti-hallucination:** ai-5e-1/1b/1c (grounding L2+L3+L4), ai-5e-2 (L6 OOD + L7 empty guard)
+- **Lab data CRUD:** data-1 (Materials/Samples/Experiments), data-2 (Equipment/Bookings) + composite indexes
+- **UI polish:** data-1b (i18n + layout), data-1c (shadcn Form/Table refactor), ui-1 (PageContainer + reduced-motion)
+- **Stage 2 Phase 1:** spectra-1 (24 spectrum types, signed URL upload, SHA-256), spectra-2 (experiment Tabs + standalone /spectra page)
+
+### Database state
+- **Firestore:** materials, samples, experiments, equipment, bookings, papers, spectra (all tenant-scoped, multi-tenant rules in place)
+- **Storage (Firebase Storage / GCS):** `papers/{tenantId}/...` and `tenants/{tenantId}/spectra/{spectrumId}/raw/...`
+- **Pinecone:** namespace-per-tenant for paper RAG (index `labyra-papers`, 1024-dim cosine)
+- **Composite indexes deployed:** materials (category+updatedAt), experiments (status+updatedAt), samples (status+preparedAt), equipment (status+updatedAt, category+updatedAt), bookings (equipmentId+startAt, userId+startAt, status+startAt), spectra (experimentId+measuredAt, sampleId+spectrumType, spectrumType+createdAt, status+createdAt)
+
+### Next phases (planned)
+- **Stage 2 Phase 2:** Python worker (Cloud Run + Pub/Sub) for spectrum parsing + AI analysis
+  - See `docs/database-stage-2-plan.md` for full roadmap
+- **Stage 2 Phase 3:** BigQuery time-series for GCD/CA traces
+- **Dashboard widgets:** KPI cards + recent activity (deferred per session decision)
+- **Lineage graph:** Material → Sample → Experiment D3 visualization
+- **Members + RBAC:** invite flow + role assignment
+- **Settings page:** tenant config + AI preferences
+
+### Critical patterns learned this round
+1. **shadcn UI mandatory:** All forms use Form/FormField/FormItem/FormLabel/FormControl/FormMessage. Tables use shadcn Table/TableHeader/TableBody. Buttons use `Button asChild` when wrapping Link.
+2. **Backward-compat tables:** Legacy data (pre-data-1 schema) handled with `data.experimentCode ?? doc.id`, `data.experimentType ?? data.type`. Use `t.has(key) ? t(key) : key` for missing i18n entries.
+3. **Doc ID injection:** Always `{ ...d.data(), id: d.id }` when mapping Firestore snapshots — legacy docs missing `id` field break React keys.
+4. **Breadcrumbs t.has() guard:** Dynamic route segments (e.g. `/experiments/exp-001`) try `t('nav.exp-001')` which throws MISSING_MESSAGE. Use `t.has()` not try/catch (next-intl emits error events on missing keys regardless of try/catch).
+5. **Vietnamese-$ stripping:** `$word$` in AI responses triggers KaTeX math render. System prompt + `stripVietnameseDollar` post-process in chat route.
+6. **Gemini multi-turn:** Convert Anthropic-style content blocks (text/tool_use/tool_result) to Gemini parts (text/functionCall/functionResponse) in `toGeminiHistory` AND `sendMessageStream` payload conversion.
+7. **shadcn install pattern:** `pnpm dlx shadcn@latest add <component>` — choose N when prompted to overwrite `button.tsx` (custom with Spinner integration). Form, Table, Tabs, Card, Dialog, Sheet, Separator all installed.
+
+---
+
 ## Anti-patterns — NEVER DO
 
 ```
@@ -396,7 +438,7 @@ db.collectionGroup("experiments").get()
 ❌ Commit secrets/credentials
 ❌ fetch data trong useEffect khi có thể dùng Server Component
 ❌ Firestore query không có tenantId filter
-❌ Import icon library ngoài Lucide React
+❌ Import icon library ngoài @tabler/icons-react (centralized in src/components/icons.tsx)
 ❌ Console.log trong production code (dùng logger)
 ```
 
@@ -612,6 +654,43 @@ export default defineConfig({
 
 ---
 
+## Current Phase Status (R160)
+
+**Latest shipped:** R160-spectra-2 (May 13, 2026)
+
+### Completed phases
+- **AI Foundation:** ai-3 (provider abstraction), ai-4 (tool calling), ai-5a (RAG foundation), ai-5b (paper pipeline)
+- **Anti-hallucination:** ai-5e-1/1b/1c (grounding L2+L3+L4), ai-5e-2 (L6 OOD + L7 empty guard)
+- **Lab data CRUD:** data-1 (Materials/Samples/Experiments), data-2 (Equipment/Bookings) + composite indexes
+- **UI polish:** data-1b (i18n + layout), data-1c (shadcn Form/Table refactor), ui-1 (PageContainer + reduced-motion)
+- **Stage 2 Phase 1:** spectra-1 (24 spectrum types, signed URL upload, SHA-256), spectra-2 (experiment Tabs + standalone /spectra page)
+
+### Database state
+- **Firestore:** materials, samples, experiments, equipment, bookings, papers, spectra (all tenant-scoped, multi-tenant rules in place)
+- **Storage (Firebase Storage / GCS):** `papers/{tenantId}/...` and `tenants/{tenantId}/spectra/{spectrumId}/raw/...`
+- **Pinecone:** namespace-per-tenant for paper RAG (index `labyra-papers`, 1024-dim cosine)
+- **Composite indexes deployed:** materials (category+updatedAt), experiments (status+updatedAt), samples (status+preparedAt), equipment (status+updatedAt, category+updatedAt), bookings (equipmentId+startAt, userId+startAt, status+startAt), spectra (experimentId+measuredAt, sampleId+spectrumType, spectrumType+createdAt, status+createdAt)
+
+### Next phases (planned)
+- **Stage 2 Phase 2:** Python worker (Cloud Run + Pub/Sub) for spectrum parsing + AI analysis
+  - See `docs/database-stage-2-plan.md` for full roadmap
+- **Stage 2 Phase 3:** BigQuery time-series for GCD/CA traces
+- **Dashboard widgets:** KPI cards + recent activity (deferred per session decision)
+- **Lineage graph:** Material → Sample → Experiment D3 visualization
+- **Members + RBAC:** invite flow + role assignment
+- **Settings page:** tenant config + AI preferences
+
+### Critical patterns learned this round
+1. **shadcn UI mandatory:** All forms use Form/FormField/FormItem/FormLabel/FormControl/FormMessage. Tables use shadcn Table/TableHeader/TableBody. Buttons use `Button asChild` when wrapping Link.
+2. **Backward-compat tables:** Legacy data (pre-data-1 schema) handled with `data.experimentCode ?? doc.id`, `data.experimentType ?? data.type`. Use `t.has(key) ? t(key) : key` for missing i18n entries.
+3. **Doc ID injection:** Always `{ ...d.data(), id: d.id }` when mapping Firestore snapshots — legacy docs missing `id` field break React keys.
+4. **Breadcrumbs t.has() guard:** Dynamic route segments (e.g. `/experiments/exp-001`) try `t('nav.exp-001')` which throws MISSING_MESSAGE. Use `t.has()` not try/catch (next-intl emits error events on missing keys regardless of try/catch).
+5. **Vietnamese-$ stripping:** `$word$` in AI responses triggers KaTeX math render. System prompt + `stripVietnameseDollar` post-process in chat route.
+6. **Gemini multi-turn:** Convert Anthropic-style content blocks (text/tool_use/tool_result) to Gemini parts (text/functionCall/functionResponse) in `toGeminiHistory` AND `sendMessageStream` payload conversion.
+7. **shadcn install pattern:** `pnpm dlx shadcn@latest add <component>` — choose N when prompted to overwrite `button.tsx` (custom with Spinner integration). Form, Table, Tabs, Card, Dialog, Sheet, Separator all installed.
+
+---
+
 ## Anti-patterns — NEVER DO
 
 ```
@@ -624,7 +703,7 @@ export default defineConfig({
 ❌ Commit secrets/credentials
 ❌ fetch data trong useEffect
 ❌ Firestore query không có tenantId filter
-❌ Import icon library ngoài Lucide React
+❌ Import icon library ngoài @tabler/icons-react (centralized in src/components/icons.tsx)
 ❌ console.log trong production (dùng logger)
 ❌ outline: none mà không có focus replacement
 ❌ <img> tag — dùng next/image

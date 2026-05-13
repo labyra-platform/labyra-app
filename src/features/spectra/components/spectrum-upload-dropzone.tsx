@@ -58,6 +58,7 @@ interface UploadItem {
   file: File;
   spectrumType: SpectrumType | null;
   chemicalFormula: string;
+  anode: string;
   status: ItemStatus;
 }
 
@@ -81,7 +82,7 @@ async function uploadOneFile(
   sampleLabel: string | undefined,
   updateStatus: (id: string, status: ItemStatus) => void
 ): Promise<string> {
-  const { file, spectrumType, chemicalFormula } = item;
+  const { file, spectrumType, chemicalFormula, anode } = item;
   if (!spectrumType) throw new Error('no_type_selected');
 
   const config = SPECTRA_CONFIG[spectrumType];
@@ -153,6 +154,7 @@ async function uploadOneFile(
       sampleId,
       sampleLabel,
       chemicalFormula: chemicalFormula || undefined,
+      anode: anode || 'Cu',
       measuredAt: Date.now()
     })
   });
@@ -218,6 +220,7 @@ export function SpectrumUploadDropzone({
       file,
       spectrumType: detectSpectrumType(file.name) ?? null,
       chemicalFormula: '',
+      anode: 'Cu',
       status: { phase: 'pending' }
     }));
     setItems((prev) => [...prev, ...newItems]);
@@ -240,6 +243,10 @@ export function SpectrumUploadDropzone({
 
   const changeFormula = (id: string, formula: string) => {
     updateItem(id, { chemicalFormula: formula });
+  };
+
+  const changeAnode = (id: string, anode: string) => {
+    updateItem(id, { anode });
   };
 
   const startUpload = async () => {
@@ -327,6 +334,7 @@ export function SpectrumUploadDropzone({
                   disabled={isUploading}
                   onTypeChange={(type) => changeType(item.id, type)}
                   onFormulaChange={(f) => changeFormula(item.id, f)}
+                  onAnodeChange={(a) => changeAnode(item.id, a)}
                   onRemove={() => removeItem(item.id)}
                 />
               ))}
@@ -368,6 +376,7 @@ interface UploadRowProps {
   disabled: boolean;
   onTypeChange: (type: SpectrumType) => void;
   onFormulaChange: (formula: string) => void;
+  onAnodeChange: (anode: string) => void;
   onRemove: () => void;
 }
 
@@ -377,9 +386,17 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function UploadRow({ item, disabled, onTypeChange, onFormulaChange, onRemove }: UploadRowProps) {
+function UploadRow({
+  item,
+  disabled,
+  onTypeChange,
+  onFormulaChange,
+  onAnodeChange,
+  onRemove
+}: UploadRowProps) {
   const t = useTranslations('spectra');
   const chemicalFormula = item.chemicalFormula;
+  const anode = item.anode;
   const spectrumType = item.spectrumType;
   const status = item.status;
   const file = item.file;
@@ -435,8 +452,26 @@ function UploadRow({ item, disabled, onTypeChange, onFormulaChange, onRemove }: 
           value={chemicalFormula}
           onChange={(e) => onFormulaChange(e.target.value)}
           disabled={!canEdit || disabled}
-          className='w-24 text-xs'
+          className='w-20 text-xs'
         />
+        {spectrumType === 'xrd' && (
+          <Select
+            value={anode || 'Cu'}
+            onValueChange={(v) => onAnodeChange(v)}
+            disabled={!canEdit || disabled}
+          >
+            <SelectTrigger className='w-20 text-xs'>
+              <SelectValue placeholder='Cu' />
+            </SelectTrigger>
+            <SelectContent>
+              {['Cu', 'Mo', 'Co', 'Cr', 'Fe', 'Ag'].map((a) => (
+                <SelectItem key={a} value={a}>
+                  {a}-Kα
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <StatusBadge status={status} />

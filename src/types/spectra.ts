@@ -78,6 +78,7 @@ export interface SpectrumMetadata {
   sampleId: string;
   sampleLabel?: string; // denormalized
   chemicalFormula?: string; // user-provided for citation lookup (e.g. 'WO3')
+  anode?: string; // X-ray anode for XRD: Cu/Mo/Co/Cr/Fe/Ag (default Cu)
 
   // Type
   spectrumType: SpectrumType;

@@ -1,14 +1,32 @@
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, getLocale } from 'next-intl/server';
+import Link from 'next/link';
+import { IconPlus } from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
 import PageContainer from '@/components/layout/page-container';
+import { EquipmentTable } from '@/features/equipment/components/equipment-table';
 
-export default async function EquipmentPage() {
-  const t = await getTranslations('nav');
+export async function generateMetadata() {
+  const t = await getTranslations('equipment');
+  return { title: t('title') };
+}
 
+export default async function EquipmentListPage() {
+  const t = await getTranslations('equipment');
+  const locale = await getLocale();
   return (
-    <PageContainer pageTitle={t('equipment')} pageDescription='Coming soon'>
-      <div className='text-muted-foreground py-12 text-center text-sm'>
-        This page is part of Phase 4 / Phase 5 of the R160 roadmap.
-      </div>
+    <PageContainer
+      pageTitle={t('title')}
+      pageDescription={t('subtitle')}
+      pageHeaderAction={
+        <Button asChild>
+          <Link href={`/${locale}/dashboard/equipment/new`}>
+            <IconPlus className='size-4' />
+            {t('addNew')}
+          </Link>
+        </Button>
+      }
+    >
+      <EquipmentTable />
     </PageContainer>
   );
 }

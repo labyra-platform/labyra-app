@@ -545,7 +545,9 @@
       "vibrationalModes": "Vibrational Modes",
       "carbonAnalysis": "Carbon Analysis (D/G ratio)",
       "functionalGroups": "Functional Groups",
-      "compoundClass": "Likely Compound Class"
+      "compoundClass": "Likely Compound Class",
+      "likelySampleType": "Likely Sample Type",
+      "reflectanceProfile": "Reflectance Profile"
     },
     "chart": {
       "peaks": "Detected Peaks"

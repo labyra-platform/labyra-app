@@ -1,12 +1,17 @@
 /**
- * AnalysisResult types — mirror the worker output schema.
- * @phase R160-spectra-3c (extended for UV-Vis, Raman, FTIR)
+ * AnalysisResult types — mirror worker schema.
+ * @phase R160-spectra-3c-hotfix
  */
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
 
+export interface SpectrumCurve {
+  x: number[];
+  y: number[];
+}
+
 // =====================================================================
-// XRD (spectra-3a)
+// XRD
 // =====================================================================
 
 export interface XRDPeak {
@@ -27,6 +32,7 @@ export interface WilliamsonHallResult {
 export interface XRDParsedData {
   spectrum_type: 'xrd';
   peaks: XRDPeak[];
+  spectrum_curve: SpectrumCurve;
   quick_stats: {
     rowCount: number;
     xRange: [number, number];
@@ -57,7 +63,7 @@ export interface XRDAIOutput {
 }
 
 // =====================================================================
-// UV-Vis (spectra-3c)
+// UV-Vis (transmission)
 // =====================================================================
 
 export interface UVVisPeak {
@@ -71,12 +77,16 @@ export interface TaucBandgapResult {
   transition: 'direct' | 'indirect';
   r_squared: number;
   fit_range_ev: [number, number];
+  slope?: number;
+  intercept?: number;
   method: string;
 }
 
 export interface UVVisParsedData {
   spectrum_type: 'uvvis';
   peaks: UVVisPeak[];
+  spectrum_curve: SpectrumCurve;
+  tauc_curve: SpectrumCurve;
   quick_stats: {
     rowCount: number;
     xRange: [number, number];
@@ -106,7 +116,43 @@ export interface UVVisAIOutput {
 }
 
 // =====================================================================
-// Raman (spectra-3c)
+// UV-Vis DRS
+// =====================================================================
+
+export interface UVVisDRSParsedData {
+  spectrum_type: 'uvvis_drs';
+  peaks: [];
+  reflectance_curve: SpectrumCurve;
+  km_curve: SpectrumCurve;
+  tauc_curve: SpectrumCurve;
+  quick_stats: {
+    rowCount: number;
+    xRange: [number, number];
+    yRange: [number, number];
+    peakCount: number;
+  };
+  tauc_bandgap: TaucBandgapResult | null;
+  reflectance_mode: 'percent' | 'fractional';
+  x_unit: 'nm';
+  y_unit: 'Reflectance';
+}
+
+export interface UVVisDRSAIOutput {
+  summary: string;
+  bandgap: {
+    value_ev: number | null;
+    transition: 'direct' | 'indirect' | null;
+    confidence: ConfidenceLevel;
+  };
+  reflectance_profile: string;
+  likely_sample_type: string | null;
+  warnings: string[];
+  next_steps: string[];
+  overall_confidence: ConfidenceLevel;
+}
+
+// =====================================================================
+// Raman
 // =====================================================================
 
 export interface RamanPeak {
@@ -128,6 +174,7 @@ export interface CarbonAnalysis {
 export interface RamanParsedData {
   spectrum_type: 'raman';
   peaks: RamanPeak[];
+  spectrum_curve: SpectrumCurve;
   quick_stats: {
     rowCount: number;
     xRange: [number, number];
@@ -135,7 +182,7 @@ export interface RamanParsedData {
     peakCount: number;
   };
   carbon_analysis: CarbonAnalysis | null;
-  x_unit: 'cm⁻¹';
+  x_unit: 'cm-1';
   y_unit: string;
 }
 
@@ -154,7 +201,7 @@ export interface RamanAIOutput {
 }
 
 // =====================================================================
-// FTIR (spectra-3c)
+// FTIR
 // =====================================================================
 
 export interface FTIRPeak {
@@ -173,6 +220,7 @@ export interface FunctionalGroup {
 export interface FTIRParsedData {
   spectrum_type: 'ftir';
   peaks: FTIRPeak[];
+  spectrum_curve: SpectrumCurve;
   quick_stats: {
     rowCount: number;
     xRange: [number, number];
@@ -181,7 +229,7 @@ export interface FTIRParsedData {
   };
   y_mode: 'transmittance' | 'absorbance' | 'unknown';
   functional_groups: FunctionalGroup[];
-  x_unit: 'cm⁻¹';
+  x_unit: 'cm-1';
   y_unit: string;
 }
 
@@ -200,11 +248,22 @@ export interface FTIRAIOutput {
 }
 
 // =====================================================================
-// Discriminated unions
+// Union
 // =====================================================================
 
-export type SpectrumParsedData = XRDParsedData | UVVisParsedData | RamanParsedData | FTIRParsedData;
-export type SpectrumAIOutput = XRDAIOutput | UVVisAIOutput | RamanAIOutput | FTIRAIOutput;
+export type SpectrumParsedData =
+  | XRDParsedData
+  | UVVisParsedData
+  | UVVisDRSParsedData
+  | RamanParsedData
+  | FTIRParsedData;
+
+export type SpectrumAIOutput =
+  | XRDAIOutput
+  | UVVisAIOutput
+  | UVVisDRSAIOutput
+  | RamanAIOutput
+  | FTIRAIOutput;
 
 export interface AnalysisResult {
   schemaVersion: 1;

@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * AnalysisResultCard — display AI interpretation, type-aware.
- * @phase R160-spectra-3c (extended for UV-Vis, Raman, FTIR)
+ * AnalysisResultCard — display AI interpretation with SciText formatting.
+ * @phase R160-spectra-3c-hotfix
  */
 
 import { useTranslations } from 'next-intl';
@@ -10,12 +10,14 @@ import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { SciText, formatSciText } from '@/features/spectra/utils/format-units';
 import type {
   AnalysisResult,
   ConfidenceLevel,
   FTIRAIOutput,
   RamanAIOutput,
   UVVisAIOutput,
+  UVVisDRSAIOutput,
   XRDAIOutput
 } from '@/types/spectra-analysis';
 
@@ -31,7 +33,7 @@ function confidenceVariant(level: ConfidenceLevel): 'default' | 'secondary' | 'd
 
 export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
   const t = useTranslations('spectra.analysis');
-  const { ai, parsed, analysisVersion, spectrumType } = result;
+  const { ai, analysisVersion, spectrumType } = result;
 
   return (
     <Card>
@@ -48,21 +50,21 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
       </CardHeader>
 
       <CardContent className='space-y-4'>
-        {/* Summary - common to all types */}
         <div>
           <h4 className='text-sm font-medium text-muted-foreground'>{t('summary')}</h4>
-          <p className='mt-1 text-sm leading-relaxed'>{ai.summary}</p>
+          <p className='mt-1 text-sm leading-relaxed'>
+            <SciText>{ai.summary}</SciText>
+          </p>
         </div>
 
         <Separator />
 
-        {/* Type-specific body */}
-        {spectrumType === 'xrd' && <XRDBody ai={ai as XRDAIOutput} parsed={parsed} t={t} />}
-        {spectrumType === 'uvvis' && <UVVisBody ai={ai as UVVisAIOutput} t={t} />}
-        {spectrumType === 'raman' && <RamanBody ai={ai as RamanAIOutput} t={t} />}
-        {spectrumType === 'ftir' && <FTIRBody ai={ai as FTIRAIOutput} t={t} />}
+        {spectrumType === 'xrd' && <XRDBody ai={ai as XRDAIOutput} parsed={result.parsed} />}
+        {spectrumType === 'uvvis' && <UVVisBody ai={ai as UVVisAIOutput} />}
+        {spectrumType === 'uvvis_drs' && <UVVisDRSBody ai={ai as UVVisDRSAIOutput} />}
+        {spectrumType === 'raman' && <RamanBody ai={ai as RamanAIOutput} />}
+        {spectrumType === 'ftir' && <FTIRBody ai={ai as FTIRAIOutput} />}
 
-        {/* Warnings - common */}
         {ai.warnings.length > 0 && (
           <>
             <Separator />
@@ -74,7 +76,9 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
                 {ai.warnings.map((w, i) => (
                   <li key={i} className='flex gap-2'>
                     <span className='text-amber-500'>⚠</span>
-                    <span>{w}</span>
+                    <span>
+                      <SciText>{w}</SciText>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -82,7 +86,6 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
           </>
         )}
 
-        {/* Next steps - common */}
         {ai.next_steps.length > 0 && (
           <>
             <Separator />
@@ -90,7 +93,9 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
               <h4 className='text-sm font-medium text-muted-foreground'>{t('nextSteps')}</h4>
               <ul className='mt-2 list-inside list-disc space-y-1 text-sm'>
                 {ai.next_steps.map((step, i) => (
-                  <li key={i}>{step}</li>
+                  <li key={i}>
+                    <SciText>{step}</SciText>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -101,18 +106,17 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
   );
 }
 
-// ============================================================
-// XRD body
-// ============================================================
-function XRDBody({
-  ai,
-  parsed,
-  t
-}: {
-  ai: XRDAIOutput;
-  parsed: AnalysisResult['parsed'];
-  t: ReturnType<typeof useTranslations<'spectra.analysis'>>;
-}) {
+function ConfidencePill({ level }: { level: ConfidenceLevel }) {
+  const t = useTranslations('spectra.analysis');
+  return (
+    <Badge variant={confidenceVariant(level)} className='text-xs'>
+      {t(`confidence.${level}`)}
+    </Badge>
+  );
+}
+
+function XRDBody({ ai, parsed }: { ai: XRDAIOutput; parsed: AnalysisResult['parsed'] }) {
+  const t = useTranslations('spectra.analysis');
   return (
     <>
       <div>
@@ -123,15 +127,17 @@ function XRDBody({
               <div className='flex items-center justify-between gap-2'>
                 <span className='font-medium'>{phase.name}</span>
                 <div className='flex items-center gap-2'>
-                  <Badge variant={confidenceVariant(phase.confidence)} className='text-xs'>
-                    {t(`confidence.${phase.confidence}`)}
-                  </Badge>
+                  <ConfidencePill level={phase.confidence} />
                   <span className='text-xs text-muted-foreground'>
                     {t('matchedPeaks', { count: phase.matched_peaks })}
                   </span>
                 </div>
               </div>
-              {phase.note && <p className='mt-1 text-xs text-muted-foreground'>{phase.note}</p>}
+              {phase.note && (
+                <p className='mt-1 text-xs text-muted-foreground'>
+                  <SciText>{phase.note}</SciText>
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -171,25 +177,15 @@ function XRDBody({
   );
 }
 
-// ============================================================
-// UV-Vis body
-// ============================================================
-function UVVisBody({
-  ai,
-  t
-}: {
-  ai: UVVisAIOutput;
-  t: ReturnType<typeof useTranslations<'spectra.analysis'>>;
-}) {
+function UVVisBody({ ai }: { ai: UVVisAIOutput }) {
+  const t = useTranslations('spectra.analysis');
   return (
     <>
       {ai.bandgap.value_ev !== null && (
         <div className='rounded-md border p-3'>
           <div className='flex items-center justify-between'>
             <h4 className='text-sm font-medium text-muted-foreground'>{t('bandgap')}</h4>
-            <Badge variant={confidenceVariant(ai.bandgap.confidence)} className='text-xs'>
-              {t(`confidence.${ai.bandgap.confidence}`)}
-            </Badge>
+            <ConfidencePill level={ai.bandgap.confidence} />
           </div>
           <p className='mt-1 text-2xl font-semibold'>
             {ai.bandgap.value_ev} <span className='text-sm font-normal'>eV</span>
@@ -211,10 +207,16 @@ function UVVisBody({
               {ai.absorption_features.map((feat, i) => (
                 <div key={i} className='rounded-md border p-3'>
                   <div className='flex items-center justify-between'>
-                    <span className='font-medium'>{feat.assignment}</span>
+                    <span className='font-medium'>
+                      <SciText>{feat.assignment}</SciText>
+                    </span>
                     <span className='text-xs text-muted-foreground'>{feat.wavelength_nm} nm</span>
                   </div>
-                  {feat.note && <p className='mt-1 text-xs text-muted-foreground'>{feat.note}</p>}
+                  {feat.note && (
+                    <p className='mt-1 text-xs text-muted-foreground'>
+                      <SciText>{feat.note}</SciText>
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -225,16 +227,50 @@ function UVVisBody({
   );
 }
 
-// ============================================================
-// Raman body
-// ============================================================
-function RamanBody({
-  ai,
-  t
-}: {
-  ai: RamanAIOutput;
-  t: ReturnType<typeof useTranslations<'spectra.analysis'>>;
-}) {
+function UVVisDRSBody({ ai }: { ai: UVVisDRSAIOutput }) {
+  const t = useTranslations('spectra.analysis');
+  return (
+    <>
+      {ai.bandgap.value_ev !== null && (
+        <div className='rounded-md border p-3'>
+          <div className='flex items-center justify-between'>
+            <h4 className='text-sm font-medium text-muted-foreground'>
+              {t('bandgap')} (Kubelka-Munk)
+            </h4>
+            <ConfidencePill level={ai.bandgap.confidence} />
+          </div>
+          <p className='mt-1 text-2xl font-semibold'>
+            {ai.bandgap.value_ev} <span className='text-sm font-normal'>eV</span>
+          </p>
+          {ai.bandgap.transition && (
+            <p className='mt-1 text-xs text-muted-foreground'>
+              {t('transition')}: {ai.bandgap.transition}
+            </p>
+          )}
+        </div>
+      )}
+
+      {ai.likely_sample_type && (
+        <div className='rounded-md border p-3'>
+          <h4 className='text-sm font-medium text-muted-foreground'>{t('likelySampleType')}</h4>
+          <p className='mt-1 text-lg font-semibold'>{ai.likely_sample_type}</p>
+        </div>
+      )}
+
+      {ai.reflectance_profile && (
+        <div className='rounded-md bg-muted p-3'>
+          <h4 className='text-sm font-medium'>{t('reflectanceProfile')}</h4>
+          <p className='mt-1 text-sm'>
+            <SciText>{ai.reflectance_profile}</SciText>
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function RamanBody({ ai }: { ai: RamanAIOutput }) {
+  const t = useTranslations('spectra.analysis');
   return (
     <>
       {ai.likely_material && (
@@ -253,10 +289,18 @@ function RamanBody({
               {ai.vibrational_modes.map((mode, i) => (
                 <div key={i} className='rounded-md border p-3'>
                   <div className='flex items-center justify-between'>
-                    <span className='font-medium'>{mode.assignment}</span>
-                    <span className='text-xs text-muted-foreground'>{mode.shift_cm1} cm⁻¹</span>
+                    <span className='font-medium'>
+                      <SciText>{mode.assignment}</SciText>
+                    </span>
+                    <span className='text-xs text-muted-foreground'>
+                      {formatSciText(`${mode.shift_cm1} cm-1`)}
+                    </span>
                   </div>
-                  {mode.note && <p className='mt-1 text-xs text-muted-foreground'>{mode.note}</p>}
+                  {mode.note && (
+                    <p className='mt-1 text-xs text-muted-foreground'>
+                      <SciText>{mode.note}</SciText>
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -269,7 +313,9 @@ function RamanBody({
           <Separator />
           <div className='rounded-md bg-muted p-3'>
             <h4 className='text-sm font-medium'>{t('carbonAnalysis')}</h4>
-            <p className='mt-1 text-sm'>{ai.carbon_interpretation}</p>
+            <p className='mt-1 text-sm'>
+              <SciText>{ai.carbon_interpretation}</SciText>
+            </p>
           </div>
         </>
       )}
@@ -277,16 +323,8 @@ function RamanBody({
   );
 }
 
-// ============================================================
-// FTIR body
-// ============================================================
-function FTIRBody({
-  ai,
-  t
-}: {
-  ai: FTIRAIOutput;
-  t: ReturnType<typeof useTranslations<'spectra.analysis'>>;
-}) {
+function FTIRBody({ ai }: { ai: FTIRAIOutput }) {
+  const t = useTranslations('spectra.analysis');
   return (
     <>
       {ai.likely_compound_class && (
@@ -305,17 +343,21 @@ function FTIRBody({
               {ai.functional_groups.map((group, i) => (
                 <div key={i} className='rounded-md border p-3'>
                   <div className='flex items-center justify-between gap-2'>
-                    <span className='font-medium'>{group.name}</span>
+                    <span className='font-medium'>
+                      <SciText>{group.name}</SciText>
+                    </span>
                     <div className='flex items-center gap-2'>
-                      <Badge variant={confidenceVariant(group.confidence)} className='text-xs'>
-                        {t(`confidence.${group.confidence}`)}
-                      </Badge>
+                      <ConfidencePill level={group.confidence} />
                       <span className='text-xs text-muted-foreground'>
-                        {group.wavenumber_cm1} cm⁻¹
+                        {formatSciText(`${group.wavenumber_cm1} cm-1`)}
                       </span>
                     </div>
                   </div>
-                  {group.note && <p className='mt-1 text-xs text-muted-foreground'>{group.note}</p>}
+                  {group.note && (
+                    <p className='mt-1 text-xs text-muted-foreground'>
+                      <SciText>{group.note}</SciText>
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

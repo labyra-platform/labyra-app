@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * SpectrumChart — Plotly chart dispatcher.
- * Renders peak markers + axis labels per spectrum type.
- * @phase R160-spectra-3c
+ * SpectrumChart — Plotly chart with full spectrum curve + peak markers.
+ * Renders different chart configurations per spectrum type.
+ * @phase R160-spectra-3c-hotfix
  */
 
 import dynamic from 'next/dynamic';
@@ -23,30 +23,200 @@ interface SpectrumChartProps {
   parsed: SpectrumParsedData;
 }
 
-function getChartConfig(parsed: SpectrumParsedData) {
+interface PlotData {
+  x: number[];
+  y: number[];
+  type: 'scatter';
+  mode: 'lines' | 'markers' | 'lines+markers' | 'text+markers';
+  name: string;
+  line?: { color: string; width?: number };
+  marker?: {
+    color: string;
+    size?: number;
+    symbol?: string;
+    line?: { color: string; width: number };
+  };
+  text?: string[];
+  textposition?: 'top center';
+  hovertemplate?: string;
+  customdata?: number[] | string[];
+}
+
+const LINE_COLOR = 'hsl(220, 70%, 50%)';
+const PEAK_COLOR = 'hsl(0, 70%, 55%)';
+
+function getXRDTraces(parsed: SpectrumParsedData): PlotData[] {
+  if (parsed.spectrum_type !== 'xrd') return [];
+  const traces: PlotData[] = [
+    {
+      x: parsed.spectrum_curve.x,
+      y: parsed.spectrum_curve.y,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Diffractogram',
+      line: { color: LINE_COLOR, width: 1.5 }
+    }
+  ];
+  if (parsed.peaks.length > 0) {
+    traces.push({
+      x: parsed.peaks.map((p) => p.two_theta),
+      y: parsed.peaks.map((p) => p.intensity),
+      type: 'scatter',
+      mode: 'text+markers',
+      name: 'Peaks',
+      marker: {
+        color: PEAK_COLOR,
+        size: 8,
+        symbol: 'triangle-down',
+        line: { color: 'white', width: 1 }
+      },
+      text: parsed.peaks.map((_, i) => `${i + 1}`),
+      textposition: 'top center',
+      hovertemplate: '%{customdata}<br>I = %{y:.1f}<extra></extra>',
+      customdata: parsed.peaks.map(
+        (p) => `2θ = ${p.two_theta.toFixed(3)}°, FWHM = ${p.fwhm.toFixed(3)}°`
+      )
+    });
+  }
+  return traces;
+}
+
+function getUVVisTraces(parsed: SpectrumParsedData): PlotData[] {
+  if (parsed.spectrum_type !== 'uvvis') return [];
+  const traces: PlotData[] = [
+    {
+      x: parsed.spectrum_curve.x,
+      y: parsed.spectrum_curve.y,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Absorbance',
+      line: { color: LINE_COLOR, width: 1.5 }
+    }
+  ];
+  if (parsed.peaks.length > 0) {
+    traces.push({
+      x: parsed.peaks.map((p) => p.wavelength_nm),
+      y: parsed.peaks.map((p) => p.absorbance),
+      type: 'scatter',
+      mode: 'text+markers',
+      name: 'Peaks',
+      marker: {
+        color: PEAK_COLOR,
+        size: 8,
+        symbol: 'triangle-down',
+        line: { color: 'white', width: 1 }
+      },
+      text: parsed.peaks.map((_, i) => `${i + 1}`),
+      textposition: 'top center',
+      hovertemplate: '%{customdata}<extra></extra>',
+      customdata: parsed.peaks.map(
+        (p) => `λ = ${p.wavelength_nm.toFixed(2)} nm (${p.energy_ev.toFixed(2)} eV)`
+      )
+    });
+  }
+  return traces;
+}
+
+function getRamanTraces(parsed: SpectrumParsedData): PlotData[] {
+  if (parsed.spectrum_type !== 'raman') return [];
+  const traces: PlotData[] = [
+    {
+      x: parsed.spectrum_curve.x,
+      y: parsed.spectrum_curve.y,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Raman',
+      line: { color: LINE_COLOR, width: 1.5 }
+    }
+  ];
+  if (parsed.peaks.length > 0) {
+    traces.push({
+      x: parsed.peaks.map((p) => p.shift_cm1),
+      y: parsed.peaks.map((p) => p.intensity),
+      type: 'scatter',
+      mode: 'text+markers',
+      name: 'Peaks',
+      marker: {
+        color: PEAK_COLOR,
+        size: 8,
+        symbol: 'triangle-down',
+        line: { color: 'white', width: 1 }
+      },
+      text: parsed.peaks.map((_, i) => `${i + 1}`),
+      textposition: 'top center',
+      hovertemplate: '%{customdata}<br>I = %{y:.1f}<extra></extra>',
+      customdata: parsed.peaks.map(
+        (p) => `ν = ${p.shift_cm1.toFixed(1)} cm⁻¹, FWHM = ${p.fwhm.toFixed(1)}`
+      )
+    });
+  }
+  return traces;
+}
+
+function getFTIRTraces(parsed: SpectrumParsedData): PlotData[] {
+  if (parsed.spectrum_type !== 'ftir') return [];
+  const traces: PlotData[] = [
+    {
+      x: parsed.spectrum_curve.x,
+      y: parsed.spectrum_curve.y,
+      type: 'scatter',
+      mode: 'lines',
+      name: parsed.y_mode === 'transmittance' ? 'Transmittance' : 'Absorbance',
+      line: { color: LINE_COLOR, width: 1.5 }
+    }
+  ];
+  if (parsed.peaks.length > 0) {
+    // Marker y values: convert absorbance back to %T scale if needed for visual position
+    const yValues =
+      parsed.y_mode === 'transmittance'
+        ? parsed.peaks.map((p) => Math.pow(10, -p.absorbance) * 100)
+        : parsed.peaks.map((p) => p.absorbance);
+    traces.push({
+      x: parsed.peaks.map((p) => p.wavenumber_cm1),
+      y: yValues,
+      type: 'scatter',
+      mode: 'text+markers',
+      name: 'Peaks',
+      marker: {
+        color: PEAK_COLOR,
+        size: 8,
+        symbol: 'triangle-down',
+        line: { color: 'white', width: 1 }
+      },
+      text: parsed.peaks.map((_, i) => `${i + 1}`),
+      textposition: 'top center',
+      hovertemplate: '%{customdata}<extra></extra>',
+      customdata: parsed.peaks.map(
+        (p) => `ν = ${p.wavenumber_cm1.toFixed(1)} cm⁻¹, FWHM = ${p.fwhm.toFixed(1)}`
+      )
+    });
+  }
+  return traces;
+}
+
+interface ChartLayout {
+  title: string;
+  xAxis: string;
+  yAxis: string;
+  xRange: [number, number];
+  reverseX?: boolean;
+}
+
+function getLayoutConfig(parsed: SpectrumParsedData): ChartLayout {
   if (parsed.spectrum_type === 'xrd') {
     return {
       title: 'XRD Diffractogram',
-      xAxis: '2θ (°)',
+      xAxis: '2θ (degrees)',
       yAxis: 'Intensity (counts)',
-      xValues: parsed.peaks.map((p) => p.two_theta),
-      yValues: parsed.peaks.map((p) => p.intensity),
-      fwhm: parsed.peaks.map((p) => p.fwhm),
-      xRange: parsed.quick_stats.xRange,
-      hoverFormat: (i: number) => `2θ = ${parsed.peaks[i].two_theta.toFixed(3)}°`
+      xRange: parsed.quick_stats.xRange
     };
   }
   if (parsed.spectrum_type === 'uvvis') {
     return {
-      title: 'UV-Vis Absorption',
+      title: 'UV-Vis Absorption Spectrum',
       xAxis: 'Wavelength (nm)',
       yAxis: 'Absorbance',
-      xValues: parsed.peaks.map((p) => p.wavelength_nm),
-      yValues: parsed.peaks.map((p) => p.absorbance),
-      fwhm: parsed.peaks.map(() => 0),
-      xRange: parsed.quick_stats.xRange,
-      hoverFormat: (i: number) =>
-        `λ = ${parsed.peaks[i].wavelength_nm.toFixed(2)} nm (${parsed.peaks[i].energy_ev.toFixed(2)} eV)`
+      xRange: parsed.quick_stats.xRange
     };
   }
   if (parsed.spectrum_type === 'raman') {
@@ -54,59 +224,48 @@ function getChartConfig(parsed: SpectrumParsedData) {
       title: 'Raman Spectrum',
       xAxis: 'Raman shift (cm⁻¹)',
       yAxis: 'Intensity (a.u.)',
-      xValues: parsed.peaks.map((p) => p.shift_cm1),
-      yValues: parsed.peaks.map((p) => p.intensity),
-      fwhm: parsed.peaks.map((p) => p.fwhm),
-      xRange: parsed.quick_stats.xRange,
-      hoverFormat: (i: number) => `ν = ${parsed.peaks[i].shift_cm1.toFixed(2)} cm⁻¹`
+      xRange: parsed.quick_stats.xRange
     };
   }
-  // ftir
+  if (parsed.spectrum_type === 'ftir') {
+    return {
+      title: 'FTIR Spectrum',
+      xAxis: 'Wavenumber (cm⁻¹)',
+      yAxis: parsed.y_mode === 'transmittance' ? 'Transmittance (%)' : 'Absorbance',
+      xRange: parsed.quick_stats.xRange,
+      reverseX: true
+    };
+  }
+  // uvvis_drs or unknown — fallback
   return {
-    title: 'FTIR Spectrum',
-    xAxis: 'Wavenumber (cm⁻¹)',
-    yAxis: parsed.y_mode === 'transmittance' ? '%T' : 'Absorbance',
-    xValues: parsed.peaks.map((p) => p.wavenumber_cm1),
-    yValues: parsed.peaks.map((p) => p.absorbance),
-    fwhm: parsed.peaks.map((p) => p.fwhm),
-    // FTIR conventional: high wavenumber on left (reverse)
-    xRange: [...parsed.quick_stats.xRange].reverse() as [number, number],
-    hoverFormat: (i: number) => `ν = ${parsed.peaks[i].wavenumber_cm1.toFixed(1)} cm⁻¹`
+    title: 'Spectrum',
+    xAxis: 'X',
+    yAxis: 'Y',
+    xRange: parsed.quick_stats.xRange
   };
 }
 
 export function SpectrumChart({ parsed }: SpectrumChartProps) {
-  const cfg = getChartConfig(parsed);
+  let traces: PlotData[] = [];
+  if (parsed.spectrum_type === 'xrd') traces = getXRDTraces(parsed);
+  else if (parsed.spectrum_type === 'uvvis') traces = getUVVisTraces(parsed);
+  else if (parsed.spectrum_type === 'raman') traces = getRamanTraces(parsed);
+  else if (parsed.spectrum_type === 'ftir') traces = getFTIRTraces(parsed);
 
-  const peakTrace = {
-    x: cfg.xValues,
-    y: cfg.yValues,
-    mode: 'text+markers' as const,
-    type: 'scatter' as const,
-    name: 'Peaks',
-    text: cfg.xValues.map((_, i) => `${i + 1}`),
-    textposition: 'top center' as const,
-    marker: {
-      color: 'hsl(220, 90%, 60%)',
-      size: 8,
-      symbol: 'triangle-down' as const,
-      line: { color: 'white', width: 1 }
-    },
-    hovertemplate: '%{customdata}<br>I = %{y:.3f}<extra></extra>',
-    customdata: cfg.xValues.map((_, i) => cfg.hoverFormat(i))
-  };
+  const cfg = getLayoutConfig(parsed);
+  const xRange = cfg.reverseX ? ([...cfg.xRange].reverse() as [number, number]) : cfg.xRange;
 
   return (
     <Plot
-      data={[peakTrace]}
+      data={traces}
       layout={{
         autosize: true,
-        height: 400,
-        margin: { l: 60, r: 30, t: 30, b: 50 },
+        height: 420,
+        margin: { l: 60, r: 30, t: 40, b: 50 },
         title: { text: cfg.title, font: { size: 14 } },
         xaxis: {
           title: { text: cfg.xAxis },
-          range: cfg.xRange,
+          range: xRange,
           gridcolor: 'hsl(var(--border))'
         },
         yaxis: {
@@ -116,7 +275,8 @@ export function SpectrumChart({ parsed }: SpectrumChartProps) {
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
         font: { family: 'inherit', size: 12 },
-        showlegend: false,
+        showlegend: true,
+        legend: { orientation: 'h', y: -0.2 },
         hovermode: 'closest'
       }}
       config={{

@@ -545,7 +545,9 @@
       "vibrationalModes": "Vibrational modes",
       "carbonAnalysis": "Phân tích carbon (D/G ratio)",
       "functionalGroups": "Nhóm chức năng",
-      "compoundClass": "Loại hợp chất khả dĩ"
+      "compoundClass": "Loại hợp chất khả dĩ",
+      "likelySampleType": "Loại mẫu khả dĩ",
+      "reflectanceProfile": "Profile phản xạ"
     },
     "chart": {
       "peaks": "Đỉnh đã phát hiện"

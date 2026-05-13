@@ -57,3 +57,4 @@ firebase-service-account.json
 
 # Agent context snapshots (regenerated via `pnpm snapshot`)
 .claude/
+*-sa.json

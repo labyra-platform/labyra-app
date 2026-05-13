@@ -1,16 +1,16 @@
 /**
- * Pub/Sub publisher with explicit timeout + REST API fallback.
+ * Pub/Sub publisher using REST API (avoids gRPC issues in Vercel serverless).
  * @phase R160-spectra-3b
  */
 
 import 'server-only';
 
-import { PubSub } from '@google-cloud/pubsub';
+import { GoogleAuth } from 'google-auth-library';
 
 const TOPIC = process.env.PUBSUB_SPECTRA_TOPIC ?? 'spectra-analysis';
 const PROJECT_ID = process.env.GCP_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
-let _client: PubSub | null = null;
+let _auth: GoogleAuth | null = null;
 
 interface SaCredentials {
   client_email: string;
@@ -26,33 +26,25 @@ function parseAndNormalizeCreds(raw: string): SaCredentials {
   return creds;
 }
 
-function getClient(): PubSub {
-  if (_client) return _client;
+function getAuth(): GoogleAuth {
+  if (_auth) return _auth;
 
   const credsB64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
   const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
   let creds: SaCredentials | undefined;
   if (credsB64) {
-    const decoded = Buffer.from(credsB64, 'base64').toString('utf-8');
-    creds = parseAndNormalizeCreds(decoded);
+    creds = parseAndNormalizeCreds(Buffer.from(credsB64, 'base64').toString('utf-8'));
   } else if (credsJson) {
     creds = parseAndNormalizeCreds(credsJson);
   }
 
-  console.error('[pubsub] init', {
+  _auth = new GoogleAuth({
     projectId: PROJECT_ID,
-    hasCreds: !!creds,
-    clientEmail: creds?.client_email,
-    privateKeyLen: creds?.private_key?.length,
-    privateKeyStart: creds?.private_key?.substring(0, 30)
+    credentials: creds,
+    scopes: ['https://www.googleapis.com/auth/pubsub']
   });
-
-  _client = creds
-    ? new PubSub({ projectId: PROJECT_ID, credentials: creds })
-    : new PubSub({ projectId: PROJECT_ID });
-
-  return _client;
+  return _auth;
 }
 
 export interface SpectrumAnalysisMessage {
@@ -67,30 +59,48 @@ export async function publishSpectrumAnalysis(msg: SpectrumAnalysisMessage): Pro
     throw new Error('GCP_PROJECT_ID not configured');
   }
 
-  console.error('[pubsub] publish-start', JSON.stringify(msg));
+  const auth = getAuth();
+  const client = await auth.getClient();
+  const token = (await client.getAccessToken()).token;
 
-  try {
-    const client = getClient();
-    const data = Buffer.from(JSON.stringify(msg));
-
-    // Race against 8s timeout
-    const messageId = await Promise.race([
-      client.topic(TOPIC).publishMessage({
-        data,
-        attributes: { tenantId: msg.tenantId, spectrumType: msg.spectrumType }
-      }),
-      new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error('publish-timeout-8s')), 8000)
-      )
-    ]);
-
-    console.error('[pubsub] publish-success', { messageId });
-    return messageId;
-  } catch (err) {
-    console.error('[pubsub] publish-FAILED', {
-      error: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack?.substring(0, 500) : undefined
-    });
-    throw err;
+  if (!token) {
+    throw new Error('Failed to obtain access token');
   }
+
+  const url = `https://pubsub.googleapis.com/v1/projects/${PROJECT_ID}/topics/${TOPIC}:publish`;
+  const body = {
+    messages: [
+      {
+        data: Buffer.from(JSON.stringify(msg)).toString('base64'),
+        attributes: {
+          tenantId: msg.tenantId,
+          spectrumType: msg.spectrumType
+        }
+      }
+    ]
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Pub/Sub REST publish failed ${response.status}: ${errorText.substring(0, 300)}`
+    );
+  }
+
+  const result = (await response.json()) as { messageIds?: string[] };
+  const messageId = result.messageIds?.[0];
+  if (!messageId) {
+    throw new Error('Pub/Sub returned no messageId');
+  }
+
+  return messageId;
 }

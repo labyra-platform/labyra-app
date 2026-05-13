@@ -379,7 +379,10 @@ function formatBytes(bytes: number): string {
 
 function UploadRow({ item, disabled, onTypeChange, onFormulaChange, onRemove }: UploadRowProps) {
   const t = useTranslations('spectra');
-  const { file, spectrumType, status } = item;
+  const chemicalFormula = item.chemicalFormula;
+  const spectrumType = item.spectrumType;
+  const status = item.status;
+  const file = item.file;
   const canEdit = status.phase === 'pending';
   const canRemove = canEdit || status.phase === 'done' || status.phase === 'error';
 
@@ -409,13 +412,13 @@ function UploadRow({ item, disabled, onTypeChange, onFormulaChange, onRemove }: 
         )}
       </div>
 
-      <div className='flex-shrink-0'>
+      <div className='flex flex-shrink-0 items-center gap-2'>
         <Select
           value={spectrumType ?? undefined}
           onValueChange={(v) => onTypeChange(v as SpectrumType)}
           disabled={!canEdit || disabled}
         >
-          <SelectTrigger className='w-40'>
+          <SelectTrigger className='w-28 lg:w-32'>
             <SelectValue placeholder={t('selectType')} />
           </SelectTrigger>
           <SelectContent>
@@ -426,6 +429,14 @@ function UploadRow({ item, disabled, onTypeChange, onFormulaChange, onRemove }: 
             ))}
           </SelectContent>
         </Select>
+        <Input
+          type='text'
+          placeholder={t.has('formulaPlaceholder') ? t('formulaPlaceholder') : 'WO3'}
+          value={chemicalFormula}
+          onChange={(e) => onFormulaChange(e.target.value)}
+          disabled={!canEdit || disabled}
+          className='w-24 text-xs'
+        />
       </div>
 
       <StatusBadge status={status} />

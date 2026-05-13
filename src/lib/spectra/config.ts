@@ -251,7 +251,7 @@ export function detectSpectrumType(filename: string): SpectrumType | null {
   if (/\.spm$|\.ibw$/.test(lower)) return 'afm';
   if (/\.vms$/.test(lower)) return 'xps';
   if (/\.spe$|\.wdf$/.test(lower)) return 'raman';
-  if (/xrd/.test(lower)) return 'xrd';
+  if (/xrd/.test(lower) || /\.xy$|\.raw$/.test(lower)) return 'xrd';
   if (/raman/.test(lower)) return 'raman';
   if (/drs|diffuse|reflect/.test(lower)) return 'uvvis_drs';
   if (/uvvis|uv-vis|uvv/.test(lower)) return 'uvvis';

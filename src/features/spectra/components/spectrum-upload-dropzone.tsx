@@ -311,7 +311,7 @@ export function SpectrumUploadDropzone({
             )}
           </div>
 
-          <div className='max-h-96 space-y-2 overflow-y-auto rounded-md border p-2'>
+          <div className='max-h-[28rem] space-y-2 overflow-y-auto overscroll-contain rounded-md border p-2 pr-3'>
             {items.map((item) => (
               <UploadRow
                 key={item.id}

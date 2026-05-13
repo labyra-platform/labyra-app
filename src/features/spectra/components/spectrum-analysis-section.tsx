@@ -3,14 +3,13 @@
 /**
  * SpectrumAnalysisSection — client component.
  * Fetches AnalysisResult via authenticated API endpoint.
- * Firebase Admin SDK stays server-only behind /api/spectra/[id]/analysis.
- * @phase R160-spectra-3b
+ * @phase R160-spectra-3c (extended for UV-Vis, Raman, FTIR)
  */
 
 import { useEffect, useState } from 'react';
 
 import { AnalysisResultCard } from '@/features/spectra/components/analysis-result-card';
-import { PeaksChart } from '@/features/spectra/components/peaks-chart';
+import { SpectrumChart } from '@/features/spectra/components/spectrum-chart';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { AnalysisResult } from '@/types/spectra-analysis';
 
@@ -18,6 +17,8 @@ interface SpectrumAnalysisSectionProps {
   spectrumId: string;
   status: string;
 }
+
+const SUPPORTED_CHART_TYPES = new Set(['xrd', 'uvvis', 'raman', 'ftir']);
 
 export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysisSectionProps) {
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -63,12 +64,15 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
   }
   if (!result) return null;
 
+  const hasChartSupport =
+    SUPPORTED_CHART_TYPES.has(result.spectrumType) && result.parsed.peaks.length > 0;
+
   return (
     <div className='space-y-6'>
       <AnalysisResultCard result={result} />
-      {result.spectrumType === 'xrd' && result.parsed.peaks.length > 0 && (
+      {hasChartSupport && (
         <div className='rounded-lg border bg-card p-4'>
-          <PeaksChart parsed={result.parsed} />
+          <SpectrumChart parsed={result.parsed} />
         </div>
       )}
     </div>

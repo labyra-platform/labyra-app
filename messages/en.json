@@ -537,7 +537,15 @@
         "low": "Low confidence",
         "medium": "Medium confidence",
         "high": "High confidence"
-      }
+      },
+      "bandgap": "Optical Bandgap",
+      "transition": "Transition type",
+      "absorptionFeatures": "Absorption Features",
+      "likelyMaterial": "Likely Material",
+      "vibrationalModes": "Vibrational Modes",
+      "carbonAnalysis": "Carbon Analysis (D/G ratio)",
+      "functionalGroups": "Functional Groups",
+      "compoundClass": "Likely Compound Class"
     },
     "chart": {
       "peaks": "Detected Peaks"

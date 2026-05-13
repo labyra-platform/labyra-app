@@ -537,7 +537,15 @@
         "low": "Độ tin cậy thấp",
         "medium": "Độ tin cậy trung bình",
         "high": "Độ tin cậy cao"
-      }
+      },
+      "bandgap": "Bandgap quang học",
+      "transition": "Loại chuyển dời",
+      "absorptionFeatures": "Đặc trưng hấp thụ",
+      "likelyMaterial": "Vật liệu khả dĩ",
+      "vibrationalModes": "Vibrational modes",
+      "carbonAnalysis": "Phân tích carbon (D/G ratio)",
+      "functionalGroups": "Nhóm chức năng",
+      "compoundClass": "Loại hợp chất khả dĩ"
     },
     "chart": {
       "peaks": "Đỉnh đã phát hiện"

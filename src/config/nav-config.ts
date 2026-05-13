@@ -56,6 +56,14 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        title: 'Spectra',
+        titleKey: 'nav.spectra',
+        url: '/dashboard/spectra',
+        icon: 'spectra',
+        shortcut: ['s', 'p'],
+        items: []
+      },
+      {
         title: 'Data Assets',
         titleKey: 'nav.dataAssets',
         url: '/dashboard/data-assets',

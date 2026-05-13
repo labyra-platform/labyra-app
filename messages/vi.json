@@ -45,7 +45,8 @@
     "papers": "Papers",
     "upload": "Tải lên",
     "new": "Thêm mới",
-    "edit": "Chỉnh sửa"
+    "edit": "Chỉnh sửa",
+    "spectra": "Phổ đo"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",
@@ -339,7 +340,9 @@
       "completed": "Hoàn thành",
       "failed": "Thất bại",
       "cancelled": "Đã hủy"
-    }
+    },
+    "tabEdit": "Chỉnh sửa",
+    "tabSpectra": "Phổ đo"
   },
   "equipment": {
     "title": "Thiết bị",
@@ -504,6 +507,22 @@
       "tem": "TEM",
       "afm": "AFM",
       "optical_microscopy": "Quang học vi mô"
+    },
+    "colGroup": "Nhóm",
+    "detail": {
+      "metadata": "Thông tin metadata",
+      "status": "Trạng thái",
+      "originalFilename": "Tên file gốc",
+      "size": "Dung lượng",
+      "mimeType": "MIME type",
+      "sha256": "SHA-256",
+      "measuredAt": "Thời gian đo",
+      "instrument": "Thiết bị",
+      "sample": "Mẫu",
+      "download": "Tải xuống",
+      "preparing": "Đang chuẩn bị...",
+      "error": "Lỗi",
+      "analysisPending": "Phổ đã được tải lên. Phân tích AI sẽ được kích hoạt khi worker sẵn sàng (Phase 2)."
     }
   }
 }

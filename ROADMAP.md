@@ -150,3 +150,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-data-2 — Equipment + Bookings CRUD with shadcn Form/Table, full i18n, composite Firestore indexes
 - [x] R160-ui-1 — UI polish: Papers PageContainer, AI Assistant i18n, reduced-motion CSS (WCAG 2.3.3), Stage 2 + a11y plan docs
 - [x] R160-spectra-1 — Stage 2 Phase 1: Spectrum upload (24 types) with Firebase Storage signed URL flow, sha256 verify, tenant-scoped, 4 composite indexes
+- [x] R160-spectra-2 — Spectra integration: Experiment detail Tabs (Edit|Spectra), standalone /dashboard/spectra route, upload dialog, detail page with download

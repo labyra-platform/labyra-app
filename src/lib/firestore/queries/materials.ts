@@ -19,7 +19,7 @@ import type { Material } from '@/types/materials';
 
 function materialFromSnapshot(snap: DocumentSnapshot): Material | null {
   if (!snap.exists()) return null;
-  return snap.data() as Material;
+  return { ...snap.data(), id: snap.id } as Material;
 }
 
 export function useMaterials() {
@@ -37,7 +37,7 @@ export function useMaterials() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setMaterials(snap.docs.map((d) => d.data() as Material));
+        setMaterials(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Material));
         setLoading(false);
       },
       (err) => {

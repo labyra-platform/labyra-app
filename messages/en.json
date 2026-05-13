@@ -45,7 +45,8 @@
     "papers": "Papers",
     "upload": "Upload",
     "new": "New",
-    "edit": "Edit"
+    "edit": "Edit",
+    "spectra": "Spectra"
   },
   "auth": {
     "signInTitle": "Sign in to Labyra",
@@ -339,7 +340,9 @@
       "completed": "Completed",
       "failed": "Failed",
       "cancelled": "Cancelled"
-    }
+    },
+    "tabEdit": "Edit",
+    "tabSpectra": "Spectra"
   },
   "equipment": {
     "title": "Equipment",
@@ -504,6 +507,22 @@
       "tem": "TEM",
       "afm": "AFM",
       "optical_microscopy": "Optical microscopy"
+    },
+    "colGroup": "Group",
+    "detail": {
+      "metadata": "Metadata",
+      "status": "Status",
+      "originalFilename": "Original filename",
+      "size": "Size",
+      "mimeType": "MIME type",
+      "sha256": "SHA-256",
+      "measuredAt": "Measured at",
+      "instrument": "Instrument",
+      "sample": "Sample",
+      "download": "Download",
+      "preparing": "Preparing...",
+      "error": "Error",
+      "analysisPending": "Spectrum uploaded. AI analysis will trigger when worker is available (Phase 2)."
     }
   }
 }

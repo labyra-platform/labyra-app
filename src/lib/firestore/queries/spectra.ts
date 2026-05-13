@@ -19,7 +19,7 @@ import type { SpectrumMetadata } from '@/types/spectra';
 
 function fromSnapshot(snap: DocumentSnapshot): SpectrumMetadata | null {
   if (!snap.exists()) return null;
-  return snap.data() as SpectrumMetadata;
+  return { ...snap.data(), id: snap.id } as SpectrumMetadata;
 }
 
 /** List all spectra in tenant (limited 100) */
@@ -35,7 +35,7 @@ export function useAllSpectra() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setSpectra(snap.docs.map((d) => d.data() as SpectrumMetadata));
+        setSpectra(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata));
         setLoading(false);
       },
       (err) => {
@@ -69,7 +69,7 @@ export function useSpectraByExperiment(experimentId: string | null) {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setSpectra(snap.docs.map((d) => d.data() as SpectrumMetadata));
+        setSpectra(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata));
         setLoading(false);
       },
       (err) => {

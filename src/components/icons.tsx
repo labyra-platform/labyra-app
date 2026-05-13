@@ -97,7 +97,8 @@ import {
   IconHierarchy,
   IconTestPipe,
   IconUsersGroup,
-  IconFileDescription
+  IconFileDescription,
+  IconChartLine
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -234,6 +235,7 @@ export const Icons = {
   materials: IconAtom2,
   samples: IconTestPipe,
   experiments: IconFlask,
+  spectra: IconChartLine,
   dataAssets: IconChartHistogram,
   lineage: IconHierarchy,
   chemicals: IconFlask2,

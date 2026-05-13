@@ -18,7 +18,7 @@ import type { Equipment } from '@/types/equipment';
 
 function fromSnapshot(snap: DocumentSnapshot): Equipment | null {
   if (!snap.exists()) return null;
-  return snap.data() as Equipment;
+  return { ...snap.data(), id: snap.id } as Equipment;
 }
 
 export function useEquipmentList() {
@@ -36,7 +36,7 @@ export function useEquipmentList() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setEquipment(snap.docs.map((d) => d.data() as Equipment));
+        setEquipment(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Equipment));
         setLoading(false);
       },
       (err) => {

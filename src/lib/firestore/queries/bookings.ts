@@ -18,7 +18,7 @@ import type { Booking } from '@/types/bookings';
 
 function fromSnapshot(snap: DocumentSnapshot): Booking | null {
   if (!snap.exists()) return null;
-  return snap.data() as Booking;
+  return { ...snap.data(), id: snap.id } as Booking;
 }
 
 export function useBookings() {
@@ -33,7 +33,7 @@ export function useBookings() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setBookings(snap.docs.map((d) => d.data() as Booking));
+        setBookings(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Booking));
         setLoading(false);
       },
       (err) => {

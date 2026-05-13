@@ -18,7 +18,7 @@ import type { Sample } from '@/types/samples';
 
 function sampleFromSnapshot(snap: DocumentSnapshot): Sample | null {
   if (!snap.exists()) return null;
-  return snap.data() as Sample;
+  return { ...snap.data(), id: snap.id } as Sample;
 }
 
 export function useSamples() {
@@ -33,7 +33,7 @@ export function useSamples() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setSamples(snap.docs.map((d) => d.data() as Sample));
+        setSamples(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Sample));
         setLoading(false);
       },
       (err) => {

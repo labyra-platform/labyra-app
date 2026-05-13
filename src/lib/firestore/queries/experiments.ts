@@ -18,7 +18,7 @@ import type { Experiment } from '@/types/experiments';
 
 function experimentFromSnapshot(snap: DocumentSnapshot): Experiment | null {
   if (!snap.exists()) return null;
-  return snap.data() as Experiment;
+  return { ...snap.data(), id: snap.id } as Experiment;
 }
 
 export function useExperiments() {
@@ -36,7 +36,7 @@ export function useExperiments() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setExperiments(snap.docs.map((d) => d.data() as Experiment));
+        setExperiments(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Experiment));
         setLoading(false);
       },
       (err) => {

@@ -2,8 +2,8 @@
  * Pub/Sub publisher for spectrum analysis tasks.
  *
  * Server-only — uses @google-cloud/pubsub Node SDK.
- * On Vercel: requires GCP_PROJECT_ID + GOOGLE_APPLICATION_CREDENTIALS_JSON env.
- * On local dev: gcloud ADC (Application Default Credentials).
+ * Vercel: uses GOOGLE_APPLICATION_CREDENTIALS_BASE64 (avoids JSON escape issues).
+ * Local dev: uses ADC via `gcloud auth application-default login`.
  *
  * @phase R160-spectra-3b
  */
@@ -20,15 +20,22 @@ let _client: PubSub | null = null;
 function getClient(): PubSub {
   if (_client) return _client;
 
-  // Vercel: parse JSON credentials from env
+  // Prefer base64 (Vercel-safe), fallback to raw JSON, finally ADC.
+  const credsB64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
   const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-  if (credsJson) {
+
+  if (credsB64) {
+    const decoded = Buffer.from(credsB64, 'base64').toString('utf-8');
+    _client = new PubSub({
+      projectId: PROJECT_ID,
+      credentials: JSON.parse(decoded)
+    });
+  } else if (credsJson) {
     _client = new PubSub({
       projectId: PROJECT_ID,
       credentials: JSON.parse(credsJson)
     });
   } else {
-    // Local: ADC
     _client = new PubSub({ projectId: PROJECT_ID });
   }
   return _client;
@@ -39,14 +46,8 @@ export interface SpectrumAnalysisMessage {
   spectrumId: string;
   spectrumType: string;
   experimentId?: string;
-  // Future: priority, retryHint, etc.
 }
 
-/**
- * Publish a spectrum analysis task. Returns Pub/Sub message ID on success.
- * Errors are caller's responsibility — typically log + continue (spectrum
- * stays 'uploaded' and can be reprocessed manually).
- */
 export async function publishSpectrumAnalysis(msg: SpectrumAnalysisMessage): Promise<string> {
   if (!PROJECT_ID) {
     throw new Error('GCP_PROJECT_ID not configured');

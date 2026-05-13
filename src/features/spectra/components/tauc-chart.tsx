@@ -30,6 +30,9 @@ const CURVE_COLOR = 'hsl(280, 70%, 50%)';
 const FIT_COLOR = 'hsl(0, 80%, 55%)';
 
 export function TaucChart({ curve, bandgap, yLabel, title }: TaucChartProps) {
+  if (!curve?.x) {
+    return <div className='text-sm text-muted-foreground'>Tauc data unavailable</div>;
+  }
   const traces: Array<Record<string, unknown>> = [
     {
       x: curve.x,

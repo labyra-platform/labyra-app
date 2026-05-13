@@ -25,6 +25,9 @@ const ENDO_COLOR = 'hsl(220, 80%, 55%)';
 const EXO_COLOR = 'hsl(15, 80%, 55%)';
 
 export function TGAChart({ parsed }: { parsed: TGAParsedData }) {
+  if (!parsed?.spectrum_curve?.x) {
+    return <div className='text-sm text-muted-foreground'>No spectrum data</div>;
+  }
   return (
     <Plot
       data={[
@@ -77,6 +80,9 @@ export function TGAChart({ parsed }: { parsed: TGAParsedData }) {
 }
 
 export function DSCChart({ parsed }: { parsed: DSCParsedData }) {
+  if (!parsed?.spectrum_curve?.x) {
+    return <div className='text-sm text-muted-foreground'>No spectrum data</div>;
+  }
   const endoX = parsed.endothermic_peaks.map((p) => p.peak_T);
   const endoY = parsed.endothermic_peaks.map((p) => p.heat_flow);
   const exoX = parsed.exothermic_peaks.map((p) => p.peak_T);
@@ -141,6 +147,9 @@ export function DSCChart({ parsed }: { parsed: DSCParsedData }) {
 }
 
 export function OCPChart({ parsed }: { parsed: OCPParsedData }) {
+  if (!parsed?.spectrum_curve?.x) {
+    return <div className='text-sm text-muted-foreground'>No spectrum data</div>;
+  }
   return (
     <Plot
       data={[

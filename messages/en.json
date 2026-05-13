@@ -583,6 +583,10 @@
     "noFilesToUpload": "No files to upload",
     "clearAll": "Clear all",
     "clearCompleted": "Clear completed",
-    "formulaPlaceholder": "Formula (e.g. WO3)"
+    "formulaPlaceholder": "Formula (e.g. WO3)",
+    "notFound": "Spectrum not found",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this spectrum permanently?",
+    "toastDeleted": "Spectrum deleted"
   }
 }

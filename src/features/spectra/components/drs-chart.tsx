@@ -25,6 +25,9 @@ interface DRSChartProps {
 }
 
 export function DRSChart({ reflectance, km, reflectanceMode }: DRSChartProps) {
+  if (!reflectance?.x || !km?.x) {
+    return <div className='text-sm text-muted-foreground'>DRS data incomplete</div>;
+  }
   const yLabel = reflectanceMode === 'percent' ? 'Reflectance (%)' : 'Reflectance';
   return (
     <Plot

@@ -111,6 +111,62 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "spectra",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "experimentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "measuredAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "spectra",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sampleId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "spectrumType",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "spectra",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "spectrumType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "spectra",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

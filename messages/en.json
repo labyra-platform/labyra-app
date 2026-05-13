@@ -182,7 +182,9 @@
       "failed": "Failed",
       "cancelling": "Cancelling",
       "cancelled": "Cancelled"
-    }
+    },
+    "title": "Papers",
+    "subtitle": "Research papers in your lab's knowledge base"
   },
   "materials": {
     "title": "Materials",
@@ -434,6 +436,74 @@
       "in_progress": "In progress",
       "completed": "Completed",
       "cancelled": "Cancelled"
+    }
+  },
+  "aiAssistant": {
+    "title": "AI Assistant",
+    "subtitle": "Ask about your lab, papers, or anything"
+  },
+  "spectra": {
+    "title": "Spectra",
+    "subtitle": "Manage measurement spectra for experiments",
+    "loading": "Loading...",
+    "empty": "No spectra yet. Upload one to start.",
+    "upload": "Upload",
+    "uploading": "Uploading...",
+    "uploadSuccess": "Upload complete",
+    "dropHere": "Drop file here or click to select",
+    "selectTypeFirst": "Please select a spectrum type first",
+    "spectrumType": "Spectrum type",
+    "selectTypePlaceholder": "Select type",
+    "phaseHashing": "Computing checksum...",
+    "phaseRequesting": "Requesting upload URL...",
+    "phaseUploading": "Uploading to Storage...",
+    "phaseNotifying": "Saving metadata...",
+    "phaseDone": "Complete!",
+    "phaseError": "Error",
+    "colFilename": "Filename",
+    "colType": "Type",
+    "colSize": "Size",
+    "colStatus": "Status",
+    "colMeasuredAt": "Measured at",
+    "status": {
+      "uploaded": "Uploaded",
+      "queued": "Queued",
+      "processing": "Processing",
+      "analyzed": "Analyzed",
+      "failed": "Failed"
+    },
+    "group": {
+      "structural": "Structural",
+      "optical": "Optical",
+      "electrochemistry": "Electrochemistry",
+      "photoelectrochemistry": "Photoelectrochemistry",
+      "surface": "Surface",
+      "microscopy": "Microscopy"
+    },
+    "type": {
+      "xrd": "XRD",
+      "saed": "SAED",
+      "hrtem": "HRTEM",
+      "uvvis": "UV-Vis",
+      "pl": "PL (Photoluminescence)",
+      "raman": "Raman",
+      "ftir": "FTIR",
+      "cv": "CV (Cyclic Voltammetry)",
+      "eis": "EIS",
+      "gcd": "GCD (Galvanostatic Charge-Discharge)",
+      "lsv": "LSV",
+      "ca": "CA (Chronoamperometry)",
+      "pec_jv": "PEC J-V",
+      "ipce": "IPCE",
+      "eis_light": "EIS-light",
+      "xps": "XPS",
+      "eds": "EDS",
+      "bet": "BET",
+      "contact_angle": "Contact Angle",
+      "sem": "SEM",
+      "tem": "TEM",
+      "afm": "AFM",
+      "optical_microscopy": "Optical microscopy"
     }
   }
 }

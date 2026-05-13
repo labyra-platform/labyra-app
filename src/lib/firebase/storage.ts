@@ -61,3 +61,72 @@ export async function deleteStorageFile(storagePath: string): Promise<void> {
     throw err;
   }
 }
+
+/**
+ * Spectrum storage path helpers + signed URL generation.
+ * @phase R160-spectra-1
+ * @see labrya-experiment-database-report.md Section 2.1
+ */
+
+/** Tenant-scoped raw spectrum path */
+export function spectrumRawPath(tenantId: string, spectrumId: string, filename: string): string {
+  // Sanitize filename to safe characters
+  const safe = filename.replace(/[^\w.\-]/g, '_');
+  return `tenants/${tenantId}/spectra/${spectrumId}/raw/${safe}`;
+}
+
+export function spectrumProcessedPath(
+  tenantId: string,
+  spectrumId: string,
+  filename: string
+): string {
+  const safe = filename.replace(/[^\w.\-]/g, '_');
+  return `tenants/${tenantId}/spectra/${spectrumId}/processed/${safe}`;
+}
+
+export function spectrumThumbnailPath(tenantId: string, spectrumId: string): string {
+  return `tenants/${tenantId}/spectra/${spectrumId}/thumbnail.jpg`;
+}
+
+/**
+ * Generate a signed UPLOAD URL (V4) for client to PUT a file directly to GCS.
+ * Expires in 15 minutes. Client uploads bytes, then calls /api/spectra/notify-complete.
+ */
+export async function getSignedUploadUrl(
+  storagePath: string,
+  contentType: string,
+  expiresInMs = 15 * 60 * 1000
+): Promise<string> {
+  const bucket = getAdminStorageService().bucket();
+  const file = bucket.file(storagePath);
+  const [url] = await file.getSignedUrl({
+    version: 'v4',
+    action: 'write',
+    expires: Date.now() + expiresInMs,
+    contentType
+  });
+  return url;
+}
+
+/** Verify a file exists in Storage at the given path */
+export async function fileExists(storagePath: string): Promise<boolean> {
+  const bucket = getAdminStorageService().bucket();
+  const file = bucket.file(storagePath);
+  const [exists] = await file.exists();
+  return exists;
+}
+
+/** Get file metadata (size, contentType, sha256 if present) */
+export async function getFileMetadata(storagePath: string) {
+  const bucket = getAdminStorageService().bucket();
+  const file = bucket.file(storagePath);
+  const [metadata] = await file.getMetadata();
+  return metadata;
+}
+
+/** Delete a file from Storage */
+export async function deleteFile(storagePath: string): Promise<void> {
+  const bucket = getAdminStorageService().bucket();
+  const file = bucket.file(storagePath);
+  await file.delete({ ignoreNotFound: true });
+}

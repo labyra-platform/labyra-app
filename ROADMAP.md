@@ -148,3 +148,5 @@ Source repos cũ (reference only, không port code):
 - [x] R160-data-1b — i18n + UI polish: full Vietnamese keys for materials/samples/experiments, experiments table backward-compat (legacy schema fallback)
 - [x] R160-data-1c — Full shadcn refactor: Forms with Form/FormField pattern, Tables with shadcn Table, complete i18n labels/placeholders/options
 - [x] R160-data-2 — Equipment + Bookings CRUD with shadcn Form/Table, full i18n, composite Firestore indexes
+- [x] R160-ui-1 — UI polish: Papers PageContainer, AI Assistant i18n, reduced-motion CSS (WCAG 2.3.3), Stage 2 + a11y plan docs
+- [x] R160-spectra-1 — Stage 2 Phase 1: Spectrum upload (24 types) with Firebase Storage signed URL flow, sha256 verify, tenant-scoped, 4 composite indexes

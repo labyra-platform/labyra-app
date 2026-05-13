@@ -9,6 +9,13 @@ service firebase.storage {
       allow write: if false;
     }
 
+    // Spectra: tenant-scoped, raw is write-once via Admin SDK signed URL
+    match /tenants/{tenantId}/spectra/{spectrumId}/{path=**} {
+      allow read: if isAuthenticated() && isTenantMember(tenantId);
+      // Writes only through API route signed URL (Admin SDK)
+      allow write: if false;
+    }
+
     // Default deny
     match /{allPaths=**} {
       allow read, write: if false;

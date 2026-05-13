@@ -182,7 +182,9 @@
       "failed": "Thất bại",
       "cancelling": "Đang hủy",
       "cancelled": "Đã hủy"
-    }
+    },
+    "title": "Thư viện paper",
+    "subtitle": "Nguồn kiến thức trong lab của bạn"
   },
   "materials": {
     "title": "Vật liệu",
@@ -434,6 +436,74 @@
       "in_progress": "Đang chạy",
       "completed": "Hoàn thành",
       "cancelled": "Đã hủy"
+    }
+  },
+  "aiAssistant": {
+    "title": "Trợ lý AI",
+    "subtitle": "Hỏi về lab, paper, hoặc bất cứ điều gì"
+  },
+  "spectra": {
+    "title": "Phổ đo",
+    "subtitle": "Quản lý phổ đo cho thí nghiệm",
+    "loading": "Đang tải...",
+    "empty": "Chưa có phổ đo nào. Tải lên để bắt đầu.",
+    "upload": "Tải lên",
+    "uploading": "Đang tải...",
+    "uploadSuccess": "Tải lên thành công",
+    "dropHere": "Kéo thả file vào đây hoặc click để chọn",
+    "selectTypeFirst": "Vui lòng chọn loại phổ trước",
+    "spectrumType": "Loại phổ",
+    "selectTypePlaceholder": "Chọn loại phổ",
+    "phaseHashing": "Đang tính checksum...",
+    "phaseRequesting": "Đang yêu cầu URL...",
+    "phaseUploading": "Đang tải lên Storage...",
+    "phaseNotifying": "Đang lưu metadata...",
+    "phaseDone": "Hoàn thành!",
+    "phaseError": "Lỗi",
+    "colFilename": "Tên file",
+    "colType": "Loại",
+    "colSize": "Dung lượng",
+    "colStatus": "Trạng thái",
+    "colMeasuredAt": "Thời gian đo",
+    "status": {
+      "uploaded": "Đã tải lên",
+      "queued": "Đang chờ",
+      "processing": "Đang xử lý",
+      "analyzed": "Đã phân tích",
+      "failed": "Thất bại"
+    },
+    "group": {
+      "structural": "Cấu trúc",
+      "optical": "Quang học",
+      "electrochemistry": "Điện hóa",
+      "photoelectrochemistry": "Quang điện hóa",
+      "surface": "Bề mặt",
+      "microscopy": "Vi mô"
+    },
+    "type": {
+      "xrd": "XRD",
+      "saed": "SAED",
+      "hrtem": "HRTEM",
+      "uvvis": "UV-Vis",
+      "pl": "PL (Photoluminescence)",
+      "raman": "Raman",
+      "ftir": "FTIR",
+      "cv": "CV (Cyclic Voltammetry)",
+      "eis": "EIS",
+      "gcd": "GCD (Galvanostatic Charge-Discharge)",
+      "lsv": "LSV",
+      "ca": "CA (Chronoamperometry)",
+      "pec_jv": "PEC J-V",
+      "ipce": "IPCE",
+      "eis_light": "EIS-light",
+      "xps": "XPS",
+      "eds": "EDS",
+      "bet": "BET",
+      "contact_angle": "Contact Angle",
+      "sem": "SEM",
+      "tem": "TEM",
+      "afm": "AFM",
+      "optical_microscopy": "Quang học vi mô"
     }
   }
 }

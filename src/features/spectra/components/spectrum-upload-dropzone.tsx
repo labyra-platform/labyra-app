@@ -101,18 +101,17 @@ async function uploadOneFile(
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({
-      filename: file.name,
+      originalFilename: file.name,
       mimeType: file.type || 'application/octet-stream',
       sizeBytes: file.size,
-      sha256,
       spectrumType,
       experimentId,
       sampleId
     })
   });
   if (!sigRes.ok) throw new Error(`signed_url_failed_${sigRes.status}`);
-  const { uploadUrl, storagePath, spectrumId } = (await sigRes.json()) as {
-    uploadUrl: string;
+  const { signedUrl, storagePath, spectrumId } = (await sigRes.json()) as {
+    signedUrl: string;
     storagePath: string;
     spectrumId: string;
   };
@@ -121,7 +120,7 @@ async function uploadOneFile(
   updateStatus(item.id, { phase: 'uploading', progress: 0 });
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('PUT', uploadUrl);
+    xhr.open('PUT', signedUrl);
     xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {

@@ -143,3 +143,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ai-5e-1b — Grounding polish: skip page numbers (>10K), skip negated context ("không 92%")
 - [x] R160-ai-5e-1c — Multi-turn conversation context + strip Vietnamese words in $ wrappers
 - [x] R160-ai-5e-2 — L6 OOD detection (Haiku classifier) + L7 empty result guard (system prompt + early refusal)
+- [x] R160-data-1 — Materials + Samples + Experiments full CRUD (pages, forms, API routes)

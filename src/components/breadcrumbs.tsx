@@ -20,11 +20,9 @@ export function Breadcrumbs() {
   // key is missing from messages (prevents runtime errors on unknown routes).
   const resolveTitle = (item: BcItem): string => {
     if (!item.titleKey) return item.title;
-    try {
-      return t(item.titleKey);
-    } catch {
-      return item.title;
-    }
+    // Use .has() to avoid triggering MISSING_MESSAGE error events
+    // for auto-generated keys like 'nav.exp-003' from dynamic route segments.
+    return t.has(item.titleKey) ? t(item.titleKey) : item.title;
   };
 
   if (items.length === 0) return null;

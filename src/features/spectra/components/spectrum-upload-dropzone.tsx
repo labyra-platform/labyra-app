@@ -59,6 +59,7 @@ interface UploadItem {
   spectrumType: SpectrumType | null;
   chemicalFormula: string;
   anode: string;
+  monochromator: string;
   status: ItemStatus;
 }
 
@@ -82,7 +83,7 @@ async function uploadOneFile(
   sampleLabel: string | undefined,
   updateStatus: (id: string, status: ItemStatus) => void
 ): Promise<string> {
-  const { file, spectrumType, chemicalFormula, anode } = item;
+  const { file, spectrumType, chemicalFormula, anode, monochromator } = item;
   if (!spectrumType) throw new Error('no_type_selected');
 
   const config = SPECTRA_CONFIG[spectrumType];
@@ -155,6 +156,7 @@ async function uploadOneFile(
       sampleLabel,
       chemicalFormula: chemicalFormula || undefined,
       anode: anode || 'Cu',
+      monochromator: monochromator || 'none',
       measuredAt: Date.now()
     })
   });
@@ -221,6 +223,7 @@ export function SpectrumUploadDropzone({
       spectrumType: detectSpectrumType(file.name) ?? null,
       chemicalFormula: '',
       anode: 'Cu',
+      monochromator: 'none',
       status: { phase: 'pending' }
     }));
     setItems((prev) => [...prev, ...newItems]);
@@ -247,6 +250,10 @@ export function SpectrumUploadDropzone({
 
   const changeAnode = (id: string, anode: string) => {
     updateItem(id, { anode });
+  };
+
+  const changeMonochromator = (id: string, monochromator: string) => {
+    updateItem(id, { monochromator });
   };
 
   const startUpload = async () => {
@@ -335,6 +342,7 @@ export function SpectrumUploadDropzone({
                   onTypeChange={(type) => changeType(item.id, type)}
                   onFormulaChange={(f) => changeFormula(item.id, f)}
                   onAnodeChange={(a) => changeAnode(item.id, a)}
+                  onMonochromatorChange={(m) => changeMonochromator(item.id, m)}
                   onRemove={() => removeItem(item.id)}
                 />
               ))}
@@ -377,6 +385,7 @@ interface UploadRowProps {
   onTypeChange: (type: SpectrumType) => void;
   onFormulaChange: (formula: string) => void;
   onAnodeChange: (anode: string) => void;
+  onMonochromatorChange: (monochromator: string) => void;
   onRemove: () => void;
 }
 
@@ -392,11 +401,13 @@ function UploadRow({
   onTypeChange,
   onFormulaChange,
   onAnodeChange,
+  onMonochromatorChange,
   onRemove
 }: UploadRowProps) {
   const t = useTranslations('spectra');
   const chemicalFormula = item.chemicalFormula;
   const anode = item.anode;
+  const monochromator = item.monochromator;
   const spectrumType = item.spectrumType;
   const status = item.status;
   const file = item.file;
@@ -455,22 +466,41 @@ function UploadRow({
           className='w-20 text-xs'
         />
         {spectrumType === 'xrd' && (
-          <Select
-            value={anode || 'Cu'}
-            onValueChange={(v) => onAnodeChange(v)}
-            disabled={!canEdit || disabled}
-          >
-            <SelectTrigger className='w-20 text-xs'>
-              <SelectValue placeholder='Cu' />
-            </SelectTrigger>
-            <SelectContent>
-              {['Cu', 'Mo', 'Co', 'Cr', 'Fe', 'Ag'].map((a) => (
-                <SelectItem key={a} value={a}>
-                  {a}-Kα
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <>
+            <Select
+              value={anode || 'Cu'}
+              onValueChange={(v) => onAnodeChange(v)}
+              disabled={!canEdit || disabled}
+            >
+              <SelectTrigger className='w-20 text-xs'>
+                <SelectValue placeholder='Cu' />
+              </SelectTrigger>
+              <SelectContent>
+                {['Cu', 'Mo', 'Co', 'Cr', 'Fe', 'Ag'].map((a) => (
+                  <SelectItem key={a} value={a}>
+                    {a}-Kα
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={monochromator || 'none'}
+              onValueChange={(v) => onMonochromatorChange(v)}
+              disabled={!canEdit || disabled}
+            >
+              <SelectTrigger className='w-24 text-xs'>
+                <SelectValue placeholder='None' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='none'>None</SelectItem>
+                <SelectItem value='ni_filter'>Ni filter</SelectItem>
+                <SelectItem value='graphite'>Graphite</SelectItem>
+                <SelectItem value='ge111'>Ge(111)</SelectItem>
+                <SelectItem value='johansson'>Johansson</SelectItem>
+                <SelectItem value='si220'>Si(220)</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
         )}
       </div>
 

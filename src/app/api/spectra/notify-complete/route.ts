@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       sampleLabel,
       chemicalFormula,
       anode,
+      monochromator,
       instrument,
       measuredAt
     } = body;
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
       sampleLabel: sampleLabel ?? undefined,
       chemicalFormula: chemicalFormula ?? undefined,
       anode: anode ?? undefined,
+      monochromator: monochromator ?? undefined,
       spectrumType: spectrumType as SpectrumType,
       group: config.group,
       storage: {

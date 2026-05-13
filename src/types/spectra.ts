@@ -79,6 +79,7 @@ export interface SpectrumMetadata {
   sampleLabel?: string; // denormalized
   chemicalFormula?: string; // user-provided for citation lookup (e.g. 'WO3')
   anode?: string; // X-ray anode for XRD: Cu/Mo/Co/Cr/Fe/Ag (default Cu)
+  monochromator?: string; // XRD monochromator: none/ni_filter/graphite/ge111/johansson/si220
 
   // Type
   spectrumType: SpectrumType;

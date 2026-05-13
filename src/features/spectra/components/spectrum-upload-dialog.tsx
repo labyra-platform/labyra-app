@@ -28,7 +28,7 @@ export function SpectrumUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-2xl'>
+      <DialogContent className='flex max-h-[85vh] max-w-2xl flex-col overflow-hidden'>
         <DialogHeader>
           <DialogTitle>{t('upload')}</DialogTitle>
           <DialogDescription>{t('subtitle')}</DialogDescription>

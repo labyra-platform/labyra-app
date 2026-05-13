@@ -277,7 +277,7 @@ export function SpectrumUploadDropzone({
   const pendingCount = items.filter((it) => it.status.phase === 'pending').length;
 
   return (
-    <div className='space-y-4'>
+    <div className='flex min-h-0 flex-1 flex-col space-y-4 overflow-hidden'>
       {/* Dropzone */}
       <div
         {...getRootProps()}

@@ -177,9 +177,16 @@ function XRDBody({ ai, parsed }: { ai: XRDAIOutput; parsed: AnalysisResult['pars
       )}
 
       {parsed.spectrum_type === 'xrd' && parsed.williamson_hall && (
-        <div className='rounded-md bg-muted p-3 text-xs'>
-          <strong>W-H fit:</strong> R² = {parsed.williamson_hall.r_squared} (
-          {parsed.williamson_hall.n_peaks_used} peaks)
+        <div className='mt-2 space-y-2'>
+          <div className='rounded-md bg-muted p-3 text-xs'>
+            <strong>W-H fit:</strong> R² = {parsed.williamson_hall.r_squared} (
+            {parsed.williamson_hall.n_peaks_used} peaks)
+          </div>
+          {parsed.williamson_hall.quality_note && (
+            <div className='rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100'>
+              ⚠ {parsed.williamson_hall.quality_note}
+            </div>
+          )}
         </div>
       )}
     </>

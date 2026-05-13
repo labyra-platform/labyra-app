@@ -45,6 +45,8 @@ export interface WilliamsonHallResult {
   r_squared: number;
   method: 'Williamson-Hall';
   n_peaks_used: number;
+  is_reliable?: boolean;
+  quality_note?: string | null;
 }
 
 export interface XRDParsedData {

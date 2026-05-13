@@ -247,9 +247,9 @@ export function getSpectrumConfig(type: SpectrumType): SpectrumTypeConfig {
 /** Heuristic: detect spectrum type from filename (basic — user should confirm) */
 export function detectSpectrumType(filename: string): SpectrumType | null {
   const lower = filename.toLowerCase();
-  if (/\.dm3$/.test(lower)) return 'hrtem';
+  if (lower.endsWith('.dm3')) return 'hrtem';
   if (/\.spm$|\.ibw$/.test(lower)) return 'afm';
-  if (/\.vms$/.test(lower)) return 'xps';
+  if (lower.endsWith('.vms')) return 'xps';
   if (/\.spe$|\.wdf$/.test(lower)) return 'raman';
   if (/xrd/.test(lower) || /\.xy$|\.raw$/.test(lower)) return 'xrd';
   if (/raman/.test(lower)) return 'raman';

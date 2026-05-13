@@ -1,12 +1,27 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "nextjs", "import", "jsx-a11y"],
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react",
+    "nextjs",
+    "import",
+    "jsx-a11y"
+  ],
   "env": {
     "es6": true,
     "browser": true,
     "node": true
   },
-  "ignorePatterns": [".next/**", "out/**", "build/**", "next-env.d.ts", "scripts/**"],
+  "ignorePatterns": [
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "scripts/**"
+  ],
   "settings": {
     "jsx-a11y": {
       "components": {
@@ -20,33 +35,80 @@
     "suspicious": "warn"
   },
   "rules": {
-    "no-console": ["warn", { "allow": ["warn", "error"] }],
-    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-console": [
+      "warn",
+      {
+        "allow": [
+          "warn",
+          "error"
+        ]
+      }
+    ],
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
     "no-unused-expressions": "warn",
     "@typescript-eslint/no-explicit-any": "warn",
-
     "react/react-in-jsx-scope": "off",
     "react/no-unknown-property": "off",
     "react/jsx-no-target-blank": "off",
     "react/no-children-prop": "off",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
-
     "no-shadow": "off",
     "import/no-anonymous-default-export": "warn",
     "import/no-unassigned-import": "off",
-
-    "jsx-a11y/alt-text": ["warn", { "elements": ["img"], "img": ["Image"] }],
+    "jsx-a11y/alt-text": [
+      "warn",
+      {
+        "elements": [
+          "img"
+        ],
+        "img": [
+          "Image"
+        ]
+      }
+    ],
     "jsx-a11y/aria-props": "warn",
     "jsx-a11y/aria-proptypes": "warn",
     "jsx-a11y/aria-unsupported-elements": "warn",
     "jsx-a11y/role-has-required-aria-props": "warn",
     "jsx-a11y/role-supports-aria-props": "warn",
-    "jsx-a11y/prefer-tag-over-role": "off"
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "no-underscore-dangle": [
+      "warn",
+      {
+        "allow": [
+          "_client",
+          "_index",
+          "_nlp",
+          "_its",
+          "_hybrid",
+          "_exhaustive",
+          "_store",
+          "_provider",
+          "_auth",
+          "_registered",
+          "_BM25Vectorizer",
+          "__labyraActiveJobs",
+          "__labyraJobProcessor",
+          "__labyraBM25Cache"
+        ]
+      }
+    ]
   },
   "overrides": [
     {
-      "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+      "files": [
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.mts",
+        "**/*.cts"
+      ],
       "rules": {
         "constructor-super": "off",
         "no-const-assign": "off",

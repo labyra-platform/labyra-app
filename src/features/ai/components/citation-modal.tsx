@@ -46,6 +46,9 @@ export function CitationModal({ source, onClose }: CitationModalProps) {
         // Close when click overlay (but not modal content)
         if (e.target === e.currentTarget) onClose();
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
       role='dialog'
       aria-modal='true'
       aria-labelledby='citation-modal-title'

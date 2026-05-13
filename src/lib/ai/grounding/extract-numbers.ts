@@ -19,7 +19,7 @@ export interface NumberMatch {
  * - Years: 2024, 1998
  */
 const NUMBER_REGEX =
-  /-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?(?:\s*[%]|\s*[a-zA-Z°µ]+(?:[\/·][a-zA-Z²³]+)*)?/g;
+  /-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?(?:\s*[%]|\s*[a-zA-Z°µ]+(?:[/·][a-zA-Z²³]+)*)?/g;
 
 export function extractNumbers(text: string): NumberMatch[] {
   const matches: NumberMatch[] = [];

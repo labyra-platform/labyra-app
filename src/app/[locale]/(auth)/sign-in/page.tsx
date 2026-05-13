@@ -1,4 +1,5 @@
-'use client';
+import Link from 'next/link';
+('use client');
 
 import { useTranslations } from 'next-intl';
 
@@ -100,9 +101,9 @@ export default function SignInPage(): React.ReactElement {
 
       <p className='text-center text-sm text-muted-foreground'>
         {t('noAccount')}{' '}
-        <a href='/sign-up' className='font-medium text-primary hover:underline'>
+        <Link href='/sign-up' className='font-medium text-primary hover:underline'>
           Sign up
-        </a>
+        </Link>
       </p>
     </div>
   );

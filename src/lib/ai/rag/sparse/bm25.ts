@@ -130,7 +130,7 @@ export class BM25Encoder implements SparseEncoder {
 
   /** Export vocab for persistence (sorted list — index = position) */
   getVocab(): string[] {
-    const arr = new Array<string>(this.vocab.size);
+    const arr = Array.from<string>({ length: this.vocab.size });
     for (const [term, idx] of this.vocab.entries()) {
       arr[idx] = term;
     }

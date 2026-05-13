@@ -62,7 +62,7 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   const vectorStore = getVectorStore();
   // Merge user filter with section exclusion
   const mergedFilter: Record<string, unknown> = {
-    ...(req.filter ?? {}),
+    ...req.filter,
     section: { $nin: EXCLUDED_SECTIONS }
   };
 

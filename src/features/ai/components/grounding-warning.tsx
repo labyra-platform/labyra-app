@@ -38,9 +38,13 @@ export function GroundingWarning({ grounding }: { grounding: GroundingDetails })
 
       {open && (
         <div
+          role='presentation'
           className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm'
           onClick={(e) => {
             if (e.target === e.currentTarget) setOpen(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setOpen(false);
           }}
         >
           <div className='relative w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-xl border bg-card shadow-xl'>

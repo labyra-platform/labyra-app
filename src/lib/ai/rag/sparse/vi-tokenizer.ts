@@ -100,7 +100,7 @@ export class VietnameseTokenizer implements Tokenizer {
         .normalize('NFC')
         .toLowerCase()
         // Keep Unicode letters + numbers + dashes (for compounds like "co2", "wo3")
-        .replace(/[^\p{L}\p{N}\-]+/gu, ' ')
+        .replace(/[^\p{L}\p{N}-]+/gu, ' ')
         .split(/\s+/)
         // Strip leading/trailing dashes (markdown bullets, negative numbers etc)
         .map((t) => t.replace(/^-+|-+$/g, ''))

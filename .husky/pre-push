@@ -1,1 +1,2 @@
-pnpm run build
+pnpm exec tsc --noEmit
+pnpm exec oxlint

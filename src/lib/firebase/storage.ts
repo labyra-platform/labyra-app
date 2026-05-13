@@ -71,7 +71,7 @@ export async function deleteStorageFile(storagePath: string): Promise<void> {
 /** Tenant-scoped raw spectrum path */
 export function spectrumRawPath(tenantId: string, spectrumId: string, filename: string): string {
   // Sanitize filename to safe characters
-  const safe = filename.replace(/[^\w.\-]/g, '_');
+  const safe = filename.replace(/[^\w.-]/g, '_');
   return `tenants/${tenantId}/spectra/${spectrumId}/raw/${safe}`;
 }
 
@@ -80,7 +80,7 @@ export function spectrumProcessedPath(
   spectrumId: string,
   filename: string
 ): string {
-  const safe = filename.replace(/[^\w.\-]/g, '_');
+  const safe = filename.replace(/[^\w.-]/g, '_');
   return `tenants/${tenantId}/spectra/${spectrumId}/processed/${safe}`;
 }
 

@@ -111,7 +111,7 @@ function XRDBody({
 }: {
   ai: XRDAIOutput;
   parsed: AnalysisResult['parsed'];
-  t: (k: string, opts?: Record<string, unknown>) => string;
+  t: ReturnType<typeof useTranslations<'spectra.analysis'>>;
 }) {
   return (
     <>
@@ -179,7 +179,7 @@ function UVVisBody({
   t
 }: {
   ai: UVVisAIOutput;
-  t: (k: string, opts?: Record<string, unknown>) => string;
+  t: ReturnType<typeof useTranslations<'spectra.analysis'>>;
 }) {
   return (
     <>
@@ -233,7 +233,7 @@ function RamanBody({
   t
 }: {
   ai: RamanAIOutput;
-  t: (k: string, opts?: Record<string, unknown>) => string;
+  t: ReturnType<typeof useTranslations<'spectra.analysis'>>;
 }) {
   return (
     <>
@@ -285,7 +285,7 @@ function FTIRBody({
   t
 }: {
   ai: FTIRAIOutput;
-  t: (k: string, opts?: Record<string, unknown>) => string;
+  t: ReturnType<typeof useTranslations<'spectra.analysis'>>;
 }) {
   return (
     <>

@@ -146,3 +146,4 @@ Source repos cũ (reference only, không port code):
 - [x] R160-data-1 — Materials + Samples + Experiments full CRUD (pages, forms, API routes)
 - [x] R160-ai-tools-1 — Lab tools polish: align countExperiments/findSample/recentMaterials with data-1 schemas (experimentCode, sampleCode, hazardLevel, quantity/unit)
 - [x] R160-data-1b — i18n + UI polish: full Vietnamese keys for materials/samples/experiments, experiments table backward-compat (legacy schema fallback)
+- [x] R160-data-1c — Full shadcn refactor: Forms with Form/FormField pattern, Tables with shadcn Table, complete i18n labels/placeholders/options

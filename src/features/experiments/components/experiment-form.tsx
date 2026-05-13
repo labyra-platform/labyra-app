@@ -8,8 +8,15 @@ import { toast } from 'sonner';
 import { getAuth } from 'firebase/auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -25,10 +32,15 @@ interface ExperimentFormProps {
   experimentId?: string;
 }
 
+const TYPES = ['synthesis', 'characterization', 'measurement', 'analysis', 'other'] as const;
+const STATUSES = ['planned', 'running', 'completed', 'failed', 'cancelled'] as const;
+
 export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormProps) {
   const router = useRouter();
   const locale = useLocale();
-  const t = useTranslations('experiments');
+  const t = useTranslations('experiments.form');
+  const tType = useTranslations('experiments.type');
+  const tStatus = useTranslations('experiments.status');
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<ExperimentFormValues>({
@@ -59,112 +71,180 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
       const method = experimentId ? 'PATCH' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${token}`
-        },
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify(values)
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success(experimentId ? t('toastUpdated') : t('toastCreated'));
+      toast.success(experimentId ? t('update') : t('create'));
       router.push(`/${locale}/dashboard/experiments`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('toastUpdated'));
+      toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 max-w-2xl'>
-      <div className='grid grid-cols-2 gap-4'>
-        <div className='space-y-1.5'>
-          <Label>Mã *</Label>
-          <Input {...form.register('experimentCode')} placeholder='E-2026-001' />
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6 max-w-3xl'>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <FormField
+            control={form.control}
+            name='experimentCode'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('code')} *</FormLabel>
+                <FormControl>
+                  <Input placeholder={t('codePlaceholder')} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='experimentType'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('type')} *</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {TYPES.map((tp) => (
+                      <SelectItem key={tp} value={tp}>
+                        {tType(tp)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-        <div className='space-y-1.5'>
-          <Label>Loại *</Label>
-          <Select
-            value={form.watch('experimentType')}
-            onValueChange={(v) =>
-              form.setValue('experimentType', v as ExperimentFormValues['experimentType'])
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='synthesis'>Synthesis</SelectItem>
-              <SelectItem value='characterization'>Characterization</SelectItem>
-              <SelectItem value='measurement'>Measurement</SelectItem>
-              <SelectItem value='analysis'>Analysis</SelectItem>
-              <SelectItem value='other'>Other</SelectItem>
-            </SelectContent>
-          </Select>
+
+        <FormField
+          control={form.control}
+          name='title'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('title')} *</FormLabel>
+              <FormControl>
+                <Input placeholder={t('titlePlaceholder')} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name='description'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('description')}</FormLabel>
+              <FormControl>
+                <Textarea rows={2} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+          <FormField
+            control={form.control}
+            name='temperature'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('temperature')}</FormLabel>
+                <FormControl>
+                  <Input type='number' step='any' {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='pressure'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('pressure')}</FormLabel>
+                <FormControl>
+                  <Input type='number' step='any' {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='duration'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('duration')}</FormLabel>
+                <FormControl>
+                  <Input type='number' step='any' {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      </div>
 
-      <div className='space-y-1.5'>
-        <Label>Tiêu đề *</Label>
-        <Input {...form.register('title')} placeholder='Hydrothermal synthesis of WO3' />
-      </div>
+        <FormField
+          control={form.control}
+          name='status'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('status')} *</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {tStatus(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <div className='space-y-1.5'>
-        <Label>Mô tả</Label>
-        <Textarea {...form.register('description')} rows={2} />
-      </div>
+        <FormField
+          control={form.control}
+          name='notes'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('notes')}</FormLabel>
+              <FormControl>
+                <Textarea rows={4} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <div className='grid grid-cols-3 gap-4'>
-        <div className='space-y-1.5'>
-          <Label>Nhiệt độ (°C)</Label>
-          <Input type='number' step='any' {...form.register('temperature')} />
+        <div className='flex justify-end gap-2'>
+          <Button type='button' variant='outline' onClick={() => router.back()}>
+            {t('cancel')}
+          </Button>
+          <Button type='submit' disabled={submitting}>
+            {submitting ? t('saving') : experimentId ? t('update') : t('create')}
+          </Button>
         </div>
-        <div className='space-y-1.5'>
-          <Label>Áp suất</Label>
-          <Input type='number' step='any' {...form.register('pressure')} />
-        </div>
-        <div className='space-y-1.5'>
-          <Label>Thời lượng (phút)</Label>
-          <Input type='number' step='any' {...form.register('duration')} />
-        </div>
-      </div>
-
-      <div className='space-y-1.5'>
-        <Label>Trạng thái *</Label>
-        <Select
-          value={form.watch('status')}
-          onValueChange={(v) => form.setValue('status', v as ExperimentFormValues['status'])}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='planned'>Planned</SelectItem>
-            <SelectItem value='running'>Running</SelectItem>
-            <SelectItem value='completed'>Completed</SelectItem>
-            <SelectItem value='failed'>Failed</SelectItem>
-            <SelectItem value='cancelled'>Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className='space-y-1.5'>
-        <Label>Ghi chú</Label>
-        <Textarea {...form.register('notes')} rows={4} />
-      </div>
-
-      <div className='flex gap-2 justify-end'>
-        <Button
-          type='button'
-          variant='outline'
-          onClick={() => router.push(`/${locale}/dashboard/experiments`)}
-        >
-          Hủy
-        </Button>
-        <Button type='submit' disabled={submitting}>
-          {submitting ? 'Đang lưu...' : experimentId ? 'Cập nhật' : 'Tạo mới'}
-        </Button>
-      </div>
-    </form>
+      </form>
+    </Form>
   );
 }

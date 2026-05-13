@@ -202,7 +202,46 @@
     "colCategory": "Category",
     "colQuantity": "Quantity",
     "colLocation": "Location",
-    "colHazard": "Hazard"
+    "colHazard": "Hazard",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "e.g. WO₃ powder",
+      "formula": "Formula",
+      "formulaPlaceholder": "e.g. WO₃",
+      "category": "Category",
+      "cas": "CAS number",
+      "casPlaceholder": "12345-67-8",
+      "location": "Storage location",
+      "locationPlaceholder": "e.g. Shelf A3",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "supplier": "Supplier",
+      "supplierPlaceholder": "e.g. Sigma-Aldrich",
+      "lotNumber": "Lot number",
+      "lotPlaceholder": "e.g. Lot 2024-XYZ",
+      "hazardLevel": "Hazard level",
+      "hazardNotes": "Safety notes",
+      "cancel": "Cancel",
+      "create": "Create",
+      "update": "Update",
+      "saving": "Saving..."
+    },
+    "category": {
+      "chemical": "Chemical",
+      "reagent": "Reagent",
+      "solvent": "Solvent",
+      "gas": "Gas",
+      "consumable": "Consumable",
+      "equipment": "Equipment",
+      "other": "Other"
+    },
+    "hazard": {
+      "none": "None",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "extreme": "Extreme"
+    }
   },
   "samples": {
     "title": "Samples",
@@ -222,7 +261,32 @@
     "colName": "Name",
     "colMassVolume": "Mass / Volume",
     "colStatus": "Status",
-    "colLocation": "Location"
+    "colLocation": "Location",
+    "form": {
+      "code": "Sample code",
+      "codePlaceholder": "e.g. S-2026-001",
+      "name": "Name",
+      "namePlaceholder": "e.g. WO₃ nanopowder batch A",
+      "description": "Description",
+      "mass": "Mass (g)",
+      "volume": "Volume (mL)",
+      "concentration": "Concentration",
+      "status": "Status",
+      "location": "Location",
+      "locationPlaceholder": "e.g. Fridge 1, Shelf B",
+      "protocol": "Protocol",
+      "cancel": "Cancel",
+      "create": "Create",
+      "update": "Update",
+      "saving": "Saving..."
+    },
+    "status": {
+      "prepared": "Prepared",
+      "in_use": "In use",
+      "consumed": "Consumed",
+      "archived": "Archived",
+      "discarded": "Discarded"
+    }
   },
   "experiments": {
     "title": "Experiments",
@@ -242,6 +306,37 @@
     "colTitle": "Title",
     "colType": "Type",
     "colStatus": "Status",
-    "colStarted": "Started"
+    "colStarted": "Started",
+    "form": {
+      "code": "Code",
+      "codePlaceholder": "e.g. E-2026-001",
+      "title": "Title",
+      "titlePlaceholder": "e.g. Hydrothermal WO₃ synthesis",
+      "description": "Description",
+      "type": "Type",
+      "status": "Status",
+      "temperature": "Temperature (°C)",
+      "pressure": "Pressure",
+      "duration": "Duration (min)",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "create": "Create",
+      "update": "Update",
+      "saving": "Saving..."
+    },
+    "type": {
+      "synthesis": "Synthesis",
+      "characterization": "Characterization",
+      "measurement": "Measurement",
+      "analysis": "Analysis",
+      "other": "Other"
+    },
+    "status": {
+      "planned": "Planned",
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    }
   }
 }

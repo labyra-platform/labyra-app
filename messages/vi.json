@@ -202,7 +202,46 @@
     "colCategory": "Loại",
     "colQuantity": "Số lượng",
     "colLocation": "Vị trí",
-    "colHazard": "Nguy hiểm"
+    "colHazard": "Nguy hiểm",
+    "form": {
+      "name": "Tên",
+      "namePlaceholder": "vd: WO₃ powder",
+      "formula": "Công thức",
+      "formulaPlaceholder": "vd: WO₃",
+      "category": "Loại",
+      "cas": "Số CAS",
+      "casPlaceholder": "12345-67-8",
+      "location": "Vị trí lưu trữ",
+      "locationPlaceholder": "vd: Tủ A3",
+      "quantity": "Số lượng",
+      "unit": "Đơn vị",
+      "supplier": "Nhà cung cấp",
+      "supplierPlaceholder": "vd: Sigma-Aldrich",
+      "lotNumber": "Số lô",
+      "lotPlaceholder": "vd: Lot 2024-XYZ",
+      "hazardLevel": "Mức nguy hiểm",
+      "hazardNotes": "Ghi chú an toàn",
+      "cancel": "Hủy",
+      "create": "Tạo mới",
+      "update": "Cập nhật",
+      "saving": "Đang lưu..."
+    },
+    "category": {
+      "chemical": "Hóa chất",
+      "reagent": "Thuốc thử",
+      "solvent": "Dung môi",
+      "gas": "Khí",
+      "consumable": "Vật tư tiêu hao",
+      "equipment": "Thiết bị",
+      "other": "Khác"
+    },
+    "hazard": {
+      "none": "Không",
+      "low": "Thấp",
+      "medium": "Trung bình",
+      "high": "Cao",
+      "extreme": "Cực cao"
+    }
   },
   "samples": {
     "title": "Mẫu",
@@ -222,7 +261,32 @@
     "colName": "Tên",
     "colMassVolume": "Khối lượng / Thể tích",
     "colStatus": "Trạng thái",
-    "colLocation": "Vị trí"
+    "colLocation": "Vị trí",
+    "form": {
+      "code": "Mã sample",
+      "codePlaceholder": "vd: S-2026-001",
+      "name": "Tên",
+      "namePlaceholder": "vd: WO₃ nanopowder batch A",
+      "description": "Mô tả",
+      "mass": "Khối lượng (g)",
+      "volume": "Thể tích (mL)",
+      "concentration": "Nồng độ",
+      "status": "Trạng thái",
+      "location": "Vị trí",
+      "locationPlaceholder": "vd: Tủ lạnh 1, kệ B",
+      "protocol": "Quy trình",
+      "cancel": "Hủy",
+      "create": "Tạo mới",
+      "update": "Cập nhật",
+      "saving": "Đang lưu..."
+    },
+    "status": {
+      "prepared": "Đã chuẩn bị",
+      "in_use": "Đang sử dụng",
+      "consumed": "Đã sử dụng hết",
+      "archived": "Lưu trữ",
+      "discarded": "Đã hủy"
+    }
   },
   "experiments": {
     "title": "Thí nghiệm",
@@ -242,6 +306,37 @@
     "colTitle": "Tiêu đề",
     "colType": "Loại",
     "colStatus": "Trạng thái",
-    "colStarted": "Bắt đầu"
+    "colStarted": "Bắt đầu",
+    "form": {
+      "code": "Mã thí nghiệm",
+      "codePlaceholder": "vd: E-2026-001",
+      "title": "Tiêu đề",
+      "titlePlaceholder": "vd: Tổng hợp hydrothermal WO₃",
+      "description": "Mô tả",
+      "type": "Loại",
+      "status": "Trạng thái",
+      "temperature": "Nhiệt độ (°C)",
+      "pressure": "Áp suất",
+      "duration": "Thời lượng (phút)",
+      "notes": "Ghi chú",
+      "cancel": "Hủy",
+      "create": "Tạo mới",
+      "update": "Cập nhật",
+      "saving": "Đang lưu..."
+    },
+    "type": {
+      "synthesis": "Tổng hợp",
+      "characterization": "Đặc trưng hóa",
+      "measurement": "Đo đạc",
+      "analysis": "Phân tích",
+      "other": "Khác"
+    },
+    "status": {
+      "planned": "Đã lên kế hoạch",
+      "running": "Đang chạy",
+      "completed": "Hoàn thành",
+      "failed": "Thất bại",
+      "cancelled": "Đã hủy"
+    }
   }
 }

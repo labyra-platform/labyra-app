@@ -2,6 +2,14 @@
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 import { useSamples } from '@/lib/firestore/queries/samples';
 import type { SampleStatus } from '@/types/samples';
 
@@ -17,6 +25,7 @@ export function SamplesTable() {
   const { samples, loading } = useSamples();
   const locale = useLocale();
   const t = useTranslations('samples');
+  const tStatus = useTranslations('samples.status');
 
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
@@ -27,39 +36,39 @@ export function SamplesTable() {
   }
 
   return (
-    <div className='rounded-lg border overflow-x-auto'>
-      <table className='w-full text-sm'>
-        <thead className='bg-muted/50 text-xs uppercase'>
-          <tr>
-            <th className='px-3 py-2 text-left'>{t('colCode')}</th>
-            <th className='px-3 py-2 text-left'>{t('colName')}</th>
-            <th className='px-3 py-2 text-right'>{t('colMassVolume')}</th>
-            <th className='px-3 py-2 text-left'>{t('colStatus')}</th>
-            <th className='px-3 py-2 text-left'>{t('colLocation')}</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className='rounded-lg border'>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('colCode')}</TableHead>
+            <TableHead>{t('colName')}</TableHead>
+            <TableHead className='text-right'>{t('colMassVolume')}</TableHead>
+            <TableHead>{t('colStatus')}</TableHead>
+            <TableHead>{t('colLocation')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {samples.map((s) => (
-            <tr key={s.id} className='border-t hover:bg-muted/30'>
-              <td className='px-3 py-2 font-mono text-xs'>
+            <TableRow key={s.id}>
+              <TableCell className='font-mono text-xs'>
                 <Link href={`/${locale}/dashboard/samples/${s.id}`} className='hover:underline'>
                   {s.sampleCode}
                 </Link>
-              </td>
-              <td className='px-3 py-2 font-medium'>{s.name}</td>
-              <td className='px-3 py-2 text-right tabular-nums'>
+              </TableCell>
+              <TableCell className='font-medium'>{s.name}</TableCell>
+              <TableCell className='text-right tabular-nums'>
                 {s.mass != null ? `${s.mass} g` : s.volume != null ? `${s.volume} mL` : '—'}
-              </td>
-              <td className='px-3 py-2'>
+              </TableCell>
+              <TableCell>
                 <Badge className={statusColor[s.status]} variant='secondary'>
-                  {s.status}
+                  {tStatus(s.status)}
                 </Badge>
-              </td>
-              <td className='px-3 py-2 text-muted-foreground'>{s.location ?? '—'}</td>
-            </tr>
+              </TableCell>
+              <TableCell className='text-muted-foreground'>{s.location ?? '—'}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

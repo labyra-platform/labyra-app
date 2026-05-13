@@ -3,6 +3,14 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 import { useMaterials } from '@/lib/firestore/queries/materials';
 import type { HazardLevel } from '@/types/materials';
 
@@ -18,6 +26,8 @@ export function MaterialsTable() {
   const { materials, loading } = useMaterials();
   const locale = useLocale();
   const t = useTranslations('materials');
+  const tCat = useTranslations('materials.category');
+  const tHaz = useTranslations('materials.hazard');
 
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
@@ -28,21 +38,21 @@ export function MaterialsTable() {
   }
 
   return (
-    <div className='rounded-lg border overflow-x-auto'>
-      <table className='w-full text-sm'>
-        <thead className='bg-muted/50 text-xs uppercase'>
-          <tr>
-            <th className='px-3 py-2 text-left'>{t('colName')}</th>
-            <th className='px-3 py-2 text-left'>{t('colCategory')}</th>
-            <th className='px-3 py-2 text-right'>{t('colQuantity')}</th>
-            <th className='px-3 py-2 text-left'>{t('colLocation')}</th>
-            <th className='px-3 py-2 text-left'>{t('colHazard')}</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className='rounded-lg border'>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('colName')}</TableHead>
+            <TableHead>{t('colCategory')}</TableHead>
+            <TableHead className='text-right'>{t('colQuantity')}</TableHead>
+            <TableHead>{t('colLocation')}</TableHead>
+            <TableHead>{t('colHazard')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {materials.map((m) => (
-            <tr key={m.id} className='border-t hover:bg-muted/30'>
-              <td className='px-3 py-2'>
+            <TableRow key={m.id}>
+              <TableCell>
                 <Link
                   href={`/${locale}/dashboard/materials/${m.id}`}
                   className='font-medium hover:underline'
@@ -52,22 +62,22 @@ export function MaterialsTable() {
                 {m.formula && (
                   <span className='ml-2 text-muted-foreground text-xs'>{m.formula}</span>
                 )}
-              </td>
-              <td className='px-3 py-2 capitalize'>{m.category}</td>
-              <td className='px-3 py-2 text-right tabular-nums'>
+              </TableCell>
+              <TableCell>{tCat(m.category)}</TableCell>
+              <TableCell className='text-right tabular-nums'>
                 {m.quantity} {m.unit}
-              </td>
-              <td className='px-3 py-2 text-muted-foreground'>{m.location ?? '—'}</td>
-              <td className='px-3 py-2'>
+              </TableCell>
+              <TableCell className='text-muted-foreground'>{m.location ?? '—'}</TableCell>
+              <TableCell>
                 <Badge className={hazardColor[m.hazardLevel]} variant='secondary'>
                   {m.hazardLevel !== 'none' && <IconAlertTriangle size={10} className='mr-1' />}
-                  {m.hazardLevel}
+                  {tHaz(m.hazardLevel)}
                 </Badge>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

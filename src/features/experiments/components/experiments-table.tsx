@@ -2,6 +2,14 @@
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 import { useExperiments } from '@/lib/firestore/queries/experiments';
 
 const statusColor: Record<string, string> = {
@@ -14,13 +22,15 @@ const statusColor: Record<string, string> = {
 
 function formatDate(ms: number | undefined): string {
   if (!ms) return '—';
-  return new Date(ms).toLocaleDateString('vi-VN');
+  return new Date(ms).toLocaleDateString();
 }
 
 export function ExperimentsTable() {
   const { experiments, loading } = useExperiments();
   const locale = useLocale();
   const t = useTranslations('experiments');
+  const tType = useTranslations('experiments.type');
+  const tStatus = useTranslations('experiments.status');
 
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
@@ -30,51 +40,56 @@ export function ExperimentsTable() {
     return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
+  // Use .has() check to avoid triggering MISSING_MESSAGE error events.
+  // Legacy experiments may have free-form type values not in i18n catalog.
+  const safeType = (key: string): string => (tType.has(key) ? tType(key) : key);
+  const safeStatus = (key: string): string => (tStatus.has(key) ? tStatus(key) : key);
+
   return (
-    <div className='rounded-lg border overflow-x-auto'>
-      <table className='w-full text-sm'>
-        <thead className='bg-muted/50 text-xs uppercase'>
-          <tr>
-            <th className='px-3 py-2 text-left'>{t('colCode')}</th>
-            <th className='px-3 py-2 text-left'>{t('colTitle')}</th>
-            <th className='px-3 py-2 text-left'>{t('colType')}</th>
-            <th className='px-3 py-2 text-left'>{t('colStatus')}</th>
-            <th className='px-3 py-2 text-left'>{t('colStarted')}</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className='rounded-lg border'>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('colCode')}</TableHead>
+            <TableHead>{t('colTitle')}</TableHead>
+            <TableHead>{t('colType')}</TableHead>
+            <TableHead>{t('colStatus')}</TableHead>
+            <TableHead>{t('colStarted')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {experiments.map((e) => {
-            // Backward-compat: handle data with legacy schema (type vs experimentType, no experimentCode)
+            // Backward-compat: handle legacy schema
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const data = e as any;
             const code = data.experimentCode ?? e.id;
-            const type = data.experimentType ?? data.type ?? '—';
+            const type = data.experimentType ?? data.type ?? 'other';
             const startMs = e.startedAt ?? data.startDate ?? undefined;
             return (
-              <tr key={e.id} className='border-t hover:bg-muted/30'>
-                <td className='px-3 py-2 font-mono text-xs'>
+              <TableRow key={e.id}>
+                <TableCell className='font-mono text-xs'>
                   <Link
                     href={`/${locale}/dashboard/experiments/${e.id}`}
                     className='hover:underline'
                   >
                     {code}
                   </Link>
-                </td>
-                <td className='px-3 py-2 font-medium'>{e.title}</td>
-                <td className='px-3 py-2 capitalize'>{type}</td>
-                <td className='px-3 py-2'>
+                </TableCell>
+                <TableCell className='font-medium'>{e.title}</TableCell>
+                <TableCell>{safeType(type)}</TableCell>
+                <TableCell>
                   <Badge className={statusColor[e.status] ?? 'bg-muted'} variant='secondary'>
-                    {e.status}
+                    {safeStatus(e.status)}
                   </Badge>
-                </td>
-                <td className='px-3 py-2 text-muted-foreground'>
+                </TableCell>
+                <TableCell className='text-muted-foreground'>
                   {formatDate(typeof startMs === 'number' ? startMs : undefined)}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

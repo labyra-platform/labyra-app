@@ -8,8 +8,15 @@ import { toast } from 'sonner';
 import { getAuth } from 'firebase/auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -25,10 +32,13 @@ interface SampleFormProps {
   sampleId?: string;
 }
 
+const STATUSES = ['prepared', 'in_use', 'consumed', 'archived', 'discarded'] as const;
+
 export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
   const router = useRouter();
   const locale = useLocale();
-  const t = useTranslations('samples');
+  const t = useTranslations('samples.form');
+  const tStatus = useTranslations('samples.status');
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<SampleFormValues>({
@@ -59,103 +69,170 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       const method = sampleId ? 'PATCH' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${token}`
-        },
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify(values)
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success(sampleId ? t('toastUpdated') : t('toastCreated'));
+      toast.success(sampleId ? t('update') : t('create'));
       router.push(`/${locale}/dashboard/samples`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('toastUpdated'));
+      toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 max-w-2xl'>
-      <div className='grid grid-cols-2 gap-4'>
-        <div className='space-y-1.5'>
-          <Label>Mã sample *</Label>
-          <Input {...form.register('sampleCode')} placeholder='S-2026-001' />
-          {form.formState.errors.sampleCode && (
-            <p className='text-destructive text-xs'>{form.formState.errors.sampleCode.message}</p>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6 max-w-3xl'>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <FormField
+            control={form.control}
+            name='sampleCode'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('code')} *</FormLabel>
+                <FormControl>
+                  <Input placeholder={t('codePlaceholder')} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='name'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('name')} *</FormLabel>
+                <FormControl>
+                  <Input placeholder={t('namePlaceholder')} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name='description'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('description')}</FormLabel>
+              <FormControl>
+                <Textarea rows={2} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
+        />
+
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+          <FormField
+            control={form.control}
+            name='mass'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('mass')}</FormLabel>
+                <FormControl>
+                  <Input type='number' step='any' {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='volume'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('volume')}</FormLabel>
+                <FormControl>
+                  <Input type='number' step='any' {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='concentration'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('concentration')}</FormLabel>
+                <FormControl>
+                  <Input type='number' step='any' {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-        <div className='space-y-1.5'>
-          <Label>Tên *</Label>
-          <Input {...form.register('name')} placeholder='WO3 nanopowder batch A' />
-          {form.formState.errors.name && (
-            <p className='text-destructive text-xs'>{form.formState.errors.name.message}</p>
+
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <FormField
+            control={form.control}
+            name='status'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('status')} *</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {tStatus(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='location'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('location')}</FormLabel>
+                <FormControl>
+                  <Input placeholder={t('locationPlaceholder')} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name='protocol'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('protocol')}</FormLabel>
+              <FormControl>
+                <Textarea rows={3} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-      </div>
+        />
 
-      <div className='space-y-1.5'>
-        <Label>Mô tả</Label>
-        <Textarea {...form.register('description')} rows={2} />
-      </div>
-
-      <div className='grid grid-cols-3 gap-4'>
-        <div className='space-y-1.5'>
-          <Label>Khối lượng (g)</Label>
-          <Input type='number' step='any' {...form.register('mass')} />
+        <div className='flex justify-end gap-2'>
+          <Button type='button' variant='outline' onClick={() => router.back()}>
+            {t('cancel')}
+          </Button>
+          <Button type='submit' disabled={submitting}>
+            {submitting ? t('saving') : sampleId ? t('update') : t('create')}
+          </Button>
         </div>
-        <div className='space-y-1.5'>
-          <Label>Thể tích (mL)</Label>
-          <Input type='number' step='any' {...form.register('volume')} />
-        </div>
-        <div className='space-y-1.5'>
-          <Label>Nồng độ</Label>
-          <Input type='number' step='any' {...form.register('concentration')} />
-        </div>
-      </div>
-
-      <div className='grid grid-cols-2 gap-4'>
-        <div className='space-y-1.5'>
-          <Label>Trạng thái *</Label>
-          <Select
-            value={form.watch('status')}
-            onValueChange={(v) => form.setValue('status', v as SampleFormValues['status'])}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='prepared'>Prepared</SelectItem>
-              <SelectItem value='in_use'>In use</SelectItem>
-              <SelectItem value='consumed'>Consumed</SelectItem>
-              <SelectItem value='archived'>Archived</SelectItem>
-              <SelectItem value='discarded'>Discarded</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className='space-y-1.5'>
-          <Label>Vị trí</Label>
-          <Input {...form.register('location')} placeholder='Fridge 1, Shelf B' />
-        </div>
-      </div>
-
-      <div className='space-y-1.5'>
-        <Label>Protocol</Label>
-        <Textarea {...form.register('protocol')} rows={3} />
-      </div>
-
-      <div className='flex gap-2 justify-end'>
-        <Button
-          type='button'
-          variant='outline'
-          onClick={() => router.push(`/${locale}/dashboard/samples`)}
-        >
-          Hủy
-        </Button>
-        <Button type='submit' disabled={submitting}>
-          {submitting ? 'Đang lưu...' : sampleId ? 'Cập nhật' : 'Tạo mới'}
-        </Button>
-      </div>
-    </form>
+      </form>
+    </Form>
   );
 }

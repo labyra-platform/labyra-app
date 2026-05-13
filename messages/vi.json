@@ -473,7 +473,13 @@
       "queued": "Đang chờ",
       "processing": "Đang xử lý",
       "analyzed": "Đã phân tích",
-      "failed": "Thất bại"
+      "failed": "Thất bại",
+      "pending": "Chờ",
+      "hashing": "Tính hash",
+      "requesting": "Xin URL",
+      "uploading": "Đang upload",
+      "notifying": "Hoàn tất",
+      "done": "Xong"
     },
     "group": {
       "structural": "Cấu trúc",
@@ -506,7 +512,11 @@
       "sem": "SEM",
       "tem": "TEM",
       "afm": "AFM",
-      "optical_microscopy": "Quang học vi mô"
+      "optical_microscopy": "Quang học vi mô",
+      "uvvis_drs": "UV-Vis DRS",
+      "tga": "TGA",
+      "dsc": "DSC",
+      "ocp": "OCP"
     },
     "colGroup": "Nhóm",
     "detail": {
@@ -547,10 +557,31 @@
       "functionalGroups": "Nhóm chức năng",
       "compoundClass": "Loại hợp chất khả dĩ",
       "likelySampleType": "Loại mẫu khả dĩ",
-      "reflectanceProfile": "Profile phản xạ"
+      "reflectanceProfile": "Profile phản xạ",
+      "decompStages": "Các giai đoạn phân hủy",
+      "stage": "Giai đoạn",
+      "estimatedComposition": "Thành phần ước tính",
+      "thermalStability": "Độ bền nhiệt",
+      "likelyMaterialClass": "Loại vật liệu khả dĩ",
+      "thermalEvents": "Sự kiện nhiệt",
+      "equilibriumPotential": "Thế cân bằng",
+      "stabilityAssessment": "Đánh giá độ ổn định",
+      "physicalMeaning": "Ý nghĩa vật lý"
     },
     "chart": {
       "peaks": "Đỉnh đã phát hiện"
-    }
+    },
+    "dragOrClickMulti": "Kéo thả file vào đây hoặc click để chọn (nhiều file)",
+    "dropFilesHere": "Thả file vào đây",
+    "multiFileHint": "Hỗ trợ nhiều file. Mỗi file chọn loại phổ riêng.",
+    "selectType": "Chọn loại",
+    "selectTypeForAll": "Chọn loại phổ cho tất cả file",
+    "queueStatus": "{total} file · {done} xong · {pending} chờ",
+    "uploadCount": "Upload {count} file",
+    "uploadedCount": "{count} file đã upload",
+    "failedCount": "{count} file thất bại",
+    "noFilesToUpload": "Chưa có file",
+    "clearAll": "Xóa tất cả",
+    "clearCompleted": "Xóa file đã xong"
   }
 }

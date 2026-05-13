@@ -80,7 +80,32 @@ export const SPECTRA_CONFIG: Record<SpectrumType, SpectrumTypeConfig> = {
     defaultUnits: { x: 'Wavenumber (cm⁻¹)', y: '%T or Absorbance' },
     isImage: false
   },
+  // Thermal
+  tga: {
+    type: 'tga',
+    group: 'thermal',
+    acceptedExtensions: ['.csv', '.txt', '.tga'],
+    maxSizeBytes: 5 * MB,
+    defaultUnits: { x: 'Temperature (°C)', y: 'Mass (%)' },
+    isImage: false
+  },
+  dsc: {
+    type: 'dsc',
+    group: 'thermal',
+    acceptedExtensions: ['.csv', '.txt', '.dsc'],
+    maxSizeBytes: 5 * MB,
+    defaultUnits: { x: 'Temperature (°C)', y: 'Heat flow (mW)' },
+    isImage: false
+  },
   // Electrochemistry
+  ocp: {
+    type: 'ocp',
+    group: 'electrochemistry',
+    acceptedExtensions: ['.csv', '.txt', '.dat'],
+    maxSizeBytes: 5 * MB,
+    defaultUnits: { x: 'Time (s)', y: 'Potential (V)' },
+    isImage: false
+  },
   cv: {
     type: 'cv',
     group: 'electrochemistry',

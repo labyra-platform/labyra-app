@@ -12,6 +12,9 @@ export type SpectrumType =
   // Optical (4)
   | 'uvvis'
   | 'uvvis_drs'
+  | 'ocp'
+  | 'dsc'
+  | 'tga'
   | 'pl'
   | 'raman'
   | 'ftir'
@@ -41,6 +44,7 @@ export type SpectrumGroup =
   | 'optical'
   | 'electrochemistry'
   | 'photoelectrochemistry'
+  | 'thermal'
   | 'surface'
   | 'microscopy';
 

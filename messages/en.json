@@ -473,7 +473,13 @@
       "queued": "Queued",
       "processing": "Processing",
       "analyzed": "Analyzed",
-      "failed": "Failed"
+      "failed": "Failed",
+      "pending": "Pending",
+      "hashing": "Hashing",
+      "requesting": "Requesting URL",
+      "uploading": "Uploading",
+      "notifying": "Finalizing",
+      "done": "Done"
     },
     "group": {
       "structural": "Structural",
@@ -506,7 +512,11 @@
       "sem": "SEM",
       "tem": "TEM",
       "afm": "AFM",
-      "optical_microscopy": "Optical microscopy"
+      "optical_microscopy": "Optical microscopy",
+      "uvvis_drs": "UV-Vis DRS",
+      "tga": "TGA",
+      "dsc": "DSC",
+      "ocp": "OCP"
     },
     "colGroup": "Group",
     "detail": {
@@ -547,10 +557,31 @@
       "functionalGroups": "Functional Groups",
       "compoundClass": "Likely Compound Class",
       "likelySampleType": "Likely Sample Type",
-      "reflectanceProfile": "Reflectance Profile"
+      "reflectanceProfile": "Reflectance Profile",
+      "decompStages": "Decomposition Stages",
+      "stage": "Stage",
+      "estimatedComposition": "Estimated Composition",
+      "thermalStability": "Thermal Stability",
+      "likelyMaterialClass": "Likely Material Class",
+      "thermalEvents": "Thermal Events",
+      "equilibriumPotential": "Equilibrium Potential",
+      "stabilityAssessment": "Stability",
+      "physicalMeaning": "Physical Meaning"
     },
     "chart": {
       "peaks": "Detected Peaks"
-    }
+    },
+    "dragOrClickMulti": "Drag files here or click to select (multiple)",
+    "dropFilesHere": "Drop files here",
+    "multiFileHint": "Multiple files supported. Each file gets its own spectrum type.",
+    "selectType": "Select type",
+    "selectTypeForAll": "Select spectrum type for all files",
+    "queueStatus": "{total} files · {done} done · {pending} pending",
+    "uploadCount": "Upload {count}",
+    "uploadedCount": "{count} file(s) uploaded",
+    "failedCount": "{count} file(s) failed",
+    "noFilesToUpload": "No files to upload",
+    "clearAll": "Clear all",
+    "clearCompleted": "Clear completed"
   }
 }

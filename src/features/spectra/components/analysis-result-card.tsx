@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { SciText, formatSciText } from '@/features/spectra/utils/format-units';
+import { TGABody, DSCBody, OCPBody } from '@/features/spectra/components/analysis-bodies-ext';
+import type { TGAAIOutput, DSCAIOutput, OCPAIOutput } from '@/types/spectra-analysis-ext';
 import type {
   AnalysisResult,
   ConfidenceLevel,
@@ -64,6 +66,9 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
         {spectrumType === 'uvvis_drs' && <UVVisDRSBody ai={ai as UVVisDRSAIOutput} />}
         {spectrumType === 'raman' && <RamanBody ai={ai as RamanAIOutput} />}
         {spectrumType === 'ftir' && <FTIRBody ai={ai as FTIRAIOutput} />}
+        {spectrumType === 'tga' && <TGABody ai={ai as TGAAIOutput} />}
+        {spectrumType === 'dsc' && <DSCBody ai={ai as DSCAIOutput} />}
+        {spectrumType === 'ocp' && <OCPBody ai={ai as OCPAIOutput} />}
 
         {ai.warnings.length > 0 && (
           <>
@@ -73,7 +78,7 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
                 {t('warnings')}
               </h4>
               <ul className='mt-2 space-y-1 text-sm'>
-                {ai.warnings.map((w, i) => (
+                {ai.warnings.map((w: string, i: number) => (
                   <li key={i} className='flex gap-2'>
                     <span className='text-amber-500'>⚠</span>
                     <span>
@@ -92,7 +97,7 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
             <div>
               <h4 className='text-sm font-medium text-muted-foreground'>{t('nextSteps')}</h4>
               <ul className='mt-2 list-inside list-disc space-y-1 text-sm'>
-                {ai.next_steps.map((step, i) => (
+                {ai.next_steps.map((step: string, i: number) => (
                   <li key={i}>
                     <SciText>{step}</SciText>
                   </li>

@@ -1,10 +1,8 @@
 'use client';
 
 /**
- * SpectrumAnalysisSection — client component, dispatches chart by type.
- * UV-Vis: main spectrum + Tauc plot.
- * UV-Vis DRS: reflectance/KM + Tauc plot.
- * @phase R160-spectra-3c-hotfix
+ * SpectrumAnalysisSection — dispatch chart by type (extended).
+ * @phase R160-spectra-3c-hotfix3
  */
 
 import { useEffect, useState } from 'react';
@@ -13,6 +11,7 @@ import { AnalysisResultCard } from '@/features/spectra/components/analysis-resul
 import { DRSChart } from '@/features/spectra/components/drs-chart';
 import { SpectrumChart } from '@/features/spectra/components/spectrum-chart';
 import { TaucChart } from '@/features/spectra/components/tauc-chart';
+import { DSCChart, OCPChart, TGAChart } from '@/features/spectra/components/spectrum-chart-ext';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { AnalysisResult } from '@/types/spectra-analysis';
 
@@ -67,7 +66,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     <div className='space-y-6'>
       <AnalysisResultCard result={result} />
 
-      {/* Main spectrum chart */}
+      {/* Original 4 types */}
       {(parsed.spectrum_type === 'xrd' ||
         parsed.spectrum_type === 'uvvis' ||
         parsed.spectrum_type === 'raman' ||
@@ -83,13 +82,13 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
           <TaucChart
             curve={parsed.tauc_curve}
             bandgap={parsed.tauc_bandgap}
-            yLabel={`(αhν)${parsed.tauc_bandgap.transition === 'direct' ? '²' : '^(1/2)'} (a.u.)`}
-            title={`Tauc Plot — ${parsed.tauc_bandgap.transition} transition`}
+            yLabel={`(αhν)^n (a.u.)`}
+            title={`Tauc Plot — ${parsed.tauc_bandgap.transition}`}
           />
         </div>
       )}
 
-      {/* UV-Vis DRS: reflectance + KM + Tauc */}
+      {/* UV-Vis DRS */}
       {parsed.spectrum_type === 'uvvis_drs' && (
         <>
           <div className='rounded-lg border bg-card p-4'>
@@ -104,12 +103,33 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
               <TaucChart
                 curve={parsed.tauc_curve}
                 bandgap={parsed.tauc_bandgap}
-                yLabel={`(F(R)·hν)${parsed.tauc_bandgap.transition === 'direct' ? '²' : '^(1/2)'} (a.u.)`}
-                title={`Tauc Plot on Kubelka-Munk — ${parsed.tauc_bandgap.transition}`}
+                yLabel={`(F(R)hν)^n (a.u.)`}
+                title={`Tauc on Kubelka-Munk — ${parsed.tauc_bandgap.transition}`}
               />
             </div>
           )}
         </>
+      )}
+
+      {/* TGA */}
+      {parsed.spectrum_type === 'tga' && (
+        <div className='rounded-lg border bg-card p-4'>
+          <TGAChart parsed={parsed} />
+        </div>
+      )}
+
+      {/* DSC */}
+      {parsed.spectrum_type === 'dsc' && (
+        <div className='rounded-lg border bg-card p-4'>
+          <DSCChart parsed={parsed} />
+        </div>
+      )}
+
+      {/* OCP */}
+      {parsed.spectrum_type === 'ocp' && (
+        <div className='rounded-lg border bg-card p-4'>
+          <OCPChart parsed={parsed} />
+        </div>
       )}
     </div>
   );

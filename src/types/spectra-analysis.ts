@@ -1,7 +1,17 @@
 /**
+
  * AnalysisResult types — mirror worker schema.
  * @phase R160-spectra-3c-hotfix
  */
+
+import type {
+  TGAParsedData,
+  TGAAIOutput,
+  DSCParsedData,
+  DSCAIOutput,
+  OCPParsedData,
+  OCPAIOutput
+} from '@/types/spectra-analysis-ext';
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
 
@@ -256,14 +266,20 @@ export type SpectrumParsedData =
   | UVVisParsedData
   | UVVisDRSParsedData
   | RamanParsedData
-  | FTIRParsedData;
+  | FTIRParsedData
+  | TGAParsedData
+  | DSCParsedData
+  | OCPParsedData;
 
 export type SpectrumAIOutput =
   | XRDAIOutput
   | UVVisAIOutput
   | UVVisDRSAIOutput
   | RamanAIOutput
-  | FTIRAIOutput;
+  | FTIRAIOutput
+  | TGAAIOutput
+  | DSCAIOutput
+  | OCPAIOutput;
 
 export interface AnalysisResult {
   schemaVersion: 1;

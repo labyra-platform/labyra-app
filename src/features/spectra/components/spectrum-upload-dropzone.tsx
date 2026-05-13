@@ -32,6 +32,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { SPECTRA_CONFIG, ALL_ACCEPTED_EXTENSIONS, detectSpectrumType } from '@/lib/spectra/config';
 import type { SpectrumType } from '@/types/spectra';
@@ -56,6 +57,7 @@ interface UploadItem {
   id: string; // local UUID for keying
   file: File;
   spectrumType: SpectrumType | null;
+  chemicalFormula: string;
   status: ItemStatus;
 }
 
@@ -79,7 +81,7 @@ async function uploadOneFile(
   sampleLabel: string | undefined,
   updateStatus: (id: string, status: ItemStatus) => void
 ): Promise<string> {
-  const { file, spectrumType } = item;
+  const { file, spectrumType, chemicalFormula } = item;
   if (!spectrumType) throw new Error('no_type_selected');
 
   const config = SPECTRA_CONFIG[spectrumType];
@@ -150,6 +152,7 @@ async function uploadOneFile(
       experimentId,
       sampleId,
       sampleLabel,
+      chemicalFormula: chemicalFormula || undefined,
       measuredAt: Date.now()
     })
   });
@@ -214,6 +217,7 @@ export function SpectrumUploadDropzone({
       id: genId(),
       file,
       spectrumType: detectSpectrumType(file.name) ?? null,
+      chemicalFormula: '',
       status: { phase: 'pending' }
     }));
     setItems((prev) => [...prev, ...newItems]);
@@ -232,6 +236,10 @@ export function SpectrumUploadDropzone({
 
   const changeType = (id: string, type: SpectrumType) => {
     updateItem(id, { spectrumType: type });
+  };
+
+  const changeFormula = (id: string, formula: string) => {
+    updateItem(id, { chemicalFormula: formula });
   };
 
   const startUpload = async () => {
@@ -318,6 +326,7 @@ export function SpectrumUploadDropzone({
                   item={item}
                   disabled={isUploading}
                   onTypeChange={(type) => changeType(item.id, type)}
+                  onFormulaChange={(f) => changeFormula(item.id, f)}
                   onRemove={() => removeItem(item.id)}
                 />
               ))}
@@ -358,6 +367,7 @@ interface UploadRowProps {
   item: UploadItem;
   disabled: boolean;
   onTypeChange: (type: SpectrumType) => void;
+  onFormulaChange: (formula: string) => void;
   onRemove: () => void;
 }
 
@@ -367,7 +377,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function UploadRow({ item, disabled, onTypeChange, onRemove }: UploadRowProps) {
+function UploadRow({ item, disabled, onTypeChange, onFormulaChange, onRemove }: UploadRowProps) {
   const t = useTranslations('spectra');
   const { file, spectrumType, status } = item;
   const canEdit = status.phase === 'pending';

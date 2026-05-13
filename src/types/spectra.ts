@@ -77,6 +77,7 @@ export interface SpectrumMetadata {
   experimentId: string;
   sampleId: string;
   sampleLabel?: string; // denormalized
+  chemicalFormula?: string; // user-provided for citation lookup (e.g. 'WO3')
 
   // Type
   spectrumType: SpectrumType;

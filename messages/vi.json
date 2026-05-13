@@ -582,6 +582,7 @@
     "failedCount": "{count} file thất bại",
     "noFilesToUpload": "Chưa có file",
     "clearAll": "Xóa tất cả",
-    "clearCompleted": "Xóa file đã xong"
+    "clearCompleted": "Xóa file đã xong",
+    "formulaPlaceholder": "CT (vd: WO3)"
   }
 }

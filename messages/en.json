@@ -582,6 +582,7 @@
     "failedCount": "{count} file(s) failed",
     "noFilesToUpload": "No files to upload",
     "clearAll": "Clear all",
-    "clearCompleted": "Clear completed"
+    "clearCompleted": "Clear completed",
+    "formulaPlaceholder": "Formula (e.g. WO3)"
   }
 }

@@ -108,6 +108,7 @@ export function XRDPeakDetailTable({ peaks }: XRDPeakDetailTableProps) {
       rowKey={(r) => `${r.two_theta}-${r._idx}`}
       footer='D = Scherrer crystallite size (Kλ/βcosθ, K=0.9). β = integral breadth. δ = 1/D² dislocation density. ε = βcosθ/4 microstrain.'
       emptyMessage='No peaks detected.'
+      exportFilename='xrd-peak-details'
     />
   );
 }

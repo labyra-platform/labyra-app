@@ -31,9 +31,11 @@ export function NavBack({ fallback, label = 'Back', variant = 'ghost' }: NavBack
   };
 
   return (
-    <Button variant={variant} size='sm' onClick={handleClick} className='gap-1'>
-      <IconArrowLeft className='size-4' />
-      {label}
-    </Button>
+    <div className='flex justify-start'>
+      <Button variant={variant} size='sm' onClick={handleClick} className='gap-1'>
+        <IconArrowLeft className='size-4' />
+        {label}
+      </Button>
+    </div>
   );
 }

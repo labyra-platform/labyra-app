@@ -16,8 +16,11 @@ import {
   IconChevronUp,
   IconArrowsSort,
   IconSortAscending,
-  IconSortDescending
+  IconSortDescending,
+  IconDownload
 } from '@tabler/icons-react';
+import * as XLSX from 'xlsx';
+import { Button } from '@/components/ui/button';
 
 export interface DataTableColumn<T> {
   key: string;
@@ -42,6 +45,10 @@ interface DataTableProps<T> {
   rowKey: (row: T, idx: number) => string;
   footer?: ReactNode;
   emptyMessage?: string;
+  /** If set, shows export button. Filename without extension. */
+  exportFilename?: string;
+  /** Custom value extractor for export (default: use column.cell as string) */
+  exportValue?: (row: T, columnKey: string) => string | number | null;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -55,7 +62,9 @@ export function DataTable<T>({
   initialCollapsed = false,
   rowKey,
   footer,
-  emptyMessage = 'No data.'
+  emptyMessage = 'No data.',
+  exportFilename,
+  exportValue
 }: DataTableProps<T>) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
@@ -90,6 +99,28 @@ export function DataTable<T>({
       setSortKey(null);
       setSortDir(null);
     }
+  };
+
+  const handleExport = () => {
+    if (!sortedRows.length) return;
+    const data = sortedRows.map((row, idx) => {
+      const obj: Record<string, string | number | null> = {};
+      for (const col of columns) {
+        if (exportValue) {
+          obj[col.header] = exportValue(row, col.key);
+        } else if (col.sortValue) {
+          obj[col.header] = col.sortValue(row) ?? null;
+        } else {
+          obj[col.header] = String(col.cell(row, idx) ?? '');
+        }
+      }
+      return obj;
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Data');
+    const filename = exportFilename ?? 'table';
+    XLSX.writeFile(wb, `${filename}.xlsx`);
   };
 
   const renderSortIcon = (key: string) => {

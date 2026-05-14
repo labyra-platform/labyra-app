@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import PageContainer from '@/components/layout/page-container';
 import { getReferenceCard } from '@/lib/firebase/reference-cards/service';
 import { getCurrentTenantId } from '@/lib/auth/server';
+import { formatSciText } from '@/features/spectra/utils/format-units';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,10 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
   }
 
   return (
-    <PageContainer pageTitle={card.phaseName} pageDescription={card.formula ?? card.cardNumber}>
+    <PageContainer
+      pageTitle={formatSciText(card.phaseName)}
+      pageDescription={card.formula ? formatSciText(card.formula) : card.cardNumber}
+    >
       <div className='space-y-6'>
         <Link
           href={`/${locale}/dashboard/spectra`}
@@ -57,7 +61,7 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
         <div className='rounded-lg border bg-card p-4 space-y-3'>
           <div className='flex items-center gap-2'>
             <IconBook className='size-5 text-muted-foreground' />
-            <h2 className='text-lg font-medium'>{card.phaseName}</h2>
+            <h2 className='text-lg font-medium'>{formatSciText(card.phaseName)}</h2>
             <Badge variant='secondary' className='ml-auto'>
               Internal · {card.cardNumber}
             </Badge>
@@ -66,7 +70,7 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
           <div className='grid grid-cols-2 gap-4 text-sm sm:grid-cols-4'>
             <div>
               <div className='text-muted-foreground text-xs'>Formula</div>
-              <div className='font-mono'>{card.formula ?? '—'}</div>
+              <div className='font-mono'>{card.formula ? formatSciText(card.formula) : '—'}</div>
             </div>
             <div>
               <div className='text-muted-foreground text-xs'>Space group</div>

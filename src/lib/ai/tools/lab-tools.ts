@@ -7,7 +7,6 @@ import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { RegisteredTool, ToolContext } from './types';
 
 // ─── countExperiments ─────────────────────────────────────────────
-type ExperimentStatusFilter = 'planned' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 async function countExperimentsHandler(input: Record<string, unknown>, ctx: ToolContext) {
   const db = getAdminFirestoreService();
@@ -150,14 +149,6 @@ export const findSample: RegisteredTool = {
 };
 
 // ─── recentMaterials ──────────────────────────────────────────────
-type MaterialCategoryFilter =
-  | 'chemical'
-  | 'reagent'
-  | 'solvent'
-  | 'gas'
-  | 'consumable'
-  | 'equipment'
-  | 'other';
 
 async function recentMaterialsHandler(input: Record<string, unknown>, ctx: ToolContext) {
   const limit =

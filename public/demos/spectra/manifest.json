@@ -15,6 +15,36 @@
       "monochromator": "none",
       "expectedPhase": "W18O49 monoclinic (P2/m), COD #1535917 / MP-19394",
       "sizeBytes": 40178
+    },
+    {
+      "id": "xrd-tio2-anatase",
+      "filename": "xrd-tio2-anatase.xy",
+      "spectrumType": "xrd",
+      "label_vi": "TiO₂ anatase (simulated)",
+      "label_en": "TiO₂ anatase (simulated)",
+      "formula": "TiO2",
+      "description_vi": "Mẫu simulated TiO₂ pha anatase (tetragonal I4₁/amd) từ JCPDS 21-1272. Peak chủ đạo: 25.3° (101), 37.8° (004), 48.0° (200). FWHM=0.10° (crystallite ~80 nm). Cu Kα. Dùng để demo + test pipeline.",
+      "description_en": "Simulated TiO₂ anatase (tetragonal I4₁/amd) from JCPDS 21-1272. Main peaks: 25.3° (101), 37.8° (004), 48.0° (200). FWHM=0.10° (crystallite ~80 nm). Cu Kα. For demo + pipeline testing.",
+      "anode": "Cu",
+      "monochromator": "none",
+      "expectedPhase": "TiO2 anatase (I41/amd), JCPDS 21-1272 / MP-390",
+      "synthetic": true,
+      "sizeBytes": 44833
+    },
+    {
+      "id": "xrd-zno-wurtzite",
+      "filename": "xrd-zno-wurtzite.xy",
+      "spectrumType": "xrd",
+      "label_vi": "ZnO wurtzite (simulated)",
+      "label_en": "ZnO wurtzite (simulated)",
+      "formula": "ZnO",
+      "description_vi": "Mẫu simulated ZnO pha wurtzite (hexagonal P6₃mc) từ JCPDS 36-1451. Peak chủ đạo: 31.8° (100), 34.4° (002), 36.3° (101). FWHM=0.10°. Cu Kα. Dùng để demo + test pipeline.",
+      "description_en": "Simulated ZnO wurtzite (hexagonal P6₃mc) from JCPDS 36-1451. Main peaks: 31.8° (100), 34.4° (002), 36.3° (101). FWHM=0.10°. Cu Kα. For demo + pipeline testing.",
+      "anode": "Cu",
+      "monochromator": "none",
+      "expectedPhase": "ZnO wurtzite (P63mc), JCPDS 36-1451 / MP-2133",
+      "synthetic": true,
+      "sizeBytes": 44842
     }
   ]
 }

@@ -96,7 +96,22 @@
           "_BM25Vectorizer",
           "__labyraActiveJobs",
           "__labyraJobProcessor",
-          "__labyraBM25Cache"
+          "__labyraBM25Cache",
+          "_seconds",
+          "_nanoseconds",
+          "_patched",
+          "_path",
+          "_meta",
+          "_id",
+          "_idx",
+          "_app",
+          "_values",
+          "_adminApp",
+          "_adminFirestore",
+          "_firestoreSettingsApplied",
+          "protected_",
+          "_queue",
+          "_processorEnsured"
         ]
       }
     ]

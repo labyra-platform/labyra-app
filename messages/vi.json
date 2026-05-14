@@ -637,5 +637,33 @@
     "toastUpdated": "Đã cập nhật",
     "toastDeleted": "Đã xóa",
     "backToLibrary": "Quay lại thư viện"
+  },
+  "lifecycle": {
+    "status": {
+      "active": "Hoạt động",
+      "deprecated": "Đã ngừng",
+      "retracted": "Đã thu hồi"
+    },
+    "filter": {
+      "label": "Lọc",
+      "title": "Trạng thái hiển thị"
+    },
+    "deprecate": "Lưu trữ",
+    "deprecateConfirmTitle": "Lưu trữ bản ghi này?",
+    "deprecateConfirmDesc": "Bản ghi sẽ ẩn khỏi danh sách mặc định nhưng vẫn lưu giữ và có thể khôi phục sau.",
+    "deprecated": "Đã lưu trữ",
+    "retract": "Thu hồi",
+    "retractConfirmTitle": "Thu hồi bản ghi (không thể hoàn tác)",
+    "retractConfirmDesc": "Thu hồi đánh dấu bản ghi là không hợp lệ về mặt khoa học. Hành động này KHÔNG thể hoàn tác. Vui lòng nhập lý do để lưu lại trong audit log.",
+    "retractReasonLabel": "Lý do thu hồi",
+    "retractReasonPlaceholder": "VD: Phát hiện lỗi dụng cụ, dữ liệu sai...",
+    "retractReasonRequired": "Vui lòng nhập lý do thu hồi",
+    "retracted": "Đã thu hồi",
+    "retractedNotice": "Bản ghi đã thu hồi (không thể chỉnh sửa).",
+    "reactivate": "Khôi phục",
+    "reactivated": "Đã khôi phục",
+    "cannotReactivateRetracted": "Không thể khôi phục bản ghi đã thu hồi (immutable theo chính sách compliance).",
+    "cancel": "Hủy",
+    "errorGeneric": "Có lỗi xảy ra"
   }
 }

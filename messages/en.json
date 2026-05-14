@@ -637,5 +637,33 @@
     "toastUpdated": "Card updated",
     "toastDeleted": "Card deleted",
     "backToLibrary": "Back to library"
+  },
+  "lifecycle": {
+    "status": {
+      "active": "Active",
+      "deprecated": "Deprecated",
+      "retracted": "Retracted"
+    },
+    "filter": {
+      "label": "Filter",
+      "title": "Show statuses"
+    },
+    "deprecate": "Archive",
+    "deprecateConfirmTitle": "Archive this record?",
+    "deprecateConfirmDesc": "The record will be hidden from default lists but retained and reversible.",
+    "deprecated": "Archived",
+    "retract": "Retract",
+    "retractConfirmTitle": "Retract record (irreversible)",
+    "retractConfirmDesc": "Retraction marks the record as scientifically invalid. This action CANNOT be undone. Please provide a reason for the audit log.",
+    "retractReasonLabel": "Retraction reason",
+    "retractReasonPlaceholder": "E.g., Instrument malfunction, data error...",
+    "retractReasonRequired": "Please provide a retraction reason",
+    "retracted": "Retracted",
+    "retractedNotice": "This record has been retracted (read-only).",
+    "reactivate": "Reactivate",
+    "reactivated": "Reactivated",
+    "cannotReactivateRetracted": "Cannot reactivate retracted records (immutable per compliance policy).",
+    "cancel": "Cancel",
+    "errorGeneric": "An error occurred"
   }
 }

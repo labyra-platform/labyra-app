@@ -11,38 +11,109 @@ import type { ReferenceCard, ReferenceCardPeak } from '@/types/spectra';
 
 const COLLECTION = 'reference_cards';
 
-interface CreateReferenceCardInput {
-  tenantId: string;
-  cardNumber: string;
-  phaseName: string;
-  formula?: string;
-  spaceGroup?: string;
-  anode?: string;
-  peaks: ReferenceCardPeak[];
-  notes?: string;
-  createdBy: string;
-}
+// R163-spectra-4c-4a: discriminated-union create supporting all spectrum types.
+import type {
+  XRDReferenceCard,
+  FTIRReferenceCard,
+  RamanReferenceCard,
+  UVVisReferenceCard
+} from '@/types/spectra';
+import type { CreateAnyRefCardInput } from '@/lib/spectra/reference-card-schema';
 
-export async function createReferenceCard(input: CreateReferenceCardInput): Promise<ReferenceCard> {
+type CreateInputWithMeta = CreateAnyRefCardInput & {
+  tenantId: string;
+  createdBy: string;
+};
+
+export async function createReferenceCard(input: CreateInputWithMeta): Promise<ReferenceCard> {
   const id = randomUUID();
   const now = Date.now();
-  // R163-4c-2: legacy createReferenceCard is XRD-only.
-  // FTIR/Raman/UVVis variants will get dedicated create functions in 4c-3.
-  const card: import('@/types/spectra').XRDReferenceCard = {
-    id,
-    tenantId: input.tenantId,
-    spectrumType: 'xrd',
-    cardNumber: input.cardNumber,
-    phaseName: input.phaseName,
-    formula: input.formula,
-    spaceGroup: input.spaceGroup,
-    anode: input.anode,
-    source: 'manual',
-    peaks: input.peaks,
-    notes: input.notes,
-    createdBy: input.createdBy,
-    createdAt: now
-  };
+
+  // Build variant matching spectrumType (compiler narrows via discriminator)
+  let card: ReferenceCard;
+  switch (input.spectrumType) {
+    case 'xrd': {
+      const xrd: XRDReferenceCard = {
+        id,
+        tenantId: input.tenantId,
+        spectrumType: 'xrd',
+        cardNumber: input.cardNumber,
+        phaseName: input.phaseName,
+        formula: input.formula,
+        spaceGroup: input.spaceGroup,
+        anode: input.anode,
+        source: 'manual',
+        peaks: input.peaks,
+        notes: input.notes,
+        createdBy: input.createdBy,
+        createdAt: now
+      };
+      card = xrd;
+      break;
+    }
+    case 'ftir': {
+      const ftir: FTIRReferenceCard = {
+        id,
+        tenantId: input.tenantId,
+        spectrumType: 'ftir',
+        cardNumber: input.cardNumber,
+        phaseName: input.phaseName,
+        formula: input.formula,
+        mode: input.mode,
+        source: 'manual',
+        peaks: input.peaks,
+        notes: input.notes,
+        createdBy: input.createdBy,
+        createdAt: now
+      };
+      card = ftir;
+      break;
+    }
+    case 'raman': {
+      const raman: RamanReferenceCard = {
+        id,
+        tenantId: input.tenantId,
+        spectrumType: 'raman',
+        cardNumber: input.cardNumber,
+        phaseName: input.phaseName,
+        formula: input.formula,
+        laserWavelength: input.laserWavelength,
+        source: 'manual',
+        peaks: input.peaks,
+        notes: input.notes,
+        createdBy: input.createdBy,
+        createdAt: now
+      };
+      card = raman;
+      break;
+    }
+    case 'uvvis': {
+      const uvvis: UVVisReferenceCard = {
+        id,
+        tenantId: input.tenantId,
+        spectrumType: 'uvvis',
+        cardNumber: input.cardNumber,
+        phaseName: input.phaseName,
+        formula: input.formula,
+        solvent: input.solvent,
+        source: 'manual',
+        peaks: input.peaks,
+        notes: input.notes,
+        createdBy: input.createdBy,
+        createdAt: now
+      };
+      card = uvvis;
+      break;
+    }
+    default: {
+      // Exhaustive check — TS will error if a new variant is added without handling
+      const _exhaustive: never = input;
+      throw new Error(
+        `Unsupported spectrum type: ${(_exhaustive as { spectrumType: string }).spectrumType}`
+      );
+    }
+  }
+
   await getAdminFirestoreService()
     .collection('tenants')
     .doc(input.tenantId)

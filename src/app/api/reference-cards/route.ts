@@ -11,7 +11,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService } from '@/lib/firebase/admin';
-import { CreateReferenceCardSchema } from '@/lib/spectra/reference-card-schema';
+import { CreateAnyRefCardSchema } from '@/lib/spectra/reference-card-schema';
 import { createReferenceCard, listReferenceCards } from '@/lib/firebase/reference-cards/service';
 import { getTenantIdFromToken } from '@/lib/auth/token';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const parsed = CreateReferenceCardSchema.safeParse(body);
+  const parsed = CreateAnyRefCardSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'invalid_input', details: parsed.error.flatten() },

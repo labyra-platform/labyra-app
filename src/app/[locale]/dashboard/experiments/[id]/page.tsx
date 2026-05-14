@@ -12,6 +12,7 @@ import { useExperiment } from '@/lib/firestore/queries/experiments';
 import { ExperimentForm } from '@/features/experiments/components/experiment-form';
 import { SpectraList } from '@/features/spectra/components/spectra-list';
 import { SpectrumUploadDialog } from '@/features/spectra/components/spectrum-upload-dialog';
+import { NavBack } from '@/components/nav/nav-back';
 
 export default function ExperimentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -69,6 +70,7 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
         </Button>
       }
     >
+      <NavBack fallback={`/${locale}/dashboard/experiments`} label='Back to experiments' />
       <Tabs defaultValue='edit' className='w-full'>
         <TabsList>
           <TabsTrigger value='edit'>{t('tabEdit')}</TabsTrigger>

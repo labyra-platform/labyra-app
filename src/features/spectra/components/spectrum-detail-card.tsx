@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { getAuth } from 'firebase/auth';
-import { IconDownload, IconAlertCircle } from '@tabler/icons-react';
+import { IconDownload, IconAlertCircle, IconRefresh } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,31 @@ interface SpectrumDetailCardProps {
 }
 
 export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
+  const [reanalyzing, setReanalyzing] = useState(false);
+
+  const handleReanalyze = async () => {
+    if (reanalyzing) return;
+    setReanalyzing(true);
+    try {
+      const user = getAuth().currentUser;
+      if (!user) throw new Error('Not authenticated');
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/spectra/${spectrum.id}/reanalyze`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(errBody.slice(0, 200));
+      }
+      toast.success('Re-analysis queued. Refresh in ~30s to see results.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Re-analyze failed');
+    } finally {
+      setReanalyzing(false);
+    }
+  };
+
   const t = useTranslations('spectra');
   const tType = useTranslations('spectra.type');
   const tStatus = useTranslations('spectra.status');
@@ -65,10 +90,23 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
                 {tType(spectrum.spectrumType)} · {tGroup(spectrum.group)}
               </CardDescription>
             </div>
-            <Button onClick={handleDownload} disabled={downloading}>
-              <IconDownload className='size-4' />
-              {downloading ? tField('preparing') : tField('download')}
-            </Button>
+            <div className='flex gap-2'>
+              <Button onClick={handleDownload} disabled={downloading}>
+                <IconDownload className='size-4' />
+                {downloading ? tField('preparing') : tField('download')}
+              </Button>
+              <Button
+                variant='outline'
+                onClick={handleReanalyze}
+                disabled={
+                  reanalyzing || spectrum.status === 'queued' || spectrum.status === 'processing'
+                }
+                title='Re-run analysis with latest worker'
+              >
+                <IconRefresh className={`size-4 ${reanalyzing ? 'animate-spin' : ''}`} />
+                {reanalyzing ? 'Re-analyzing…' : 'Re-analyze'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className='space-y-3'>

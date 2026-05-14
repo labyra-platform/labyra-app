@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import PageContainer from '@/components/layout/page-container';
 import { useSpectrum } from '@/lib/firestore/queries/spectra';
 import { SpectrumDetailCard } from '@/features/spectra/components/spectrum-detail-card';
+import { NavBack } from '@/components/nav/nav-back';
 
 import { SpectrumAnalysisSection } from '@/features/spectra/components/spectrum-analysis-section';
 export default function SpectrumDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -61,6 +62,10 @@ export default function SpectrumDetailPage({ params }: { params: Promise<{ id: s
         </Button>
       }
     >
+      <NavBack
+        fallback={`/${locale}/dashboard/experiments/${spectrum.experimentId}`}
+        label={`Back to ${spectrum.experimentId}`}
+      />
       <SpectrumDetailCard spectrum={spectrum} />
       {/* R160-spectra-3b-analysis-render */}
       <SpectrumAnalysisSection spectrumId={spectrum.id} status={spectrum.status} />

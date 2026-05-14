@@ -117,3 +117,181 @@ export function computeInternalCandidates(
 
   return candidates.toSorted((a, b) => b.match_score - a.match_score);
 }
+
+// ============================================================
+// R163-spectra-4c-5b — Multi-type internal candidates
+// ============================================================
+import { matchScoreFTIR, matchScoreRaman, matchScoreUVVis } from '@/lib/spectra/multi-match-score';
+import type {
+  SpectrumParsedData,
+  FTIRCitationCandidate,
+  RamanCitationCandidate,
+  UVVisCitationCandidate,
+  MultiCitationCandidate,
+  FTIRPeak,
+  RamanPeak,
+  UVVisPeak
+} from '@/types/spectra-analysis';
+import type { FTIRReferenceCard, RamanReferenceCard, UVVisReferenceCard } from '@/types/spectra';
+
+const THRESHOLD_MULTI = 0.3;
+
+/**
+ * Build user assignment map: user peak index → assignment from matched ref.
+ * Only includes peaks that matched.
+ */
+function buildAssignmentMap<R extends { assignment?: string }>(
+  details: { userIdx: number | null; matched: boolean }[],
+  refPeaks: R[]
+): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (let i = 0; i < details.length; i++) {
+    const d = details[i];
+    const ref = refPeaks[i];
+    if (d?.matched && d.userIdx !== null && ref?.assignment) {
+      map[String(d.userIdx)] = ref.assignment;
+    }
+  }
+  return map;
+}
+
+export function computeFTIRCandidates(
+  userPeaks: FTIRPeak[],
+  refCards: FTIRReferenceCard[]
+): FTIRCitationCandidate[] {
+  if (userPeaks.length === 0 || refCards.length === 0) return [];
+  const candidates: FTIRCitationCandidate[] = [];
+  for (const card of refCards) {
+    const result = matchScoreFTIR(userPeaks, card.peaks);
+    if (result.score < THRESHOLD_MULTI) continue;
+    candidates.push({
+      spectrumType: 'ftir',
+      citation: {
+        source: 'internal',
+        id: card.id,
+        title: card.phaseName,
+        authors: card.notes ?? null,
+        journal: null,
+        year: null,
+        doi: null,
+        url: null
+      },
+      formula: card.formula ?? '',
+      reference_peaks: card.peaks.map((p) => ({
+        wavenumber: p.wavenumber,
+        intensity: p.intensity,
+        assignment: p.assignment ?? null
+      })),
+      match_score: result.score,
+      matched_peaks_count: result.matchedCount,
+      total_user_peaks: userPeaks.length,
+      user_assignment_map: buildAssignmentMap(result.details, card.peaks)
+    });
+  }
+  return candidates.toSorted((a, b) => b.match_score - a.match_score);
+}
+
+export function computeRamanCandidates(
+  userPeaks: RamanPeak[],
+  refCards: RamanReferenceCard[]
+): RamanCitationCandidate[] {
+  if (userPeaks.length === 0 || refCards.length === 0) return [];
+  const candidates: RamanCitationCandidate[] = [];
+  for (const card of refCards) {
+    const result = matchScoreRaman(userPeaks, card.peaks);
+    if (result.score < THRESHOLD_MULTI) continue;
+    candidates.push({
+      spectrumType: 'raman',
+      citation: {
+        source: 'internal',
+        id: card.id,
+        title: card.phaseName,
+        authors: card.notes ?? null,
+        journal: null,
+        year: null,
+        doi: null,
+        url: null
+      },
+      formula: card.formula ?? '',
+      laser_wavelength_nm: card.laserWavelength ?? null,
+      reference_peaks: card.peaks.map((p) => ({
+        shift: p.shift,
+        intensity: p.intensity,
+        assignment: p.assignment ?? null
+      })),
+      match_score: result.score,
+      matched_peaks_count: result.matchedCount,
+      total_user_peaks: userPeaks.length,
+      user_assignment_map: buildAssignmentMap(result.details, card.peaks)
+    });
+  }
+  return candidates.toSorted((a, b) => b.match_score - a.match_score);
+}
+
+export function computeUVVisCandidates(
+  userPeaks: UVVisPeak[],
+  refCards: UVVisReferenceCard[]
+): UVVisCitationCandidate[] {
+  if (userPeaks.length === 0 || refCards.length === 0) return [];
+  const candidates: UVVisCitationCandidate[] = [];
+  for (const card of refCards) {
+    const result = matchScoreUVVis(userPeaks, card.peaks);
+    if (result.score < THRESHOLD_MULTI) continue;
+    candidates.push({
+      spectrumType: 'uvvis',
+      citation: {
+        source: 'internal',
+        id: card.id,
+        title: card.phaseName,
+        authors: card.notes ?? null,
+        journal: null,
+        year: null,
+        doi: null,
+        url: null
+      },
+      formula: card.formula ?? '',
+      solvent: card.solvent ?? null,
+      reference_peaks: card.peaks.map((p) => ({
+        wavelength: p.wavelength,
+        intensity: p.intensity,
+        assignment: p.assignment ?? null
+      })),
+      match_score: result.score,
+      matched_peaks_count: result.matchedCount,
+      total_user_peaks: userPeaks.length,
+      user_assignment_map: buildAssignmentMap(result.details, card.peaks)
+    });
+  }
+  return candidates.toSorted((a, b) => b.match_score - a.match_score);
+}
+
+/**
+ * Dispatcher: route to type-specific candidate computation based on parsed
+ * spectrum type. Filters refCards to matching spectrumType before matching.
+ */
+export function computeMultiInternalCandidates(
+  parsed: SpectrumParsedData,
+  refCards: ReferenceCard[]
+): MultiCitationCandidate[] {
+  if (parsed.spectrum_type === 'xrd' && 'peaks' in parsed) {
+    // Reuse existing XRD logic for backward compat, tag with spectrumType
+    const xrdCandidates = computeInternalCandidates(parsed.peaks, refCards);
+    return xrdCandidates.map((c) => ({ ...c, spectrumType: 'xrd' as const }));
+  }
+  if (parsed.spectrum_type === 'ftir' && 'peaks' in parsed) {
+    const ftirCards = refCards.filter((c): c is FTIRReferenceCard => c.spectrumType === 'ftir');
+    return computeFTIRCandidates(parsed.peaks, ftirCards);
+  }
+  if (parsed.spectrum_type === 'raman' && 'peaks' in parsed) {
+    const ramanCards = refCards.filter((c): c is RamanReferenceCard => c.spectrumType === 'raman');
+    return computeRamanCandidates(parsed.peaks, ramanCards);
+  }
+  if (
+    (parsed.spectrum_type === 'uvvis' || parsed.spectrum_type === 'uvvis_drs') &&
+    'peaks' in parsed
+  ) {
+    const uvvisCards = refCards.filter((c): c is UVVisReferenceCard => c.spectrumType === 'uvvis');
+    return computeUVVisCandidates(parsed.peaks as UVVisPeak[], uvvisCards);
+  }
+  return [];
+}

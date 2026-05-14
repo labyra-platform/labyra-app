@@ -91,6 +91,7 @@ export class AnthropicProvider implements LLMProvider {
         params.tools = toAnthropicTools(request.tools);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK third-party type mismatch
       const stream = await getClient().messages.stream(params as any);
 
       // Accumulate tool_use blocks (they arrive across multiple events)
@@ -167,6 +168,7 @@ export class AnthropicProvider implements LLMProvider {
     if (request.tools && request.tools.length > 0) {
       params.tools = toAnthropicTools(request.tools);
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK third-party type mismatch
     const response = await getClient().messages.create(params as any);
 
     const textBlock = response.content.find((b) => b.type === 'text');

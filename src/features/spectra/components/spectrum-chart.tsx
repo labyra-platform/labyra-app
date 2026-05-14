@@ -78,8 +78,8 @@ function getXRDTraces(
   ];
   if (parsed.peaks.length > 0) {
     traces.push({
-      x: parsed.peaks.map((p: any) => p.two_theta),
-      y: parsed.peaks.map((p: any) => p.intensity),
+      x: parsed.peaks.map((p) => p.two_theta),
+      y: parsed.peaks.map((p) => p.intensity),
       type: 'scatter',
       mode: 'text+markers',
       name: 'Peaks',
@@ -89,11 +89,11 @@ function getXRDTraces(
         symbol: 'triangle-down',
         line: { color: 'white', width: 1 }
       },
-      text: parsed.peaks.map((_p: any, i: number) => `${i + 1}`),
+      text: parsed.peaks.map((_p, i) => `${i + 1}`),
       textposition: 'top center',
       hovertemplate: '%{customdata}<br>I = %{y:.1f}<extra></extra>',
       customdata: parsed.peaks.map(
-        (p: any) => `2θ = ${p.two_theta.toFixed(3)}°, FWHM = ${p.fwhm.toFixed(3)}°`
+        (p) => `2θ = ${p.two_theta.toFixed(3)}°, FWHM = ${p.fwhm.toFixed(3)}°`
       )
     });
   }
@@ -135,8 +135,8 @@ function getUVVisTraces(parsed: SpectrumParsedData): PlotData[] {
   ];
   if (parsed.peaks.length > 0) {
     traces.push({
-      x: parsed.peaks.map((p: any) => p.wavelength_nm),
-      y: parsed.peaks.map((p: any) => p.absorbance),
+      x: parsed.peaks.map((p) => p.wavelength_nm),
+      y: parsed.peaks.map((p) => p.absorbance),
       type: 'scatter',
       mode: 'text+markers',
       name: 'Peaks',
@@ -146,11 +146,11 @@ function getUVVisTraces(parsed: SpectrumParsedData): PlotData[] {
         symbol: 'triangle-down',
         line: { color: 'white', width: 1 }
       },
-      text: parsed.peaks.map((_p: any, i: number) => `${i + 1}`),
+      text: parsed.peaks.map((_p, i) => `${i + 1}`),
       textposition: 'top center',
       hovertemplate: '%{customdata}<extra></extra>',
       customdata: parsed.peaks.map(
-        (p: any) => `λ = ${p.wavelength_nm.toFixed(2)} nm (${p.energy_ev.toFixed(2)} eV)`
+        (p) => `λ = ${p.wavelength_nm.toFixed(2)} nm (${p.energy_ev.toFixed(2)} eV)`
       )
     });
   }
@@ -171,8 +171,8 @@ function getRamanTraces(parsed: SpectrumParsedData): PlotData[] {
   ];
   if (parsed.peaks.length > 0) {
     traces.push({
-      x: parsed.peaks.map((p: any) => p.shift_cm1),
-      y: parsed.peaks.map((p: any) => p.intensity),
+      x: parsed.peaks.map((p) => p.shift_cm1),
+      y: parsed.peaks.map((p) => p.intensity),
       type: 'scatter',
       mode: 'text+markers',
       name: 'Peaks',
@@ -182,11 +182,11 @@ function getRamanTraces(parsed: SpectrumParsedData): PlotData[] {
         symbol: 'triangle-down',
         line: { color: 'white', width: 1 }
       },
-      text: parsed.peaks.map((_p: any, i: number) => `${i + 1}`),
+      text: parsed.peaks.map((_p, i) => `${i + 1}`),
       textposition: 'top center',
       hovertemplate: '%{customdata}<br>I = %{y:.1f}<extra></extra>',
       customdata: parsed.peaks.map(
-        (p: any) => `ν = ${p.shift_cm1.toFixed(1)} cm⁻¹, FWHM = ${p.fwhm.toFixed(1)}`
+        (p) => `ν = ${p.shift_cm1.toFixed(1)} cm⁻¹, FWHM = ${p.fwhm.toFixed(1)}`
       )
     });
   }
@@ -209,10 +209,10 @@ function getFTIRTraces(parsed: SpectrumParsedData): PlotData[] {
     // Marker y values: convert absorbance back to %T scale if needed for visual position
     const yValues =
       parsed.y_mode === 'transmittance'
-        ? parsed.peaks.map((p: any) => Math.pow(10, -p.absorbance) * 100)
-        : parsed.peaks.map((p: any) => p.absorbance);
+        ? parsed.peaks.map((p) => Math.pow(10, -p.absorbance) * 100)
+        : parsed.peaks.map((p) => p.absorbance);
     traces.push({
-      x: parsed.peaks.map((p: any) => p.wavenumber_cm1),
+      x: parsed.peaks.map((p) => p.wavenumber_cm1),
       y: yValues,
       type: 'scatter',
       mode: 'text+markers',
@@ -223,7 +223,7 @@ function getFTIRTraces(parsed: SpectrumParsedData): PlotData[] {
         symbol: 'triangle-down',
         line: { color: 'white', width: 1 }
       },
-      text: parsed.peaks.map((_p: any, i: number) => `${i + 1}`),
+      text: parsed.peaks.map((_p, i) => `${i + 1}`),
       textposition: 'top center',
       hovertemplate: '%{customdata}<extra></extra>',
       customdata: parsed.peaks.map(

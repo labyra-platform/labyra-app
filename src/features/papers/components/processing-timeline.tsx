@@ -46,7 +46,6 @@ export function ProcessingTimeline({ paper }: { paper: Paper }) {
         const isIndexed = paper.status === 'indexed';
         const isCurrent = !isIndexed && paper.status === step.status;
         const isPast = isIndexed ? true : currentOrder > stepOrder && currentOrder >= 0;
-        const isPending = currentOrder < stepOrder && !isFailed && !isCancelled;
 
         let icon = <IconCircle className='size-4 text-muted-foreground/40' />;
         let textClass = 'text-muted-foreground';

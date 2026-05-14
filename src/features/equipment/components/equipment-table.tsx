@@ -12,6 +12,16 @@ import {
 } from '@/components/ui/table';
 import { useEquipmentList } from '@/lib/firestore/queries/equipment';
 
+// R162-batch8-safe-hoisted: extracted from EquipmentTable to satisfy
+// consistent-function-scoping rule (no closure over component state).
+function safe(fn: (k: string) => string, key: string): string {
+  try {
+    return fn(key);
+  } catch {
+    return key;
+  }
+}
+
 const statusColor: Record<string, string> = {
   available: 'bg-green-500/10 text-green-700 dark:text-green-400',
   in_use: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
@@ -35,11 +45,7 @@ export function EquipmentTable() {
     return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
-  const safe = (fn: (k: string) => string, key: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const f = fn as any;
-    return f.has?.(key) ? f(key) : key;
-  };
+  // R162-batch8-safe-hoisted: see top-level safe() below
 
   return (
     <div className='rounded-lg border'>

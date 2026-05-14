@@ -53,7 +53,6 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
     }
   };
 
-  const t = useTranslations('spectra');
   const tType = useTranslations('spectra.type');
   const tStatus = useTranslations('spectra.status');
   const tGroup = useTranslations('spectra.group');

@@ -166,6 +166,7 @@ export class GeminiProvider implements LLMProvider {
         }));
 
         const result = await chat.sendMessageStream(functionResponses);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK third-party type mismatch
         yield* this.consumeGeminiStream(result as any, request.model);
         return;
       }
@@ -222,6 +223,7 @@ export class GeminiProvider implements LLMProvider {
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await chat.sendMessageStream(sendPayload as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK third-party type mismatch
       yield* this.consumeGeminiStream(result as any, request.model);
     } catch (e) {
       yield {

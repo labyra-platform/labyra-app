@@ -1,15 +1,5 @@
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
-import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-  CardFooter
-} from '@/components/ui/card';
-import { Icons } from '@/components/icons';
 import { KpiCards } from '@/features/overview/components/kpi-cards';
 import React from 'react';
 

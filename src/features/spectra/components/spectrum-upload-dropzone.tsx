@@ -132,15 +132,17 @@ async function uploadOneFile(
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', signedUrl);
     xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-    xhr.upload.onprogress = (e) => {
+    xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable) {
         const pct = Math.round((e.loaded / e.total) * 100);
         updateStatus(item.id, { phase: 'uploading', progress: pct });
       }
-    };
-    xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`upload_${xhr.status}`));
-    xhr.onerror = () => reject(new Error('upload_network_error'));
+    });
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`upload_${xhr.status}`));
+    });
+    xhr.addEventListener('error', () => reject(new Error('upload_network_error')));
     xhr.send(file);
   });
 

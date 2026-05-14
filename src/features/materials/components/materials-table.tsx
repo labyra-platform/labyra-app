@@ -1,18 +1,18 @@
+/**
+ * MaterialsTable — list materials with sortable columns + Excel export.
+ *
+ * @phase R161-data-table-migrate
+ */
 'use client';
+
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { useMaterials } from '@/lib/firestore/queries/materials';
-import type { HazardLevel } from '@/types/materials';
+import type { Material, HazardLevel } from '@/types/materials';
+import { SciText } from '@/features/spectra/utils/format-units';
 
 const hazardColor: Record<HazardLevel, string> = {
   none: 'bg-muted text-muted-foreground',
@@ -32,52 +32,92 @@ export function MaterialsTable() {
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
   }
-
   if (materials.length === 0) {
     return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
+  const columns: DataTableColumn<Material>[] = [
+    {
+      key: 'name',
+      header: t('colName'),
+      cell: (m) => (
+        <>
+          <Link
+            href={`/${locale}/dashboard/materials/${m.id}`}
+            className='font-medium hover:underline'
+          >
+            <SciText>{m.name}</SciText>
+          </Link>
+          {m.formula && (
+            <span className='ml-2 text-muted-foreground text-xs'>
+              <SciText>{m.formula}</SciText>
+            </span>
+          )}
+        </>
+      ),
+      sortValue: (m) => m.name
+    },
+    {
+      key: 'category',
+      header: t('colCategory'),
+      cell: (m) => tCat(m.category),
+      sortValue: (m) => tCat(m.category)
+    },
+    {
+      key: 'quantity',
+      header: t('colQuantity'),
+      cell: (m) => (
+        <span className='tabular-nums'>
+          {m.quantity} {m.unit}
+        </span>
+      ),
+      sortValue: (m) => m.quantity
+    },
+    {
+      key: 'location',
+      header: t('colLocation'),
+      cell: (m) => <span className='text-muted-foreground'>{m.location ?? '—'}</span>,
+      sortValue: (m) => m.location ?? ''
+    },
+    {
+      key: 'hazardLevel',
+      header: t('colHazard'),
+      cell: (m) => (
+        <Badge className={hazardColor[m.hazardLevel]} variant='secondary'>
+          {m.hazardLevel !== 'none' && <IconAlertTriangle size={10} className='mr-1' />}
+          {tHaz(m.hazardLevel)}
+        </Badge>
+      ),
+      sortValue: (m) => {
+        const order: Record<HazardLevel, number> = {
+          none: 0,
+          low: 1,
+          medium: 2,
+          high: 3,
+          extreme: 4
+        };
+        return order[m.hazardLevel];
+      }
+    }
+  ];
+
   return (
-    <div className='rounded-lg border'>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('colName')}</TableHead>
-            <TableHead>{t('colCategory')}</TableHead>
-            <TableHead className='text-right'>{t('colQuantity')}</TableHead>
-            <TableHead>{t('colLocation')}</TableHead>
-            <TableHead>{t('colHazard')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {materials.map((m) => (
-            <TableRow key={m.id}>
-              <TableCell>
-                <Link
-                  href={`/${locale}/dashboard/materials/${m.id}`}
-                  className='font-medium hover:underline'
-                >
-                  {m.name}
-                </Link>
-                {m.formula && (
-                  <span className='ml-2 text-muted-foreground text-xs'>{m.formula}</span>
-                )}
-              </TableCell>
-              <TableCell>{tCat(m.category)}</TableCell>
-              <TableCell className='text-right tabular-nums'>
-                {m.quantity} {m.unit}
-              </TableCell>
-              <TableCell className='text-muted-foreground'>{m.location ?? '—'}</TableCell>
-              <TableCell>
-                <Badge className={hazardColor[m.hazardLevel]} variant='secondary'>
-                  {m.hazardLevel !== 'none' && <IconAlertTriangle size={10} className='mr-1' />}
-                  {tHaz(m.hazardLevel)}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable<Material>
+      rows={materials}
+      columns={columns}
+      rowKey={(m) => m.id}
+      defaultSort={{ key: 'name', direction: 'asc' }}
+      exportFilename='materials'
+      title={t('listTitle') !== 'materials.listTitle' ? t('listTitle') : 'Materials'}
+      description={`${materials.length} total`}
+      exportValue={(m, key) => {
+        if (key === 'name') return m.name;
+        if (key === 'category') return tCat(m.category);
+        if (key === 'quantity') return `${m.quantity} ${m.unit}`;
+        if (key === 'location') return m.location ?? '';
+        if (key === 'hazardLevel') return tHaz(m.hazardLevel);
+        return null;
+      }}
+    />
   );
 }

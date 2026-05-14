@@ -3,6 +3,7 @@
  *
  * @phase R162-refcard-edit
  */
+// R164-phase-6b: fetch URL migrated /api/reference-cards → /api/references
 'use client';
 
 import { useState } from 'react';
@@ -53,7 +54,7 @@ export function EditReferenceCardDialog({
       const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const token = await user.getIdToken();
-      const res = await fetch(`/api/reference-cards/${card.id}`, {
+      const res = await fetch(`/api/references/${card.id}`, {
         method: 'PATCH',
         headers: {
           authorization: `Bearer ${token}`,

@@ -9,6 +9,7 @@
  *
  * @phase R163-spectra-4c-4b
  */
+// R164-phase-6b: fetch URL migrated /api/reference-cards → /api/references
 'use client';
 
 import { useState } from 'react';
@@ -155,7 +156,7 @@ export function AddReferenceCardDialog({
           break;
       }
 
-      const res = await fetch('/api/reference-cards', {
+      const res = await fetch('/api/references', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)

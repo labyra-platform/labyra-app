@@ -1,3 +1,4 @@
+// R164-phase-6b: fetch URL migrated /api/reference-cards → /api/references
 // R163-4c-2-narrow-manager
 /**
  * ReferenceCardsManager — list tenant's reference cards with toggle + delete.
@@ -41,7 +42,7 @@ export function ReferenceCardsManager({
       const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('Not authenticated');
       const token = await user.getIdToken();
-      const res = await fetch(`/api/reference-cards/${id}`, {
+      const res = await fetch(`/api/references/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });

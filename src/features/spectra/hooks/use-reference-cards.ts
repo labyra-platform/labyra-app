@@ -6,6 +6,7 @@
  *
  * @phase R160-spectra-4a-pdf
  */
+// R164-phase-6b: fetch URL migrated /api/reference-cards → /api/references
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -51,7 +52,7 @@ export function useReferenceCards() {
       const user = getFirebaseAuth().currentUser;
       if (!user) return;
       const token = await user.getIdToken();
-      const res = await fetch('/api/reference-cards', {
+      const res = await fetch('/api/references', {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) return;

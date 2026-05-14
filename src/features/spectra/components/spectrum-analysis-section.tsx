@@ -13,7 +13,12 @@ import { SpectrumChart } from '@/features/spectra/components/spectrum-chart';
 import { XRDPeakDetailTable } from '@/features/spectra/components/xrd-peak-detail-table';
 import { XRDQualityCard } from '@/features/spectra/components/xrd-quality-card';
 import { XRDPhaseSummary } from '@/features/spectra/components/xrd-phase-summary';
-import { computeInternalCandidates } from '@/lib/spectra/internal-candidates';
+import {
+  computeInternalCandidates,
+  computeMultiInternalCandidates
+} from '@/lib/spectra/internal-candidates';
+// R163-4c-5c1
+import { MultiCitationsPanel } from '@/features/spectra/components/multi-citations-panel';
 import { AddReferenceCardDialog } from '@/features/spectra/components/add-reference-card-dialog';
 import { ReferenceCardsManager } from '@/features/spectra/components/reference-cards-manager';
 import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';
@@ -77,6 +82,13 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     return [...workerCandidates, ...internal].toSorted((a, b) => b.match_score - a.match_score);
   }, [result, allCards]);
 
+  // R163-4c-5c1: multi-type candidates for FTIR/Raman/UV-Vis
+  const multiCandidates = useMemo(() => {
+    const parsed = result?.parsed;
+    if (!parsed) return [];
+    return computeMultiInternalCandidates(parsed, allCards);
+  }, [result, allCards]);
+
   if (status !== 'analyzed') return null;
   if (loading) return <div className='text-sm text-muted-foreground'>Loading analysis…</div>;
   if (!result) return null;
@@ -102,7 +114,11 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
         parsed.spectrum_type === 'raman' ||
         parsed.spectrum_type === 'ftir') && (
         <div className='rounded-lg border bg-card p-4 space-y-2'>
-          {parsed.spectrum_type === 'xrd' && (
+          {/* R163-4c-5c1: + Add reference for all 4 types */}
+          {(parsed.spectrum_type === 'xrd' ||
+            parsed.spectrum_type === 'ftir' ||
+            parsed.spectrum_type === 'raman' ||
+            parsed.spectrum_type === 'uvvis') && (
             <div className='flex flex-wrap gap-2 items-center'>
               <Button type='button' variant='outline' size='sm' onClick={() => setAddRefOpen(true)}>
                 + Add reference
@@ -153,6 +169,17 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
       {parsed.spectrum_type === 'xrd' && mergedCandidates.length > 0 && (
         <XRDPhaseSummary candidates={mergedCandidates} />
       )}
+
+      {/* R163-4c-5c1: Multi-type citations panel */}
+      {(parsed.spectrum_type === 'ftir' ||
+        parsed.spectrum_type === 'raman' ||
+        parsed.spectrum_type === 'uvvis') &&
+        multiCandidates.length > 0 && (
+          <MultiCitationsPanel
+            candidates={multiCandidates}
+            userPeaks={(parsed.peaks ?? []) as never}
+          />
+        )}
 
       {/* UV-Vis: add Tauc plot */}
       {parsed.spectrum_type === 'uvvis' && parsed.tauc_bandgap && (

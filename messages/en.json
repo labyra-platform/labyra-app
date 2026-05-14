@@ -46,7 +46,8 @@
     "upload": "Upload",
     "new": "New",
     "edit": "Edit",
-    "spectra": "Spectra"
+    "spectra": "Spectra",
+    "referenceCards": "Reference cards"
   },
   "auth": {
     "signInTitle": "Sign in to Labyra",

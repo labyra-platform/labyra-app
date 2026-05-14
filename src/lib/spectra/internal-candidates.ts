@@ -23,14 +23,33 @@ const THRESHOLD = 0.3;
  * Returns [] if unparseable. Reference card schema stores hkl as string;
  * CitationCandidate schema expects number[].
  */
+/**
+ * Parse hkl from string format to number array.
+ *
+ * Supported formats:
+ *   "1 0 0"     → [1, 0, 0]
+ *   "(1 0 0)"   → [1, 0, 0]   (crystallographic parentheses)
+ *   "100"       → [1, 0, 0]   (compact 3-digit)
+ *   "1̄ 0 0"     → [-1, 0, 0]  (Unicode overline U+0304 for negative h)
+ *   "-1 0 0"    → [-1, 0, 0]
+ *
+ * Returns [] if unparseable.
+ */
 function parseHkl(hkl: string | undefined): number[] {
   if (!hkl) return [];
-  const cleaned = hkl.replace(/[()]/g, '').trim();
-  // Split by whitespace; if single token of 3 digits, split per char.
+  // Strip crystallographic parentheses + braces
+  let cleaned = hkl.replace(/[(){}[\]]/g, '').trim();
+  // Normalize Unicode combining overline (U+0304) → ASCII minus prefix.
+  // "1̄" (1 + U+0304) → "-1"
+  cleaned = cleaned.replace(/(\d)\u0304/g, '-$1');
+
   const tokens = cleaned.split(/\s+/).filter(Boolean);
   const first = tokens[0];
   if (tokens.length === 1 && first !== undefined && /^-?\d{3}$/.test(first)) {
-    return first.split('').map(Number);
+    // Compact form like "100" or "-100" — split per char (preserve sign on first)
+    const sign = first.startsWith('-') ? -1 : 1;
+    const digits = first.replace(/^-/, '').split('').map(Number);
+    return digits.length === 3 ? [sign * digits[0]!, digits[1]!, digits[2]!] : digits;
   }
   const nums = tokens.map((t) => Number.parseInt(t, 10)).filter((n) => !Number.isNaN(n));
   return nums.length > 0 ? nums : [];

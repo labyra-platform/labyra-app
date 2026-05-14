@@ -208,10 +208,17 @@ import { cn } from "@/lib/utils";
 
 ## Icons Rules
 
+Codebase uses **`@tabler/icons-react`** as the canonical icon library
+(decided R160). Centralized in `src/components/icons.tsx`.
+
 ```tsx
-// ✅ Lucide React cho tất cả UI icons
-import { FlaskConical, TestTube2, Atom, Sparkles } from "lucide-react";
-<FlaskConical className="h-4 w-4" />
+// ✅ Tabler icons cho tất cả UI icons
+import { IconFlask, IconTestTube, IconAtom, IconSparkles } from "@tabler/icons-react";
+<IconFlask className="size-4" />
+
+// ✅ Or use the centralized Icons object (preferred for shared icons)
+import { Icons } from '@/components/icons';
+<Icons.papers className="size-4" />
 
 // ✅ Inline SVG CHỈ cho logo và brand icons
 export function LabyraLogo({ className }: { className?: string }) {
@@ -222,7 +229,7 @@ export function LabyraLogo({ className }: { className?: string }) {
 <span>🔬 Experiments</span>  // NO
 <span>⚠️ Warning</span>      // NO
 
-// ❌ NEVER import icon library khác (Heroicons, FontAwesome, etc.)
+// ❌ NEVER import other icon libraries (Lucide, Heroicons, FontAwesome, etc.)
 ```
 
 ### Icon sizes (dùng đúng, không tự đặt):

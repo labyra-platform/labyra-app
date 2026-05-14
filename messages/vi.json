@@ -46,7 +46,8 @@
     "upload": "Tải lên",
     "new": "Thêm mới",
     "edit": "Chỉnh sửa",
-    "spectra": "Phổ đo"
+    "spectra": "Phổ đo",
+    "referenceCards": "Thư viện reference"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",

@@ -5,7 +5,7 @@
  * @phase R160-spectra-3c-hotfix3
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { AnalysisResultCard } from '@/features/spectra/components/analysis-result-card';
 import { DRSChart } from '@/features/spectra/components/drs-chart';
@@ -13,6 +13,7 @@ import { SpectrumChart } from '@/features/spectra/components/spectrum-chart';
 import { XRDPeakDetailTable } from '@/features/spectra/components/xrd-peak-detail-table';
 import { XRDQualityCard } from '@/features/spectra/components/xrd-quality-card';
 import { XRDPhaseSummary } from '@/features/spectra/components/xrd-phase-summary';
+import { computeInternalCandidates } from '@/lib/spectra/internal-candidates';
 import { AddReferenceCardDialog } from '@/features/spectra/components/add-reference-card-dialog';
 import { ReferenceCardsManager } from '@/features/spectra/components/reference-cards-manager';
 import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';
@@ -72,6 +73,14 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
 
   const { parsed } = result;
 
+  // R162-spectra-4b — merge worker candidates with tenant reference cards
+  const mergedCandidates = useMemo(() => {
+    if (parsed?.spectrum_type !== 'xrd') return [];
+    const workerCandidates = parsed.citation?.candidates ?? [];
+    const internal = computeInternalCandidates(parsed.peaks ?? [], allCards);
+    return [...workerCandidates, ...internal].sort((a, b) => b.match_score - a.match_score);
+  }, [parsed, allCards]);
+
   // Defensive: skip render if parsed missing critical fields (worker partial fail)
   if (!parsed || typeof parsed !== 'object') {
     return (
@@ -123,6 +132,9 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
         />
       )}
       {parsed.spectrum_type === 'xrd' && <XRDPeakDetailTable peaks={parsed.peaks} />}
+      {parsed.spectrum_type === 'xrd' && mergedCandidates.length > 0 && (
+        <XRDPhaseSummary candidates={mergedCandidates} />
+      )}
 
       {/* UV-Vis: add Tauc plot */}
       {parsed.spectrum_type === 'uvvis' && parsed.tauc_bandgap && (

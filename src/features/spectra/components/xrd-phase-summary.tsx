@@ -32,6 +32,8 @@ function getCitationLink(c: CitationCandidate): string | null {
   if (doi) return `https://doi.org/${doi}`;
   if (source === 'COD') return `http://www.crystallography.net/cod/${id}.html`;
   if (source === 'MP') return `https://materialsproject.org/materials/${id}`;
+  // R162-spectra-4b — internal reference card detail page
+  if (source === 'internal') return `/dashboard/reference-cards/${id}`;
   return null;
 }
 
@@ -51,8 +53,8 @@ export function XRDPhaseSummary({ candidates }: XRDPhaseSummaryProps) {
       <div className='border-b p-3'>
         <h3 className='text-sm font-medium'>Identified Phases — Detailed</h3>
         <p className='text-xs text-muted-foreground'>
-          {candidates.length} candidate{candidates.length > 1 ? 's' : ''} from COD/Materials
-          Project. Sorted by match score.
+          {candidates.length} candidate{candidates.length > 1 ? 's' : ''} from COD, Materials
+          Project, and tenant library. Sorted by match score.
         </p>
       </div>
       <div className='divide-y'>

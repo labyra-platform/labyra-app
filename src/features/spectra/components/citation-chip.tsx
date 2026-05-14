@@ -80,6 +80,9 @@ function buildEntryUrl(source: PhaseSource): string | null {
       return `http://www.crystallography.net/cod/${source.id}.html`;
     case 'MP':
       return `https://next-gen.materialsproject.org/materials/${source.id}`;
+    case 'internal':
+      // R162-spectra-4b — local route, no target=_blank handling needed below
+      return `/dashboard/reference-cards/${source.id}`;
     case 'web':
       return null; // web sources should have explicit URL via doi field
     default:

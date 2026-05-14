@@ -304,3 +304,29 @@ Same code path as user-uploaded files. No demo-only branching.
 - Manifest: `public/demos/spectra/manifest.json`
 - Loader: `src/lib/spectra/load-demo.ts`
 - Button: `src/features/spectra/components/demo-data-button.tsx`
+
+
+## 17. Internal Reference Card Library (R162-spectra-4b)
+
+In addition to public databases (COD, MP), each tenant maintains a private
+library of reference cards captured manually from ICDD PDF, JCPDS, or
+published patterns (R161 §4a-pdf).
+
+**Path**: Firestore `tenants/{tenantId}/reference_cards/{cardId}`
+**Schema**: `src/lib/spectra/reference-card-schema.ts`
+**Matching algorithm**: identical to §12.1 (`matchScore`, ±0.3° tolerance,
+intensity-weighted), invoked client-side from
+`src/lib/spectra/internal-candidates.ts`.
+
+**Threshold**: 0.3 (matches worker default). Cards below threshold are
+omitted entirely rather than shown as low-confidence — Trust > Coverage.
+
+**UI surfacing**:
+- Citation chip type `internal` → label "Library"
+- Click chip → routes to `/dashboard/reference-cards/{id}`
+- XRDPhaseSummary merges internal candidates with COD/MP, ranked by match score
+
+**Strategic rationale**: each lab accumulates institutional knowledge of
+materials they study. Library citations turn that tacit knowledge into
+machine-checkable provenance and create switching cost — a structural moat
+(per `docs/strategy/market-research.md` §1.2).

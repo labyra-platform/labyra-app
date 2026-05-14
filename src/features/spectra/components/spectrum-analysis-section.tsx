@@ -67,19 +67,21 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     };
   }, [spectrumId, status]);
 
+  // R162-hooks-fix — useMemo must be called before any conditional return
+  // (React Rules of Hooks). Null-safe via optional chaining on result.
+  const mergedCandidates = useMemo(() => {
+    const parsed = result?.parsed;
+    if (!parsed || parsed.spectrum_type !== 'xrd') return [];
+    const workerCandidates = parsed.citation?.candidates ?? [];
+    const internal = computeInternalCandidates(parsed.peaks ?? [], allCards);
+    return [...workerCandidates, ...internal].sort((a, b) => b.match_score - a.match_score);
+  }, [result, allCards]);
+
   if (status !== 'analyzed') return null;
   if (loading) return <div className='text-sm text-muted-foreground'>Loading analysis…</div>;
   if (!result) return null;
 
   const { parsed } = result;
-
-  // R162-spectra-4b — merge worker candidates with tenant reference cards
-  const mergedCandidates = useMemo(() => {
-    if (parsed?.spectrum_type !== 'xrd') return [];
-    const workerCandidates = parsed.citation?.candidates ?? [];
-    const internal = computeInternalCandidates(parsed.peaks ?? [], allCards);
-    return [...workerCandidates, ...internal].sort((a, b) => b.match_score - a.match_score);
-  }, [parsed, allCards]);
 
   // Defensive: skip render if parsed missing critical fields (worker partial fail)
   if (!parsed || typeof parsed !== 'object') {

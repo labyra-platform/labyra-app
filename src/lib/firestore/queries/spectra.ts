@@ -1,7 +1,7 @@
 'use client';
 /**
  * Firestore queries for spectra.
- * @phase R160-spectra-1
+ * @phase R164-phase-5b-1 (was R160-spectra-1) — collection renamed spectra→measurements
  */
 import { useEffect, useState } from 'react';
 import {
@@ -31,7 +31,10 @@ export function useAllSpectra() {
   useEffect(() => {
     if (!tenantId) return;
     setLoading(true);
-    const q = query(collection(db(), `tenants/${tenantId}/spectra`), orderBy('createdAt', 'desc'));
+    const q = query(
+      collection(db(), `tenants/${tenantId}/measurements`),
+      orderBy('createdAt', 'desc')
+    );
     const unsub = onSnapshot(
       q,
       (snap) => {
@@ -62,7 +65,7 @@ export function useSpectraByExperiment(experimentId: string | null) {
     }
     setLoading(true);
     const q = query(
-      collection(db(), `tenants/${tenantId}/spectra`),
+      collection(db(), `tenants/${tenantId}/measurements`),
       where('experimentId', '==', experimentId),
       orderBy('measuredAt', 'desc')
     );
@@ -95,7 +98,7 @@ export function useSpectrum(spectrumId: string | null) {
       return;
     }
     setLoading(true);
-    const ref = doc(db(), `tenants/${tenantId}/spectra/${spectrumId}`);
+    const ref = doc(db(), `tenants/${tenantId}/measurements/${spectrumId}`);
     const unsub = onSnapshot(
       ref,
       (snap) => {

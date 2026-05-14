@@ -47,14 +47,44 @@ function getAuth(): GoogleAuth {
   return _auth;
 }
 
-export interface SpectrumAnalysisMessage {
+// R164-phase-5b-1: rename SpectrumAnalysisMessage → MeasurementAnalysisMessage
+// Worker (Phase 5a) accepts both spectrumId + measurementId fields.
+export interface MeasurementAnalysisMessage {
+  tenantId: string;
+  measurementId: string;
+  spectrumType: string;
+  experimentId?: string;
+  /** Firestore collection name. R164: "measurements". Legacy: "spectra". */
+  collection?: 'measurements' | 'spectra';
+}
+
+/** @deprecated Use MeasurementAnalysisMessage. Kept for old callers. */
+export type SpectrumAnalysisMessage = MeasurementAnalysisMessage;
+
+// R164-phase-5b-1: canonical name is publishMeasurementAnalysis.
+export async function publishMeasurementAnalysis(msg: MeasurementAnalysisMessage): Promise<string> {
+  // Always set collection to 'measurements' if not specified (R164 default).
+  if (!msg.collection) msg.collection = 'measurements';
+  return _publishImpl(msg);
+}
+
+/** @deprecated Use publishMeasurementAnalysis. */
+export async function publishSpectrumAnalysis(msg: {
   tenantId: string;
   spectrumId: string;
   spectrumType: string;
   experimentId?: string;
+}): Promise<string> {
+  return publishMeasurementAnalysis({
+    tenantId: msg.tenantId,
+    measurementId: msg.spectrumId,
+    spectrumType: msg.spectrumType,
+    experimentId: msg.experimentId,
+    collection: 'measurements'
+  });
 }
 
-export async function publishSpectrumAnalysis(msg: SpectrumAnalysisMessage): Promise<string> {
+async function _publishImpl(msg: MeasurementAnalysisMessage): Promise<string> {
   if (!PROJECT_ID) {
     throw new Error('GCP_PROJECT_ID not configured');
   }

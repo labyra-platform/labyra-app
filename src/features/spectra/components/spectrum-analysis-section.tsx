@@ -52,7 +52,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
           return;
         }
         const token = await user.getIdToken();
-        const res = await fetch(`/api/spectra/${spectrumId}/analysis`, {
+        const res = await fetch(`/api/measurements/${spectrumId}/analysis`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) {

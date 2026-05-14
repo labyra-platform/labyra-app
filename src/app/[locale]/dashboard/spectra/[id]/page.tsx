@@ -24,7 +24,7 @@ export default function SpectrumDetailPage({ params }: { params: Promise<{ id: s
       const user = getAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const token = await user.getIdToken();
-      const res = await fetch(`/api/spectra/${id}`, {
+      const res = await fetch(`/api/measurements/${id}`, {
         method: 'DELETE',
         headers: { authorization: `Bearer ${token}` }
       });

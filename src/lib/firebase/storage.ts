@@ -63,34 +63,59 @@ export async function deleteStorageFile(storagePath: string): Promise<void> {
 }
 
 /**
- * Spectrum storage path helpers + signed URL generation.
- * @phase R160-spectra-1
- * @see labyra-experiment-database-report.md Section 2.1
+ * Measurement storage path helpers + signed URL generation.
+ * @phase R164-phase-5b-1 (was R160-spectra-1) — renamed spectrum* → measurement*
+ * @see labyra-experiment-database-report.md Section 2.1, ADR-016
+ *
+ * Path format: tenants/{tid}/measurements/{id}/raw|processed|thumbnail
+ * Deprecated `spectrum*` aliases kept; both produce the SAME new path.
  */
 
-/** Tenant-scoped raw spectrum path */
-export function spectrumRawPath(tenantId: string, spectrumId: string, filename: string): string {
-  // Sanitize filename to safe characters
+/** Tenant-scoped raw measurement file path. */
+export function measurementRawPath(
+  tenantId: string,
+  measurementId: string,
+  filename: string
+): string {
   const safe = filename.replace(/[^\w.-]/g, '_');
-  return `tenants/${tenantId}/spectra/${spectrumId}/raw/${safe}`;
+  return `tenants/${tenantId}/measurements/${measurementId}/raw/${safe}`;
 }
 
+export function measurementProcessedPath(
+  tenantId: string,
+  measurementId: string,
+  filename: string
+): string {
+  const safe = filename.replace(/[^\w.-]/g, '_');
+  return `tenants/${tenantId}/measurements/${measurementId}/processed/${safe}`;
+}
+
+export function measurementThumbnailPath(tenantId: string, measurementId: string): string {
+  return `tenants/${tenantId}/measurements/${measurementId}/thumbnail.jpg`;
+}
+
+/** @deprecated Use measurementRawPath. R164 alias for R160-R163 callers. */
+export function spectrumRawPath(tenantId: string, spectrumId: string, filename: string): string {
+  return measurementRawPath(tenantId, spectrumId, filename);
+}
+
+/** @deprecated Use measurementProcessedPath. */
 export function spectrumProcessedPath(
   tenantId: string,
   spectrumId: string,
   filename: string
 ): string {
-  const safe = filename.replace(/[^\w.-]/g, '_');
-  return `tenants/${tenantId}/spectra/${spectrumId}/processed/${safe}`;
+  return measurementProcessedPath(tenantId, spectrumId, filename);
 }
 
+/** @deprecated Use measurementThumbnailPath. */
 export function spectrumThumbnailPath(tenantId: string, spectrumId: string): string {
-  return `tenants/${tenantId}/spectra/${spectrumId}/thumbnail.jpg`;
+  return measurementThumbnailPath(tenantId, spectrumId);
 }
 
 /**
  * Generate a signed UPLOAD URL (V4) for client to PUT a file directly to GCS.
- * Expires in 15 minutes. Client uploads bytes, then calls /api/spectra/notify-complete.
+ * Expires in 15 minutes. Client uploads bytes, then calls /api/measurements/notify-complete.
  */
 export async function getSignedUploadUrl(
   storagePath: string,

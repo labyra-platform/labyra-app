@@ -17,7 +17,7 @@ export async function getLatestAnalysis(
   spectrumId: string
 ): Promise<AnalysisResult | null> {
   const db = getAdminFirestoreService();
-  const ref = db.doc(`tenants/${tenantId}/spectra/${spectrumId}/analysis/latest`);
+  const ref = db.doc(`tenants/${tenantId}/measurements/${spectrumId}/analysis/latest`);
   const snap = await ref.get();
   if (!snap.exists) return null;
   return snap.data() as AnalysisResult;

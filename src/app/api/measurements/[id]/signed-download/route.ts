@@ -1,22 +1,24 @@
 /**
- * DELETE /api/spectra/[id]
+ * GET /api/spectra/[id]/signed-download
  *
- * Deletes spectrum doc + raw file. Raw is normally immutable, but full delete
- * is allowed (data ownership).
+ * Returns: { url, expiresAt }
+ *
+ * Generates a short-lived signed URL for the raw file.
  *
  * @phase R160-spectra-1
+ * R164 R164-phase-5b-2: moved from /api/spectra/* → /api/measurements/*.
  * R164 R164-phase-5b-1: backend now reads from measurements collection (URL unchanged).
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
-import { deleteFile } from '@/lib/firebase/storage';
+import { getSignedDownloadUrl } from '@/lib/firebase/storage';
 import type { SpectrumMetadata } from '@/types/spectra';
 import { getTenantIdFromToken } from '@/lib/auth/token';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const authHeader = req.headers.get('authorization');
@@ -29,8 +31,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return new NextResponse('no_tenant', { status: 403 });
     }
 
-    // R162-tier-rate-limit — per-tenant rate limit
-    const rl = await checkRateLimit(rateLimitKey('spectra-delete', tenantId), 30, 60);
+    // R162-read-tier — per-tenant read rate limit
+    const rl = await checkRateLimit(rateLimitKey('signed-download', tenantId), 100, 60);
     if (!rl.allowed) {
       return new NextResponse('rate_limited', {
         status: 429,
@@ -39,33 +41,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     const db = getAdminFirestoreService();
-    const ref = db.doc(`tenants/${tenantId}/measurements/${id}`);
-    const snap = await ref.get();
+    const snap = await db.doc(`tenants/${tenantId}/measurements/${id}`).get();
     if (!snap.exists) {
       return new NextResponse('not_found', { status: 404 });
     }
     const data = snap.data() as SpectrumMetadata;
+    // Extract path from gs:// URI
     const gsPath = data.storage.raw.replace(/^gs:\/\/[^/]+\//, '');
 
-    // Best effort: delete file (don't block if file already gone)
-    try {
-      await deleteFile(gsPath);
-      if (data.storage.processed) {
-        const processedPath = data.storage.processed.replace(/^gs:\/\/[^/]+\//, '');
-        await deleteFile(processedPath);
-      }
-      if (data.storage.thumbnail) {
-        const thumbPath = data.storage.thumbnail.replace(/^gs:\/\/[^/]+\//, '');
-        await deleteFile(thumbPath);
-      }
-    } catch (e) {
-      console.error('delete storage files error', e);
-    }
-
-    await ref.delete();
-    return NextResponse.json({ ok: true });
+    const url = await getSignedDownloadUrl(gsPath);
+    return NextResponse.json({ url, expiresAt: Date.now() + 15 * 60 * 1000 });
   } catch (err) {
-    console.error('DELETE /api/spectra error', err);
+    console.error('GET signed-download error', err);
     return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
   }
 }

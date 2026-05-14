@@ -37,7 +37,7 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
       const user = getAuth().currentUser;
       if (!user) throw new Error('Not authenticated');
       const token = await user.getIdToken();
-      const res = await fetch(`/api/spectra/${spectrum.id}/reanalyze`, {
+      const res = await fetch(`/api/measurements/${spectrum.id}/reanalyze`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -65,7 +65,7 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
       const user = getAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const token = await user.getIdToken();
-      const res = await fetch(`/api/spectra/${spectrum.id}/signed-download`, {
+      const res = await fetch(`/api/measurements/${spectrum.id}/signed-download`, {
         headers: { authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error(await res.text());

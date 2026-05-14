@@ -107,7 +107,7 @@ async function uploadOneFile(
   if (!user) throw new Error('not_authenticated');
   const token = await user.getIdToken();
 
-  const sigRes = await fetch('/api/spectra/signed-upload', {
+  const sigRes = await fetch('/api/measurements/signed-upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -148,7 +148,7 @@ async function uploadOneFile(
 
   // 4. Notify complete
   updateStatus(item.id, { phase: 'notifying' });
-  const notifyRes = await fetch('/api/spectra/notify-complete', {
+  const notifyRes = await fetch('/api/measurements/notify-complete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({

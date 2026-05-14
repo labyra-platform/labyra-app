@@ -12,6 +12,7 @@ import { DRSChart } from '@/features/spectra/components/drs-chart';
 import { SpectrumChart } from '@/features/spectra/components/spectrum-chart';
 import { XRDPeakDetailTable } from '@/features/spectra/components/xrd-peak-detail-table';
 import { XRDQualityCard } from '@/features/spectra/components/xrd-quality-card';
+import { XRDPhaseSummary } from '@/features/spectra/components/xrd-phase-summary';
 import { AddReferenceCardDialog } from '@/features/spectra/components/add-reference-card-dialog';
 import { ReferenceCardsManager } from '@/features/spectra/components/reference-cards-manager';
 import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';

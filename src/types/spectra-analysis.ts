@@ -23,6 +23,50 @@ export interface PhaseSource {
   doi?: string | null;
 }
 
+// R161-citation-types: full citation candidate from worker
+export interface CitationInfo {
+  source: CitationSourceType;
+  id: string;
+  authors?: string | null;
+  title?: string | null;
+  journal?: string | null;
+  year?: number | null;
+  doi?: string | null;
+  url?: string | null;
+}
+
+export interface CitationCandidate {
+  citation: CitationInfo;
+  formula: string;
+  space_group: string;
+  space_group_number: number | null;
+  crystal_system: string | null;
+  lattice_a: number | null;
+  lattice_b: number | null;
+  lattice_c: number | null;
+  lattice_alpha: number | null;
+  lattice_beta: number | null;
+  lattice_gamma: number | null;
+  simulated_peaks: {
+    twotheta: number;
+    intensity: number;
+    relative_intensity: number;
+    multiplicity: number;
+    hkl: number[];
+  }[];
+  match_score: number;
+  matched_peaks_count: number;
+  total_user_peaks: number;
+  intensity_correlation: number | null;
+  user_hkl_map: Record<string, number[]>;
+}
+
+export interface CitationLookupResult {
+  query: string;
+  candidates: CitationCandidate[];
+  errors: string[];
+}
+
 export interface SpectrumCurve {
   x: number[];
   y: number[];
@@ -87,6 +131,8 @@ export interface XRDParsedData {
   quality_metrics?: XRDQualityMetrics;
   wavelength_angstrom: number;
   source: string;
+  // R161-citation
+  citation?: CitationLookupResult;
 }
 
 export interface PhaseIdentification {

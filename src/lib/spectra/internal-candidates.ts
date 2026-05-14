@@ -12,7 +12,7 @@
  * @phase R162-spectra-4b
  */
 
-import { matchScore } from '@/lib/firebase/reference-cards/service';
+import { matchScore } from '@/lib/spectra/match-score';
 import type { ReferenceCard } from '@/types/spectra';
 import type { CitationCandidate, XRDPeak } from '@/types/spectra-analysis';
 
@@ -28,8 +28,9 @@ function parseHkl(hkl: string | undefined): number[] {
   const cleaned = hkl.replace(/[()]/g, '').trim();
   // Split by whitespace; if single token of 3 digits, split per char.
   const tokens = cleaned.split(/\s+/).filter(Boolean);
-  if (tokens.length === 1 && /^-?\d{3}$/.test(tokens[0]!)) {
-    return tokens[0]!.split('').map(Number);
+  const first = tokens[0];
+  if (tokens.length === 1 && first !== undefined && /^-?\d{3}$/.test(first)) {
+    return first.split('').map(Number);
   }
   const nums = tokens.map((t) => Number.parseInt(t, 10)).filter((n) => !Number.isNaN(n));
   return nums.length > 0 ? nums : [];

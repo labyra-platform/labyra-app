@@ -1,64 +1,91 @@
 /**
- * API: PATCH/DELETE /api/experiments/[id] — update / delete Experiment
- * @phase R160-data-1
+ * /api/experiments/[id] — read, update, deprecate (soft delete) a experiment.
+ *
+ * DELETE here = deprecate (lifecycleStatus → 'deprecated').
+ * For scientific retraction, use POST /api/experiments/[id]/retract.
+ *
+ * @phase R164-phase-4a
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
-import { getTenantIdFromToken } from '@/lib/auth/token';
+import { authenticate } from '@/lib/api/auth-helper';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import { UpdateExperimentSchema } from '@/lib/schemas/experiment-schema';
+import {
+  getExperiment,
+  updateExperiment,
+  deprecateExperiment
+} from '@/lib/firebase/experiments/service';
 
-async function authorize(
-  req: NextRequest
-): Promise<{ uid: string; tenantId: string } | NextResponse> {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
-  const token = authHeader.slice('Bearer '.length);
-  const decoded = await getAdminAuthService().verifyIdToken(token);
-  const tenantId = getTenantIdFromToken(decoded);
-  if (!tenantId) {
-    return new NextResponse('no_tenant', { status: 403 });
-  }
+export const runtime = 'nodejs';
 
-  // R162-tier-rate-limit — per-tenant rate limit
-  const rl = await checkRateLimit(rateLimitKey('experiments-edit', tenantId), 30, 60);
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+export async function GET(req: NextRequest, ctx: RouteContext) {
+  const auth = await authenticate(req);
+  if (auth.error) return auth.error;
+
+  const rl = await checkRateLimit(rateLimitKey('experiments-read', auth.tenantId), 100, 60);
   if (!rl.allowed) {
-    return new NextResponse('rate_limited', {
-      status: 429,
-      headers: { 'Retry-After': String(rl.resetSec) }
+    return new NextResponse('rate_limited', { status: 429 });
+  }
+
+  const { id } = await ctx.params;
+  const item = await getExperiment(auth.tenantId, id);
+  if (!item) return new NextResponse('not_found', { status: 404 });
+  return NextResponse.json(item);
+}
+
+export async function PATCH(req: NextRequest, ctx: RouteContext) {
+  const auth = await authenticate(req);
+  if (auth.error) return auth.error;
+
+  const rl = await checkRateLimit(rateLimitKey('experiments-write', auth.tenantId), 30, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', { status: 429 });
+  }
+
+  const { id } = await ctx.params;
+  const body = await req.json();
+  const parsed = UpdateExperimentSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'invalid_input', details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const updated = await updateExperiment(id, parsed.data, {
+      tenantId: auth.tenantId,
+      updatedBy: auth.uid
     });
-  }
-  return { uid: decoded.uid, tenantId };
-}
-
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const auth = await authorize(req);
-  if (auth instanceof NextResponse) return auth;
-  try {
-    const data = await req.json();
-    const db = getAdminFirestoreService();
-    const ref = db.doc(`tenants/${auth.tenantId}/experiments/${id}`);
-    await ref.update({ ...data, updatedAt: Date.now() });
-    return NextResponse.json({ ok: true });
+    if (!updated) return new NextResponse('not_found', { status: 404 });
+    return NextResponse.json(updated);
   } catch (err) {
-    console.error('PATCH /experiments/[id] error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    console.error('PATCH /api/experiments/[id]', err);
+    return new NextResponse('update_failed', { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const auth = await authorize(req);
-  if (auth instanceof NextResponse) return auth;
+export async function DELETE(req: NextRequest, ctx: RouteContext) {
+  const auth = await authenticate(req);
+  if (auth.error) return auth.error;
+
+  const rl = await checkRateLimit(rateLimitKey('experiments-write', auth.tenantId), 30, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', { status: 429 });
+  }
+
+  const { id } = await ctx.params;
+  const reason = req.nextUrl.searchParams.get('reason') ?? undefined;
+
   try {
-    const db = getAdminFirestoreService();
-    const ref = db.doc(`tenants/${auth.tenantId}/experiments/${id}`);
-    await ref.delete();
-    return NextResponse.json({ ok: true });
+    await deprecateExperiment(id, auth.tenantId, auth.uid, reason);
+    return new NextResponse(null, { status: 204 });
   } catch (err) {
-    console.error('DELETE /experiments/[id] error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    console.error('DELETE /api/experiments/[id]', err);
+    return new NextResponse('deprecate_failed', { status: 500 });
   }
 }

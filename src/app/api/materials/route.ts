@@ -1,52 +1,75 @@
 /**
- * API: POST /api/materials — create new Material
- * @phase R160-data-1
+ * /api/materials — list + create materials.
+ *
+ * @phase R164-phase-4a
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuthService } from '@/lib/firebase/admin';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { getTenantIdFromToken } from '@/lib/auth/token';
+import { authenticate } from '@/lib/api/auth-helper';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import { CreateMaterialSchema } from '@/lib/schemas/material-schema';
+import { listMaterials, createMaterial } from '@/lib/firebase/materials/service';
+
+export const runtime = 'nodejs';
+
+export async function GET(req: NextRequest) {
+  const auth = await authenticate(req);
+  if (auth.error) return auth.error;
+
+  const rl = await checkRateLimit(rateLimitKey('materials-read', auth.tenantId), 100, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', {
+      status: 429,
+      headers: { 'Retry-After': String(rl.resetSec) }
+    });
+  }
+
+  const includeDeprecated = req.nextUrl.searchParams.get('includeDeprecated') === 'true';
+  const includeRetracted = req.nextUrl.searchParams.get('includeRetracted') === 'true';
+  const limitParam = req.nextUrl.searchParams.get('limit');
+  const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 50, 200) : undefined;
+
+  try {
+    const items = await listMaterials(auth.tenantId, {
+      includeDeprecated,
+      includeRetracted,
+      limit
+    });
+    return NextResponse.json({ items });
+  } catch (err) {
+    console.error('GET /api/materials', err);
+    return new NextResponse('list_failed', { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
-  try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new NextResponse('unauthorized', { status: 401 });
-    }
-    const token = authHeader.slice('Bearer '.length);
-    const decoded = await getAdminAuthService().verifyIdToken(token);
-    const tenantId = getTenantIdFromToken(decoded);
-    if (!tenantId) {
-      return new NextResponse('no_tenant', { status: 403 });
-    }
+  const auth = await authenticate(req);
+  if (auth.error) return auth.error;
 
-    // R162-tier-rate-limit — per-tenant rate limit
-    const rl = await checkRateLimit(rateLimitKey('materials-write', tenantId), 30, 60);
-    if (!rl.allowed) {
-      return new NextResponse('rate_limited', {
-        status: 429,
-        headers: { 'Retry-After': String(rl.resetSec) }
-      });
-    }
-    const data = await req.json();
-    const db = getAdminFirestoreService();
-    const colRef = db.collection(`tenants/${tenantId}/materials`);
-    const docRef = colRef.doc();
-    const now = Date.now();
-    await docRef.set({
-      ...data,
-      id: docRef.id,
-      tenantId,
-      schemaVersion: 1,
-      createdAt: now,
-      updatedAt: now,
-      createdBy: decoded.uid,
-      preparedAt: data.preparedAt ?? now
+  const rl = await checkRateLimit(rateLimitKey('materials-write', auth.tenantId), 30, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', {
+      status: 429,
+      headers: { 'Retry-After': String(rl.resetSec) }
     });
-    return NextResponse.json({ id: docRef.id });
+  }
+
+  const body = await req.json();
+  const parsed = CreateMaterialSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'invalid_input', details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const item = await createMaterial(parsed.data, {
+      tenantId: auth.tenantId,
+      createdBy: auth.uid
+    });
+    return NextResponse.json(item, { status: 201 });
   } catch (err) {
-    console.error('POST /materials error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    console.error('POST /api/materials', err);
+    return new NextResponse('create_failed', { status: 500 });
   }
 }

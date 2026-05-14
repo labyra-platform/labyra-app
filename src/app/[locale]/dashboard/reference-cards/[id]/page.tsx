@@ -34,7 +34,9 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function ReferenceCardDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
   const user = await getCurrentUser();
-  const tenantId = (user?.tenantId as string | undefined) ?? null;
+  const tenantId = user
+    ? (((user as Record<string, unknown>).tenantId as string | undefined) ?? null)
+    : null;
   if (!tenantId) {
     notFound();
   }

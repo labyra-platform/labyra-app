@@ -10,6 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageContainer from '@/components/layout/page-container';
 import { useExperiment } from '@/lib/firestore/queries/experiments';
 import { ExperimentForm } from '@/features/experiments/components/experiment-form';
+// R164-phase-7-integration: lifecycle actions integration
+import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
+import { LifecycleStatusBadge } from '@/components/lifecycle/lifecycle-status-badge';
 import { SpectraList } from '@/features/spectra/components/spectra-list';
 import { SpectrumUploadDialog } from '@/features/spectra/components/spectrum-upload-dialog';
 import { DemoDataButton } from '@/features/spectra/components/demo-data-button';
@@ -27,24 +30,6 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
   const [pendingDemo, setPendingDemo] = useState<
     { file: File; formula: string; anode: string; monochromator: string } | undefined
   >(undefined);
-
-  const handleDelete = async () => {
-    if (!confirm(t('deleteConfirm'))) return;
-    try {
-      const user = getAuth().currentUser;
-      if (!user) throw new Error('not_authenticated');
-      const token = await user.getIdToken();
-      const res = await fetch(`/api/experiments/${id}`, {
-        method: 'DELETE',
-        headers: { authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error(await res.text());
-      toast.success(t('toastDeleted'));
-      router.push(`/${locale}/dashboard/experiments`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error');
-    }
-  };
 
   if (loading) {
     return (
@@ -70,9 +55,12 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
     <PageContainer
       pageTitle={t('editPageTitle')}
       pageHeaderAction={
-        <Button variant='destructive' onClick={handleDelete}>
-          {t('delete')}
-        </Button>
+        <LifecycleActions
+          entity='experiments'
+          id={id}
+          status={experiment.lifecycleStatus ?? 'active'}
+          i18nNamespace='experiments'
+        />
       }
     >
       <NavBack fallback={`/${locale}/dashboard/experiments`} label='Back to experiments' />

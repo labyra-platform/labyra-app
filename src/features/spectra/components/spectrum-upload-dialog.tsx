@@ -15,6 +15,8 @@ interface SpectrumUploadDialogProps {
   experimentId: string;
   sampleId: string;
   sampleLabel?: string;
+  /** Demo file preloaded. R162-demo-visibility */
+  initialDemo?: { file: File; formula: string; anode: string; monochromator: string };
 }
 
 export function SpectrumUploadDialog({
@@ -22,7 +24,8 @@ export function SpectrumUploadDialog({
   onOpenChange,
   experimentId,
   sampleId,
-  sampleLabel
+  sampleLabel,
+  initialDemo
 }: SpectrumUploadDialogProps) {
   const t = useTranslations('spectra');
 
@@ -34,10 +37,12 @@ export function SpectrumUploadDialog({
           <DialogDescription>{t('subtitle')}</DialogDescription>
         </DialogHeader>
         <SpectrumUploadDropzone
+          key={initialDemo?.file.name ?? 'default'}
           experimentId={experimentId}
           sampleId={sampleId}
           sampleLabel={sampleLabel}
           onComplete={() => onOpenChange(false)}
+          initialDemo={initialDemo}
         />
       </DialogContent>
     </Dialog>

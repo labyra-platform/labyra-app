@@ -12,6 +12,7 @@ import { useExperiment } from '@/lib/firestore/queries/experiments';
 import { ExperimentForm } from '@/features/experiments/components/experiment-form';
 import { SpectraList } from '@/features/spectra/components/spectra-list';
 import { SpectrumUploadDialog } from '@/features/spectra/components/spectrum-upload-dialog';
+import { DemoDataButton } from '@/features/spectra/components/demo-data-button';
 import { NavBack } from '@/components/nav/nav-back';
 
 export default function ExperimentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,6 +23,10 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
   const tSpectra = useTranslations('spectra');
   const { experiment, loading } = useExperiment(id);
   const [uploadOpen, setUploadOpen] = useState(false);
+  // R162-demo-visibility — page-level demo preload
+  const [pendingDemo, setPendingDemo] = useState<
+    { file: File; formula: string; anode: string; monochromator: string } | undefined
+  >(undefined);
 
   const handleDelete = async () => {
     if (!confirm(t('deleteConfirm'))) return;
@@ -82,7 +87,15 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
         </TabsContent>
 
         <TabsContent value='spectra' className='mt-6 space-y-4'>
-          <div className='flex justify-end'>
+          <div className='flex justify-end gap-2'>
+            {/* R162-demo-visibility — page-level demo entry point */}
+            <DemoDataButton
+              disabled={!firstSampleId}
+              onLoad={(file, prefilled) => {
+                setPendingDemo({ file, ...prefilled });
+                setUploadOpen(true);
+              }}
+            />
             <Button onClick={() => setUploadOpen(true)} disabled={!firstSampleId}>
               <IconPlus className='size-4' />
               {tSpectra('upload')}
@@ -91,9 +104,13 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
           <SpectraList experimentId={id} />
           <SpectrumUploadDialog
             open={uploadOpen}
-            onOpenChange={setUploadOpen}
+            onOpenChange={(open) => {
+              setUploadOpen(open);
+              if (!open) setPendingDemo(undefined);
+            }}
             experimentId={id}
             sampleId={firstSampleId}
+            initialDemo={pendingDemo}
           />
         </TabsContent>
       </Tabs>

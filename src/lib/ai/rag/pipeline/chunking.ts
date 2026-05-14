@@ -113,7 +113,7 @@ export function chunkPaper(ocrResult: OcrResult): Chunk[] {
       pagesSet.add(c.page);
       if (c.section) sectionsSet.add(c.section);
     }
-    const pages = Array.from(pagesSet).sort((a, b) => a - b);
+    const pages = Array.from(pagesSet).toSorted((a, b) => a - b);
     const section = Array.from(sectionsSet)[0] ?? '';
     chunks.push({
       chunkIdx,

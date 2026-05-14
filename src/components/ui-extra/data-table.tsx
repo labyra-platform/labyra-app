@@ -75,7 +75,7 @@ export function DataTable<T>({
     const col = columns.find((c) => c.key === sortKey);
     if (!col || !col.sortValue) return rows;
     const accessor = col.sortValue;
-    return [...rows].sort((a, b) => {
+    return [...rows].toSorted((a, b) => {
       const av = accessor(a);
       const bv = accessor(b);
       if (av === null || av === undefined) return 1;

@@ -131,7 +131,7 @@ export function XRDPhaseSummary({ candidates }: XRDPhaseSummaryProps) {
                   <div className='flex flex-wrap gap-2 font-mono'>
                     {c.simulated_peaks
                       .slice()
-                      .sort((a, b) => b.relative_intensity - a.relative_intensity)
+                      .toSorted((a, b) => b.relative_intensity - a.relative_intensity)
                       .slice(0, 5)
                       .map((p, idx) => (
                         <span key={idx} className='rounded bg-muted px-1.5 py-0.5'>

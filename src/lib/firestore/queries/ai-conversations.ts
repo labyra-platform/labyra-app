@@ -166,7 +166,7 @@ export function useRestoreConversationCache() {
       if (!Array.isArray(old)) return old;
       if (old.some((c) => c.id === conversation.id)) return old;
       // Insert sorted by updatedAt desc
-      return [...old, conversation].sort((a, b) => b.updatedAt - a.updatedAt);
+      return [...old, conversation].toSorted((a, b) => b.updatedAt - a.updatedAt);
     });
   };
 }

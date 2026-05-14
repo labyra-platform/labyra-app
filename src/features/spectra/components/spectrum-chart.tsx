@@ -302,7 +302,7 @@ export function SpectrumChart({ parsed, referenceCards = [] }: SpectrumChartProp
   else if (parsed.spectrum_type === 'ftir') traces = getFTIRTraces(parsed);
 
   const cfg = getLayoutConfig(parsed);
-  const xRange = cfg.reverseX ? ([...cfg.xRange].reverse() as [number, number]) : cfg.xRange;
+  const xRange = cfg.reverseX ? (cfg.xRange.toReversed() as [number, number]) : cfg.xRange;
 
   return (
     <Plot

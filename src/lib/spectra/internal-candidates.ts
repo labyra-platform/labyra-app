@@ -108,6 +108,5 @@ export function computeInternalCandidates(
     });
   }
 
-  candidates.sort((a, b) => b.match_score - a.match_score);
-  return candidates;
+  return candidates.toSorted((a, b) => b.match_score - a.match_score);
 }

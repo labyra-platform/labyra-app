@@ -7,6 +7,8 @@ import { SampleForm } from '@/features/samples/components/sample-form';
 // R164-phase-7-integration: lifecycle actions integration
 import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 import { LifecycleStatusBadge } from '@/components/lifecycle/lifecycle-status-badge';
+// R164-phase-8-9b: lineage graph
+import { LineageGraph } from '@/components/lineage/lineage-graph';
 
 export default function SampleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -46,6 +48,18 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
           />
         </header>
         <SampleForm defaultValues={sample} sampleId={id} />
+
+        {/* R164-phase-8-9b: PROV-O lineage graph */}
+        <section className='space-y-2'>
+          <details>
+            <summary className='cursor-pointer text-sm font-medium hover:text-foreground text-muted-foreground'>
+              {`📊 Sơ đồ lineage (PROV-O)`}
+            </summary>
+            <div className='mt-3'>
+              <LineageGraph rootType='sample' rootId={id} maxDepth={3} />
+            </div>
+          </details>
+        </section>
       </div>
     </PageContainer>
   );

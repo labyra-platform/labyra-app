@@ -15,6 +15,9 @@ import { ProcessingTimeline } from './processing-timeline';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { TERMINAL_STATUSES, CANCELLABLE_STATUSES } from '@/types/papers';
 
+// R164-phase-8-9b: version history
+import { VersionHistoryViewer } from '@/components/versioning/version-history-viewer';
+
 async function callApi(path: string, method: 'POST' = 'POST') {
   const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error('not_authenticated');
@@ -188,6 +191,11 @@ export function PaperDetail({ paperId }: { paperId: string }) {
             {t('reprocess')}
           </button>
         )}
+      </section>
+
+      {/* R164-phase-8-9b: version history */}
+      <section className='space-y-2'>
+        <VersionHistoryViewer entity='papers' id={paperId} />
       </section>
     </div>
   );

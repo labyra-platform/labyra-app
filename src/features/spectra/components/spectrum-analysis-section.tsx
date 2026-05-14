@@ -10,6 +10,10 @@ import { useEffect, useState } from 'react';
 import { AnalysisResultCard } from '@/features/spectra/components/analysis-result-card';
 import { DRSChart } from '@/features/spectra/components/drs-chart';
 import { SpectrumChart } from '@/features/spectra/components/spectrum-chart';
+import { AddReferenceCardDialog } from '@/features/spectra/components/add-reference-card-dialog';
+import { ReferenceCardsManager } from '@/features/spectra/components/reference-cards-manager';
+import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';
+import { Button } from '@/components/ui/button';
 import { TaucChart } from '@/features/spectra/components/tauc-chart';
 import { DSCChart, OCPChart, TGAChart } from '@/features/spectra/components/spectrum-chart-ext';
 import { getFirebaseAuth } from '@/lib/firebase/client';
@@ -21,6 +25,9 @@ interface SpectrumAnalysisSectionProps {
 }
 
 export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysisSectionProps) {
+  const [addRefOpen, setAddRefOpen] = useState(false);
+  const [manageRefOpen, setManageRefOpen] = useState(false);
+  const { activeCards, allCards, toggleCard, refresh } = useReferenceCards();
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -80,8 +87,28 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
         parsed.spectrum_type === 'uvvis' ||
         parsed.spectrum_type === 'raman' ||
         parsed.spectrum_type === 'ftir') && (
-        <div className='rounded-lg border bg-card p-4'>
-          <SpectrumChart parsed={parsed} />
+        <div className='rounded-lg border bg-card p-4 space-y-2'>
+          {parsed.spectrum_type === 'xrd' && (
+            <div className='flex flex-wrap gap-2 items-center'>
+              <Button type='button' variant='outline' size='sm' onClick={() => setAddRefOpen(true)}>
+                + Add reference
+              </Button>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={() => setManageRefOpen(true)}
+              >
+                Manage ({allCards.length})
+              </Button>
+              {activeCards.length > 0 && (
+                <span className='text-xs text-muted-foreground'>
+                  {activeCards.length} active overlay{activeCards.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          )}
+          <SpectrumChart parsed={parsed} referenceCards={activeCards} />
         </div>
       )}
 
@@ -140,6 +167,15 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
           <OCPChart parsed={parsed} />
         </div>
       )}
+      <AddReferenceCardDialog open={addRefOpen} onOpenChange={setAddRefOpen} onCreated={refresh} />
+      <ReferenceCardsManager
+        open={manageRefOpen}
+        onOpenChange={setManageRefOpen}
+        cards={allCards}
+        activeIds={activeCards.map((c) => c.id)}
+        onToggle={toggleCard}
+        onChanged={refresh}
+      />
     </div>
   );
 }

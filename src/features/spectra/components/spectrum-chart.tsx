@@ -19,8 +19,24 @@ const Plot = dynamic(() => import('react-plotly.js'), {
   )
 });
 
+interface ReferenceCardPeakInput {
+  twoTheta: number;
+  intensity: number;
+  hkl?: string;
+}
+
+interface ReferenceCardOverlay {
+  id: string;
+  cardNumber: string;
+  phaseName: string;
+  formula?: string;
+  peaks: ReferenceCardPeakInput[];
+  color: string; // hex/hsl for overlay
+}
+
 interface SpectrumChartProps {
   parsed: SpectrumParsedData;
+  referenceCards?: ReferenceCardOverlay[];
 }
 
 interface PlotData {
@@ -45,7 +61,10 @@ interface PlotData {
 const LINE_COLOR = 'hsl(220, 70%, 50%)';
 const PEAK_COLOR = 'hsl(0, 70%, 55%)';
 
-function getXRDTraces(parsed: SpectrumParsedData): PlotData[] {
+function getXRDTraces(
+  parsed: SpectrumParsedData,
+  referenceCards: ReferenceCardOverlay[] = []
+): PlotData[] {
   if (parsed.spectrum_type !== 'xrd') return [];
   const traces: PlotData[] = [
     {
@@ -77,6 +96,27 @@ function getXRDTraces(parsed: SpectrumParsedData): PlotData[] {
         (p: any) => `2θ = ${p.two_theta.toFixed(3)}°, FWHM = ${p.fwhm.toFixed(3)}°`
       )
     });
+  }
+
+  // Reference card overlays: vertical sticks at reference peak positions
+  // Scale to relative intensity within data range
+  if (referenceCards.length > 0 && parsed.spectrum_curve.y.length > 0) {
+    const yMax = Math.max(...parsed.spectrum_curve.y);
+    for (const ref of referenceCards) {
+      for (const p of ref.peaks) {
+        const yTop = (p.intensity / 100) * yMax;
+        traces.push({
+          x: [p.twoTheta, p.twoTheta, p.twoTheta],
+          y: [0, yTop, null as unknown as number],
+          type: 'scatter',
+          mode: 'lines',
+          name: `${ref.cardNumber} ${ref.formula ?? ref.phaseName}`,
+          line: { color: ref.color, width: 1.5 },
+          hovertemplate: `${ref.cardNumber}<br>2θ = ${p.twoTheta}°<br>I = ${p.intensity}%${p.hkl ? '<br>hkl: ' + p.hkl : ''}<extra></extra>`,
+          customdata: [p.hkl ?? '', p.hkl ?? '', p.hkl ?? '']
+        });
+      }
+    }
   }
   return traces;
 }
@@ -245,7 +285,7 @@ function getLayoutConfig(parsed: SpectrumParsedData): ChartLayout {
   };
 }
 
-export function SpectrumChart({ parsed }: SpectrumChartProps) {
+export function SpectrumChart({ parsed, referenceCards = [] }: SpectrumChartProps) {
   // Defensive: missing curve data — uvvis_drs has reflectance_curve, not spectrum_curve
   if (parsed.spectrum_type === 'uvvis_drs') {
     return <div className='text-sm text-muted-foreground'>DRS rendered separately</div>;
@@ -254,7 +294,9 @@ export function SpectrumChart({ parsed }: SpectrumChartProps) {
     return <div className='text-sm text-muted-foreground'>No spectrum data to display</div>;
   }
   let traces: PlotData[] = [];
-  if (parsed.spectrum_type === 'xrd') traces = getXRDTraces(parsed);
+  // Reference cards only apply to XRD
+  const refCards = parsed.spectrum_type === 'xrd' ? referenceCards : [];
+  if (parsed.spectrum_type === 'xrd') traces = getXRDTraces(parsed, refCards);
   else if (parsed.spectrum_type === 'uvvis') traces = getUVVisTraces(parsed);
   else if (parsed.spectrum_type === 'raman') traces = getRamanTraces(parsed);
   else if (parsed.spectrum_type === 'ftir') traces = getFTIRTraces(parsed);

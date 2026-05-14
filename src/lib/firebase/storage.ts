@@ -65,7 +65,7 @@ export async function deleteStorageFile(storagePath: string): Promise<void> {
 /**
  * Spectrum storage path helpers + signed URL generation.
  * @phase R160-spectra-1
- * @see labrya-experiment-database-report.md Section 2.1
+ * @see labyra-experiment-database-report.md Section 2.1
  */
 
 /** Tenant-scoped raw spectrum path */

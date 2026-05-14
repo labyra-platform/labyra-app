@@ -2,7 +2,7 @@
 
 > **Phiên bản:** 1.0 — May 2026  
 > **Phạm vi:** Web, Mobile, Desktop, SaaS, Enterprise  
-> **Áp dụng cho:** Labrya và các sản phẩm digital chuyên nghiệp
+> **Áp dụng cho:** Labyra và các sản phẩm digital chuyên nghiệp
 
 ---
 
@@ -21,7 +21,7 @@
 11. [Form Design Standards](#11-form-design-standards)
 12. [Design System Standards](#12-design-system-standards)
 13. [Performance Standards](#13-performance-standards)
-14. [Áp dụng cho Labrya](#14-áp-dụng-cho-labrya)
+14. [Áp dụng cho Labyra](#14-áp-dụng-cho-labyra)
 
 ---
 
@@ -162,7 +162,7 @@ Tiêu chuẩn gốc về Human-Centred Design Process — nền tảng cho mọi
 - Loading indicators cho mọi async action
 - Progress bars cho long-running tasks
 - Confirmation sau khi action thành công
-- **Labrya:** AI query đang ở tầng nào (Flash/Sonnet/Opus) → hiển thị
+- **Labyra:** AI query đang ở tầng nào (Flash/Sonnet/Opus) → hiển thị
 
 ### 2. Match Between System and Real World
 > Dùng ngôn ngữ, khái niệm quen thuộc với user, không phải system-oriented jargon.
@@ -553,7 +553,7 @@ Vùng tay cái dễ chạm nhất (right-handed, one-handed use):
 
 ## 10. Data Visualization Standards
 
-Đặc biệt quan trọng cho Labrya — spectrum plots, EIS, CV curves.
+Đặc biệt quan trọng cho Labyra — spectrum plots, EIS, CV curves.
 
 ### Chart Selection Guide
 
@@ -722,11 +722,11 @@ Color     Input        Data table   layout        page
 
 ---
 
-## 14. Áp Dụng Cho Labrya
+## 14. Áp Dụng Cho Labyra
 
 ### Priority Matrix
 
-| Standard | Priority cho Labrya | Lý do |
+| Standard | Priority cho Labyra | Lý do |
 |---|---|---|
 | WCAG 2.2 AA | 🔴 Critical | Enterprise requirement, trường đại học VN |
 | Nielsen Heuristics | 🔴 Critical | Core UX quality |

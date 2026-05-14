@@ -1,5 +1,5 @@
 # Database Architecture — Experiment Data
-## Agent Reference Report for Labrya Lab Management SaaS
+## Agent Reference Report for Labyra Lab Management SaaS
 
 > **Dành cho:** AI Agent khi implement, query, hoặc thiết kế data layer cho experiment data  
 > **Cập nhật:** May 2026  
@@ -96,7 +96,7 @@ Không bao giờ lưu file content trong Firestore. Firestore chỉ lưu metadat
 #### Path Convention (bắt buộc)
 
 ```
-gs://labrya-{env}/
+gs://labyra-{env}/
   tenants/
     {tenantId}/
       experiments/
@@ -137,7 +137,7 @@ interface SpectrumMetadata {
 
   // GCS paths
   gcs: {
-    raw: string;           // "gs://labrya-prod/tenants/.../raw/original.xy"
+    raw: string;           // "gs://labyra-prod/tenants/.../raw/original.xy"
     processed?: string;
     thumbnail?: string;    // cho image types
   };
@@ -310,7 +310,7 @@ interface GCDResult {
   voltageWindow: [number, number];
 
   // Reference to BigQuery
-  bigqueryTable: string;   // "labrya.experiments.gcd_cycles"
+  bigqueryTable: string;   // "labyra.experiments.gcd_cycles"
   bigqueryFilter: {        // WHERE clause để query
     tenantId: string;
     spectrumId: string;
@@ -346,8 +346,8 @@ GCD, CA, long CV cycling — hàng triệu data points không phù hợp với F
 #### Schema Design
 
 ```sql
--- Table: labrya.experiments.time_series
-CREATE TABLE labrya.experiments.time_series (
+-- Table: labyra.experiments.time_series
+CREATE TABLE labyra.experiments.time_series (
   -- Partition + cluster keys
   tenant_id       STRING NOT NULL,
   spectrum_id     STRING NOT NULL,
@@ -388,7 +388,7 @@ SELECT
   cycle_number,
   MAX(voltage_v) - MIN(voltage_v) AS voltage_window,
   MAX(time_s) - MIN(time_s) AS cycle_duration_s
-FROM labrya.experiments.time_series
+FROM labyra.experiments.time_series
 WHERE tenant_id = @tenantId
   AND spectrum_id = @spectrumId
   AND spectrum_type = 'gcd'
@@ -407,8 +407,8 @@ FROM ...
 SELECT
   s.sample_label,
   AVG(t.current_density_mAcm2) AS avg_current_density
-FROM labrya.experiments.time_series t
-JOIN labrya.experiments.spectra_metadata s USING (spectrum_id)
+FROM labyra.experiments.time_series t
+JOIN labyra.experiments.spectra_metadata s USING (spectrum_id)
 WHERE t.tenant_id = @tenantId
   AND t.spectrum_type = 'ca'
   AND t.measured_date BETWEEN @startDate AND @endDate
@@ -471,7 +471,7 @@ interface Entity {
   canonicalFormula?: string;  // "WO3" (pymatgen normalized)
   unit?: string;           // "eV", "mAh/g", "F/g"
   paperIds: string[];      // papers mentioning this entity
-  experimentIds: string[]; // Labrya experiments với entity này
+  experimentIds: string[]; // Labyra experiments với entity này
 }
 
 // Edges
@@ -589,7 +589,7 @@ async def retrieve(query: str, tenant_id: str, top_k: int = 30):
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    Labrya Experiment Data Layer                      │
+│                    Labyra Experiment Data Layer                      │
 ├──────────────┬──────────────┬──────────────┬────────────────────────┤
 │   TYPE 1     │   TYPE 2     │   TYPE 3     │   TYPE 4 & 5           │
 │  Raw Files   │  Structured  │  Time-Series │  Graph + Vectors       │
@@ -683,7 +683,7 @@ async def retrieve(query: str, tenant_id: str, top_k: int = 30):
 
 [REQUIRED] BigQuery: Row Access Policy
   → CREATE ROW ACCESS POLICY tenant_isolation
-    ON labrya.experiments.time_series
+    ON labyra.experiments.time_series
     GRANT TO ("serviceAccount:...")
     FILTER USING (tenant_id = SESSION_USER_TENANT());
 

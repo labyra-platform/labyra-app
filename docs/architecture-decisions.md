@@ -264,7 +264,7 @@ return { ...snap.data(), id: snap.id } as Entity;
 **Date**: 2026-05-13 (R160-spectra-1)
 **Status**: Accepted, revisitable
 
-**Context**: Database report (`docs/labrya-experiment-database-report.md`) prescribes
+**Context**: Database report (`docs/labyra-experiment-database-report.md`) prescribes
 native GCS bucket with custom IAM for tenant isolation. Labyra already has Firebase Storage
 configured (papers use it) with Admin SDK + storage.rules + Signed URLs.
 

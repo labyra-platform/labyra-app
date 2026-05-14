@@ -1780,7 +1780,7 @@ Test cases that passed:
 Stage 2 Phase 1 ships the spectrum upload pipeline. Phase 2 (Cloud Run worker + AI analysis)
 remains deferred. This section captures the shipped state for new contributors / agents.
 
-See also `docs/labrya-experiment-database-report.md` and `.claude/skills/database-architecture/`.
+See also `docs/labyra-experiment-database-report.md` and `.claude/skills/database-architecture/`.
 
 ### Scope
 

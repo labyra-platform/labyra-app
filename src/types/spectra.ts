@@ -1,7 +1,7 @@
 /**
  * Spectrum types and metadata.
  * @phase R160-spectra-1
- * @see labrya-experiment-database-report.md Section 1 (Taxonomy: 6 groups × 24 types)
+ * @see labyra-experiment-database-report.md Section 1 (Taxonomy: 6 groups × 24 types)
  */
 
 export type SpectrumType =

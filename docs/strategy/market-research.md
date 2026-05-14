@@ -1,7 +1,7 @@
 # Market Research Report — SaaS & Enterprise
 ## Niche Lab Management + AI Research · Vietnam & Global · May 2026
 
-> **Mục đích:** Khảo sát thị trường để định vị Labrya, xác định TAM/SAM/SOM, và tìm cơ hội mở rộng  
+> **Mục đích:** Khảo sát thị trường để định vị Labyra, xác định TAM/SAM/SOM, và tìm cơ hội mở rộng  
 > **Phạm vi:** Niche lab management, AI research tools, và các vertical SaaS liên quan  
 > **Sources:** MarketsandMarkets, Fortune Business Insights, Decision Lab, Tech Collective SEA, Zylo 2026
 
@@ -25,7 +25,7 @@ Global SaaS market đạt $408 billion năm 2025, và dự báo tăng trưởng 
 
 ---
 
-### 1.2 LIMS Market — Niche Trực Tiếp Của Labrya
+### 1.2 LIMS Market — Niche Trực Tiếp Của Labyra
 
 Global LIMS market được định giá $2.54B năm 2024, đạt $2.88B năm 2025, và dự kiến tăng trưởng CAGR 12.5%, đạt $5.19B vào 2030.
 
@@ -33,7 +33,7 @@ Top 4 players — LabWare, Thermo Fisher, LabVantage Solutions, STARLIMS — chi
 
 #### Phân khúc quan trọng:
 
-Industry-specific LIMS segment dự kiến tăng trưởng CAGR cao nhất (13%), software segment CAGR 13.1% — đây chính xác là vị trí của Labrya: **industry-specific (materials science) + cloud software**.
+Industry-specific LIMS segment dự kiến tăng trưởng CAGR cao nhất (13%), software segment CAGR 13.1% — đây chính xác là vị trí của Labyra: **industry-specific (materials science) + cloud software**.
 
 Cloud-based LIMS segment dự kiến đạt 57% market share vào 2035, driven by flexibility, cost-effectiveness, và remote access support.
 
@@ -54,7 +54,7 @@ Thực trạng thị trường LIMS 2026:
 │
 └── GAP: Academic labs, developing markets, materials science
          ↑
-    Đây là Labrya's TAM
+    Đây là Labyra's TAM
 ```
 
 ---
@@ -68,9 +68,9 @@ Thực trạng thị trường LIMS 2026:
 | **SciSpace** | 280M papers, general | $12–20/user/mo | Không domain-specific |
 | **Scite.ai** | Citation verification | $20/user/mo | Citation only |
 | **ResearchRabbit** | Literature mapping | Free–$10/mo | No analysis |
-| **Labrya** | **Materials lab + AI** | **$29/lab/mo** | **Unique position** |
+| **Labyra** | **Materials lab + AI** | **$29/lab/mo** | **Unique position** |
 
-**Labrya là sản phẩm duy nhất kết hợp lab management + domain-specific AI + spectrum analysis trong một platform.**
+**Labyra là sản phẩm duy nhất kết hợp lab management + domain-specific AI + spectrum analysis trong một platform.**
 
 ---
 
@@ -136,7 +136,7 @@ Enterprise software market tại Vietnam dự kiến đạt $277.58M năm 2025, 
 | **LIMS quốc tế (LabWare...)** | ~5% lab lớn | $50K+/năm, không có VN support |
 | **Phần mềm tự xây** | ~5% | Không maintain được, không update |
 
-**Labrya là sản phẩm đầu tiên trong niche này tại VN.** First-mover advantage rất lớn.
+**Labyra là sản phẩm đầu tiên trong niche này tại VN.** First-mover advantage rất lớn.
 
 ### 2.3 Research Infrastructure VN — Target Market Size
 
@@ -160,7 +160,7 @@ Revenue potential VN:
 
 Tại Vietnam, manufacturing-focused SaaS players đang gaining traction bằng cách address productivity và supply-chain transparency. Vertical SaaS được thiết kế để tackle industry-specific pain points mà generic tools bỏ qua — đây là lý do investors đang lean vào thesis này.
 
-**Labrya fit perfectly vào pattern này:**
+**Labyra fit perfectly vào pattern này:**
 - Industry-specific (materials science)
 - Local compliance (Nghị định 24/2026)
 - Affordable pricing cho academic market
@@ -172,14 +172,14 @@ Tại Vietnam, manufacturing-focused SaaS players đang gaining traction bằng 
 
 ### 3.1 Horizontal Expansion — Cùng User, Khác Niche
 
-Sau khi dominate materials science, Labrya có thể expand theo user (researcher) sang các lĩnh vực liền kề:
+Sau khi dominate materials science, Labyra có thể expand theo user (researcher) sang các lĩnh vực liền kề:
 
 #### Tier 1 — Gần nhất, ít effort nhất
 
 **Environmental Science Labs**
 - Market: $1.2B global environmental testing
 - Pain: Water/soil/air sample tracking, regulatory compliance
-- Overlap với Labrya: Sample lineage, chemical inventory, spectrum (ICP, GC-MS)
+- Overlap với Labyra: Sample lineage, chemical inventory, spectrum (ICP, GC-MS)
 - Adaptation effort: Medium — cần thêm environmental-specific analyzers
 
 **Pharmaceutical / Drug Discovery Labs**
@@ -205,7 +205,7 @@ Sau khi dominate materials science, Labrya có thể expand theo user (researche
 **University Teaching Labs**
 - Market: Underserved, high volume, low budget
 - Pain: Student experiment tracking, safety compliance, equipment booking
-- Overlap: 80% of current Labrya features
+- Overlap: 80% of current Labyra features
 - Adaptation effort: Low — mostly pricing/packaging change
 
 **Contract Research Organizations (CROs)**
@@ -230,7 +230,7 @@ Sau khi dominate materials science, Labrya có thể expand theo user (researche
 - $1.2B market, growing 12% CAGR
 - Natural extension của experiment management
 - Key players: LabArchives, Benchling, Notion (general)
-- Labrya advantage: Already have experiment data model + AI
+- Labyra advantage: Already have experiment data model + AI
 
 **Scientific Data Management System (SDMS)**
 - $800M market
@@ -261,19 +261,19 @@ Phase 4 (2029): Global academic — Europe, US
 
 ### 3.4 Platform Play — Long Term Vision
 
-Sau khi đạt critical mass, Labrya có thể evolve thành **platform**:
+Sau khi đạt critical mass, Labyra có thể evolve thành **platform**:
 
 ```
-Labrya Platform (5+ năm)
+Labyra Platform (5+ năm)
 ├── Core: Lab Management OS
 ├── Marketplace: 3rd-party analyzers (plugin ecosystem)
-│   → Analyzer vendors build Labrya-compatible plugins
+│   → Analyzer vendors build Labyra-compatible plugins
 │   → Revenue share model
 ├── Data: Anonymized research dataset
 │   → Opt-in data contribution
 │   → Sell aggregated insights to instrument vendors
 │   → Train better domain models
-└── API: Labrya-as-infrastructure
+└── API: Labyra-as-infrastructure
     → Other labs apps build on top
     → Like Stripe for lab data
 ```
@@ -284,7 +284,7 @@ Labrya Platform (5+ năm)
 
 ### 4.1 Direct Competitors
 
-| Competitor | Strengths | Weaknesses | Labrya Advantage |
+| Competitor | Strengths | Weaknesses | Labyra Advantage |
 |---|---|---|---|
 | **LabWare** | 20+ years, enterprise | $100K+/year, no AI, US-centric | 100x cheaper, AI-native, VN compliance |
 | **Benchling** | Modern UX, life science | $150/user/mo, biotech only | Materials science focus, 5x cheaper |
@@ -294,7 +294,7 @@ Labrya Platform (5+ năm)
 
 ### 4.2 Indirect Competitors
 
-| Tool | Usage | Why Researcher Uses It | Labrya Replacement |
+| Tool | Usage | Why Researcher Uses It | Labyra Replacement |
 |---|---|---|---|
 | **Excel/Google Sheets** | Chemical inventory, data log | Free, familiar | $0 free tier + import |
 | **OriginPro** | Spectrum analysis | Standard in field | AI analysis built-in |
@@ -312,7 +312,7 @@ Labrya Platform (5+ năm)
 **Medium term moat (2–4 năm):**
 - Network effects: shared protocol templates, cross-lab benchmarks
 - Data moat: aggregated spectrum analysis → better AI models
-- Switching cost: experiment history, sample lineage in Labrya
+- Switching cost: experiment history, sample lineage in Labyra
 
 **Long term moat (4+ năm):**
 - Platform ecosystem: analyzer plugins, API integrations
@@ -334,11 +334,11 @@ Trong H1 2025, SEA startups raise khoảng $2B với growing attention toward en
 - **SciNote** (ELN): Bootstrapped to profitability, $2M ARR
 - **Scinote** + **LabArchives**: Proven that $10–30/user/mo works in academic market
 
-### 5.2 Labrya Funding Readiness
+### 5.2 Labyra Funding Readiness
 
-Với architecture R160 hiện tại, Labrya đang ở vị trí tốt để:
+Với architecture R160 hiện tại, Labyra đang ở vị trí tốt để:
 
-| Stage | Criteria | Labrya Status |
+| Stage | Criteria | Labyra Status |
 |---|---|---|
 | Pre-seed | Product exists, founding team | ✅ |
 | Seed | 10+ paying customers, $10K MRR | → Target: Oct 2026 |
@@ -392,7 +392,7 @@ Government National Digital Transformation Program allocate $2.5B cho digital in
 ### 7.1 Market Position
 
 ```
-Labrya Market Position Matrix:
+Labyra Market Position Matrix:
 
                  Low Price ←──────────────→ High Price
 High Specialization  ┌─────────────────────────────┐
@@ -407,7 +407,7 @@ Low Specialization   │                   LabWare    │
                      └─────────────────────────────┘
 ```
 
-Labrya ở **sweet spot**: high specialization + affordable price = maximum value perception.
+Labyra ở **sweet spot**: high specialization + affordable price = maximum value perception.
 
 ### 7.2 Top 5 Strategic Recommendations
 

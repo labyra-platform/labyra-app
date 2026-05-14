@@ -160,7 +160,7 @@ Source repos cũ (reference only, không port code):
 ### Market position
 - Global LIMS $2.88B → $5.19B (2030), CAGR 12.5%
 - Big 4 (LabWare/Thermo/LabVantage/STARLIMS) dominate enterprise — academic underserved
-- Labrya unique: lab management + domain-specific AI + spectrum analysis in one
+- Labyra unique: lab management + domain-specific AI + spectrum analysis in one
 - Vertical SaaS outperforms horizontal in retention + efficiency
 
 ### Target market

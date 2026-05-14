@@ -12,7 +12,7 @@
 - `docs/strategy/market-research.md` — TAM/SAM/SOM, LIMS competitive analysis
 - `docs/strategy/consumer-psychology.md` — UTAUT/TAM/Fogg model application
 - `docs/scientific-methods/xrd-analysis.md` — XRD algorithms & formulas reference
-- `docs/labrya-experiment-database-report.md` — Database architecture for experiment data (storage tier per data type)
+- `docs/labyra-experiment-database-report.md` — Database architecture for experiment data (storage tier per data type)
 - `docs/database-stage-2-plan.md` — Stage 2 migration roadmap (GCS + BigQuery + spectra pipeline)
 - `docs/accessibility-audit.md` — WCAG 2.2 AA checklist
 - `docs/handoff-r160-spectra.md` — Latest session handoff (Phase 1 spectra shipped)

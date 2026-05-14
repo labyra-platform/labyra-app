@@ -1,5 +1,5 @@
 # Tâm Lý Hành Vi Người Dùng — Pre-Launch Research Report
-## Labrya SaaS · Vietnam & Global · May 2026
+## Labyra SaaS · Vietnam & Global · May 2026
 
 > **Mục đích:** Hiểu tâm lý người dùng trước khi launch để thiết kế onboarding, pricing, UX, và marketing đúng hướng  
 > **Target audience:** Researcher, lab manager, nghiên cứu sinh tại VN và quốc tế  
@@ -19,14 +19,14 @@ Perceived Ease of Use (PEOU) → "Cái này có dễ dùng không?"
     Behavioral Intention → Actual Use
 ```
 
-**Với Labrya:** PU = tiết kiệm 4 giờ/ngày Excel + phân tích phổ tự động. PEOU = onboarding < 10 phút, không cần training.
+**Với Labyra:** PU = tiết kiệm 4 giờ/ngày Excel + phân tích phổ tự động. PEOU = onboarding < 10 phút, không cần training.
 
 ---
 
 ### 1.2 UTAUT (Unified Theory of Acceptance and Use of Technology)
 Mở rộng TAM, giải thích **70% behavioral intention variance** — mạnh hơn TAM (40–60%). 4 yếu tố:
 
-| Yếu tố | Định nghĩa | Áp dụng Labrya |
+| Yếu tố | Định nghĩa | Áp dụng Labyra |
 |---|---|---|
 | **Performance Expectancy** | Tin rằng tool giúp đạt kết quả tốt hơn | "AI phân tích XRD nhanh hơn tôi 10x" |
 | **Effort Expectancy** | Tin rằng tool dễ dùng | "Upload file là xong, không cần code" |
@@ -45,7 +45,7 @@ Behavior = Motivation × Ability × Prompt
 
 Hành vi xảy ra khi cả 3 yếu tố hội tụ cùng lúc:
 - **Motivation:** Researcher muốn publish paper nhanh hơn
-- **Ability:** Labrya đủ dễ để dùng ngay
+- **Ability:** Labyra đủ dễ để dùng ngay
 - **Prompt:** Email "Your XRD analysis is ready" → click vào
 
 **Implication:** Đừng chỉ build feature tốt — phải có **trigger đúng lúc** (notification, email, in-app nudge).
@@ -87,7 +87,7 @@ Hành vi xảy ra khi cả 3 yếu tố hội tụ cùng lúc:
 - Researcher xem landing page trên điện thoại trước
 - Nếu mobile experience kém → bounce ngay, không thử desktop
 
-### 2.3 Generational Patterns (Quan trọng cho Labrya)
+### 2.3 Generational Patterns (Quan trọng cho Labyra)
 
 | Segment | Behavior | Strategy |
 |---|---|---|
@@ -131,32 +131,32 @@ User churn vì:
 **Mere-Exposure Effect:**
 User càng thấy UI familiar → càng trust và adopt nhanh hơn. Dùng design patterns quen thuộc (shadcn/ui, familiar layouts) thay vì "sáng tạo" UI lạ.
 
-*Áp dụng Labrya:* Navigation, form layout, button placement phải giống Notion/Linear/Vercel — researcher đã quen những pattern này.
+*Áp dụng Labyra:* Navigation, form layout, button placement phải giống Notion/Linear/Vercel — researcher đã quen những pattern này.
 
 **Zeigarnik Effect:**
 Người ta nhớ task chưa hoàn thành nhiều hơn task đã xong. Progress bar onboarding tạo "open loop" → user muốn complete.
 
-*Áp dụng Labrya:* Onboarding checklist "3/5 steps complete" → user cảm thấy cần finish. Không show all features ngay → show progressively.
+*Áp dụng Labyra:* Onboarding checklist "3/5 steps complete" → user cảm thấy cần finish. Không show all features ngay → show progressively.
 
 **Loss Aversion (Kahneman):**
-Sợ mất > muốn được. "Bạn sẽ mất 4 giờ/ngày nếu không dùng Labrya" mạnh hơn "Bạn tiết kiệm 4 giờ/ngày với Labrya."
+Sợ mất > muốn được. "Bạn sẽ mất 4 giờ/ngày nếu không dùng Labyra" mạnh hơn "Bạn tiết kiệm 4 giờ/ngày với Labyra."
 
-*Áp dụng Labrya:* Messaging "Stop wasting time on Excel" > "Save time with AI". Free trial framing: "Bạn có 14 ngày Pro — đừng để lãng phí."
+*Áp dụng Labyra:* Messaging "Stop wasting time on Excel" > "Save time with AI". Free trial framing: "Bạn có 14 ngày Pro — đừng để lãng phí."
 
 **Commitment & Consistency (Cialdini):**
 Khi user đã bắt đầu làm gì đó, họ có xu hướng tiếp tục để consistent với quyết định ban đầu.
 
-*Áp dụng Labrya:* Encourage user import một lô hóa chất, setup một experiment — sau khi có data trong app, churn cost tăng lên đáng kể.
+*Áp dụng Labyra:* Encourage user import một lô hóa chất, setup một experiment — sau khi có data trong app, churn cost tăng lên đáng kể.
 
 **Social Proof:**
-"1,200 researchers từ 45 lab đang dùng Labrya" > mọi feature description.
+"1,200 researchers từ 45 lab đang dùng Labyra" > mọi feature description.
 
-*Áp dụng Labrya:* Counter số lab, số spectrum analyzed, số paper supported. Real testimonial từ PI BKU/HUST.
+*Áp dụng Labyra:* Counter số lab, số spectrum analyzed, số paper supported. Real testimonial từ PI BKU/HUST.
 
 **Authority Bias:**
 Researcher trust source có authority — professor, journal, institution.
 
-*Áp dụng Labrya:* Partnership với BKU/VNU trước launch. Mention pymatgen, Materials Project, RRUFF — tools họ đã biết và tin.
+*Áp dụng Labyra:* Partnership với BKU/VNU trước launch. Mention pymatgen, Materials Project, RRUFF — tools họ đã biết và tin.
 
 ---
 
@@ -190,7 +190,7 @@ Stage 3: Habit Formation (ngày 3–7)
 
 Stage 4: Dependency
 "Tôi không muốn quay lại Excel nữa"
-→ Data đã trong Labrya, export cost cao
+→ Data đã trong Labyra, export cost cao
 
 Stage 5: Advocate
 "Tôi đã recommend cho lab bên cạnh"
@@ -203,7 +203,7 @@ Stage 5: Advocate
 Tier 1 (tin nhất):   Đồng nghiệp cùng field recommend
 Tier 2:              PI / advisor recommend  
 Tier 3:              Conference / journal mention
-Tier 4:              Institution adoption (BKU dùng Labrya)
+Tier 4:              Institution adoption (BKU dùng Labyra)
 Tier 5:              Online review / demo video
 Tier 6 (tin ít nhất): Ads, cold email, landing page claims
 ```
@@ -217,9 +217,9 @@ Tier 6 (tin ít nhất): Ads, cold email, landing page claims
 ### 5.1 Time-to-Value — Chỉ Số Quan Trọng Nhất
 
 ```
-Target cho Labrya: < 10 phút từ signup → first "aha moment"
+Target cho Labyra: < 10 phút từ signup → first "aha moment"
 
-Aha moment của Labrya:
+Aha moment của Labyra:
 → Upload một XRD file → nhận kết quả phân tích AI trong 60 giây
 → HOẶC: Thêm hóa chất đầu tiên → thấy GHS warning auto-populate
 → HOẶC: Hỏi AI một câu về sample → nhận câu trả lời có citation rõ ràng
@@ -335,7 +335,7 @@ Team tier ($79) là decoy làm Pro ($29) trông value hơn. Đa số user chọn
 **Xử lý:**
 - "Share with PI" feature — gửi summary report đẹp cho PI xem
 - ROI calculator: "Lab tiết kiệm X giờ/tháng"
-- Compliance story: "Labrya giúp lab đáp ứng Nghị định 24/2026"
+- Compliance story: "Labyra giúp lab đáp ứng Nghị định 24/2026"
 
 ---
 
@@ -355,7 +355,7 @@ Target: Lan rộng trong cộng đồng materials science VN
 
 ```
 Channel: Conference poster, seminar demo, Facebook group VN Materials Science
-Message: "X lab từ BKU/HUST đang dùng Labrya"
+Message: "X lab từ BKU/HUST đang dùng Labyra"
 Psychology: Social proof + authority (institution names)
 ```
 
@@ -393,7 +393,7 @@ Psychology: Authority + loss aversion ("Lab khác trong department đã dùng")
 
 ---
 
-## 10. Summary — 10 Rules Từ Tâm Lý Học Cho Labrya
+## 10. Summary — 10 Rules Từ Tâm Lý Học Cho Labyra
 
 1. **Trust first, feature second** — Researcher VN adopt theo trust hierarchy, không theo feature list
 2. **Social proof beats ads** — 1 PI recommend = 1,000 impressions

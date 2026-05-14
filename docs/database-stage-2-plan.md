@@ -2,7 +2,7 @@
 
 > **Status:** Planning  
 > **Owner:** Backend / AI Architecture  
-> **Source:** `labrya-experiment-database-report.md`  
+> **Source:** `labyra-experiment-database-report.md`  
 > **Created:** May 13, 2026
 
 ## Why
@@ -101,6 +101,6 @@ Every storage tier MUST enforce tenantId isolation:
 - Pinecone: namespace-per-tenant (already in place)
 
 ## References
-- Source doc: `labrya-experiment-database-report.md`
+- Source doc: `labyra-experiment-database-report.md`
 - Existing infra: Pinecone serverless `labyra-papers` index (1024-dim cosine, AWS us-east-1)
 - Cloud project: `labyra-app-dev`

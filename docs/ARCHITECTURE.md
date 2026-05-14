@@ -525,7 +525,7 @@ All schemas include `schemaVersion: 1`, audit fields (`createdAt`/`updatedAt`/`c
 
 ### 10.2 Spectrum data pipeline (R160-spectra-1 + R160-spectra-2) — Stage 2 Phase 1
 
-24 spectrum types across 6 analyzer groups per `docs/labrya-experiment-database-report.md`:
+24 spectrum types across 6 analyzer groups per `docs/labyra-experiment-database-report.md`:
 
 ```
 Browser                            Backend                       Storage

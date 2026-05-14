@@ -9,7 +9,7 @@ Distilled from `market-research.md` + `consumer-psychology.md` (May 2026).
 
 ### Pricing disruption
 - LIMS Big 4 (LabWare/Thermo/LabVantage/STARLIMS): $50K–$500K/year enterprise
-- Labrya target: **$29/lab/month** = 100-1000x cheaper
+- Labyra target: **$29/lab/month** = 100-1000x cheaper
 - Per-lab pricing (not per-user) → no adoption barrier from PI/admin
 
 ### Unique position

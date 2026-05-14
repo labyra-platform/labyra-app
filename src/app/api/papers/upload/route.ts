@@ -23,6 +23,7 @@ import { checkQuota, trackUsage } from '@/lib/ai/governance/quota';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
 import type { Paper } from '@/types/papers';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Vercel: 60s for upload (processing is async)
@@ -55,6 +56,12 @@ export async function POST(request: Request) {
   const userId = decoded.uid;
   if (!tenantId) {
     return jsonError(403, 'missing_tenant_claim');
+  }
+
+  // R162-security — per-tenant rate limit
+  const rl = await checkRateLimit(rateLimitKey('paper-upload', tenantId), 30, 60);
+  if (!rl.allowed) {
+    return jsonError(429, 'rate_limited', { retryAfter: rl.resetSec });
   }
 
   // ─── Parse multipart ──────────────────────────────────────────

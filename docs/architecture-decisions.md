@@ -342,3 +342,38 @@ remain deferred.
   enforcement on numerical guard especially
 
 ---
+
+
+## ADR-015: Stage 1 security — Firestore rate limit + Origin check
+
+**Date**: 2026-05-14 (R162-security)
+**Status**: Accepted
+
+**Context**: Pre-PMF (Stage 1 per `labyra-strategy.md`). API routes have:
+- Per-month quota in `governance/quota.ts` (papers, tokens, cost cap)
+- Bearer token auth
+- No per-minute rate limit → vulnerable to burst attacks on expensive AI endpoints
+- No CSRF defense → vulnerable to cross-origin form-based attacks
+
+**Decision**: Implement Stage 1 minimal defenses without new infra dependencies.
+- Rate limit: Firestore counter docs at `_rate_limits/{key}` with TTL cleanup
+- CSRF: Origin header check in `src/middleware.ts` against fixed allowlist
+- Apply rate limits to expensive mutations: reanalyze (5/min), signed-upload (30/min), papers/upload (30/min)
+- Document Stage 2 migration to Upstash (interface preserved)
+
+**Consequences**:
+- ~20ms latency overhead on rate-limited routes (Firestore tx)
+- 1 extra Firestore write per rate-limited request → minor cost (~$0.06/100K)
+- Origin check is bypassable if attacker controls a subdomain — acceptable Stage 1 risk
+- Webhook routes (`/api/webhooks/*`) bypass Origin check by design
+- No per-IP rate limits yet (deferred to Stage 3 enterprise)
+
+**Migration triggers to Stage 2 (Upstash)**:
+- 20+ active labs
+- Documented abuse incident
+- Firestore txn latency > 200ms
+
+**Alternatives**:
+- Upstash Redis (rejected: Stage 2, forbidden Stage 1 per `labyra-strategy.md`)
+- In-memory LRU (rejected: not shared across Vercel instances, less reliable)
+- Double-submit CSRF token (deferred to Stage 3 SOC2/SAML)

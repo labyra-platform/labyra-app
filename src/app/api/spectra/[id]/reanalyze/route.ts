@@ -16,6 +16,7 @@ import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/ad
 import { publishSpectrumAnalysis } from '@/lib/pubsub/publisher';
 import type { SpectrumMetadata } from '@/types/spectra';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -29,6 +30,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
+    }
+
+    // R162-security — per-tenant rate limit
+    const rl = await checkRateLimit(rateLimitKey('reanalyze', tenantId), 5, 60);
+    if (!rl.allowed) {
+      return new NextResponse('rate_limited', {
+        status: 429,
+        headers: { 'Retry-After': String(rl.resetSec) }
+      });
     }
 
     const { id: spectrumId } = await params;

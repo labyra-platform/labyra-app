@@ -17,6 +17,7 @@ import { spectrumRawPath, getSignedUploadUrl } from '@/lib/firebase/storage';
 import { SPECTRA_CONFIG } from '@/lib/spectra/config';
 import type { SpectrumType } from '@/types/spectra';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -30,6 +31,15 @@ export async function POST(req: NextRequest) {
     const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
+    }
+
+    // R162-security — per-tenant rate limit
+    const rl = await checkRateLimit(rateLimitKey('signed-upload', tenantId), 30, 60);
+    if (!rl.allowed) {
+      return new NextResponse('rate_limited', {
+        status: 429,
+        headers: { 'Retry-After': String(rl.resetSec) }
+      });
     }
 
     const body = await req.json();

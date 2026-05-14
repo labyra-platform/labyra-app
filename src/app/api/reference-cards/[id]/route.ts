@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 import { getReferenceCard, deleteReferenceCard } from '@/lib/firebase/reference-cards/service';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -29,6 +30,15 @@ async function authenticate(req: NextRequest) {
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+
+  // R162-tier-rate-limit — per-tenant rate limit
+  const rl = await checkRateLimit(rateLimitKey('refcards-edit', auth.tenantId!), 30, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', {
+      status: 429,
+      headers: { 'Retry-After': String(rl.resetSec) }
+    });
+  }
   const { id } = await params;
 
   const card = await getReferenceCard(auth.tenantId!, id);

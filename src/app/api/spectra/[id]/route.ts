@@ -11,6 +11,7 @@ import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/ad
 import { deleteFile } from '@/lib/firebase/storage';
 import type { SpectrumMetadata } from '@/types/spectra';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -25,6 +26,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
+    }
+
+    // R162-tier-rate-limit — per-tenant rate limit
+    const rl = await checkRateLimit(rateLimitKey('spectra-delete', tenantId), 30, 60);
+    if (!rl.allowed) {
+      return new NextResponse('rate_limited', {
+        status: 429,
+        headers: { 'Retry-After': String(rl.resetSec) }
+      });
     }
 
     const db = getAdminFirestoreService();

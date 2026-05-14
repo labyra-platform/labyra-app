@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 async function authorize(
   req: NextRequest
@@ -18,6 +19,15 @@ async function authorize(
   const tenantId = getTenantIdFromToken(decoded);
   if (!tenantId) {
     return new NextResponse('no_tenant', { status: 403 });
+  }
+
+  // R162-tier-rate-limit — per-tenant rate limit
+  const rl = await checkRateLimit(rateLimitKey('bookings-edit', tenantId), 30, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', {
+      status: 429,
+      headers: { 'Retry-After': String(rl.resetSec) }
+    });
   }
   return { uid: decoded.uid, tenantId };
 }

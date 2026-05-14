@@ -9,6 +9,7 @@ import { getJobQueue } from '@/lib/ai/rag/jobs';
 import { getVectorStore } from '@/lib/ai/rag/vector-store';
 import { TERMINAL_STATUSES, type Paper } from '@/types/papers';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -29,6 +30,15 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const tenantId = getTenantIdFromToken(decoded);
   if (!tenantId) {
     return new Response(JSON.stringify({ error: 'missing_tenant_claim' }), { status: 403 });
+  }
+
+  // R162-tier-rate-limit — per-tenant rate limit
+  const rl = await checkRateLimit(rateLimitKey('paper-reprocess', tenantId), 30, 60);
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: 'rate_limited' }), {
+      status: 429,
+      headers: { 'content-type': 'application/json', 'Retry-After': String(rl.resetSec) }
+    });
   }
 
   const { id: paperId } = await context.params;

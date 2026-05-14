@@ -25,6 +25,7 @@ import { checkGrounding } from '@/lib/ai/grounding';
 import { loadConversationHistory } from '@/lib/ai/conversation-history';
 import { classifyOnTopic, offTopicResponse } from '@/lib/ai/grounding/on-topic-check';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -91,6 +92,15 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'missing_tenant_claim' }), {
       status: 403,
       headers: { 'content-type': 'application/json' }
+    });
+  }
+
+  // R162-tier-rate-limit — per-tenant rate limit
+  const rl = await checkRateLimit(rateLimitKey('chat', tenantId), 5, 60);
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: 'rate_limited' }), {
+      status: 429,
+      headers: { 'content-type': 'application/json', 'Retry-After': String(rl.resetSec) }
     });
   }
 

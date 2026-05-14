@@ -14,6 +14,7 @@ import { getAdminAuthService } from '@/lib/firebase/admin';
 import { CreateReferenceCardSchema } from '@/lib/spectra/reference-card-schema';
 import { createReferenceCard, listReferenceCards } from '@/lib/firebase/reference-cards/service';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -35,6 +36,15 @@ async function authenticate(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+
+  // R162-tier-rate-limit — per-tenant rate limit
+  const rl = await checkRateLimit(rateLimitKey('refcards-write', auth.tenantId!), 30, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', {
+      status: 429,
+      headers: { 'Retry-After': String(rl.resetSec) }
+    });
+  }
 
   const body = await req.json();
   const parsed = CreateReferenceCardSchema.safeParse(body);

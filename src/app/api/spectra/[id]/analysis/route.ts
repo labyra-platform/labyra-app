@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 import { getLatestAnalysis } from '@/lib/firestore/queries/spectra-analysis';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return new NextResponse('unauthorized', { status: 401 });
     }
     const decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
-    const tenantId = decoded.tenantId as string | undefined;
+    const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
     }

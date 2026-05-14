@@ -22,6 +22,7 @@ import { paperStoragePath, uploadBuffer } from '@/lib/firebase/storage';
 import { checkQuota, trackUsage } from '@/lib/ai/governance/quota';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
 import type { Paper } from '@/types/papers';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Vercel: 60s for upload (processing is async)
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     return jsonError(401, 'invalid_token');
   }
 
-  const tenantId = (decoded.tenantId as string | undefined) ?? null;
+  const tenantId = getTenantIdFromToken(decoded);
   const userId = decoded.uid;
   if (!tenantId) {
     return jsonError(403, 'missing_tenant_claim');

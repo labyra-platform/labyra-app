@@ -15,6 +15,7 @@ import { publishSpectrumAnalysis } from '@/lib/pubsub/publisher';
 import { fileExists, getFileMetadata } from '@/lib/firebase/storage';
 import { SPECTRA_CONFIG } from '@/lib/spectra/config';
 import type { SpectrumMetadata, SpectrumType } from '@/types/spectra';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
       return new NextResponse('unauthorized', { status: 401 });
     }
     const decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
-    const tenantId = decoded.tenantId as string | undefined;
+    const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
     }

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 import { getReferenceCard, deleteReferenceCard } from '@/lib/firebase/reference-cards/service';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 
@@ -17,7 +18,7 @@ async function authenticate(req: NextRequest) {
   }
   try {
     const decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
-    const tenantId = decoded.tenantId as string | undefined;
+    const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) return { error: new NextResponse('no_tenant', { status: 403 }) };
     return { tenantId };
   } catch {

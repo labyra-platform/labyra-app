@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { deleteFile } from '@/lib/firebase/storage';
 import type { SpectrumMetadata } from '@/types/spectra';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +22,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return new NextResponse('unauthorized', { status: 401 });
     }
     const decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
-    const tenantId = decoded.tenantId as string | undefined;
+    const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
     }

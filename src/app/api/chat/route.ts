@@ -24,6 +24,7 @@ import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
 import { checkGrounding } from '@/lib/ai/grounding';
 import { loadConversationHistory } from '@/lib/ai/conversation-history';
 import { classifyOnTopic, offTopicResponse } from '@/lib/ai/grounding/on-topic-check';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const tenantId = (decoded.tenantId as string | undefined) ?? null;
+  const tenantId = getTenantIdFromToken(decoded);
   const userId = decoded.uid;
   const userEmail = decoded.email ?? '';
   if (!tenantId) {

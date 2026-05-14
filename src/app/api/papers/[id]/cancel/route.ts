@@ -6,6 +6,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
 import { CANCELLABLE_STATUSES, type Paper } from '@/types/papers';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 
@@ -23,7 +24,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return new Response(JSON.stringify({ error: 'invalid_token' }), { status: 401 });
   }
 
-  const tenantId = (decoded.tenantId as string | undefined) ?? null;
+  const tenantId = getTenantIdFromToken(decoded);
   if (!tenantId) {
     return new Response(JSON.stringify({ error: 'missing_tenant_claim' }), { status: 403 });
   }

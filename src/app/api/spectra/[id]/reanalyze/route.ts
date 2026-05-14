@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { publishSpectrumAnalysis } from '@/lib/pubsub/publisher';
 import type { SpectrumMetadata } from '@/types/spectra';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return new NextResponse('unauthorized', { status: 401 });
     }
     const decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
-    const tenantId = decoded.tenantId as string | undefined;
+    const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
     }

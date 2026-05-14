@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
     const token = authHeader.slice('Bearer '.length);
     const decoded = await getAdminAuthService().verifyIdToken(token);
-    const tenantId = decoded.tenantId as string | undefined;
+    const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
     }

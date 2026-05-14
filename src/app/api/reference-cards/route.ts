@@ -67,6 +67,15 @@ export async function GET(req: NextRequest) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
 
+  // R162-read-tier — per-tenant read rate limit
+  const rl = await checkRateLimit(rateLimitKey('refcards-list', auth.tenantId!), 100, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', {
+      status: 429,
+      headers: { 'Retry-After': String(rl.resetSec) }
+    });
+  }
+
   const formula = req.nextUrl.searchParams.get('formula') ?? undefined;
   const cards = await listReferenceCards(auth.tenantId!, formula ? { formula } : undefined);
   return NextResponse.json({ cards });

@@ -12,6 +12,7 @@ import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/ad
 import { getSignedDownloadUrl } from '@/lib/firebase/storage';
 import type { SpectrumMetadata } from '@/types/spectra';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -26,6 +27,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
+    }
+
+    // R162-read-tier — per-tenant read rate limit
+    const rl = await checkRateLimit(rateLimitKey('signed-download', tenantId), 100, 60);
+    if (!rl.allowed) {
+      return new NextResponse('rate_limited', {
+        status: 429,
+        headers: { 'Retry-After': String(rl.resetSec) }
+      });
     }
 
     const db = getAdminFirestoreService();

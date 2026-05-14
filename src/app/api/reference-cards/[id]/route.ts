@@ -59,6 +59,15 @@ async function applyMutationRateLimit(tenantId: string) {
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+
+  // R162-read-tier — per-tenant read rate limit
+  const rl = await checkRateLimit(rateLimitKey('refcards-read', auth.tenantId!), 100, 60);
+  if (!rl.allowed) {
+    return new NextResponse('rate_limited', {
+      status: 429,
+      headers: { 'Retry-After': String(rl.resetSec) }
+    });
+  }
   const { id } = await params;
 
   const card = await getReferenceCard(auth.tenantId!, id);

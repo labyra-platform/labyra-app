@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 import { getLatestAnalysis } from '@/lib/firestore/queries/spectra-analysis';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -20,6 +21,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
+    }
+
+    // R162-read-tier — per-tenant read rate limit
+    const rl = await checkRateLimit(rateLimitKey('spectra-read', tenantId), 100, 60);
+    if (!rl.allowed) {
+      return new NextResponse('rate_limited', {
+        status: 429,
+        headers: { 'Retry-After': String(rl.resetSec) }
+      });
     }
 
     const { id } = await params;

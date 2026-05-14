@@ -665,5 +665,30 @@
     "cannotReactivateRetracted": "Cannot reactivate retracted records (immutable per compliance policy).",
     "cancel": "Cancel",
     "errorGeneric": "An error occurred"
+  },
+  "versioning": {
+    "loading": "Loading history...",
+    "error": "Error: {msg}",
+    "noHistory": "No version history yet",
+    "historyTitle": "Version history",
+    "current": "current",
+    "noChangeNote": "(no change note)",
+    "changedBy": "By",
+    "viewContent": "View version content"
+  },
+  "lineage": {
+    "loading": "Loading lineage graph...",
+    "error": "Lineage load error: {msg}",
+    "noLineage": "No lineage relations yet",
+    "title": "PROV-O lineage graph",
+    "legend": {
+      "material": "Material",
+      "sample": "Sample",
+      "experiment": "Experiment",
+      "measurement": "Measurement",
+      "analysis": "AI Analysis",
+      "reference": "Reference",
+      "paper": "Paper"
+    }
   }
 }

@@ -665,5 +665,30 @@
     "cannotReactivateRetracted": "Không thể khôi phục bản ghi đã thu hồi (immutable theo chính sách compliance).",
     "cancel": "Hủy",
     "errorGeneric": "Có lỗi xảy ra"
+  },
+  "versioning": {
+    "loading": "Đang tải lịch sử...",
+    "error": "Lỗi: {msg}",
+    "noHistory": "Chưa có lịch sử thay đổi",
+    "historyTitle": "Lịch sử phiên bản",
+    "current": "hiện tại",
+    "noChangeNote": "(không có ghi chú)",
+    "changedBy": "Bởi",
+    "viewContent": "Xem nội dung phiên bản"
+  },
+  "lineage": {
+    "loading": "Đang tải sơ đồ lineage...",
+    "error": "Lỗi tải lineage: {msg}",
+    "noLineage": "Chưa có quan hệ lineage",
+    "title": "Sơ đồ lineage PROV-O",
+    "legend": {
+      "material": "Vật liệu",
+      "sample": "Mẫu",
+      "experiment": "Thí nghiệm",
+      "measurement": "Đo phổ",
+      "analysis": "Phân tích AI",
+      "reference": "Tham chiếu",
+      "paper": "Bài báo"
+    }
   }
 }

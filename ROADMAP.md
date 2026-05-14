@@ -151,3 +151,36 @@ Source repos cũ (reference only, không port code):
 - [x] R160-ui-1 — UI polish: Papers PageContainer, AI Assistant i18n, reduced-motion CSS (WCAG 2.3.3), Stage 2 + a11y plan docs
 - [x] R160-spectra-1 — Stage 2 Phase 1: Spectrum upload (24 types) with Firebase Storage signed URL flow, sha256 verify, tenant-scoped, 4 composite indexes
 - [x] R160-spectra-2 — Spectra integration: Experiment detail Tabs (Edit|Spectra), standalone /dashboard/spectra route, upload dialog, detail page with download
+
+## Strategic Context (May 2026)
+
+> Detailed analysis: see `docs/strategy/market-research.md` + `docs/strategy/consumer-psychology.md`
+> Actionable distillation: see `docs/strategy/INSIGHTS.md`
+
+### Market position
+- Global LIMS $2.88B → $5.19B (2030), CAGR 12.5%
+- Big 4 (LabWare/Thermo/LabVantage/STARLIMS) dominate enterprise — academic underserved
+- Labrya unique: lab management + domain-specific AI + spectrum analysis in one
+- Vertical SaaS outperforms horizontal in retention + efficiency
+
+### Target market
+- TAM ~$5.8B (LIMS + AI research + spectrum tools)
+- SAM ~$600M-900M (academic + materials science + Asia-Pacific)
+- SOM Year 1-3: focus VN academic + Asia-Pacific tier-2
+
+### Pricing strategy
+- $29/lab/month (vs $50K enterprise) — disruption tier
+- Free → Pro ($29) → Lab ($99) — decoy pricing
+- No credit card free trial (VN trust)
+
+### Trust hierarchy (critical for adoption)
+- PI recommendation > peer > paper citation > marketing
+- One PI converted = entire lab adopts
+- **Implementation**: AI grounded citations, no hallucination, source-verified
+
+### Onboarding target
+- Sign-up → first analysis < 10 minutes
+- > 10 min = 40% retention drop
+
+---
+

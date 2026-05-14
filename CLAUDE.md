@@ -8,6 +8,10 @@
 - `docs/architecture-decisions.md` — ADR log (past decisions with rationale)
 - `docs/ai/ai-5b-pipeline.md` — Paper pipeline design (if working on RAG)
 - `docs/uiux-international-standards.md` — UI/UX standards (WCAG 2.2 AA, ISO 9241, Nielsen, Gestalt, Tufte data viz)
+- `docs/strategy/INSIGHTS.md` — strategic actionable (pricing, trust, onboarding, VN context)
+- `docs/strategy/market-research.md` — TAM/SAM/SOM, LIMS competitive analysis
+- `docs/strategy/consumer-psychology.md` — UTAUT/TAM/Fogg model application
+- `docs/scientific-methods/xrd-analysis.md` — XRD algorithms & formulas reference
 - `docs/labrya-experiment-database-report.md` — Database architecture for experiment data (storage tier per data type)
 - `docs/database-stage-2-plan.md` — Stage 2 migration roadmap (GCS + BigQuery + spectra pipeline)
 - `docs/accessibility-audit.md` — WCAG 2.2 AA checklist

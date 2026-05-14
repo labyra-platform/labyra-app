@@ -77,7 +77,9 @@ export interface SpectrumMetadata {
   experimentId: string;
   sampleId: string;
   sampleLabel?: string; // denormalized
-  chemicalFormula?: string; // user-provided for citation lookup (e.g. 'WO3')
+  chemicalFormula?: string;
+  profileFunction?: string; // R161-phase-E: gaussian/lorentzian/pseudo_voigt
+  zeroShift?: number; // R161-phase-E: 2θ offset correction (°) // user-provided for citation lookup (e.g. 'WO3')
   anode?: string; // X-ray anode for XRD: Cu/Mo/Co/Cr/Fe/Ag (default Cu)
   monochromator?: string; // XRD monochromator: none/ni_filter/graphite/ge111/johansson/si220
 

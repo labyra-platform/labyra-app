@@ -60,6 +60,8 @@ interface UploadItem {
   chemicalFormula: string;
   anode: string;
   monochromator: string;
+  profileFunction: string;
+  zeroShift: number;
   status: ItemStatus;
 }
 
@@ -83,7 +85,8 @@ async function uploadOneFile(
   sampleLabel: string | undefined,
   updateStatus: (id: string, status: ItemStatus) => void
 ): Promise<string> {
-  const { file, spectrumType, chemicalFormula, anode, monochromator } = item;
+  const { file, spectrumType, chemicalFormula, anode, monochromator, profileFunction, zeroShift } =
+    item;
   if (!spectrumType) throw new Error('no_type_selected');
 
   const config = SPECTRA_CONFIG[spectrumType];
@@ -157,6 +160,8 @@ async function uploadOneFile(
       chemicalFormula: chemicalFormula || undefined,
       anode: anode || 'Cu',
       monochromator: monochromator || 'none',
+      profileFunction: profileFunction || 'pseudo_voigt',
+      zeroShift: zeroShift || 0,
       measuredAt: Date.now()
     })
   });
@@ -224,6 +229,8 @@ export function SpectrumUploadDropzone({
       chemicalFormula: '',
       anode: 'Cu',
       monochromator: 'none',
+      profileFunction: 'pseudo_voigt',
+      zeroShift: 0,
       status: { phase: 'pending' }
     }));
     setItems((prev) => [...prev, ...newItems]);
@@ -254,6 +261,14 @@ export function SpectrumUploadDropzone({
 
   const changeMonochromator = (id: string, monochromator: string) => {
     updateItem(id, { monochromator });
+  };
+
+  const changeProfileFunction = (id: string, profileFunction: string) => {
+    updateItem(id, { profileFunction });
+  };
+
+  const changeZeroShift = (id: string, zeroShift: number) => {
+    updateItem(id, { zeroShift });
   };
 
   const startUpload = async () => {
@@ -343,6 +358,8 @@ export function SpectrumUploadDropzone({
                   onFormulaChange={(f) => changeFormula(item.id, f)}
                   onAnodeChange={(a) => changeAnode(item.id, a)}
                   onMonochromatorChange={(m) => changeMonochromator(item.id, m)}
+                  onProfileFunctionChange={(p) => changeProfileFunction(item.id, p)}
+                  onZeroShiftChange={(z) => changeZeroShift(item.id, z)}
                   onRemove={() => removeItem(item.id)}
                 />
               ))}
@@ -386,6 +403,8 @@ interface UploadRowProps {
   onFormulaChange: (formula: string) => void;
   onAnodeChange: (anode: string) => void;
   onMonochromatorChange: (monochromator: string) => void;
+  onProfileFunctionChange: (profile: string) => void;
+  onZeroShiftChange: (zeroShift: number) => void;
   onRemove: () => void;
 }
 
@@ -402,12 +421,16 @@ function UploadRow({
   onFormulaChange,
   onAnodeChange,
   onMonochromatorChange,
+  onProfileFunctionChange,
+  onZeroShiftChange,
   onRemove
 }: UploadRowProps) {
   const t = useTranslations('spectra');
   const chemicalFormula = item.chemicalFormula;
   const anode = item.anode;
   const monochromator = item.monochromator;
+  const profileFunction = item.profileFunction;
+  const zeroShift = item.zeroShift;
   const spectrumType = item.spectrumType;
   const status = item.status;
   const file = item.file;
@@ -500,6 +523,30 @@ function UploadRow({
                 <SelectItem value='si220'>Si(220)</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={profileFunction || 'pseudo_voigt'}
+              onValueChange={(v) => onProfileFunctionChange(v)}
+              disabled={!canEdit || disabled}
+            >
+              <SelectTrigger className='w-28 text-xs' title='Peak profile function'>
+                <SelectValue placeholder='Pseudo-Voigt' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='gaussian'>Gaussian</SelectItem>
+                <SelectItem value='lorentzian'>Lorentzian</SelectItem>
+                <SelectItem value='pseudo_voigt'>Pseudo-Voigt</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type='number'
+              step='0.001'
+              value={zeroShift ?? 0}
+              onChange={(e) => onZeroShiftChange(Number.parseFloat(e.target.value) || 0)}
+              disabled={!canEdit || disabled}
+              className='w-20 text-xs'
+              placeholder='Δ2θ'
+              title='Zero shift correction (°)'
+            />
           </>
         )}
       </div>

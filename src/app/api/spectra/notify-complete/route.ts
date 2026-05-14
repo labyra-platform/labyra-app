@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
       chemicalFormula,
       anode,
       monochromator,
+      profileFunction,
+      zeroShift,
       instrument,
       measuredAt
     } = body;
@@ -87,6 +89,8 @@ export async function POST(req: NextRequest) {
       chemicalFormula: chemicalFormula ?? undefined,
       anode: anode ?? undefined,
       monochromator: monochromator ?? undefined,
+      profileFunction: profileFunction ?? undefined,
+      zeroShift: typeof zeroShift === 'number' ? zeroShift : undefined,
       spectrumType: spectrumType as SpectrumType,
       group: config.group,
       storage: {

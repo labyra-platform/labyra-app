@@ -43,7 +43,8 @@ export const SPECTRA_CONFIG: Record<SpectrumType, SpectrumTypeConfig> = {
   uvvis: {
     type: 'uvvis',
     group: 'optical',
-    acceptedExtensions: ['.csv', '.txt', '.dpt'],
+    // R163-config-extensions: expanded for vendor exports
+    acceptedExtensions: ['.csv', '.txt', '.asc', '.jdx', '.dx'],
     maxSizeBytes: 5 * MB,
     defaultUnits: { x: 'Wavelength (nm)', y: 'Absorbance' },
     isImage: false
@@ -67,7 +68,8 @@ export const SPECTRA_CONFIG: Record<SpectrumType, SpectrumTypeConfig> = {
   raman: {
     type: 'raman',
     group: 'optical',
-    acceptedExtensions: ['.txt', '.spe', '.wdf', '.csv'],
+    // R163-config-extensions: expanded for Renishaw/Bruker/JCAMP
+    acceptedExtensions: ['.csv', '.txt', '.asc', '.jdx', '.dx', '.spc'],
     maxSizeBytes: 10 * MB,
     defaultUnits: { x: 'Wavenumber (cm⁻¹)', y: 'Intensity (a.u.)' },
     isImage: false
@@ -75,7 +77,8 @@ export const SPECTRA_CONFIG: Record<SpectrumType, SpectrumTypeConfig> = {
   ftir: {
     type: 'ftir',
     group: 'optical',
-    acceptedExtensions: ['.csv', '.dpt', '.spa'],
+    // R163-config-extensions: added .asc (PerkinElmer), .jdx/.dx (JCAMP-DX), .txt
+    acceptedExtensions: ['.csv', '.dpt', '.spa', '.asc', '.jdx', '.dx', '.txt'],
     maxSizeBytes: 10 * MB,
     defaultUnits: { x: 'Wavenumber (cm⁻¹)', y: '%T or Absorbance' },
     isImage: false

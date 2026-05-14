@@ -98,7 +98,7 @@ export function useCopyAsLatex(containerRef: RefObject<HTMLElement | null>): voi
     if (!container) return;
 
     const handleCopy = (e: ClipboardEvent) => {
-      console.log('[copy-as-latex] copy event fired');
+      if (process.env.NODE_ENV !== 'production') console.warn('[copy-as-latex] copy event fired');
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
         return;
@@ -120,7 +120,8 @@ export function useCopyAsLatex(containerRef: RefObject<HTMLElement | null>): voi
           intersecting.push(k);
         }
       }
-      console.log('[copy-as-latex] intersecting katex:', intersecting.length);
+      if (process.env.NODE_ENV !== 'production')
+        console.warn('[copy-as-latex] intersecting katex:', intersecting.length);
       if (intersecting.length === 0) {
         return;
       }
@@ -138,10 +139,11 @@ export function useCopyAsLatex(containerRef: RefObject<HTMLElement | null>): voi
 
       const tempDiv = document.createElement('div');
       tempDiv.appendChild(expandedRange.cloneContents());
-      console.log(
-        '[copy-as-latex] expanded katex count:',
-        tempDiv.querySelectorAll('.katex').length
-      );
+      if (process.env.NODE_ENV !== 'production')
+        console.warn(
+          '[copy-as-latex] expanded katex count:',
+          tempDiv.querySelectorAll('.katex').length
+        );
 
       // Build text with LaTeX source for math elements
       const text = walkNode(tempDiv)

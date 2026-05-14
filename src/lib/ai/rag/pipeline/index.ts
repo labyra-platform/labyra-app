@@ -12,7 +12,7 @@ export function registerPaperProcessor(): void {
   if (_registered) return;
   setJobProcessor(processPaperJob);
   _registered = true;
-  console.log(
+  console.warn(
     JSON.stringify({
       level: 'info',
       event: 'paper_processor_registered',

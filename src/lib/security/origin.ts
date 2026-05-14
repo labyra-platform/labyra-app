@@ -1,5 +1,3 @@
-import 'server-only';
-
 /**
  * Origin allowlist for CSRF defense via Origin header check.
  *

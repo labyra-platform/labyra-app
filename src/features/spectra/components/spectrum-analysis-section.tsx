@@ -74,7 +74,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     if (!parsed || parsed.spectrum_type !== 'xrd') return [];
     const workerCandidates = parsed.citation?.candidates ?? [];
     const internal = computeInternalCandidates(parsed.peaks ?? [], allCards);
-    return [...workerCandidates, ...internal].sort((a, b) => b.match_score - a.match_score);
+    return [...workerCandidates, ...internal].toSorted((a, b) => b.match_score - a.match_score);
   }, [result, allCards]);
 
   if (status !== 'analyzed') return null;

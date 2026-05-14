@@ -282,3 +282,25 @@ Smallest FWHM among detected peaks. Typical: 0.05° (HRXRD) - 0.20° (standard l
 ---
 
 **Last updated**: R161 (2026-05-14) — added profile fitting, AI temperature=0, citation cache.
+
+
+## 16. Demo Reference Samples (@phase R162-demo-dataset)
+
+Pre-bundled XRD samples for onboarding (path: `public/demos/spectra/`).
+Each sample ships with grounded expected phase for new-user verification of the citation pipeline.
+
+| Sample | Formula | Crystal system | Space group | Source |
+|---|---|---|---|---|
+| `xrd-w18o49-rod.xy` | W₁₈O₄₉ | Monoclinic | P2/m | COD #1535917 |
+
+**Strategic intent**: cut time-to-first-analysis below 10 min (per `docs/strategy/INSIGHTS.md` §2 Onboarding).
+**Loading mechanism**: frontend fetch `/demos/spectra/{filename}` → blob → File → existing dropzone pipeline.
+Same code path as user-uploaded files. No demo-only branching.
+
+**Reference peaks (Cu Kα, λ = 1.5406 Å)** — used to verify citation matching algorithm (§12.1) on first run:
+- W₁₈O₄₉ monoclinic (rod): 14.65°, 23.42°, 28.75°, 37.10°, 50.35°, 55.97°
+
+**Implementation files**:
+- Manifest: `public/demos/spectra/manifest.json`
+- Loader: `src/lib/spectra/load-demo.ts`
+- Button: `src/features/spectra/components/demo-data-button.tsx`

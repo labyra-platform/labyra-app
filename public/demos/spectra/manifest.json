@@ -1,0 +1,20 @@
+{
+  "_patched": "@phase R162-demo-dataset",
+  "version": 1,
+  "samples": [
+    {
+      "id": "xrd-w18o49-rod",
+      "filename": "xrd-w18o49-rod.xy",
+      "spectrumType": "xrd",
+      "label_vi": "W₁₈O₄₉ monoclinic (dạng rod)",
+      "label_en": "W₁₈O₄₉ monoclinic (rod morphology)",
+      "formula": "W18O49",
+      "description_vi": "Tungsten oxide sub-stoichiometric, tổng hợp thủy nhiệt. Phase chính monoclinic P2/m. Peak đặc trưng 28.75° (010).",
+      "description_en": "Sub-stoichiometric tungsten oxide from hydrothermal synthesis. Main phase monoclinic P2/m. Characteristic peak at 28.75° (010).",
+      "anode": "Cu",
+      "monochromator": "none",
+      "expectedPhase": "W18O49 monoclinic (P2/m), COD #1535917 / MP-19394",
+      "sizeBytes": 40178
+    }
+  ]
+}

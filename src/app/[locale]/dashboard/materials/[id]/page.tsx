@@ -1,7 +1,7 @@
 'use client';
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { getAuth } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,11 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('materials');
   const { material, loading } = useMaterial(id);
 
   const handleDelete = async () => {
-    if (!confirm('Xóa material này?')) return;
+    if (!confirm(t('deleteConfirm'))) return;
     try {
       const user = getAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
@@ -26,17 +27,17 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ id: s
         headers: { authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success('Đã xóa');
+      toast.success(t('toastDeleted'));
       router.push(`/${locale}/dashboard/materials`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Lỗi');
+      toast.error(err instanceof Error ? err.message : t('toastDeleted'));
     }
   };
 
   if (loading) {
     return (
       <PageContainer>
-        <div className='text-muted-foreground py-12 text-center text-sm'>Đang tải...</div>
+        <div className='text-muted-foreground py-12 text-center text-sm'>{t('loading')}</div>
       </PageContainer>
     );
   }
@@ -44,7 +45,7 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ id: s
   if (!material) {
     return (
       <PageContainer>
-        <div className='text-muted-foreground py-12 text-center text-sm'>Không tìm thấy</div>
+        <div className='text-muted-foreground py-12 text-center text-sm'>{t('notFound')}</div>
       </PageContainer>
     );
   }
@@ -53,9 +54,9 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ id: s
     <PageContainer>
       <div className='max-w-3xl mx-auto space-y-6'>
         <header className='flex items-center justify-between'>
-          <h1 className='text-2xl font-semibold tracking-tight'>Chỉnh sửa material</h1>
+          <h1 className='text-2xl font-semibold tracking-tight'>{t('editPageTitle')}</h1>
           <Button variant='destructive' onClick={handleDelete}>
-            Xóa
+            {t('delete')}
           </Button>
         </header>
         <MaterialForm defaultValues={material} materialId={id} />

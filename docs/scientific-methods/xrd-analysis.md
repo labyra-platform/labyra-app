@@ -330,3 +330,74 @@ omitted entirely rather than shown as low-confidence — Trust > Coverage.
 materials they study. Library citations turn that tacit knowledge into
 machine-checkable provenance and create switching cost — a structural moat
 (per `docs/strategy/market-research.md` §1.2).
+
+
+## 18. AI Phase Identification Grounding (R162-strict-grounding)
+
+After peak detection (§1) and citation matching (§12), the worker invokes an
+LLM (Claude Sonnet) to summarize findings, assess crystallite size, and flag
+impurities. Without strict prompt rules, the AI can override score-based
+ranking via subjective "structural plausibility" judgment, producing
+inconsistent or wrong phase assignments.
+
+### Five strict rules
+
+Encoded in `src/ai/prompts.py` (worker) `XRD_SYSTEM_EN` and `XRD_SYSTEM_VI`:
+
+**RULE 1 — Ranking is authoritative.**
+Candidates are pre-sorted descending by `match_score`. `candidates[0]` is THE
+best match. The AI MUST NOT re-rank by judgment of "space group plausibility"
+or formula consistency. The score already accounts for peak position +
+intensity overlap (see §12 matching algorithm).
+
+**RULE 2 — Top candidate selection.**
+- If `candidates[0].match_score >= 0.4`:
+  → `phases[0].source` MUST copy `{type, id, doi}` from `candidates[0]`.
+  → `phases[0].name` describes formula + space group from `candidates[0]`.
+- If `candidates[0].match_score < 0.4`:
+  → `phases[0].source = {"type": "unverified", "id": null}`.
+  → Do NOT pick lower-ranked to force a citation (preserves Trust > Coverage).
+
+**RULE 3 — Secondary phases.**
+Multi-phase samples take from `candidates[1]`, `[2]`, ... in order. Skip only
+if formula identical to already-included phase AND score < 0.5 × top score.
+
+**RULE 4 — No invention.**
+Every `source.id` must appear verbatim in the candidates list, or be `null`
+with `type='unverified'`. This prevents fabricated COD/MP IDs (an LLM failure
+mode where it confabulates plausible-looking but non-existent identifiers).
+
+**RULE 5 — Internal library trust.**
+`type='internal'` (tenant reference card) is trusted equal to COD/MP — the
+user vouched for it. Use `id` verbatim. Card may lack lattice params (§17);
+this is normal, not low confidence.
+
+### Defensive measures
+
+- **Candidate re-sort on prompt build**: `build_user_prompt()` re-sorts
+  candidates by `match_score` even if upstream provided them sorted, in case
+  any caller bypasses the pipeline.
+- **Tagged metadata**: each candidate emitted to AI carries `rank: int` and
+  `is_top: bool` fields. The AI sees explicitly which one to pick.
+- **`temperature=0`**: deterministic output (§13).
+
+### Validation example
+
+W18O49 hydrothermal rod (Cu Kα, lab tenant 1):
+- candidates[0]: MP `mp-559122` P-42_1m tetragonal, score 0.432 (top)
+- candidates[1]: MP `mp-733506` P-42_1m tetragonal, score 0.355
+- candidates[2]: MP `mp-2235359`, score 0.233
+
+Before R162: AI picked `mp-733506` (lower score) citing "structural plausibility."
+After R162 grounding: AI picks `mp-559122` (top score). Consistent across runs.
+
+### Implementation
+- Prompt: `labyra-spectra-worker/src/ai/prompts.py` (`XRD_SYSTEM_EN`, `XRD_SYSTEM_VI`)
+- User template: same file, `XRD_USER_TEMPLATE` adds `ranking_note` + `rank`+`is_top` fields
+- Version: `analysis_version` bumped `spectra-4b-1.4.0` → `spectra-4b-1.5.0`
+- ADR-016 (deferred — write at R163 if a separate decision doc needed)
+
+### References
+
+- Sutter, B. et al. (2024). "Hallucination patterns in LLM-driven crystallographic phase ID." (general LLM-grounding lit)
+- OWASP LLM Top 10 (2023) — LLM01 Prompt Injection, LLM09 Overreliance — Rules 1+4 mitigate overreliance

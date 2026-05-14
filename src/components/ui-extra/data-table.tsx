@@ -131,22 +131,48 @@ export function DataTable<T>({
 
   return (
     <div className='rounded-lg border bg-card'>
-      {(title || description) && (
-        <button
-          type='button'
-          onClick={() => setCollapsed((c) => !c)}
-          className='flex w-full items-center justify-between border-b p-3 text-left hover:bg-muted/30'
-        >
-          <div>
-            {title && <h3 className='text-sm font-medium'>{title}</h3>}
-            {description && <p className='text-xs text-muted-foreground'>{description}</p>}
-          </div>
-          {collapsed ? (
-            <IconChevronDown className='size-4 text-muted-foreground' />
+      {(title || description || exportFilename) && (
+        <div className='flex w-full items-center justify-between border-b p-3'>
+          {title || description ? (
+            <button
+              type='button'
+              onClick={() => setCollapsed((c) => !c)}
+              className='flex-1 text-left hover:bg-muted/30 rounded p-1 -m-1'
+            >
+              {title && <h3 className='text-sm font-medium'>{title}</h3>}
+              {description && <p className='text-xs text-muted-foreground'>{description}</p>}
+            </button>
           ) : (
-            <IconChevronUp className='size-4 text-muted-foreground' />
+            <div className='flex-1' />
           )}
-        </button>
+          <div className='flex items-center gap-2'>
+            {exportFilename && !collapsed && sortedRows.length > 0 && (
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleExport}
+                className='gap-1'
+                title='Export to Excel (.xlsx)'
+              >
+                <IconDownload className='size-3.5' />
+                Export
+              </Button>
+            )}
+            {(title || description) && (
+              <button
+                type='button'
+                onClick={() => setCollapsed((c) => !c)}
+                className='p-1 hover:bg-muted/30 rounded'
+              >
+                {collapsed ? (
+                  <IconChevronDown className='size-4 text-muted-foreground' />
+                ) : (
+                  <IconChevronUp className='size-4 text-muted-foreground' />
+                )}
+              </button>
+            )}
+          </div>
+        </div>
       )}
       {!collapsed && (
         <>

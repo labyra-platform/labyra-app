@@ -608,7 +608,20 @@
       "spaceGroup": "Space group",
       "anode": "Anode",
       "peaks": "Số đỉnh",
-      "cardNumber": "Card #"
-    }
+      "cardNumber": "Card #",
+      "twoTheta": "2θ (°)",
+      "dSpacing": "d (Å)",
+      "intensity": "Cường độ (%)",
+      "hkl": "hkl"
+    },
+    "backToSpectra": "Quay lại danh sách phổ",
+    "formula": "Công thức",
+    "spaceGroup": "Nhóm không gian",
+    "anode": "Anode",
+    "peaks": "Số đỉnh",
+    "notes": "Ghi chú",
+    "peakList": "Danh sách đỉnh",
+    "peakListSubtitle": "{count, plural, one {# đỉnh} other {# đỉnh}} từ reference card này",
+    "badgeInternal": "Internal"
   }
 }

@@ -28,8 +28,8 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'spectra' });
-  return { title: `Reference Card | ${t('title')}` };
+  const t = await getTranslations({ locale, namespace: 'referenceCards' });
+  return { title: t('title') };
 }
 
 export default async function ReferenceCardDetailPage({ params }: PageProps) {
@@ -44,6 +44,8 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const t = await getTranslations({ locale, namespace: 'referenceCards' });
+
   return (
     <PageContainer
       pageTitle={formatSciText(card.phaseName)}
@@ -55,7 +57,7 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
           className='inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground'
         >
           <IconChevronLeft className='size-4' />
-          Back to spectra
+          {t('backToSpectra')}
         </Link>
 
         <div className='rounded-lg border bg-card p-4 space-y-3'>
@@ -63,32 +65,32 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
             <IconBook className='size-5 text-muted-foreground' />
             <h2 className='text-lg font-medium'>{formatSciText(card.phaseName)}</h2>
             <Badge variant='secondary' className='ml-auto'>
-              Internal · {card.cardNumber}
+              {t('badgeInternal')} · {card.cardNumber}
             </Badge>
           </div>
 
           <div className='grid grid-cols-2 gap-4 text-sm sm:grid-cols-4'>
             <div>
-              <div className='text-muted-foreground text-xs'>Formula</div>
+              <div className='text-muted-foreground text-xs'>{t('formula')}</div>
               <div className='font-mono'>{card.formula ? formatSciText(card.formula) : '—'}</div>
             </div>
             <div>
-              <div className='text-muted-foreground text-xs'>Space group</div>
+              <div className='text-muted-foreground text-xs'>{t('spaceGroup')}</div>
               <div>{card.spaceGroup ?? '—'}</div>
             </div>
             <div>
-              <div className='text-muted-foreground text-xs'>Anode</div>
+              <div className='text-muted-foreground text-xs'>{t('anode')}</div>
               <div>{card.anode ?? '—'}</div>
             </div>
             <div>
-              <div className='text-muted-foreground text-xs'>Peaks</div>
+              <div className='text-muted-foreground text-xs'>{t('peaks')}</div>
               <div>{card.peaks.length}</div>
             </div>
           </div>
 
           {card.notes && (
             <div className='border-t pt-3'>
-              <div className='text-muted-foreground text-xs mb-1'>Notes</div>
+              <div className='text-muted-foreground text-xs mb-1'>{t('notes')}</div>
               <p className='text-sm whitespace-pre-wrap'>{card.notes}</p>
             </div>
           )}
@@ -96,18 +98,18 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
 
         <div className='rounded-lg border bg-card overflow-hidden'>
           <div className='border-b p-3'>
-            <h3 className='text-sm font-medium'>Peak list</h3>
+            <h3 className='text-sm font-medium'>{t('peakList')}</h3>
             <p className='text-xs text-muted-foreground'>
-              {card.peaks.length} peak{card.peaks.length === 1 ? '' : 's'} from this reference card
+              {t('peakListSubtitle', { count: card.peaks.length })}
             </p>
           </div>
           <table className='w-full text-sm'>
             <thead className='bg-muted/50 text-xs'>
               <tr>
-                <th className='p-2 text-left'>2θ (°)</th>
-                <th className='p-2 text-right'>d (Å)</th>
-                <th className='p-2 text-right'>Intensity (%)</th>
-                <th className='p-2 text-left'>hkl</th>
+                <th className='p-2 text-left'>{t('col.twoTheta')}</th>
+                <th className='p-2 text-right'>{t('col.dSpacing')}</th>
+                <th className='p-2 text-right'>{t('col.intensity')}</th>
+                <th className='p-2 text-left'>{t('col.hkl')}</th>
               </tr>
             </thead>
             <tbody className='divide-y'>

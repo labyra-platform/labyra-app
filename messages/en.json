@@ -608,7 +608,20 @@
       "spaceGroup": "Space group",
       "anode": "Anode",
       "peaks": "Peaks",
-      "cardNumber": "Card #"
-    }
+      "cardNumber": "Card #",
+      "twoTheta": "2θ (°)",
+      "dSpacing": "d (Å)",
+      "intensity": "Intensity (%)",
+      "hkl": "hkl"
+    },
+    "backToSpectra": "Back to spectra",
+    "formula": "Formula",
+    "spaceGroup": "Space group",
+    "anode": "Anode",
+    "peaks": "Peaks",
+    "notes": "Notes",
+    "peakList": "Peak list",
+    "peakListSubtitle": "{count, plural, one {# peak} other {# peaks}} from this reference card",
+    "badgeInternal": "Internal"
   }
 }

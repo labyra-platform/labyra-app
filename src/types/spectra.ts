@@ -113,3 +113,29 @@ export interface SpectrumMetadata {
   updatedAt: number;
   createdBy: string;
 }
+
+// ============================================================
+// R160-spectra-4a-pdf: User-provided reference cards for XRD
+// ============================================================
+export interface ReferenceCardPeak {
+  twoTheta: number; // 2θ in degrees
+  dSpacing?: number; // optional, can be computed
+  intensity: number; // relative intensity 0-100
+  hkl?: string; // Miller indices like "002"
+}
+
+export interface ReferenceCard {
+  id: string;
+  tenantId: string;
+  cardNumber: string; // e.g. "PDF-2 33-1387" or "Custom-WO3"
+  phaseName: string; // e.g. "WO3 monoclinic"
+  formula?: string; // e.g. "WO3"
+  spaceGroup?: string;
+  anode?: string; // wavelength used for measurement
+  source: 'manual' | 'cod' | 'mp';
+  sourceUrl?: string;
+  peaks: ReferenceCardPeak[];
+  notes?: string;
+  createdBy: string;
+  createdAt: number;
+}

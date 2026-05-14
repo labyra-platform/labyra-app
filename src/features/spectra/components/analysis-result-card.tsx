@@ -132,7 +132,9 @@ function XRDBody({ ai, parsed }: { ai: XRDAIOutput; parsed: AnalysisResult['pars
             <div key={`${phase.name}-${i}`} className='rounded-md border p-3'>
               <div className='flex flex-wrap items-center justify-between gap-2'>
                 <div className='flex flex-wrap items-center gap-2'>
-                  <span className='font-medium'>{phase.name}</span>
+                  <span className='font-medium'>
+                    <SciText>{phase.name}</SciText>
+                  </span>
                   {phase.source && <CitationChip source={phase.source} />}
                 </div>
                 <div className='flex items-center gap-2'>

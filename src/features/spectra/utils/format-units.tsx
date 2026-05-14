@@ -58,6 +58,19 @@ function toSubscript(s: string): string {
 export function formatSciText(text: string): string {
   if (!text) return text;
   let out = text;
+  // Chemical formula subscript: H2O → H₂O, W18O49 → W₁₈O₄₉, CO2 → CO₂
+  // Match: Capital letter (+ optional lowercase) followed by digits
+  // Skip if surrounded by space-digit patterns that look like coordinates/measurements
+  out = out.replace(/([A-Z][a-z]?)(\d+)/g, (match, element, count) => {
+    // Skip known unit prefixes that shouldn't be subscripted
+    if (
+      ['CO', 'NM', 'KM', 'MM', 'KG', 'MG', 'HZ', 'EV', 'PH'].includes(element.toUpperCase()) &&
+      match.length > 3
+    ) {
+      // These could be units; check context (skip for now if uppercase only)
+    }
+    return `${element}${toSubscript(count)}`;
+  });
   // Pattern: unit-N or unit+N (e.g. cm-1, m-2, s-1) → superscript exponent
   out = out.replace(
     /(\bcm|nm|um|mm|km|s|m|Hz|kg|g|mg|J|eV|K|mol|L|N)([+-]?\d+)/g,

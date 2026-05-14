@@ -1,15 +1,14 @@
+/**
+ * ExperimentsTable — sortable + Excel export via DataTable.
+ *
+ * @phase R161-data-table-migrate
+ */
 'use client';
+
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { useExperiments } from '@/lib/firestore/queries/experiments';
 
 const statusColor: Record<string, string> = {
@@ -25,6 +24,16 @@ function formatDate(ms: number | undefined): string {
   return new Date(ms).toLocaleDateString();
 }
 
+// Flatten experiment for table render + sort + export (handles legacy schema)
+interface ExperimentRow {
+  id: string;
+  code: string;
+  title: string;
+  type: string;
+  status: string;
+  startedAt: number | undefined;
+}
+
 export function ExperimentsTable() {
   const { experiments, loading } = useExperiments();
   const locale = useLocale();
@@ -35,61 +44,86 @@ export function ExperimentsTable() {
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
   }
-
   if (experiments.length === 0) {
     return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
-  // Use .has() check to avoid triggering MISSING_MESSAGE error events.
-  // Legacy experiments may have free-form type values not in i18n catalog.
   const safeType = (key: string): string => (tType.has(key) ? tType(key) : key);
   const safeStatus = (key: string): string => (tStatus.has(key) ? tStatus(key) : key);
 
+  // Flatten backward-compat fields once
+  const rows: ExperimentRow[] = experiments.map((e) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = e as any;
+    return {
+      id: e.id,
+      code: data.experimentCode ?? e.id,
+      title: e.title,
+      type: data.experimentType ?? data.type ?? 'other',
+      status: e.status,
+      startedAt: e.startedAt ?? data.startDate ?? undefined
+    };
+  });
+
+  const columns: DataTableColumn<ExperimentRow>[] = [
+    {
+      key: 'code',
+      header: t('colCode'),
+      cell: (r) => (
+        <Link
+          href={`/${locale}/dashboard/experiments/${r.id}`}
+          className='font-mono text-xs hover:underline'
+        >
+          {r.code}
+        </Link>
+      ),
+      sortValue: (r) => r.code
+    },
+    {
+      key: 'title',
+      header: t('colTitle'),
+      cell: (r) => <span className='font-medium'>{r.title}</span>,
+      sortValue: (r) => r.title
+    },
+    {
+      key: 'type',
+      header: t('colType'),
+      cell: (r) => safeType(r.type),
+      sortValue: (r) => safeType(r.type)
+    },
+    {
+      key: 'status',
+      header: t('colStatus'),
+      cell: (r) => (
+        <Badge className={statusColor[r.status] ?? 'bg-muted'} variant='secondary'>
+          {safeStatus(r.status)}
+        </Badge>
+      ),
+      sortValue: (r) => safeStatus(r.status)
+    },
+    {
+      key: 'startedAt',
+      header: t('colStarted'),
+      cell: (r) => <span className='text-muted-foreground'>{formatDate(r.startedAt)}</span>,
+      sortValue: (r) => r.startedAt ?? 0
+    }
+  ];
+
   return (
-    <div className='rounded-lg border'>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('colCode')}</TableHead>
-            <TableHead>{t('colTitle')}</TableHead>
-            <TableHead>{t('colType')}</TableHead>
-            <TableHead>{t('colStatus')}</TableHead>
-            <TableHead>{t('colStarted')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {experiments.map((e) => {
-            // Backward-compat: handle legacy schema
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const data = e as any;
-            const code = data.experimentCode ?? e.id;
-            const type = data.experimentType ?? data.type ?? 'other';
-            const startMs = e.startedAt ?? data.startDate ?? undefined;
-            return (
-              <TableRow key={e.id}>
-                <TableCell className='font-mono text-xs'>
-                  <Link
-                    href={`/${locale}/dashboard/experiments/${e.id}`}
-                    className='hover:underline'
-                  >
-                    {code}
-                  </Link>
-                </TableCell>
-                <TableCell className='font-medium'>{e.title}</TableCell>
-                <TableCell>{safeType(type)}</TableCell>
-                <TableCell>
-                  <Badge className={statusColor[e.status] ?? 'bg-muted'} variant='secondary'>
-                    {safeStatus(e.status)}
-                  </Badge>
-                </TableCell>
-                <TableCell className='text-muted-foreground'>
-                  {formatDate(typeof startMs === 'number' ? startMs : undefined)}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable<ExperimentRow>
+      rows={rows}
+      columns={columns}
+      rowKey={(r) => r.id}
+      defaultSort={{ key: 'startedAt', direction: 'desc' }}
+      exportFilename='experiments'
+      exportValue={(r, key) => {
+        if (key === 'code') return r.code;
+        if (key === 'title') return r.title;
+        if (key === 'type') return safeType(r.type);
+        if (key === 'status') return safeStatus(r.status);
+        if (key === 'startedAt') return formatDate(r.startedAt);
+        return null;
+      }}
+    />
   );
 }

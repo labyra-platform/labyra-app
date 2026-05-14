@@ -1,17 +1,17 @@
+/**
+ * SamplesTable — sortable + Excel export via DataTable.
+ *
+ * @phase R161-data-table-migrate
+ */
 'use client';
+
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { useSamples } from '@/lib/firestore/queries/samples';
-import type { SampleStatus } from '@/types/samples';
+import type { Sample, SampleStatus } from '@/types/samples';
+import { SciText } from '@/features/spectra/utils/format-units';
 
 const statusColor: Record<SampleStatus, string> = {
   prepared: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
@@ -30,45 +30,78 @@ export function SamplesTable() {
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
   }
-
   if (samples.length === 0) {
     return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
+  const columns: DataTableColumn<Sample>[] = [
+    {
+      key: 'sampleCode',
+      header: t('colCode'),
+      cell: (s) => (
+        <Link
+          href={`/${locale}/dashboard/samples/${s.id}`}
+          className='font-mono text-xs hover:underline'
+        >
+          {s.sampleCode}
+        </Link>
+      ),
+      sortValue: (s) => s.sampleCode
+    },
+    {
+      key: 'name',
+      header: t('colName'),
+      cell: (s) => (
+        <span className='font-medium'>
+          <SciText>{s.name}</SciText>
+        </span>
+      ),
+      sortValue: (s) => s.name
+    },
+    {
+      key: 'massVolume',
+      header: t('colMassVolume'),
+      cell: (s) => (
+        <span className='tabular-nums'>
+          {s.mass != null ? `${s.mass} g` : s.volume != null ? `${s.volume} mL` : '—'}
+        </span>
+      ),
+      sortValue: (s) => s.mass ?? s.volume ?? 0
+    },
+    {
+      key: 'status',
+      header: t('colStatus'),
+      cell: (s) => (
+        <Badge className={statusColor[s.status]} variant='secondary'>
+          {tStatus(s.status)}
+        </Badge>
+      ),
+      sortValue: (s) => tStatus(s.status)
+    },
+    {
+      key: 'location',
+      header: t('colLocation'),
+      cell: (s) => <span className='text-muted-foreground'>{s.location ?? '—'}</span>,
+      sortValue: (s) => s.location ?? ''
+    }
+  ];
+
   return (
-    <div className='rounded-lg border'>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('colCode')}</TableHead>
-            <TableHead>{t('colName')}</TableHead>
-            <TableHead className='text-right'>{t('colMassVolume')}</TableHead>
-            <TableHead>{t('colStatus')}</TableHead>
-            <TableHead>{t('colLocation')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {samples.map((s) => (
-            <TableRow key={s.id}>
-              <TableCell className='font-mono text-xs'>
-                <Link href={`/${locale}/dashboard/samples/${s.id}`} className='hover:underline'>
-                  {s.sampleCode}
-                </Link>
-              </TableCell>
-              <TableCell className='font-medium'>{s.name}</TableCell>
-              <TableCell className='text-right tabular-nums'>
-                {s.mass != null ? `${s.mass} g` : s.volume != null ? `${s.volume} mL` : '—'}
-              </TableCell>
-              <TableCell>
-                <Badge className={statusColor[s.status]} variant='secondary'>
-                  {tStatus(s.status)}
-                </Badge>
-              </TableCell>
-              <TableCell className='text-muted-foreground'>{s.location ?? '—'}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable<Sample>
+      rows={samples}
+      columns={columns}
+      rowKey={(s) => s.id}
+      defaultSort={{ key: 'sampleCode', direction: 'asc' }}
+      exportFilename='samples'
+      exportValue={(s, key) => {
+        if (key === 'sampleCode') return s.sampleCode;
+        if (key === 'name') return s.name;
+        if (key === 'massVolume')
+          return s.mass != null ? `${s.mass} g` : s.volume != null ? `${s.volume} mL` : '';
+        if (key === 'status') return tStatus(s.status);
+        if (key === 'location') return s.location ?? '';
+        return null;
+      }}
+    />
   );
 }

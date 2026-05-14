@@ -108,8 +108,6 @@ export function MaterialsTable() {
       rowKey={(m) => m.id}
       defaultSort={{ key: 'name', direction: 'asc' }}
       exportFilename='materials'
-      title={t('listTitle') !== 'materials.listTitle' ? t('listTitle') : 'Materials'}
-      description={`${materials.length} total`}
       exportValue={(m, key) => {
         if (key === 'name') return m.name;
         if (key === 'category') return tCat(m.category);

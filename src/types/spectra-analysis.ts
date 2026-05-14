@@ -371,3 +371,68 @@ export interface AnalysisResult {
   parsed: SpectrumParsedData;
   ai: SpectrumAIOutput;
 }
+
+// ============================================================
+// R163-spectra-4c-5a — Multi-spectrum citation candidates
+// ============================================================
+// Existing CitationCandidate above is XRD-specific (lattice/hkl/space_group).
+// New variants for FTIR/Raman/UV-Vis carry only fields relevant to each.
+
+export interface FTIRCitationCandidate {
+  spectrumType: 'ftir';
+  citation: CitationInfo;
+  formula: string;
+  reference_peaks: {
+    wavenumber: number; // cm⁻¹
+    intensity: number; // 0-100
+    assignment: string | null; // e.g. "Si-O stretch"
+  }[];
+  match_score: number;
+  matched_peaks_count: number;
+  total_user_peaks: number;
+  // Maps user peak index → ref peak assignment (for UI display)
+  user_assignment_map: Record<string, string>;
+}
+
+export interface RamanCitationCandidate {
+  spectrumType: 'raman';
+  citation: CitationInfo;
+  formula: string;
+  laser_wavelength_nm: number | null;
+  reference_peaks: {
+    shift: number; // cm⁻¹
+    intensity: number; // 0-100
+    assignment: string | null; // e.g. "G-band"
+  }[];
+  match_score: number;
+  matched_peaks_count: number;
+  total_user_peaks: number;
+  user_assignment_map: Record<string, string>;
+}
+
+export interface UVVisCitationCandidate {
+  spectrumType: 'uvvis';
+  citation: CitationInfo;
+  formula: string;
+  solvent: string | null;
+  reference_peaks: {
+    wavelength: number; // nm
+    intensity: number; // 0-100 or normalized absorbance
+    assignment: string | null; // e.g. "π-π* aromatic"
+  }[];
+  match_score: number;
+  matched_peaks_count: number;
+  total_user_peaks: number;
+  user_assignment_map: Record<string, string>;
+}
+
+// Marker for legacy XRD candidate (no schema change — just typing).
+// Code that wants discriminated narrowing should use (candidate as XRDCitationCandidate)
+// when spectrumType === 'xrd', or directly use CitationCandidate.
+export type XRDCitationCandidate = CitationCandidate & { spectrumType?: 'xrd' };
+
+export type MultiCitationCandidate =
+  | (CitationCandidate & { spectrumType: 'xrd' })
+  | FTIRCitationCandidate
+  | RamanCitationCandidate
+  | UVVisCitationCandidate;

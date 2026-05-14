@@ -23,7 +23,8 @@ export interface PhaseSource {
   doi?: string | null;
 }
 
-// R161-citation-types: full citation candidate from worker
+// R161-citation-types: full citation candidate from worker.
+// R164-phase-10-fix-types: added paperId for internal Reference → Paper link.
 export interface CitationInfo {
   source: CitationSourceType;
   id: string;
@@ -33,6 +34,7 @@ export interface CitationInfo {
   year?: number | null;
   doi?: string | null;
   url?: string | null;
+  paperId?: string | null;
 }
 
 export interface CitationCandidate {

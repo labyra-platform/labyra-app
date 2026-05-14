@@ -83,6 +83,7 @@ export function computeInternalCandidates(
       citation: {
         source: 'internal',
         id: card.id,
+        paperId: card.paperId ?? null, // R164-phase-10: link Reference → Paper
         title: card.phaseName,
         authors: card.notes ?? null,
         journal: null,
@@ -169,6 +170,7 @@ export function computeFTIRCandidates(
       citation: {
         source: 'internal',
         id: card.id,
+        paperId: card.paperId ?? null, // R164-phase-10: link Reference → Paper
         title: card.phaseName,
         authors: card.notes ?? null,
         journal: null,
@@ -205,6 +207,7 @@ export function computeRamanCandidates(
       citation: {
         source: 'internal',
         id: card.id,
+        paperId: card.paperId ?? null, // R164-phase-10: link Reference → Paper
         title: card.phaseName,
         authors: card.notes ?? null,
         journal: null,
@@ -242,6 +245,7 @@ export function computeUVVisCandidates(
       citation: {
         source: 'internal',
         id: card.id,
+        paperId: card.paperId ?? null, // R164-phase-10: link Reference → Paper
         title: card.phaseName,
         authors: card.notes ?? null,
         journal: null,

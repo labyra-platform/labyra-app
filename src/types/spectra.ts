@@ -133,7 +133,8 @@ export interface ReferenceCardPeak {
 
 export type SpectrumTypeRefCard = 'xrd' | 'ftir' | 'raman' | 'uvvis';
 
-// Common fields shared across all spectrum types
+// Common fields shared across all spectrum types.
+// R164-phase-10-fix-types: added paperId — Reference.paperId can be migrated here for backward compat.
 interface ReferenceCardBase {
   id: string;
   tenantId: string;
@@ -142,6 +143,7 @@ interface ReferenceCardBase {
   formula?: string; // chemical formula if applicable
   source: 'manual' | 'cod' | 'mp' | 'paper';
   sourceUrl?: string;
+  paperId?: string | null;
   notes?: string;
   createdBy: string;
   createdAt: number;

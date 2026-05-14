@@ -1,7 +1,13 @@
 /**
  * Materials types: chemicals, reagents, supplies, equipment.
- * @phase R160-data-1
+ *
+ * Extends ProvBase per ADR-016 PROV-O ELN architecture.
+ * Document ID format: `mat_<slug>_<seq>` (e.g. `mat_wo3_001`)
+ *
+ * @phase R164-phase-1-types (was R160-data-1)
  */
+
+import type { ProvBase } from './prov-base';
 
 export type MaterialCategory =
   | 'chemical'
@@ -16,34 +22,27 @@ export type MaterialUnit = 'g' | 'kg' | 'mg' | 'mL' | 'L' | 'µL' | 'mol' | 'mmo
 
 export type HazardLevel = 'none' | 'low' | 'medium' | 'high' | 'extreme';
 
-export interface Material {
-  schemaVersion: 1;
-  id: string;
-  tenantId: string;
+export interface Material extends ProvBase {
+  schemaVersion: 2; // bumped from 1 for ProvBase migration
 
   // Core
   name: string;
   formula?: string;
   category: MaterialCategory;
-  cas?: string; // CAS registry number
+  cas?: string;
 
   // Inventory
   quantity: number;
   unit: MaterialUnit;
-  location?: string; // e.g. "Shelf A3", "Fridge 2"
+  location?: string;
 
   // Supply chain
   supplier?: string;
   lotNumber?: string;
-  purchaseDate?: number; // epoch ms
+  purchaseDate?: number;
   expiryDate?: number;
 
   // Safety
   hazardLevel: HazardLevel;
   hazardNotes?: string;
-
-  // Audit
-  createdAt: number;
-  updatedAt: number;
-  createdBy: string; // uid
 }

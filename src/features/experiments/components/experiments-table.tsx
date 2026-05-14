@@ -30,7 +30,7 @@ interface ExperimentRow {
   code: string;
   title: string;
   type: string;
-  status: string;
+  workflowStatus: string;
   startedAt: number | undefined;
 }
 
@@ -60,7 +60,7 @@ export function ExperimentsTable() {
       code: data.experimentCode ?? e.id,
       title: e.title,
       type: data.experimentType ?? data.type ?? 'other',
-      status: e.status,
+      workflowStatus: e.workflowStatus,
       startedAt: e.startedAt ?? data.startDate ?? undefined
     };
   });
@@ -95,11 +95,11 @@ export function ExperimentsTable() {
       key: 'status',
       header: t('colStatus'),
       cell: (r) => (
-        <Badge className={statusColor[r.status] ?? 'bg-muted'} variant='secondary'>
-          {safeStatus(r.status)}
+        <Badge className={statusColor[r.workflowStatus] ?? 'bg-muted'} variant='secondary'>
+          {safeStatus(r.workflowStatus)}
         </Badge>
       ),
-      sortValue: (r) => safeStatus(r.status)
+      sortValue: (r) => safeStatus(r.workflowStatus)
     },
     {
       key: 'startedAt',
@@ -120,7 +120,7 @@ export function ExperimentsTable() {
         if (key === 'code') return r.code;
         if (key === 'title') return r.title;
         if (key === 'type') return safeType(r.type);
-        if (key === 'status') return safeStatus(r.status);
+        if (key === 'status') return safeStatus(r.workflowStatus);
         if (key === 'startedAt') return formatDate(r.startedAt);
         return null;
       }}

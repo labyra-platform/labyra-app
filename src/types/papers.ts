@@ -40,19 +40,25 @@ export interface PaperCostBreakdown {
   total: number;
 }
 
-export interface Paper {
-  schemaVersion: 1;
+// R164-phase-1-types: Paper now extends ProvBase (PROV-O architecture per ADR-016).
+// Existing fields preserved; schemaVersion bumped 1 → 2.
+import type { ProvBase } from './prov-base';
 
-  // Identity
-  id: string;
-  tenantId: string;
-  version: number;
+export interface Paper extends ProvBase {
+  schemaVersion: 2;
+  // Versioning (immutable scientific records per ADR-016)
+  currentVersion: number;
+  // Original fields kept for backward compat:
+
+  // Identity (id + tenantId + createdBy etc. inherited from ProvBase)
+  version: number; // schema field, NOT to confuse with currentVersion (R164 versioning)
 
   // Source
   source: 'upload' | 'doi-import' | 'crossref';
   storagePath: string;
   contentHash: string;
   fileSize: number;
+  // @deprecated Use createdBy/createdAt from ProvBase. Kept for R164 transition.
   uploadedBy: string;
   uploadedAt: number;
 
@@ -112,3 +118,13 @@ export interface MonthlyUsage {
 }
 
 export type UsageAction = 'paper' | 'embedTokens' | 'reasoningTokens' | 'storage';
+
+// R164-phase-1-types: Paper version snapshot (sub-collection)
+export interface PaperVersion {
+  id: string;
+  version: number;
+  content: Paper;
+  changedBy: string;
+  changedAt: number;
+  changeNote?: string;
+}

@@ -1,40 +1,53 @@
 /**
  * Samples types: prepared samples derived from materials.
- * @phase R160-data-1
+ *
+ * Extends ProvBase. `workflowStatus` is domain lifecycle (prepared/in_use/...);
+ * `lifecycleStatus` from ProvBase is record state (active/deprecated/retracted).
+ *
+ * Document ID format: `sam_<slug>_<seq>` (e.g. `sam_wo3_batch_001`)
+ *
+ * @phase R164-phase-1-types (was R160-data-1)
  */
 
-export type SampleStatus = 'prepared' | 'in_use' | 'consumed' | 'archived' | 'discarded';
+import type { ProvBase } from './prov-base';
 
-export interface Sample {
-  schemaVersion: 1;
-  id: string;
-  tenantId: string;
+// Domain workflow status (was `SampleStatus` — same enum, renamed for clarity
+// vs ProvBase.lifecycleStatus which is record-level).
+export type SampleWorkflowStatus = 'prepared' | 'in_use' | 'consumed' | 'archived' | 'discarded';
+
+/**
+ * @deprecated Use SampleWorkflowStatus. Type alias kept for backward compat
+ * during R164 transition. Will be removed in R165.
+ */
+export type SampleStatus = SampleWorkflowStatus;
+
+export interface Sample extends ProvBase {
+  schemaVersion: 2;
 
   // Identity
-  sampleCode: string; // e.g. "S-2026-001"
+  sampleCode: string;
   name: string;
   description?: string;
 
-  // Lineage
-  parentMaterialIds: string[]; // sources from Materials
-  derivedFromSampleId?: string; // chain of derivation
+  // Lineage (existing fields; ProvBase.derivedFrom is the generic equivalent)
+  // R164-phase-1: parentMaterialIds is the canonical Material → Sample link.
+  // ProvBase.derivedFrom optionally repeats this for cross-entity queries.
+  parentMaterialIds: string[];
+  derivedFromSampleId?: string;
 
-  // Preparation
-  preparedAt: number; // epoch ms
-  preparedBy: string; // uid
+  // Preparation (preparedAt + preparedBy provide finer-grained activity
+  // metadata than the generic ProvBase.createdAt/By)
+  preparedAt: number;
+  preparedBy: string;
   protocol?: string;
 
   // Properties
-  mass?: number; // grams
-  volume?: number; // mL
+  mass?: number;
+  volume?: number;
   concentration?: number;
   concentrationUnit?: string;
 
-  // Status
-  status: SampleStatus;
+  // Workflow state (renamed from `status` to disambiguate from lifecycleStatus)
+  workflowStatus: SampleWorkflowStatus;
   location?: string;
-
-  // Audit
-  createdAt: number;
-  updatedAt: number;
 }

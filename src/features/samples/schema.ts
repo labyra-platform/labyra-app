@@ -10,7 +10,7 @@ export const sampleFormSchema = z.object({
   volume: z.coerce.number().min(0).optional(),
   concentration: z.coerce.number().min(0).optional(),
   concentrationUnit: z.string().max(20).optional(),
-  status: z.enum(['prepared', 'in_use', 'consumed', 'archived', 'discarded']),
+  workflowStatus: z.enum(['prepared', 'in_use', 'consumed', 'archived', 'discarded']),
   location: z.string().max(100).optional(),
   protocol: z.string().max(2000).optional()
 });

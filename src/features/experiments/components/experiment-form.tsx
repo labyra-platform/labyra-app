@@ -51,7 +51,7 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
       title: defaultValues?.title ?? '',
       description: defaultValues?.description ?? '',
       experimentType: defaultValues?.experimentType ?? 'measurement',
-      status: defaultValues?.status ?? 'planned',
+      workflowStatus: defaultValues?.workflowStatus ?? 'planned',
       sampleIds: defaultValues?.sampleIds ?? [],
       equipmentUsed: defaultValues?.equipmentUsed ?? [],
       temperature: defaultValues?.temperature,
@@ -199,7 +199,7 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
 
         <FormField
           control={form.control}
-          name='status'
+          name='workflowStatus'
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('status')} *</FormLabel>

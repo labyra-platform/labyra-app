@@ -72,11 +72,11 @@ export function SamplesTable() {
       key: 'status',
       header: t('colStatus'),
       cell: (s) => (
-        <Badge className={statusColor[s.status]} variant='secondary'>
-          {tStatus(s.status)}
+        <Badge className={statusColor[s.workflowStatus]} variant='secondary'>
+          {tStatus(s.workflowStatus)}
         </Badge>
       ),
-      sortValue: (s) => tStatus(s.status)
+      sortValue: (s) => tStatus(s.workflowStatus)
     },
     {
       key: 'location',
@@ -98,7 +98,7 @@ export function SamplesTable() {
         if (key === 'name') return s.name;
         if (key === 'massVolume')
           return s.mass != null ? `${s.mass} g` : s.volume != null ? `${s.volume} mL` : '';
-        if (key === 'status') return tStatus(s.status);
+        if (key === 'status') return tStatus(s.workflowStatus);
         if (key === 'location') return s.location ?? '';
         return null;
       }}

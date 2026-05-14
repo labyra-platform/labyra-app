@@ -131,7 +131,12 @@ export async function POST(request: Request) {
   // ─── Create Firestore doc ────────────────────────────────────
   const now = Date.now();
   const paper: Paper = {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    // R164-phase-1c: ProvBase + versioning
+    currentVersion: 1,
+    createdBy: userId,
+    createdAt: now,
+    lifecycleStatus: 'active',
     id: paperId,
     tenantId,
     version,

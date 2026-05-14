@@ -53,7 +53,7 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       volume: defaultValues?.volume,
       concentration: defaultValues?.concentration,
       concentrationUnit: defaultValues?.concentrationUnit ?? '',
-      status: defaultValues?.status ?? 'prepared',
+      workflowStatus: defaultValues?.workflowStatus ?? 'prepared',
       location: defaultValues?.location ?? '',
       protocol: defaultValues?.protocol ?? ''
     }
@@ -173,7 +173,7 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           <FormField
             control={form.control}
-            name='status'
+            name='workflowStatus'
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('status')} *</FormLabel>

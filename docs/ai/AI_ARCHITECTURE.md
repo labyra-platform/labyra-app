@@ -1857,3 +1857,98 @@ When ready, Pub/Sub topic `spectrum-upload-complete` → Cloud Run worker:
 6. Update SpectrumMetadata.status → 'analyzed'
 
 See `docs/database-stage-2-plan.md` Phase 2 for full plan.
+
+
+## R161 — Citation Grounding & Determinism (May 2026)
+
+### Determinism via temperature=0
+
+```python
+# src/ai/analyzer.py
+response = client.messages.create(
+    model=settings.anthropic_model,
+    max_tokens=settings.anthropic_max_tokens,
+    temperature=0,  # R161: deterministic for scientific reproducibility
+    system=system,
+    messages=[{"role": "user", "content": user}],
+)
+```
+
+**Rationale**: XRD analysis must be reproducible. Same input → same phase identification.
+Trade-off: less creative explanations, but scientifically reliable for academic users.
+
+### Citation Grounding Flow
+
+```
+User uploads XRD file
+   ↓
+Worker parses + detects peaks
+   ↓
+Citation lookup (COD + MP parallel)
+   ↓ candidates[] with match_score
+AI receives:
+   - User peaks
+   - Top 5 candidates with formulas + space groups + simulated peaks
+   - Match scores (0.0-1.0)
+   ↓
+AI must:
+   1. Identify primary phase from HIGHEST-SCORING candidate (>0.7 = high confidence)
+   2. Cite source: {type: 'COD'|'MP', id: '1001678', doi?: '...'}
+   3. Mark "Unverified" if no candidate >0.4
+   4. NEVER hallucinate phase names without citation
+```
+
+### Hkl Wire (R161-hkl-wire)
+
+After AI returns analysis, worker assigns Miller indices to user peaks:
+```python
+# Get user_hkl_map from top candidate's peak_matcher output
+top = candidates[0]
+user_hkl_map = top.get("user_hkl_map", {})  # {0: [0,0,2], 1: [0,2,0], ...}
+for user_idx, hkl in user_hkl_map.items():
+    parsed["peaks"][user_idx]["hkl"] = " ".join(str(int(v)) for v in hkl)
+```
+
+UI displays hkl in Peak Details table column → builds user trust in match.
+
+### Trust > Coverage Principle
+
+| Scenario | Action |
+|---|---|
+| Match score >0.7 + COD/MP ID | "High confidence" badge + citation link |
+| Match score 0.4-0.7 | "Medium confidence" + show alternatives |
+| Match score <0.4 | "Unverified" badge — DO NOT guess phase name |
+| No COD/MP candidates | Empty phases list — let user investigate |
+
+This is fundamental for academic trust. One hallucinated phase = lose lab trust forever.
+
+### Per-Phase Summary Data Flow
+
+```
+worker output:
+  parsed.citation.candidates: CitationCandidate[] {
+    citation: {source, id, doi, ...},
+    formula, space_group, space_group_number,
+    crystal_system, lattice_a/b/c/α/β/γ,
+    match_score, matched_peaks_count, user_hkl_map
+  }
+       ↓
+app component XRDPhaseSummary renders cards with:
+  - Formula (SciText subscript)
+  - Crystal system + space group + number
+  - Match score badge (High/Medium/Low)
+  - Lattice params grid
+  - Citation chip + "View source ↗" link
+```
+
+### Citation Cache Impact on AI Latency
+
+Without cache: 25-30s total (COD fetch 5s + Dans_Diffraction simulate 2s × 8 candidates + AI 8s)
+With cache hit: 5-10s total (skip fetch + simulate, only AI inference)
+
+Cache layer is Protocol pattern (`src/citation/cache.py`):
+- FirestoreCitationCache (production, 30-day TTL)
+- NoOpCitationCache (tests)
+- Future: Redis/Postgres impls swap seamlessly
+
+---

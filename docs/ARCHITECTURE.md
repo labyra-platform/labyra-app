@@ -307,7 +307,95 @@ Required for: thesis defensibility, cost analytics per tenant, audit logs.
 
 ---
 
-## 6. Migration from labbook-bku
+## 7. R161 — XRD Analysis Pipeline (May 2026)
+
+### 7.1 Per-Peak Tier 1+2 Metrics
+
+Worker `_enrich_peaks()` computes per-peak derived properties from detected peaks:
+
+| Metric | Formula | Reference |
+|---|---|---|
+| d-spacing | `d = λ / (2·sin(θ))` | Bragg's law |
+| Crystallite size D | `D = K·λ / (β·cosθ)`, K=0.9 | Scherrer 1918 |
+| Integral breadth β | `β = FWHM · (η·1.5708 + (1−η)·1.0645)` | Pseudo-Voigt weighted |
+| Dislocation density δ | `δ = 1/D²` (lines/m²) | Williamson-Smallman 1956 |
+| Microstrain ε | `ε = β·cosθ / 4` | per-peak |
+
+Source: `src/parsers/xrd.py` in spectra-worker. Documented in `docs/scientific-methods/xrd-analysis.md`.
+
+### 7.2 Profile Function Fitting
+
+`_fit_peak_profile()` fits user-selected profile to each detected peak via `scipy.optimize.curve_fit`:
+
+```
+Gaussian:     G(x) = A·exp(-(x-x₀)²/(2σ²))
+Lorentzian:   L(x) = A·γ²/((x-x₀)² + γ²)
+Pseudo-Voigt: PV(x) = η·L(x) + (1-η)·G(x)  [default]
+```
+
+Quality gate: R² ≥ 0.5 → use fit; else fall back to scipy.find_peaks width estimate.
+
+### 7.3 Citation Pipeline + Cache
+
+Flow:
+```
+formula → COD search + MP search (parallel)
+       → For each candidate: 
+           cache.get() → HIT: skip fetch + simulate
+                       → MISS: fetch CIF + Dans_Diffraction simulate → cache.set()
+       → Match peaks vs simulated (±0.3° tolerance, score = 0.7·match + 0.3·intensity_corr)
+       → Sort by score, return top 5
+       → Assign hkl from top candidate to enriched peaks
+```
+
+**Citation cache** (`src/citation/cache.py`): Protocol pattern abstraction.
+- Production: `FirestoreCitationCache` at `tenants/_global/citation_cache/{source}-{id}`
+- Test: `NoOpCitationCache`
+- Future: `RedisCitationCache`, `PostgresCitationCache` — migration-safe
+
+TTL: 30 days. Hit rate >80% expected (same materials repeated).
+
+### 7.4 AI Grounding (R161-determinism)
+
+- `temperature=0` for Anthropic API calls — deterministic output
+- AI receives citation candidates as context; must ground assertions in `{type, id, doi?}`
+- "Unverified" badge when no high-confidence match (better empty than hallucinated)
+
+### 7.5 Worker Scale (Cloud Run)
+
+| Parameter | R160 | R161 |
+|---|---|---|
+| Concurrency | 5 | 10 |
+| Memory | 2Gi | 4Gi |
+| CPU | 2 | 2 |
+
+With citation cache hit (warm), spectrum analysis: 25-30s → 5-10s.
+
+### 7.6 Reference Card System (4a-pdf, legal-safe)
+
+User-pasted XRD reference cards (HighScore Plus / ICDD text format) parsed client-side:
+```
+Path: tenants/{tenantId}/reference_cards/{id}
+Schema: {cardNumber, phaseName, formula, peaks[{twoTheta, dSpacing, intensity, hkl}], anode, source: 'manual'}
+```
+
+Legal: ICDD PDF database copyrighted → never redistribute. Only user-input data accepted.
+Future: ICDD partnership for licensed distribution.
+
+### 7.7 New API Endpoints
+
+```
+POST   /api/spectra/[id]/reanalyze        — Pub/Sub republish (backfill new fields)
+POST   /api/reference-cards               — Create from parsed peaks (Zod validated)
+GET    /api/reference-cards               — List tenant's cards
+GET    /api/reference-cards/[id]          — Get single (tenant-scoped)
+DELETE /api/reference-cards/[id]          — Delete (tenant-scoped)
+POST   /reference/parse                   — Worker: text → structured (stateless)
+```
+
+All app endpoints: Firebase auth + tenantId claim mandatory.
+
+---\n\n---\n\n## 6. Migration from labbook-bku
 
 ### 6.1 What's being migrated
 

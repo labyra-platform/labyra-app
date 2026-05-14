@@ -587,6 +587,13 @@
     "notFound": "Spectrum not found",
     "delete": "Delete",
     "deleteConfirm": "Delete this spectrum permanently?",
-    "toastDeleted": "Spectrum deleted"
+    "toastDeleted": "Spectrum deleted",
+    "demo": {
+      "button": "Try demo data",
+      "menuLabel": "Pick an XRD sample to try",
+      "loaded": "Loaded sample: {name}",
+      "loadFailed": "Failed to load sample: {reason}",
+      "hint": "No data yet? Try a prepared XRD sample."
+    }
   }
 }

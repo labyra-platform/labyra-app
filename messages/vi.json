@@ -587,6 +587,13 @@
     "notFound": "Không tìm thấy phổ",
     "delete": "Xóa",
     "deleteConfirm": "Xóa phổ này vĩnh viễn?",
-    "toastDeleted": "Đã xóa phổ"
+    "toastDeleted": "Đã xóa phổ",
+    "demo": {
+      "button": "Thử với dữ liệu mẫu",
+      "menuLabel": "Chọn mẫu XRD để dùng thử",
+      "loaded": "Đã tải mẫu: {name}",
+      "loadFailed": "Không tải được mẫu: {reason}",
+      "hint": "Chưa có dữ liệu? Thử với mẫu XRD đã chuẩn bị sẵn."
+    }
   }
 }

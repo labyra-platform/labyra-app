@@ -9,7 +9,7 @@
  * @phase R160-spectra-3c-hotfix3
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -34,7 +34,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { SPECTRA_CONFIG, ALL_ACCEPTED_EXTENSIONS, detectSpectrumType } from '@/lib/spectra/config';
+import { SPECTRA_CONFIG, detectSpectrumType } from '@/lib/spectra/config';
+import { DemoDataButton } from './demo-data-button';
 import type { SpectrumType } from '@/types/spectra';
 
 interface SpectrumUploadProps {
@@ -42,6 +43,8 @@ interface SpectrumUploadProps {
   sampleId: string;
   sampleLabel?: string;
   onComplete?: (spectrumIds: string[]) => void;
+  /** Demo file preloaded from page-level Demo button. R162-demo-visibility */
+  initialDemo?: { file: File; formula: string; anode: string; monochromator: string };
 }
 
 type ItemStatus =
@@ -204,7 +207,8 @@ export function SpectrumUploadDropzone({
   experimentId,
   sampleId,
   sampleLabel,
-  onComplete
+  onComplete,
+  initialDemo
 }: SpectrumUploadProps) {
   const t = useTranslations('spectra');
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -212,6 +216,24 @@ export function SpectrumUploadDropzone({
 
   const updateItem = useCallback((id: string, patch: Partial<UploadItem>) => {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  }, []);
+
+  // R162-demo-visibility — seed demo file passed in from page-level Demo button
+  useEffect(() => {
+    if (!initialDemo) return;
+    const item: UploadItem = {
+      id: genId(),
+      file: initialDemo.file,
+      spectrumType: detectSpectrumType(initialDemo.file.name) ?? 'xrd',
+      chemicalFormula: initialDemo.formula,
+      anode: initialDemo.anode,
+      monochromator: initialDemo.monochromator,
+      profileFunction: 'pseudo_voigt',
+      zeroShift: 0,
+      status: { phase: 'pending' }
+    };
+    setItems([item]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateItemStatus = useCallback(
@@ -236,10 +258,11 @@ export function SpectrumUploadDropzone({
     setItems((prev) => [...prev, ...newItems]);
   }, []);
 
+  // R162-mime-fix — accept dropped; '*/*' is not a valid MIME for react-dropzone v14+.
+  // Validation by extension happens in onDrop (detectSpectrumType) and uploadOneFile (maxSize).
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: true,
-    accept: { '*/*': ALL_ACCEPTED_EXTENSIONS },
     disabled: isUploading
   });
 
@@ -332,6 +355,30 @@ export function SpectrumUploadDropzone({
         </p>
         <p className='mt-1 text-xs text-muted-foreground'>{t('multiFileHint')}</p>
       </div>
+
+      {/* Demo data button — R162-demo-visibility, relaxed visibility */}
+      {!isUploading && (
+        <div className='flex flex-col items-center gap-1'>
+          <DemoDataButton
+            disabled={isUploading}
+            onLoad={(file, prefilled) => {
+              const newItem = {
+                id: genId(),
+                file,
+                spectrumType: detectSpectrumType(file.name) ?? ('xrd' as const),
+                chemicalFormula: prefilled.formula,
+                anode: prefilled.anode,
+                monochromator: prefilled.monochromator,
+                profileFunction: 'pseudo_voigt',
+                zeroShift: 0,
+                status: { phase: 'pending' as const }
+              };
+              setItems((prev) => [...prev, newItem]);
+            }}
+          />
+          <p className='text-xs text-muted-foreground'>{t('demo.hint')}</p>
+        </div>
+      )}
 
       {/* Queue list */}
       {items.length > 0 && (

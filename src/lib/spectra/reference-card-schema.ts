@@ -36,7 +36,7 @@ export const ReferenceCardPeakSchema = z.object({
   hkl: z
     .string()
     .max(20)
-    .regex(/^[\-\d\s()]+$/, 'hkl: only digits, spaces, parens, minus')
+    .regex(/^[-\d\s()]+$/, 'hkl: only digits, spaces, parens, minus')
     .optional()
 });
 

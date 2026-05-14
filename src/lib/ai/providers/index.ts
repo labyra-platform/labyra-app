@@ -20,8 +20,8 @@ export const TIER_CONFIG: Record<AiTier, LLMProviderConfig> = {
   1: {
     id: 'gemini',
     tier: 1,
-    model: 'gemini-2.5-flash',
-    label: 'Gemini 2.5 Flash'
+    model: 'gemini-3-flash-preview',
+    label: 'Gemini 3 Flash (Preview)'
   },
   2: {
     id: 'anthropic',

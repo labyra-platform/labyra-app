@@ -623,6 +623,17 @@
     "notes": "Ghi chú",
     "peakList": "Danh sách đỉnh",
     "peakListSubtitle": "{count, plural, one {# đỉnh} other {# đỉnh}} từ reference card này",
-    "badgeInternal": "Internal"
+    "badgeInternal": "Internal",
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "deleting": "Đang xóa...",
+    "deleteConfirm": "Xóa reference card này? Không thể hoàn tác.",
+    "editTitle": "Chỉnh sửa reference card",
+    "editHint": "Cập nhật metadata. Danh sách đỉnh không sửa được — paste lại để tạo card mới.",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
+    "cancel": "Hủy",
+    "toastUpdated": "Đã cập nhật",
+    "toastDeleted": "Đã xóa"
   }
 }

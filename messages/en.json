@@ -623,6 +623,17 @@
     "notes": "Notes",
     "peakList": "Peak list",
     "peakListSubtitle": "{count, plural, one {# peak} other {# peaks}} from this reference card",
-    "badgeInternal": "Internal"
+    "badgeInternal": "Internal",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "deleteConfirm": "Delete this reference card? This cannot be undone.",
+    "editTitle": "Edit reference card",
+    "editHint": "Update metadata. Peak list is immutable — re-paste to create a new card.",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "toastUpdated": "Card updated",
+    "toastDeleted": "Card deleted"
   }
 }

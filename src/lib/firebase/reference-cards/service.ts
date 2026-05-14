@@ -88,6 +88,41 @@ export async function deleteReferenceCard(tenantId: string, cardId: string): Pro
     .delete();
 }
 
+export interface UpdateReferenceCardPatch {
+  phaseName?: string;
+  formula?: string;
+  anode?: string;
+  spaceGroup?: string;
+  notes?: string;
+}
+
+/**
+ * Patch metadata fields only — peaks are immutable (re-paste → new card).
+ * @phase R162-refcard-edit
+ */
+export async function updateReferenceCard(
+  tenantId: string,
+  cardId: string,
+  patch: UpdateReferenceCardPatch
+): Promise<ReferenceCard | null> {
+  const ref = getAdminFirestoreService()
+    .collection('tenants')
+    .doc(tenantId)
+    .collection(COLLECTION)
+    .doc(cardId);
+  const snap = await ref.get();
+  if (!snap.exists) return null;
+  // Filter undefined so we don't overwrite existing values with undefined
+  const cleaned: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(patch)) {
+    if (v !== undefined) cleaned[k] = v;
+  }
+  cleaned.updatedAt = Date.now();
+  await ref.update(cleaned);
+  const after = await ref.get();
+  return after.data() as ReferenceCard;
+}
+
 // R162-4b-client-server-fix — moved to src/lib/spectra/match-score.ts (client-safe).
 // Re-exported for any existing server callers that imported from this module.
 export { matchScore } from '@/lib/spectra/match-score';

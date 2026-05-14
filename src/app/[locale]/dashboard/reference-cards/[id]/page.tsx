@@ -17,6 +17,7 @@ import { IconBook, IconChevronLeft } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import PageContainer from '@/components/layout/page-container';
 import { getReferenceCard } from '@/lib/firebase/reference-cards/service';
+import { ReferenceCardActions } from '@/features/spectra/components/reference-card-actions';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { formatSciText } from '@/features/spectra/utils/format-units';
 
@@ -67,6 +68,10 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
             <Badge variant='secondary' className='ml-auto'>
               {t('badgeInternal')} · {card.cardNumber}
             </Badge>
+          </div>
+
+          <div className='flex justify-end'>
+            <ReferenceCardActions card={card} />
           </div>
 
           <div className='grid grid-cols-2 gap-4 text-sm sm:grid-cols-4'>

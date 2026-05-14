@@ -4,6 +4,7 @@ import { fontVariables } from '@/components/themes/font.config';
 import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
 import ThemeProvider from '@/components/themes/theme-provider';
 import { cn } from '@/lib/utils';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import NextTopLoader from 'nextjs-toploader';
@@ -67,6 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Providers>
           </ThemeProvider>
         </NuqsAdapter>
+        <SpeedInsights />
       </body>
     </html>
   );

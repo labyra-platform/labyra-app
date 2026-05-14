@@ -595,5 +595,20 @@
       "loadFailed": "Không tải được mẫu: {reason}",
       "hint": "Chưa có dữ liệu? Thử với mẫu XRD đã chuẩn bị sẵn."
     }
+  },
+  "referenceCards": {
+    "title": "Reference card library",
+    "subtitle": "Thư viện thẻ tham chiếu nội bộ — bổ sung từ các phổ XRD đã upload (R161 4a-pdf).",
+    "loading": "Đang tải...",
+    "emptyTitle": "Chưa có reference card",
+    "emptyHint": "Vào trang chi tiết phổ XRD → 'Add reference card' để paste dữ liệu ICDD/JCPDS.",
+    "col": {
+      "phase": "Pha",
+      "formula": "Công thức",
+      "spaceGroup": "Space group",
+      "anode": "Anode",
+      "peaks": "Số đỉnh",
+      "cardNumber": "Card #"
+    }
   }
 }

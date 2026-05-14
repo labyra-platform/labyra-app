@@ -595,5 +595,20 @@
       "loadFailed": "Failed to load sample: {reason}",
       "hint": "No data yet? Try a prepared XRD sample."
     }
+  },
+  "referenceCards": {
+    "title": "Reference card library",
+    "subtitle": "Internal reference card library — added from XRD spectrum detail pages (R161 4a-pdf).",
+    "loading": "Loading...",
+    "emptyTitle": "No reference cards yet",
+    "emptyHint": "Open an XRD spectrum detail page → 'Add reference card' to paste ICDD/JCPDS data.",
+    "col": {
+      "phase": "Phase",
+      "formula": "Formula",
+      "spaceGroup": "Space group",
+      "anode": "Anode",
+      "peaks": "Peaks",
+      "cardNumber": "Card #"
+    }
   }
 }

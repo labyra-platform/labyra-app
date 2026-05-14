@@ -1,6 +1,8 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from '@/i18n/routing';
+// R162-security-merge
+import { isAllowedOrigin, MUTATION_METHODS } from '@/lib/security/origin';
 
 const handleI18nRouting = createMiddleware(routing);
 
@@ -23,6 +25,20 @@ const handleI18nRouting = createMiddleware(routing);
  */
 // R160-i18n-3e: trust next-intl redirects
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
+  // R162-security-merge — API path: Origin check on mutations, then bypass i18n/auth logic
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    if (MUTATION_METHODS.has(request.method)) {
+      // Webhook routes verify themselves via signature — skip Origin check.
+      if (!request.nextUrl.pathname.startsWith('/api/webhooks/')) {
+        const origin = request.headers.get('origin');
+        if (!isAllowedOrigin(origin)) {
+          return new NextResponse('forbidden_origin', { status: 403 });
+        }
+      }
+    }
+    return NextResponse.next();
+  }
+
   // Step 1: locale routing
   const response = handleI18nRouting(request);
 
@@ -73,6 +89,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
 }
 
 export const config = {
-  // Match all pathnames except for assets + api routes
-  matcher: ['/((?!api|trpc|_next|_vercel|.*\\..*).*)']
+  // Match all pathnames except for static assets. API routes are now
+  // included so the R162-security-merge Origin check can run on mutations.
+  matcher: ['/((?!_next|_vercel|.*\\..*).*)']
 };

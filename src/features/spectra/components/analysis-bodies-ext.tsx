@@ -10,14 +10,7 @@ import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { SciText } from '@/features/spectra/utils/format-units';
-import type { ConfidenceLevel } from '@/types/spectra-analysis';
 import type { DSCAIOutput, OCPAIOutput, TGAAIOutput } from '@/types/spectra-analysis-ext';
-
-function confidenceVariant(level: ConfidenceLevel): 'default' | 'secondary' | 'destructive' {
-  if (level === 'high') return 'default';
-  if (level === 'medium') return 'secondary';
-  return 'destructive';
-}
 
 export function TGABody({ ai }: { ai: TGAAIOutput }) {
   const t = useTranslations('spectra.analysis');

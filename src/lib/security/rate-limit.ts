@@ -86,5 +86,5 @@ export function rateLimitKey(action: string, identifier: string): string {
 
 function sanitizeKey(key: string): string {
   // Firestore doc ID: no '/' or whitespace; cap length 1500 bytes.
-  return key.replace(/[\/\s]/g, '_').slice(0, 1500);
+  return key.replace(/[/\s]/g, '_').slice(0, 1500);
 }

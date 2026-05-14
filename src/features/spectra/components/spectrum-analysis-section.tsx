@@ -10,6 +10,8 @@ import { useEffect, useState } from 'react';
 import { AnalysisResultCard } from '@/features/spectra/components/analysis-result-card';
 import { DRSChart } from '@/features/spectra/components/drs-chart';
 import { SpectrumChart } from '@/features/spectra/components/spectrum-chart';
+import { XRDPeakDetailTable } from '@/features/spectra/components/xrd-peak-detail-table';
+import { XRDQualityCard } from '@/features/spectra/components/xrd-quality-card';
 import { AddReferenceCardDialog } from '@/features/spectra/components/add-reference-card-dialog';
 import { ReferenceCardsManager } from '@/features/spectra/components/reference-cards-manager';
 import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';
@@ -111,6 +113,15 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
           <SpectrumChart parsed={parsed} referenceCards={activeCards} />
         </div>
       )}
+      {parsed.spectrum_type === 'xrd' && (
+        <XRDQualityCard
+          quality={parsed.quality_metrics}
+          wavelength={parsed.wavelength_angstrom}
+          source={parsed.source}
+          crystallinity={parsed.crystallinity_percent}
+        />
+      )}
+      {parsed.spectrum_type === 'xrd' && <XRDPeakDetailTable peaks={parsed.peaks} />}
 
       {/* UV-Vis: add Tauc plot */}
       {parsed.spectrum_type === 'uvvis' && parsed.tauc_bandgap && (

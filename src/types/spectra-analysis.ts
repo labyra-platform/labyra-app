@@ -37,6 +37,14 @@ export interface XRDPeak {
   intensity: number;
   fwhm: number;
   relative_intensity: number;
+  // Tier 1+2 enriched fields (R161-xrd-detail)
+  integral_breadth?: number; // ° (Gaussian approx)
+  prominence?: number;
+  d_spacing?: number | null; // Å, from Bragg
+  crystallite_size_nm?: number | null; // per-peak Scherrer D
+  dislocation_density?: number | null; // lines/m² = 1/D²
+  microstrain?: number | null; // per-peak β·cosθ/4
+  hkl?: string; // Miller indices from citation match
 }
 
 export interface WilliamsonHallResult {
@@ -47,6 +55,19 @@ export interface WilliamsonHallResult {
   n_peaks_used: number;
   is_reliable?: boolean;
   quality_note?: string | null;
+}
+
+export interface XRDQualityMetrics {
+  scan_range_2theta: [number, number];
+  step_size_deg: number;
+  data_points: number;
+  n_peaks_detected: number;
+  background_estimate?: number;
+  noise_std?: number;
+  snr?: number | null;
+  max_intensity?: number;
+  smallest_fwhm?: number;
+  resolution_estimate?: number;
 }
 
 export interface XRDParsedData {
@@ -61,6 +82,9 @@ export interface XRDParsedData {
   };
   scherrer_avg_nm: number | null;
   williamson_hall: WilliamsonHallResult | null;
+  // Tier 1+2 (R161-xrd-detail)
+  crystallinity_percent?: number | null;
+  quality_metrics?: XRDQualityMetrics;
   wavelength_angstrom: number;
   source: string;
 }

@@ -17,7 +17,7 @@ import { IconBook, IconChevronLeft } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import PageContainer from '@/components/layout/page-container';
 import { getReferenceCard } from '@/lib/firebase/reference-cards/service';
-import { getCurrentUser } from '@/lib/auth/server';
+import { getCurrentTenantId } from '@/lib/auth/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,10 +33,8 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function ReferenceCardDetailPage({ params }: PageProps) {
   const { locale, id } = await params;
-  const user = await getCurrentUser();
-  const tenantId = user
-    ? (((user as Record<string, unknown>).tenantId as string | undefined) ?? null)
-    : null;
+  // Tenant isolation: getReferenceCard scopes by tenantId path segment.
+  const tenantId = await getCurrentTenantId();
   if (!tenantId) {
     notFound();
   }

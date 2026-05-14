@@ -71,19 +71,3 @@ export async function getCurrentTenantId(): Promise<string | null> {
   const claim = (user as { tenantId?: unknown }).tenantId;
   return typeof claim === 'string' ? claim : null;
 }
-
-/**
- * Server-side counterpart to useTenantId(). Returns the tenantId from
- * Firebase custom claims, or null if unauthenticated / claim missing.
- *
- * Type-safe: uses `typeof === 'string'` narrowing instead of `as` casts.
- * Same shape contract as the client hook in src/lib/auth/use-claims.ts.
- *
- * @phase R162-4e-typesafe
- */
-export async function getCurrentTenantId(): Promise<string | null> {
-  const user = await getCurrentUser();
-  if (!user) return null;
-  const claim = (user as { tenantId?: unknown }).tenantId;
-  return typeof claim === 'string' ? claim : null;
-}

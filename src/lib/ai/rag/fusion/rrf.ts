@@ -53,15 +53,12 @@ export function reciprocalRankFusion(lists: RankedItem[][], k: number = DEFAULT_
 
   return Array.from(itemScores.entries())
     .map(([id, { score, ranks }]) => ({ id, score, sourceRanks: ranks }))
-    .sort((a, b) => b.score - a.score);
+    .toSorted((a, b) => b.score - a.score);
 }
 
 /**
  * Helper: convert score-ranked items to RRF-compatible rank list.
  */
 export function toRankedList<T extends { id: string; score: number }>(items: T[]): RankedItem[] {
-  return items
-    .slice()
-    .sort((a, b) => b.score - a.score)
-    .map((item, rank) => ({ id: item.id, rank }));
+  return items.toSorted((a, b) => b.score - a.score).map((item, rank) => ({ id: item.id, rank }));
 }

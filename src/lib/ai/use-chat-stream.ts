@@ -4,7 +4,7 @@
  * Client hook v2 — handles conversationId persistence + title updates.
  * @phase R160-ai-2a
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { getAuth } from 'firebase/auth';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AiMessage, ChatStreamEventV2, AiCostBreakdown } from '@/types/ai';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
 import {
@@ -19,7 +19,6 @@ const LOCALE_LABELS: Record<string, string> = {
 };
 
 export function LocaleSwitcher(): React.ReactElement {
-  const t = useTranslations('locale');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();

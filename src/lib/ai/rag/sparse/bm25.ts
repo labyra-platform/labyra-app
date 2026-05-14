@@ -63,7 +63,7 @@ export class BM25Encoder implements SparseEncoder {
     }
     this.vocab = new Map();
     let idx = 0;
-    for (const t of Array.from(allTokens).sort()) {
+    for (const t of Array.from(allTokens).toSorted()) {
       this.vocab.set(t, idx++);
     }
 

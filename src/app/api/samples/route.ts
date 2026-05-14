@@ -3,7 +3,6 @@
  * @phase R160-data-1
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { Timestamp } from 'firebase-admin/firestore';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 

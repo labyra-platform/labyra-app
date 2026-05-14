@@ -54,11 +54,11 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
     >
       <div className='space-y-6'>
         <Link
-          href={`/${locale}/dashboard/spectra`}
+          href={`/${locale}/dashboard/reference-cards`}
           className='inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground'
         >
           <IconChevronLeft className='size-4' />
-          {t('backToSpectra')}
+          {t('backToLibrary')}
         </Link>
 
         <div className='rounded-lg border bg-card p-4 space-y-3'>

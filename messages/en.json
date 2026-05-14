@@ -594,7 +594,8 @@
       "menuLabel": "Pick an XRD sample to try",
       "loaded": "Loaded sample: {name}",
       "loadFailed": "Failed to load sample: {reason}",
-      "hint": "No data yet? Try a prepared XRD sample."
+      "hint": "No data yet? Try a prepared XRD sample.",
+      "syntheticBadge": "Simulated"
     }
   },
   "referenceCards": {
@@ -634,6 +635,7 @@
     "saving": "Saving...",
     "cancel": "Cancel",
     "toastUpdated": "Card updated",
-    "toastDeleted": "Card deleted"
+    "toastDeleted": "Card deleted",
+    "backToLibrary": "Back to library"
   }
 }

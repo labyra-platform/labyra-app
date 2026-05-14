@@ -594,7 +594,8 @@
       "menuLabel": "Chọn mẫu XRD để dùng thử",
       "loaded": "Đã tải mẫu: {name}",
       "loadFailed": "Không tải được mẫu: {reason}",
-      "hint": "Chưa có dữ liệu? Thử với mẫu XRD đã chuẩn bị sẵn."
+      "hint": "Chưa có dữ liệu? Thử với mẫu XRD đã chuẩn bị sẵn.",
+      "syntheticBadge": "Mô phỏng"
     }
   },
   "referenceCards": {
@@ -634,6 +635,7 @@
     "saving": "Đang lưu...",
     "cancel": "Hủy",
     "toastUpdated": "Đã cập nhật",
-    "toastDeleted": "Đã xóa"
+    "toastDeleted": "Đã xóa",
+    "backToLibrary": "Quay lại thư viện"
   }
 }

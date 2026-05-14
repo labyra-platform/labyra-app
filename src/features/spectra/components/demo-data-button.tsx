@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { IconFlask, IconLoader2 } from '@tabler/icons-react';
 
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { SciText } from '@/features/spectra/utils/format-units';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,9 +88,22 @@ export function DemoDataButton({ onLoad, disabled }: DemoDataButtonProps) {
             key={sample.id}
             onSelect={() => handlePick(sample)}
             disabled={loadingId !== null}
-            className='flex flex-col items-start gap-0.5 py-2'
+            className='flex flex-col items-start gap-1 py-2'
           >
-            <span className='text-sm font-medium'>{localizedLabel(sample, locale)}</span>
+            {/* R162-batch6-synthetic-badge */}
+            <div className='flex items-center gap-2 w-full'>
+              <span className='text-sm font-medium flex-1'>{localizedLabel(sample, locale)}</span>
+              {sample.formula && (
+                <Badge variant='outline' className='font-mono text-xs'>
+                  <SciText>{sample.formula}</SciText>
+                </Badge>
+              )}
+              {sample.synthetic && (
+                <Badge variant='secondary' className='text-xs'>
+                  {t('syntheticBadge')}
+                </Badge>
+              )}
+            </div>
             <span className='text-xs text-muted-foreground'>
               {localizedDescription(sample, locale)}
             </span>

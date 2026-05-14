@@ -20,6 +20,7 @@ export interface DemoSample {
   monochromator: string;
   expectedPhase: string;
   sizeBytes: number;
+  synthetic?: boolean;
 }
 
 export interface DemoManifest {

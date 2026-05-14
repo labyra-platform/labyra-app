@@ -122,7 +122,23 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
               )}
             </div>
           )}
-          <SpectrumChart parsed={parsed} referenceCards={activeCards} />
+          <SpectrumChart
+            parsed={parsed}
+            // R163-4c-2-overlay: filter XRD-only for chart overlay
+            referenceCards={activeCards
+              .filter((c) => c.spectrumType === 'xrd')
+              .map((c) => ({
+                id: c.id,
+                cardNumber: c.cardNumber,
+                phaseName: c.phaseName,
+                color: c.color,
+                peaks: (c as import('@/types/spectra').XRDReferenceCard).peaks.map((p) => ({
+                  twoTheta: p.twoTheta,
+                  intensity: p.intensity,
+                  hkl: p.hkl
+                }))
+              }))}
+          />
         </div>
       )}
       {parsed.spectrum_type === 'xrd' && (

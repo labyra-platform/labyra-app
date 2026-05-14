@@ -26,9 +26,12 @@ interface CreateReferenceCardInput {
 export async function createReferenceCard(input: CreateReferenceCardInput): Promise<ReferenceCard> {
   const id = randomUUID();
   const now = Date.now();
-  const card: ReferenceCard = {
+  // R163-4c-2: legacy createReferenceCard is XRD-only.
+  // FTIR/Raman/UVVis variants will get dedicated create functions in 4c-3.
+  const card: import('@/types/spectra').XRDReferenceCard = {
     id,
     tenantId: input.tenantId,
+    spectrumType: 'xrd',
     cardNumber: input.cardNumber,
     phaseName: input.phaseName,
     formula: input.formula,
@@ -63,7 +66,12 @@ export async function listReferenceCards(
     query = query.where('formula', '==', filter.formula);
   }
   const snap = await query.get();
-  return snap.docs.map((d) => d.data() as ReferenceCard);
+  // R163-bc-read: backward-compat default spectrumType
+  return snap.docs.map((d) => {
+    const data = d.data() as ReferenceCard & Partial<{ spectrumType: string }>;
+    if (!data.spectrumType) (data as { spectrumType: string }).spectrumType = 'xrd';
+    return data as ReferenceCard;
+  });
 }
 
 export async function getReferenceCard(
@@ -76,7 +84,11 @@ export async function getReferenceCard(
     .collection(COLLECTION)
     .doc(cardId)
     .get();
-  return doc.exists ? (doc.data() as ReferenceCard) : null;
+  if (!doc.exists) return null;
+  const data = doc.data() as ReferenceCard & Partial<{ spectrumType: string }>;
+  // R163-bc-read: legacy cards lack spectrumType → default 'xrd'
+  if (!data.spectrumType) (data as { spectrumType: string }).spectrumType = 'xrd';
+  return data as ReferenceCard;
 }
 
 export async function deleteReferenceCard(tenantId: string, cardId: string): Promise<void> {

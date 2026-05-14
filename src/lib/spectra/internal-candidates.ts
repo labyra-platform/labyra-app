@@ -61,6 +61,13 @@ export function computeInternalCandidates(
 ): CitationCandidate[] {
   if (userPeaks.length === 0 || refCards.length === 0) return [];
 
+  // R163-4c-2: pipeline is XRD-only; filter out other spectrum types
+  // (FTIR/Raman/UVVis integration comes in 4c-5).
+  const xrdCards = refCards.filter(
+    (c): c is import('@/types/spectra').XRDReferenceCard => c.spectrumType === 'xrd'
+  );
+  if (xrdCards.length === 0) return [];
+
   const userPeaksSimple = userPeaks.map((p) => ({
     twoTheta: p.two_theta,
     intensity: p.intensity
@@ -68,7 +75,7 @@ export function computeInternalCandidates(
 
   const candidates: CitationCandidate[] = [];
 
-  for (const card of refCards) {
+  for (const card of xrdCards) {
     const result = matchScore(userPeaksSimple, card.peaks);
     if (result.score < THRESHOLD) continue;
 

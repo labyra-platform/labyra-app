@@ -1,3 +1,4 @@
+// R163-4c-2-narrow-manager
 /**
  * ReferenceCardsManager — list tenant's reference cards with toggle + delete.
  *
@@ -87,7 +88,7 @@ export function ReferenceCardsManager({
                         Formula: <SciText>{card.formula}</SciText>
                       </span>
                     )}
-                    {card.anode && <span>Anode: {card.anode}</span>}
+                    {card.spectrumType === 'xrd' && card.anode && <span>Anode: {card.anode}</span>}
                     <span>{card.peaks.length} peaks</span>
                   </div>
                 </div>

@@ -57,3 +57,83 @@ export const ParseTextSchema = z
   .string()
   .min(10, 'Text too short')
   .max(50_000, 'Text too long (max 50KB)');
+
+// ============================================================
+// R163-spectra-4c-1 — discriminated union schemas for multi-spectrum refcards
+// ============================================================
+
+// XRD peak schema (existing, kept for reference + reused below)
+export const XRDPeakSchema = z.object({
+  twoTheta: z.number().gt(2).lt(180),
+  dSpacing: z.number().gt(0.1).lt(50).optional(),
+  intensity: z.number().gt(0).lte(100),
+  hkl: z
+    .string()
+    .max(20)
+    .regex(/^[-\d\s()]+$/, 'hkl: only digits, spaces, parens, minus')
+    .optional()
+});
+
+export const FTIRPeakSchema = z.object({
+  wavenumber: z.number().gte(100).lte(8000),
+  intensity: z.number().gt(0).lte(100),
+  assignment: z.string().max(100).optional()
+});
+
+export const RamanPeakSchema = z.object({
+  shift: z.number().gte(50).lte(5000),
+  intensity: z.number().gt(0).lte(100),
+  assignment: z.string().max(100).optional()
+});
+
+export const UVVisPeakSchema = z.object({
+  wavelength: z.number().gte(150).lte(2000),
+  intensity: z.number().gt(0).lte(100),
+  assignment: z.string().max(100).optional()
+});
+
+const RefCardBaseInput = {
+  cardNumber: CardNumberSchema,
+  phaseName: PhaseNameSchema,
+  formula: FormulaSchema,
+  notes: z.string().max(1000).optional()
+};
+
+export const CreateXRDRefCardSchema = z.object({
+  ...RefCardBaseInput,
+  spectrumType: z.literal('xrd'),
+  spaceGroup: SpaceGroupSchema,
+  anode: AnodeSchema,
+  peaks: z.array(XRDPeakSchema).min(3).max(200)
+});
+
+export const CreateFTIRRefCardSchema = z.object({
+  ...RefCardBaseInput,
+  spectrumType: z.literal('ftir'),
+  mode: z.enum(['transmittance', 'absorbance']).optional(),
+  peaks: z.array(FTIRPeakSchema).min(2).max(200)
+});
+
+export const CreateRamanRefCardSchema = z.object({
+  ...RefCardBaseInput,
+  spectrumType: z.literal('raman'),
+  laserWavelength: z.number().gte(200).lte(2000).optional(),
+  peaks: z.array(RamanPeakSchema).min(2).max(200)
+});
+
+export const CreateUVVisRefCardSchema = z.object({
+  ...RefCardBaseInput,
+  spectrumType: z.literal('uvvis'),
+  solvent: z.string().max(50).optional(),
+  peaks: z.array(UVVisPeakSchema).min(1).max(100)
+});
+
+// Discriminated union for any spectrum type
+export const CreateAnyRefCardSchema = z.discriminatedUnion('spectrumType', [
+  CreateXRDRefCardSchema,
+  CreateFTIRRefCardSchema,
+  CreateRamanRefCardSchema,
+  CreateUVVisRefCardSchema
+]);
+
+export type CreateAnyRefCardInput = z.infer<typeof CreateAnyRefCardSchema>;

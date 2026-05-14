@@ -47,6 +47,10 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
 
   const t = await getTranslations({ locale, namespace: 'referenceCards' });
 
+  // R163-4c-2-narrow-detail: XRD-only access (4c-4 will branch UI per type)
+  const isXrd = card.spectrumType === 'xrd';
+  const xrdCard = isXrd ? (card as import('@/types/spectra').XRDReferenceCard) : null;
+
   return (
     <PageContainer
       pageTitle={formatSciText(card.phaseName)}
@@ -81,11 +85,11 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
             </div>
             <div>
               <div className='text-muted-foreground text-xs'>{t('spaceGroup')}</div>
-              <div>{card.spaceGroup ?? '—'}</div>
+              <div>{xrdCard?.spaceGroup ?? '—'}</div>
             </div>
             <div>
               <div className='text-muted-foreground text-xs'>{t('anode')}</div>
-              <div>{card.anode ?? '—'}</div>
+              <div>{xrdCard?.anode ?? '—'}</div>
             </div>
             <div>
               <div className='text-muted-foreground text-xs'>{t('peaks')}</div>
@@ -118,7 +122,7 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
               </tr>
             </thead>
             <tbody className='divide-y'>
-              {card.peaks.map((p, i) => (
+              {xrdCard?.peaks.map((p, i) => (
                 <tr key={i}>
                   <td className='p-2 font-mono'>{p.twoTheta.toFixed(3)}</td>
                   <td className='p-2 text-right font-mono'>

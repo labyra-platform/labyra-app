@@ -126,18 +126,104 @@ export interface ReferenceCardPeak {
   hkl?: string; // Miller indices like "002"
 }
 
-export interface ReferenceCard {
+// ============================================================
+// Reference cards — discriminated union by spectrumType
+// R163-spectra-4c-1
+// ============================================================
+
+export type SpectrumTypeRefCard = 'xrd' | 'ftir' | 'raman' | 'uvvis';
+
+// Common fields shared across all spectrum types
+interface ReferenceCardBase {
   id: string;
   tenantId: string;
-  cardNumber: string; // e.g. "PDF-2 33-1387" or "Custom-WO3"
-  phaseName: string; // e.g. "WO3 monoclinic"
-  formula?: string; // e.g. "WO3"
-  spaceGroup?: string;
-  anode?: string; // wavelength used for measurement
-  source: 'manual' | 'cod' | 'mp';
+  cardNumber: string; // e.g. "PDF-2 33-1387", "FTIR-Smith-2020", "Custom-Raman-Si"
+  phaseName: string; // e.g. "WO3 monoclinic", "Si-O stretching reference"
+  formula?: string; // chemical formula if applicable
+  source: 'manual' | 'cod' | 'mp' | 'paper';
   sourceUrl?: string;
-  peaks: ReferenceCardPeak[];
   notes?: string;
   createdBy: string;
   createdAt: number;
+  updatedAt?: number;
 }
+
+// XRD peak (existing, unchanged structure)
+export interface ReferenceCardPeak {
+  twoTheta: number; // 2θ in degrees
+  dSpacing?: number; // Å, optional (Bragg-derived)
+  intensity: number; // relative intensity 0-100
+  hkl?: string; // Miller indices like "002"
+}
+
+export interface XRDReferenceCard extends ReferenceCardBase {
+  spectrumType: 'xrd';
+  spaceGroup?: string;
+  anode?: string; // e.g. 'Cu' (Kα wavelength used)
+  peaks: ReferenceCardPeak[];
+}
+
+// FTIR peak: wavenumber (cm⁻¹), intensity, optional assignment
+export interface FTIRReferenceCardPeak {
+  wavenumber: number; // cm⁻¹, typical range 400-4000
+  intensity: number; // relative 0-100
+  assignment?: string; // e.g. "Si-O stretching", "C=O carbonyl"
+}
+
+export interface FTIRReferenceCard extends ReferenceCardBase {
+  spectrumType: 'ftir';
+  mode?: 'transmittance' | 'absorbance'; // measurement mode
+  peaks: FTIRReferenceCardPeak[];
+}
+
+// Raman peak: shift (cm⁻¹) — same unit as FTIR but distinct semantics
+export interface RamanReferenceCardPeak {
+  shift: number; // cm⁻¹ Raman shift, typical 100-3500
+  intensity: number; // relative 0-100
+  assignment?: string; // e.g. "G-band", "D-band", "T2g mode"
+}
+
+export interface RamanReferenceCard extends ReferenceCardBase {
+  spectrumType: 'raman';
+  laserWavelength?: number; // nm, e.g. 532, 785, 1064
+  peaks: RamanReferenceCardPeak[];
+}
+
+// UV-Vis peak: wavelength (nm), absorbance/intensity
+export interface UVVisReferenceCardPeak {
+  wavelength: number; // nm, typical 200-900
+  intensity: number; // relative 0-100 or absorbance scaled
+  assignment?: string; // e.g. "π-π* transition", "d-d band"
+}
+
+export interface UVVisReferenceCard extends ReferenceCardBase {
+  spectrumType: 'uvvis';
+  solvent?: string; // e.g. "ethanol", "water", "DMSO"
+  peaks: UVVisReferenceCardPeak[];
+}
+
+// Discriminated union — use `card.spectrumType` to narrow.
+export type ReferenceCard =
+  | XRDReferenceCard
+  | FTIRReferenceCard
+  | RamanReferenceCard
+  | UVVisReferenceCard;
+
+// Helper: extract peak position regardless of spectrum type
+export function getPeakPosition(
+  peak: ReferenceCardPeak | FTIRReferenceCardPeak | RamanReferenceCardPeak | UVVisReferenceCardPeak
+): number {
+  if ('twoTheta' in peak) return peak.twoTheta;
+  if ('wavenumber' in peak) return peak.wavenumber;
+  if ('shift' in peak) return peak.shift;
+  if ('wavelength' in peak) return peak.wavelength;
+  return 0;
+}
+
+// Default match tolerance per spectrum type (in native units)
+export const MATCH_TOLERANCE: Record<SpectrumTypeRefCard, number> = {
+  xrd: 0.3, // degrees 2θ
+  ftir: 4, // cm⁻¹
+  raman: 2, // cm⁻¹ (higher resolution than FTIR)
+  uvvis: 5 // nm
+};

@@ -39,8 +39,11 @@ export function EditReferenceCardDialog({
   const t = useTranslations('referenceCards');
   const [phaseName, setPhaseName] = useState(card.phaseName);
   const [formula, setFormula] = useState(card.formula ?? '');
-  const [anode, setAnode] = useState(card.anode ?? 'Cu');
-  const [spaceGroup, setSpaceGroup] = useState(card.spaceGroup ?? '');
+  // R163-4c-2-narrow-edit: XRD-only fields. Non-XRD cards get empty defaults
+  // until 4c-4 introduces per-type edit forms.
+  const xrdCard = card.spectrumType === 'xrd' ? card : null;
+  const [anode, setAnode] = useState(xrdCard?.anode ?? 'Cu');
+  const [spaceGroup, setSpaceGroup] = useState(xrdCard?.spaceGroup ?? '');
   const [notes, setNotes] = useState(card.notes ?? '');
   const [submitting, setSubmitting] = useState(false);
 

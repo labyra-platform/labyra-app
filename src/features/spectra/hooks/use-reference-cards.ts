@@ -22,9 +22,8 @@ const OVERLAY_COLORS = [
   'hsl(340, 65%, 55%)'
 ];
 
-export interface ActiveReferenceCard extends ReferenceCard {
-  color: string;
-}
+// R163-4c-2: intersection type (cannot extend discriminated union via interface)
+export type ActiveReferenceCard = ReferenceCard & { color: string };
 
 function loadActiveIds(): string[] {
   if (typeof window === 'undefined') return [];

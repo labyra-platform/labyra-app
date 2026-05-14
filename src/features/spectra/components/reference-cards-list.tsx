@@ -10,6 +10,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { IconBook } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { SciText } from '@/features/spectra/utils/format-units';
+// R163-4c-2-narrow-list
 import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';
 
 export function ReferenceCardsList() {
@@ -58,9 +59,15 @@ export function ReferenceCardsList() {
               <td className='p-3 font-mono'>
                 {card.formula ? <SciText>{card.formula}</SciText> : '—'}
               </td>
-              <td className='p-3'>{card.spaceGroup ?? '—'}</td>
               <td className='p-3'>
-                {card.anode ? <Badge variant='outline'>{card.anode}</Badge> : '—'}
+                {card.spectrumType === 'xrd' ? (card.spaceGroup ?? '—') : '—'}
+              </td>
+              <td className='p-3'>
+                {card.spectrumType === 'xrd' && card.anode ? (
+                  <Badge variant='outline'>{card.anode}</Badge>
+                ) : (
+                  '—'
+                )}
               </td>
               <td className='p-3 text-right font-mono'>{card.peaks.length}</td>
               <td className='p-3 text-xs text-muted-foreground font-mono'>{card.cardNumber}</td>

@@ -37,16 +37,42 @@ const force = args.includes('--force');
 const tenantArg = args.find((a) => a.startsWith('--tenant='));
 const onlyTenant = tenantArg ? tenantArg.slice('--tenant='.length) : null;
 
-// ─── Init Admin SDK ────────────────────────────────────────────────────
-const credsB64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
-const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-let creds;
-if (credsB64) {
-  creds = JSON.parse(Buffer.from(credsB64, 'base64').toString('utf-8'));
-} else if (credsJson) {
-  creds = JSON.parse(credsJson);
-} else {
-  console.error('Missing GOOGLE_APPLICATION_CREDENTIALS_BASE64 or _JSON');
+// ─── Admin SDK init (multi-env-convention support) ─────────────────────
+// R164-phase-6c-fix-creds: support multiple credential env var names.
+function loadCredentials() {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64) {
+    return JSON.parse(
+      Buffer.from(process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64, 'base64').toString('utf-8')
+    );
+  }
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    return JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+  }
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    const fs = require('node:fs');
+    return JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf-8'));
+  }
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  }
+  if (
+    process.env.FIREBASE_ADMIN_PROJECT_ID &&
+    process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
+    process.env.FIREBASE_ADMIN_PRIVATE_KEY
+  ) {
+    return {
+      type: 'service_account',
+      project_id: process.env.FIREBASE_ADMIN_PROJECT_ID,
+      client_email: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      private_key: process.env.FIREBASE_ADMIN_PRIVATE_KEY
+    };
+  }
+  return null;
+}
+
+const creds = loadCredentials();
+if (!creds) {
+  console.error('No Firebase credentials. Set FIREBASE_ADMIN_PROJECT_ID + CLIENT_EMAIL + PRIVATE_KEY, or GOOGLE_APPLICATION_CREDENTIALS_BASE64/_JSON/_path, or FIREBASE_SERVICE_ACCOUNT_KEY');
   process.exit(1);
 }
 if (typeof creds.private_key === 'string') {
@@ -55,7 +81,7 @@ if (typeof creds.private_key === 'string') {
 
 initializeApp({ credential: cert(creds) });
 const db = getFirestore();
-db.settings({ databaseId: 'labbook' });
+db.settings({ ignoreUndefinedProperties: true, databaseId: process.env.FIRESTORE_DATABASE_ID || 'labbook' });
 
 console.log(`[migrate] mode=${dryRun ? 'DRY-RUN' : 'WRITE'} tenant=${onlyTenant ?? 'ALL'} force=${force}`);
 
@@ -117,7 +143,7 @@ async function main() {
         // Lineage: derive from sample (if present)
         derivedFrom: data.sampleId ? [data.sampleId] : undefined,
         // PROV: spectraImport activity
-        generatedBy: `migration:${MARKER}`
+        generatedBy: 'migration:R164-phase-5c'
       };
 
       // Cleanup: don't carry the _migrated flag itself

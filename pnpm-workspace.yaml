@@ -6,6 +6,7 @@ allowBuilds:
   '@swc/core': true
   crfsuite: set this to true or false
   es5-ext: true
+  esbuild: set this to true or false
   fasttext: set this to true or false
   protobufjs: true
   sharp: true

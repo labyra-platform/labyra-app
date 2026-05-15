@@ -155,3 +155,19 @@ export async function deleteFile(storagePath: string): Promise<void> {
   const file = bucket.file(storagePath);
   await file.delete({ ignoreNotFound: true });
 }
+
+/**
+ * Move (rename) a file in Storage. Used by upload-complete flow to promote
+ * a file from temp `_uploads/{sessionId}.pdf` to final `{paperId}.v1.pdf`.
+ *
+ * GCS does not support atomic rename — internally this is copy + delete.
+ * On failure mid-flight, the destination may exist without the source being
+ * deleted (rare; caller logs warning).
+ *
+ * @phase R168-3.2
+ */
+export async function movePaperFile(srcPath: string, dstPath: string): Promise<void> {
+  const bucket = getAdminStorageService().bucket();
+  const srcFile = bucket.file(srcPath);
+  await srcFile.move(dstPath);
+}

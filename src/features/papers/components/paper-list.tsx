@@ -1,4 +1,5 @@
 'use client';
+// R166-ai6a-3b-fix2: + extracting_citations
 
 /**
  * Realtime paper list with status badges.
@@ -19,6 +20,7 @@ const STATUS_COLORS: Record<PaperStatus, string> = {
   enriching: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
   embedding: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
   indexing: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
+  extracting_citations: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
   indexed: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   failed: 'bg-destructive/10 text-destructive',
   cancelling: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',

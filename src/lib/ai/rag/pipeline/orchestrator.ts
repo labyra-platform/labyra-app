@@ -15,6 +15,8 @@ import { updatePaperStatus, setPaperError, setPaperCancelled, CancelledError } f
 import type { PaperProcessingJob } from '@/lib/ai/rag/jobs/types';
 import type { Paper } from '@/types/papers';
 import { extractMetadata } from './metadata-extract';
+// R166-ai6a-3b: citation extraction step
+import { runCitationStep } from './citation-step';
 
 function backoffDelayMs(retryCount: number): number {
   const base = Math.pow(2, retryCount) * 1000;
@@ -175,6 +177,32 @@ export async function processPaperJob(job: PaperProcessingJob, signal: AbortSign
       indexedChunkCount: indexed
     });
     log('step_indexing_done', { indexed });
+
+    // ── STEP 6: Citation extraction (non-blocking) ─────────
+    // R166-ai6a-3b: extract DOI references → Citation edges
+    try {
+      await updatePaperStatus(tenantId, paperId, 'extracting_citations');
+      log('step_citation_start');
+      // Concatenate per-page OCR text into single fullText for reference parsing
+      const fullText = (ocrResult.pages ?? []).map((p) => p.text ?? '').join('\n\n');
+      const citationResult = await runCitationStep({
+        tenantId,
+        paper: {
+          id: paper.id,
+          createdBy: paper.createdBy
+        },
+        fullText,
+        signal
+      });
+      log('step_citation_done', citationResult as unknown as Record<string, unknown>);
+    } catch (citationErr) {
+      // Non-fatal: citation extraction failure must NOT fail paper indexing.
+      // Log and continue — paper is still searchable via vector embeddings.
+      if (citationErr instanceof CancelledError) throw citationErr;
+      log('step_citation_failed', {
+        error: citationErr instanceof Error ? citationErr.message : String(citationErr)
+      });
+    }
 
     // ── DONE ────────────────────────────────────────────────
     await updatePaperStatus(tenantId, paperId, 'indexed', {

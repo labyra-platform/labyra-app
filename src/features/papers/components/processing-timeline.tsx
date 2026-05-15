@@ -1,4 +1,5 @@
 'use client';
+// R166-ai6a-3b-fix2: + extracting_citations (step 6, indexed bumped to 7)
 
 /**
  * Status timeline UI — shows pipeline steps with progress.
@@ -26,7 +27,8 @@ const STEP_ORDER: Record<PaperStatus, number> = {
   enriching: 3,
   embedding: 4,
   indexing: 5,
-  indexed: 6,
+  extracting_citations: 6,
+  indexed: 7,
   failed: -1,
   cancelling: -1,
   cancelled: -1

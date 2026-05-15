@@ -4,6 +4,7 @@
  * @see docs/ai/ai-5b-pipeline.md
  */
 
+// R166-ai6a-3b-fix: added 'extracting_citations' for ai-6 pipeline step 6
 export type PaperStatus =
   | 'queued'
   | 'ocr'
@@ -11,6 +12,7 @@ export type PaperStatus =
   | 'enriching'
   | 'embedding'
   | 'indexing'
+  | 'extracting_citations'
   | 'indexed'
   | 'failed'
   | 'cancelling'

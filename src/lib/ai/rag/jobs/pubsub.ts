@@ -1,45 +1,41 @@
 /**
- * PubSubQueue — Stage 2 implementation.
- * Publishes paper processing jobs to GCP Pub/Sub topic.
+ * PubSubQueue — Stage 2 implementation using REST API.
+ *
+ * Publishes paper processing jobs to GCP Pub/Sub topic via HTTPS REST.
+ * Avoids gRPC issues with @google-cloud/pubsub SDK on Vercel serverless
+ * (matches pattern in src/lib/pubsub/publisher.ts for spectra).
+ *
  * Worker (labyra-spectra-worker) subscribes via push subscription.
  *
- * @phase R167-C
+ * @phase R167-C / hotfix R167-C2 (REST rewrite)
  * @see docs/adr/ADR-018-async-worker-architecture.md
  */
 import 'server-only';
-import { PubSub } from '@google-cloud/pubsub';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
+import { getAuth } from '@/lib/pubsub/publisher';
 import type { JobQueue, PaperProcessingJob } from './types';
 
 const DEFAULT_TOPIC = 'paper-processing';
 
-// Singleton client via globalThis (Next.js module isolation safety)
-type GlobalState = {
-  __labyraPubsubClient?: PubSub;
-};
-const globalState = globalThis as unknown as GlobalState;
-
-function getClient(): PubSub {
-  if (globalState.__labyraPubsubClient) return globalState.__labyraPubsubClient;
-  const projectId = process.env.GCP_PROJECT_ID;
-  if (!projectId) {
-    throw new Error('PubSubQueue: GCP_PROJECT_ID env not set');
-  }
-  globalState.__labyraPubsubClient = new PubSub({ projectId });
-  return globalState.__labyraPubsubClient;
-}
-
 function getTopicName(): string {
   return process.env.PUBSUB_PAPER_TOPIC ?? DEFAULT_TOPIC;
+}
+
+function getProjectId(): string {
+  const pid = process.env.GCP_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  if (!pid) {
+    throw new Error('PubSubQueue: GCP_PROJECT_ID not configured');
+  }
+  return pid;
 }
 
 export class PubSubQueue implements JobQueue {
   readonly id = 'pubsub';
 
   async enqueue(job: PaperProcessingJob): Promise<void> {
-    const topicName = getTopicName();
-    const topic = getClient().topic(topicName);
+    const projectId = getProjectId();
+    const topic = getTopicName();
 
     // ADR-018 message shape — keys MUST match worker Pydantic PaperJob model
     const messageBody = {
@@ -52,47 +48,81 @@ export class PubSubQueue implements JobQueue {
       enqueuedAt: job.enqueuedAt
     };
 
-    try {
-      const messageId = await topic.publishMessage({
-        json: messageBody
-      });
-      // eslint-disable-next-line no-console -- structured audit log
-      console.log(
-        JSON.stringify({
-          level: 'info',
-          event: 'pubsub_paper_enqueued',
-          jobId: job.jobId,
-          paperId: job.paperId,
-          tenantId: job.tenantId,
-          messageId,
-          topic: topicName
-        })
+    // Get auth token (reuses publisher.ts singleton)
+    const auth = getAuth();
+    const client = await auth.getClient();
+    const tokenResp = await client.getAccessToken();
+    if (!tokenResp.token) {
+      throw new Error('PubSubQueue: failed to obtain access token');
+    }
+
+    const url = `https://pubsub.googleapis.com/v1/projects/${projectId}/topics/${topic}:publish`;
+    const body = {
+      messages: [
+        {
+          data: Buffer.from(JSON.stringify(messageBody)).toString('base64'),
+          attributes: {
+            tenantId: job.tenantId,
+            paperId: job.paperId
+          }
+        }
+      ]
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenResp.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const err = new Error(
+        `pubsub_paper_enqueue_failed ${response.status}: ${errorText.substring(0, 300)}`
       );
-    } catch (err) {
+      // eslint-disable-next-line no-console -- structured audit log
       console.error(
         JSON.stringify({
           level: 'error',
           event: 'pubsub_paper_enqueue_failed',
           jobId: job.jobId,
           paperId: job.paperId,
-          topic: topicName,
-          error: err instanceof Error ? err.message : String(err)
+          tenantId: job.tenantId,
+          topic,
+          httpStatus: response.status,
+          error: errorText.substring(0, 300)
         })
       );
       throw err;
     }
+
+    const result = (await response.json()) as { messageIds?: string[] };
+    const messageId = result.messageIds?.[0];
+    if (!messageId) {
+      throw new Error('PubSubQueue: response missing messageId');
+    }
+
+    // eslint-disable-next-line no-console -- structured audit log
+    console.log(
+      JSON.stringify({
+        level: 'info',
+        event: 'pubsub_paper_enqueued',
+        jobId: job.jobId,
+        paperId: job.paperId,
+        tenantId: job.tenantId,
+        messageId,
+        topic
+      })
+    );
   }
 
   async cancel(jobId: string): Promise<void> {
     // Pub/Sub has no "cancel published message" API.
     // Cancellation is signaled via Firestore paper.cancelRequestedAt — worker
-    // polls this between pipeline steps (see worker src/papers/state.py).
-    //
-    // This method is a no-op for jobId-based cancellation. Callers should
-    // use /api/papers/[id]/cancel route which writes cancelRequestedAt directly.
-    //
-    // We log for observability — if this is hit, there's likely a code path
-    // calling queue.cancel(jobId) that needs migration to use the cancel route.
+    // polls between pipeline steps (see worker src/papers/state.py).
     // eslint-disable-next-line no-console -- structured audit log
     console.warn(
       JSON.stringify({
@@ -105,11 +135,7 @@ export class PubSubQueue implements JobQueue {
   }
 
   isActive(jobId: string): boolean {
-    // Pub/Sub queue doesn't track in-flight messages by jobId from publisher side.
-    // Worker side tracks via Firestore status field (queued | ocr | ... | indexed).
-    //
-    // For UI "is paper being processed" check, query Firestore paper.status
-    // directly. Always return false here to indicate no in-memory tracking.
+    // No publisher-side tracking. UI should query Firestore paper.status.
     void jobId;
     return false;
   }

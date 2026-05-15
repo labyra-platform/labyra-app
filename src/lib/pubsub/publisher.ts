@@ -27,7 +27,8 @@ function parseAndNormalizeCreds(raw: string): SaCredentials {
   return creds;
 }
 
-function getAuth(): GoogleAuth {
+// R167-C2: exported for reuse by jobs/pubsub.ts (papers queue)
+export function getAuth(): GoogleAuth {
   if (_auth) return _auth;
 
   const credsB64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;

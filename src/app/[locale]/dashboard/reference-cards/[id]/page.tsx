@@ -18,6 +18,11 @@ import { Badge } from '@/components/ui/badge';
 import PageContainer from '@/components/layout/page-container';
 import { getReferenceCard } from '@/lib/firebase/reference-cards/service';
 import { ReferenceCardActions } from '@/features/spectra/components/reference-card-actions';
+// R165-phase-4-ref-ui: lifecycle + lineage UI
+import {
+  ReferenceDetailActions,
+  ReferenceLineageSection
+} from '@/features/spectra/components/reference-detail-actions';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { formatSciText } from '@/features/spectra/utils/format-units';
 
@@ -74,7 +79,14 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
             </Badge>
           </div>
 
-          <div className='flex justify-end'>
+          <div className='flex flex-wrap items-center justify-between gap-3'>
+            <ReferenceDetailActions
+              id={card.id}
+              status={
+                (card as { lifecycleStatus?: 'active' | 'deprecated' | 'retracted' })
+                  .lifecycleStatus ?? 'active'
+              }
+            />
             <ReferenceCardActions card={card} />
           </div>
 
@@ -136,6 +148,9 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
           </table>
         </div>
       </div>
+
+      {/* R165-phase-4-ref-ui: PROV-O lineage graph */}
+      <ReferenceLineageSection id={card.id} />
     </PageContainer>
   );
 }

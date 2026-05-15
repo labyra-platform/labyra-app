@@ -10,7 +10,10 @@ import { randomUUID } from 'node:crypto';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { ReferenceCard } from '@/types/spectra';
 
-const COLLECTION = 'reference_cards';
+// R165-phase-4-ref-ui: post-R164 migration — getReferenceCard reads both
+const COLLECTION_NEW = 'references';
+const COLLECTION_LEGACY = 'reference_cards';
+const COLLECTION = COLLECTION_LEGACY; // other fns still use legacy until R166
 
 // R163-spectra-4c-4a: discriminated-union create supporting all spectrum types.
 import type {
@@ -150,17 +153,25 @@ export async function getReferenceCard(
   tenantId: string,
   cardId: string
 ): Promise<ReferenceCard | null> {
-  const doc = await getAdminFirestoreService()
-    .collection('tenants')
-    .doc(tenantId)
-    .collection(COLLECTION)
-    .doc(cardId)
-    .get();
-  if (!doc.exists) return null;
-  const data = doc.data() as ReferenceCard & Partial<{ spectrumType: string }>;
-  // R163-bc-read: legacy cards lack spectrumType → default 'xrd'
-  if (!data.spectrumType) (data as { spectrumType: string }).spectrumType = 'xrd';
-  return data as ReferenceCard;
+  // R165-phase-4-ref-ui: try new `references` collection first (post-R164), fallback legacy.
+  const db = getAdminFirestoreService();
+  for (const collectionName of [COLLECTION_NEW, COLLECTION_LEGACY]) {
+    const doc = await db
+      .collection('tenants')
+      .doc(tenantId)
+      .collection(collectionName)
+      .doc(cardId)
+      .get();
+    if (!doc.exists) continue;
+    const data = doc.data() as ReferenceCard &
+      Partial<{ spectrumType: string; _migrated: boolean }>;
+    // Skip migrated source docs (they have _migrated:true marker)
+    if (collectionName === COLLECTION_LEGACY && data._migrated === true) continue;
+    // R163-bc-read: legacy cards lack spectrumType → default 'xrd'
+    if (!data.spectrumType) (data as { spectrumType: string }).spectrumType = 'xrd';
+    return data as ReferenceCard;
+  }
+  return null;
 }
 
 export async function deleteReferenceCard(tenantId: string, cardId: string): Promise<void> {

@@ -12,7 +12,11 @@ export const DOI_REGEX = /^10\.\d{4,9}\/[-._;()/:a-zA-Z0-9]+$/;
 
 export const CitationConfidenceSchema = z.enum(['doi-exact', 'title-fuzzy', 'manual']);
 
+// R166-ai6a-2-fix: tenantId + createdBy are server-injected (not user input from API),
+// so we extend ProvBase fields explicitly instead of via ProvBaseCreateInputSchema.
 export const CitationCreateInputSchema = ProvBaseCreateInputSchema.extend({
+  tenantId: z.string().min(1),
+  createdBy: z.string().min(1),
   sourcePaperId: z.string().min(1, 'sourcePaperId required'),
   targetDoi: z.string().regex(DOI_REGEX, 'Invalid DOI format').optional(),
   targetTitle: z.string().min(1).max(500).optional(),

@@ -88,10 +88,14 @@ export async function createCitation(input: CitationCreateInput): Promise<Citati
   const existing = await ref.get();
   if (existing.exists) {
     const old = existing.data() as Citation;
+    // R168-3.3b: ordering reflects trust hierarchy.
+    // unverified < title-fuzzy < doi-exact < manual.
+    // Idempotency: never overwrite higher-trust existing with lower-trust new.
     const order: Record<Citation['confidence'], number> = {
-      'title-fuzzy': 1,
-      'doi-exact': 2,
-      manual: 3
+      unverified: 1,
+      'title-fuzzy': 2,
+      'doi-exact': 3,
+      manual: 4
     };
     if (order[old.confidence] >= order[citation.confidence]) {
       // Existing is more trusted — preserve it, return as-is

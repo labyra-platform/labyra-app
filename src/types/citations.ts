@@ -19,7 +19,7 @@ import type { ProvBase } from './prov-base';
  *   - 'title-fuzzy': No DOI extractable; matched target by title + Crossref/OpenAlex
  *   - 'manual': User manually entered (override) — highest trust
  */
-export type CitationConfidence = 'doi-exact' | 'title-fuzzy' | 'manual';
+export type CitationConfidence = 'doi-exact' | 'title-fuzzy' | 'unverified' | 'manual'; // R168-3.3a
 
 export interface Citation extends ProvBase {
   /** schemaVersion bumped from initial to allow future migrations. */

@@ -156,7 +156,7 @@ export async function runCitationStep(input: CitationStepInput): Promise<Citatio
         targetJournal: metadata?.journal,
         targetPaperId: internalTargetId,
         metadataSource: metadata?.source ?? 'pdf-only',
-        confidence: 'doi-exact',
+        confidence: metadata ? 'doi-exact' : 'unverified', // R168-3.3: 404 → unverified
         context: ref.context
       });
       result.citationsCreated += 1;

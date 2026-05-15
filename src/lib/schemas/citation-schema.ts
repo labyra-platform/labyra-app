@@ -8,9 +8,14 @@ import { ProvBaseCreateInputSchema } from './prov-base-schema';
 
 // DOI regex per CrossRef spec: 10.{4-9 digits}/{rest}
 // Example: 10.1038/s41586-022-04532-4
-export const DOI_REGEX = /^10\.\d{4,9}\/[-._;()/:a-zA-Z0-9]+$/;
+export const DOI_REGEX = /^10\.\d{4,9}\/[-._;()/:a-zA-Z0-9]*[a-zA-Z0-9]$/;
 
-export const CitationConfidenceSchema = z.enum(['doi-exact', 'title-fuzzy', 'manual']);
+export const CitationConfidenceSchema = z.enum([
+  'doi-exact',
+  'title-fuzzy',
+  'unverified',
+  'manual'
+]);
 
 // R166-ai6a-2-fix: tenantId + createdBy are server-injected (not user input from API),
 // so we extend ProvBase fields explicitly instead of via ProvBaseCreateInputSchema.

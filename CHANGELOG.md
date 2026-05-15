@@ -1,6 +1,40 @@
 # Changelog
 
-<!-- R167-docs-update-2026-05-15 -->
+<!-- R167-D-2026-05-15 -->
+
+## R167-D — Anti-hallucination doc reconciliation + L8 priority bump (2026-05-15)
+
+### Changed
+
+- `docs/ai/AI_ARCHITECTURE.md`:
+  - Section 6 marked as original design spec, pointer to Section 25 + 27
+  - Section 25 marked with L6/L7 redefinition notice (original semantics ≠ Section 25 semantics)
+  - **NEW Section 27** — Single source of truth checklist for 9-layer implementation status with sub-tasks and re-audit triggers
+- `ROADMAP.md` — L8 Ragas eval dashboard bumped to Active priority with checklist
+
+### Decisions
+
+- **L2 status corrected**: from "partial" → "shipped". Homegrown citation-check.ts is decision divergence from Anthropic Citations API spec, not partial implementation.
+- **L6/L7 redefinition acknowledged**: Section 25 redefined L6 (on-topic) and L7 (empty result guard) with different semantics from original Section 6 (cross-source / OOD). Original L6/L7 remain unimplemented. Section 27 makes this explicit to avoid future confusion.
+- **L8 priority bump**: required before adding any new layer (regression detection). No code changes — doc only.
+
+### Audit baseline
+
+- 6/9 fully shipped: L1, L2, L3, L4, L6-redefined, L7-redefined
+- 1/9 partial: L5 (sufficiency only, not unsupported claims)
+- 3/9 missing: L6-original (cross-source), L7-original (full OOD), L8 (eval), L9 (HITL+Lab Memory)
+
+### Tech debt deferred (tracked in Section 27 but not Active)
+
+- L5 upgrade — unsupported claims detection
+- L6 original — cross-source verification
+- L7 original — full OOD detection
+- L2 upgrade — Anthropic Citations API native
+- L4 upgrade — full CRAG 3-tier
+- L9 — HITL Verify + Lab Memory (depends Phase B.6+)
+
+---
+
 
 ## R167 — Async Cloud Run Worker (2026-05-15)
 

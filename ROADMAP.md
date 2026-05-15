@@ -120,6 +120,29 @@ See `docs/round-r167-handoff.md` §3 for full backlog. High-priority items:
 
 Lower priority: husky pre-push aggressive; `_force-reset-paper.mjs` misleading name; Mistral SDK fragile internal import; uncommitted utility scripts.
 
+### Anti-hallucination — L8 Eval Dashboard
+
+<!-- R167-D-2026-05-15 -->
+
+Bumped to Active after R167-D audit (`docs/ai/AI_ARCHITECTURE.md` Section 27).
+Required as gatekeeper before adding any new anti-hallucination layer — measurable
+regression detection.
+
+- [ ] Golden test set creation (7 spectrum images + 60 queries per AI_ARCHITECTURE Section 16.1)
+- [ ] Ragas Python script + dependency
+- [ ] Weekly eval cron job
+- [ ] Admin dashboard UI for metric trends
+- [ ] Scientific doc `docs/scientific-methods/eval-metrics.md` (Faithfulness/Relevancy/Precision/Recall formulas + Ragas methodology — per memory rule)
+
+**Metric targets** (AI_ARCHITECTURE Section 16.2):
+- Faithfulness ≥0.90
+- Answer Relevancy ≥0.85
+- Context Precision ≥0.80
+- Context Recall ≥0.75
+
+See `docs/ai/AI_ARCHITECTURE.md` Section 27 for full 9-layer checklist.
+Remaining layers (L5 partial, L6-original, L7-original, L9) tracked in Section 27 but not yet active priority.
+
 ### R166 Phase 6b — Citation network UI
 
 Citation extraction data layer + worker pipeline complete (R166 Phase 6a + R167-B5/B6). UI viz pending:

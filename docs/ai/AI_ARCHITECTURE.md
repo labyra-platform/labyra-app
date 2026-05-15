@@ -1774,6 +1774,81 @@ Test cases that passed:
 
 ---
 
+## Section 27: Anti-Hallucination Layer Checklist
+
+<!-- R167-D-2026-05-15 -->
+
+Single source of truth for 9-layer implementation status. Re-audit each round
+that modifies grounding/eval/rag code.
+
+**Last audit**: R167-D (2026-05-15)
+**Methodology**: `ls src/lib/ai/grounding/` + `grep -r ragas` + AI_ARCHITECTURE Section 25 cross-reference.
+
+### Shipped ✅
+
+- [x] **L1** — Strict Grounding system prompt (baseline, all tiers)
+- [x] **L2** — Citation enforcement (homegrown, `src/lib/ai/grounding/citation-check.ts`)
+  - [ ] Sub-task: upgrade to Anthropic Citations API native *(decision divergence — deferred, homegrown intentional for UI control)*
+- [x] **L3** — Numerical Verification (`src/lib/ai/grounding/extract-numbers.ts`)
+- [x] **L4** — Rerank threshold binary (`src/lib/ai/rag/search.ts`, `RERANK_SCORE_THRESHOLD=0.5`)
+  - [ ] Sub-task: full CRAG 3-tier with web search fallback (deferred)
+- [x] **L6 (redefined Section 25)** — On-topic classifier (`src/lib/ai/grounding/on-topic-check.ts`)
+- [x] **L7 (redefined Section 25)** — Empty Result Guard (system prompt rule, ai-5e-2)
+
+### Partial ⚠️
+
+- [ ] **L5** — Reflection Loop
+  - [x] Sub-task: T3 Opus sufficiency check (R160 ai-3/ai-4) — checks "đủ thông tin chưa"
+  - [ ] Sub-task: unsupported claims detection + remove/re-query — different semantic from sufficiency
+
+### Missing ❌
+
+- [ ] **L6 (original Section 6)** — Cross-source verification (RAG paper vs lab data vs Python compute)
+  - Required when spectra pipeline (Section 26) calls Python service alongside RAG retrieval
+  - Flag conflict, present all 3 sources to user
+- [ ] **L7 (original Section 6)** — Full OOD Detection (unknown materials)
+  - Current Empty Result Guard (L7 redefined) covers empty retrieval case
+  - Original L7 covers: known query but material not in corpus + not in lab → AI must admit limits
+- [ ] **L8** — Eval Dashboard (Ragas)
+  - Status: **ACTIVE PRIORITY** (R167-D bump). See ROADMAP Active section.
+  - [ ] Sub-task: golden test set (7 spectrum images + 60 queries per Section 16.1)
+  - [ ] Sub-task: Ragas Python script + dependency (`pip install ragas`)
+  - [ ] Sub-task: weekly eval cron + admin dashboard
+  - [ ] Sub-task: metric targets per Section 16.2 (Faithfulness ≥0.90, Relevancy ≥0.85, Precision ≥0.80, Recall ≥0.75)
+  - [ ] Sub-task: scientific doc `docs/scientific-methods/eval-metrics.md` (per memory rule)
+- [ ] **L9** — Human-in-the-loop Verify
+  - [ ] Sub-task: Lab Memory schema (depends on Phase B.6+, currently deferred)
+  - [ ] Sub-task: Admin `[✓ Verify]` UI on AI responses
+  - [ ] Sub-task: Fact extract pipeline → Lab Memory write
+  - [ ] Sub-task: Boost good chunks / flag bad chunks from feedback
+
+### Progress
+
+**6/9 fully shipped** (L1, L2, L3, L4, L6-redefined, L7-redefined).
+**1/9 partial** (L5).
+**3/9 missing core layers** (L6-original, L7-original, L8, L9 — note L7 has partial coverage via redefined version).
+
+### Next priority
+
+**L8 Ragas eval** is the unblock for adding any new layer (L5 upgrade, L6-original, L7-original, L9) — without measurable regression detection, additional layers cannot be validated.
+
+After L8 ships, re-evaluate priority of remaining layers based on:
+- Lab data coverage (when spectra Python pipeline active → L6-original critical)
+- Corpus growth (when 1000+ papers → L7-original critical)
+- Multi-user phase (when commercial → L9 critical)
+
+### Re-audit trigger
+
+Re-audit Section 27 checklist when any round modifies:
+- `src/lib/ai/grounding/**`
+- `src/lib/ai/rag/search.ts`
+- `src/lib/ai/providers/**`
+- New eval scripts in `scripts/eval/` or `evals/`
+- New scientific doc in `docs/scientific-methods/eval-*.md`
+
+---
+
+
 ## Section 26: Spectrum Data Pipeline (R160-spectra-1 + R160-spectra-2)
 
 ### Context

@@ -1,6 +1,6 @@
 /**
  * Cost telemetry types — tenant cost aggregate documents.
- * @phase R169-3
+ * @phase R169-3 base, R170-3 latency + token extension, R170-4 grounding
  */
 
 import type { AiTier } from './ai';
@@ -17,9 +17,31 @@ export type FeatureKind =
   | 'title_generation'
   | 'intent_classify';
 
+/** Per-capability stats (R170-3 extended) */
+export interface CapabilityStats {
+  cost: number;
+  /** Total queries through this capability */
+  queries?: number;
+  /** Total input tokens consumed */
+  inputTokens?: number;
+  /** Total output tokens generated */
+  outputTokens?: number;
+  /** Total latency milliseconds (sum) */
+  latencyMsTotal?: number;
+}
+
+/** Per-feature stats (R170-3 + R170-4 grounding) */
+export interface FeatureStats {
+  cost: number;
+  queries: number;
+  /** R170-4: Hallucination signals aggregated */
+  unverifiedNumbersTotal?: number;
+  unsourcedClaimsTotal?: number;
+}
+
 /** Daily cost aggregate per tenant. Path: tenants/{tid}/_costs/{yyyy-mm-dd} */
 export interface TenantCostDoc {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   date: string; // YYYY-MM-DD
   tenantId: string;
   totalCost: number;
@@ -32,23 +54,8 @@ export interface TenantCostDoc {
       }
     >
   >;
-  byCapability: Partial<
-    Record<
-      Capability,
-      {
-        cost: number;
-      }
-    >
-  >;
-  byFeature: Partial<
-    Record<
-      FeatureKind,
-      {
-        cost: number;
-        queries: number;
-      }
-    >
-  >;
+  byCapability: Partial<Record<Capability, CapabilityStats>>;
+  byFeature: Partial<Record<FeatureKind, FeatureStats>>;
   updatedAt: number; // epoch ms
 }
 
@@ -58,4 +65,12 @@ export interface CostTelemetryInput {
   capability: Capability;
   feature: FeatureKind;
   costUsd: number;
+  /** R170-3: actual token consumption */
+  inputTokens?: number;
+  outputTokens?: number;
+  /** R170-3: end-to-end latency in ms */
+  latencyMs?: number;
+  /** R170-4: hallucination signals */
+  unverifiedNumbers?: number;
+  unsourcedClaims?: number;
 }

@@ -16,7 +16,11 @@ import { runReflection } from '@/lib/ai/reflection/orchestrator';
 import { classifyIntent } from '@/lib/ai/dispatcher/intent-classifier';
 // R169-4: cost telemetry
 import { recordCost } from '@/lib/ai/cost/telemetry';
+// R170-5: Cost Guard pre-check
+import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
+import { estimateCost } from '@/lib/ai/cost/estimator';
 import { getCapabilityForTier } from '@/lib/ai/config/capabilities';
+import { NextResponse } from 'next/server';
 import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { writeProvenance } from '@/lib/ai/provenance-writer';
 import { generateConversationTitle } from '@/lib/ai/title-generator';
@@ -218,6 +222,54 @@ export async function POST(request: Request) {
 
   // Tier dispatch
   const intentDecision = await classifyIntent(userText);
+
+  // R170-5 [R170-hotfix]: Cost Guard pre-check
+  const estimated = estimateCost(intentDecision.tier, intentDecision.feature);
+  const costCheck = await checkCostGuard(
+    tenantId,
+    intentDecision.tier,
+    intentDecision.feature,
+    estimated
+  );
+  if (!costCheck.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: 'quota_exceeded',
+        reason: costCheck.reason,
+        dailyCurrent: costCheck.dailyCurrent,
+        dailyLimit: costCheck.dailyLimit,
+        monthlyCurrent: costCheck.monthlyCurrent,
+        monthlyLimit: costCheck.monthlyLimit
+      }),
+      {
+        status: 429,
+        headers: { 'content-type': 'application/json' }
+      }
+    );
+  }
+
+  // R170-7 [R170-hotfix2]: dry-run returns routing decision without LLM
+  const _dryRunUrl = new URL(request.url);
+  if (_dryRunUrl.searchParams.get('dry_run') === '1') {
+    return NextResponse.json({
+      mode: 'dry_run',
+      tier: intentDecision.tier,
+      feature: intentDecision.feature,
+      capability: getCapabilityForTier(intentDecision.tier),
+      intentDecision: {
+        reason: intentDecision.reason,
+        confidence: intentDecision.confidence,
+        classifierCostUsd: intentDecision.classifierCostUsd
+      },
+      estimatedCost: estimated,
+      costGuard: {
+        dailyCurrent: costCheck.dailyCurrent,
+        dailyLimit: costCheck.dailyLimit,
+        monthlyCurrent: costCheck.monthlyCurrent,
+        monthlyLimit: costCheck.monthlyLimit
+      }
+    });
+  }
   const tier: AiTier = intentDecision.tier;
   const { provider, config } = selectProvider(tier);
 
@@ -241,6 +293,10 @@ export async function POST(request: Request) {
         send({ type: 'message_start', messageId: assistantMessageId });
 
         let fullText = '';
+        // R170-4: capture grounding for telemetry (set in T3 branch)
+        let groundingForTelemetry:
+          | { unverifiedNumbers: number; unsourcedClaims: number }
+          | undefined;
         let totalUsage: AiCostBreakdown = {
           inputTokens: 0,
           outputTokens: 0,
@@ -318,14 +374,16 @@ export async function POST(request: Request) {
           try {
             await recordCost({
               tenantId,
-
               tier,
-
               capability: getCapabilityForTier(tier),
-
-              feature: 'chat',
-
-              costUsd: totalUsage.usd
+              feature: intentDecision.feature, // R170-2: per-feature attribution
+              costUsd: totalUsage.usd,
+              // R170-4: extended telemetry
+              inputTokens: totalUsage.inputTokens,
+              outputTokens: totalUsage.outputTokens,
+              latencyMs: Date.now() - startedAt,
+              unverifiedNumbers: groundingForTelemetry?.unverifiedNumbers ?? 0,
+              unsourcedClaims: groundingForTelemetry?.unsourcedClaims ?? 0
             });
           } catch (e) {
             // eslint-disable-next-line no-console
@@ -515,6 +573,11 @@ export async function POST(request: Request) {
             });
           const grounding = checkGrounding(fullText, chunks);
           if (grounding.totalWarnings > 0) {
+            // R170-4: capture for telemetry aggregate
+            groundingForTelemetry = {
+              unverifiedNumbers: grounding.unverifiedNumbers.length,
+              unsourcedClaims: grounding.unsourcedClaims.length
+            };
             send({
               type: 'grounding',
               unverifiedNumbers: grounding.unverifiedNumbers.length,

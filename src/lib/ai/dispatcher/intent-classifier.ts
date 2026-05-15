@@ -17,6 +17,7 @@
 import { getHaikuDispatcher } from '@/lib/ai/providers';
 import type { IntentDecision } from './types';
 import type { AiTier } from '@/types/ai';
+import type { FeatureKind } from '@/types/cost';
 
 const CLASSIFIER_SYSTEM = `You are an intent classifier for a materials science lab AI.
 
@@ -50,12 +51,20 @@ Tier 3 only for clearly complex multi-step research.
 Output ONLY a JSON object, no other text:
 {
   "tier": 1 | 2 | 3,
+  "feature": "lab_ops" | "theory" | "spectrum_analysis" | "paper_writing",
   "reason": "<10 words explaining why>",
   "confidence": <0.0 to 1.0>
-}`;
+}
+
+Feature kinds:
+- "lab_ops": Firestore lookup (chemicals, equipment, bookings)
+- "theory": Paper RAG, mechanism explanations
+- "spectrum_analysis": XRD/Raman/FTIR/UV-Vis data interpretation
+- "paper_writing": Drafting Discussion/Methods/Results sections`;
 
 interface ClassifierJsonResponse {
   tier: number;
+  feature?: string;
   reason: string;
   confidence: number;
 }
@@ -90,6 +99,7 @@ export async function classifyIntent(userMessage: string): Promise<IntentDecisio
     if (parsed.confidence < CONFIDENCE_THRESHOLD) {
       return {
         tier: FALLBACK_TIER,
+        feature: defaultFeature(FALLBACK_TIER),
         reason: `low_confidence (${parsed.confidence.toFixed(2)}): ${parsed.reason}`,
         confidence: parsed.confidence,
         classifierCostUsd: usage.usd,
@@ -99,6 +109,7 @@ export async function classifyIntent(userMessage: string): Promise<IntentDecisio
 
     return {
       tier,
+      feature: normalizeFeature(parsed.feature, tier),
       reason: parsed.reason,
       confidence: parsed.confidence,
       classifierCostUsd: usage.usd,
@@ -143,9 +154,46 @@ function normalizeTier(value: number): AiTier | null {
   return null;
 }
 
+/** R170-1: Default feature per tier when classifier doesn't specify */
+function defaultFeature(tier: AiTier): FeatureKind {
+  switch (tier) {
+    case 0:
+      return 'intent_classify';
+    case 1:
+      return 'lab_ops';
+    case 2:
+      return 'theory';
+    case 3:
+      return 'spectrum_analysis';
+    case 4:
+      return 'paper_writing';
+    case 5:
+      return 'audit';
+  }
+}
+
+const VALID_FEATURES: readonly FeatureKind[] = [
+  'chat',
+  'lab_ops',
+  'theory',
+  'spectrum_analysis',
+  'paper_writing',
+  'audit',
+  'title_generation',
+  'intent_classify'
+];
+
+function normalizeFeature(value: unknown, tier: AiTier): FeatureKind {
+  if (typeof value === 'string' && (VALID_FEATURES as readonly string[]).includes(value)) {
+    return value as FeatureKind;
+  }
+  return defaultFeature(tier);
+}
+
 function fallback(costUsd: number, latencyMs: number, reason: string): IntentDecision {
   return {
     tier: FALLBACK_TIER,
+    feature: defaultFeature(FALLBACK_TIER),
     reason: `fallback: ${reason}`,
     confidence: 0,
     classifierCostUsd: costUsd,

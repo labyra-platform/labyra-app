@@ -689,6 +689,27 @@
       "analysis": "Phân tích AI",
       "reference": "Tham chiếu",
       "paper": "Bài báo"
+    },
+    "explorer": {
+      "pageTitle": "Khám phá Lineage",
+      "pageDescription": "Chọn một thực thể để xem sơ đồ PROV-O quan hệ với các thực thể khác",
+      "entityType": "Loại thực thể",
+      "entity": "Thực thể",
+      "loading": "Đang tải...",
+      "selectPlaceholder": "Chọn một thực thể",
+      "noEntities": "Không có thực thể nào",
+      "emptyState": "Chưa có thực thể nào trong loại này. Tạo Material/Sample/Experiment đầu tiên để xem sơ đồ lineage.",
+      "graphTitle": "Sơ đồ lineage",
+      "error": "Lỗi: {msg}",
+      "types": {
+        "material": "Vật liệu",
+        "sample": "Mẫu",
+        "experiment": "Thí nghiệm",
+        "measurement": "Đo phổ",
+        "analysis": "Phân tích AI",
+        "reference": "Tham chiếu",
+        "paper": "Bài báo"
+      }
     }
   }
 }

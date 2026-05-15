@@ -689,6 +689,27 @@
       "analysis": "AI Analysis",
       "reference": "Reference",
       "paper": "Paper"
+    },
+    "explorer": {
+      "pageTitle": "Lineage Explorer",
+      "pageDescription": "Select an entity to view its PROV-O lineage graph with related entities",
+      "entityType": "Entity type",
+      "entity": "Entity",
+      "loading": "Loading...",
+      "selectPlaceholder": "Select an entity",
+      "noEntities": "No entities found",
+      "emptyState": "No entities of this type yet. Create your first Material/Sample/Experiment to see lineage.",
+      "graphTitle": "Lineage graph",
+      "error": "Error: {msg}",
+      "types": {
+        "material": "Material",
+        "sample": "Sample",
+        "experiment": "Experiment",
+        "measurement": "Measurement",
+        "analysis": "AI Analysis",
+        "reference": "Reference",
+        "paper": "Paper"
+      }
     }
   }
 }

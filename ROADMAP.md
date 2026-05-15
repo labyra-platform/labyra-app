@@ -3,10 +3,10 @@
 > Long-term planning. Update sau mỗi phase complete.
 > See CLAUDE.md cho coding rules, ARCHITECTURE.md cho system design.
 
-<!-- R166-docs-update-2026-05-15 -->
+<!-- R167-docs-update-2026-05-15 -->
 
 **Last updated**: 2026-05-15
-**Current state**: R166 ai-6a Phase 6a complete, blocked on Vercel OCR timeout — pivoting to async Cloud Run worker (ai-7)
+**Current state**: R167 async Pub/Sub worker pipeline **COMPLETE** (E2E verified). Vercel timeout blocker eliminated. Next: R168 tech debt cleanup + R166 Phase 6b citation UI.
 
 ---
 

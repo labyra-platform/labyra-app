@@ -1,5 +1,74 @@
 # Changelog
 
+<!-- R167-docs-update-2026-05-15 -->
+
+## R167 — Async Cloud Run Worker (2026-05-15)
+
+### Shipped (13 patches: R167-A through R167-C2)
+
+**Worker (labyra-spectra-worker, Python Cloud Run):**
+
+- `src/papers/` module — 18 files implementing full pipeline mirroring TS orchestrator
+- Pipeline steps: OCR (Mistral) → Metadata (Haiku) → Chunking → Enriching (Haiku, OFF by default) → Embedding (Voyage) → Indexing (Firestore + Pinecone) → Citation Extraction (Crossref/OpenAlex)
+- Pydantic types mirror labyra-app TS schemas (`PaperJob`, `PaperDoc`, `Citation`, etc.)
+- Idempotency: Pub/Sub at-least-once + deterministic IDs + status='indexed' early return
+- Cancellation: poll Firestore `cancelRequestedAt` between steps (cross-process safe)
+- Cost accounting per step (OCR/embed/Haiku) — populated in `paper.costUsd`
+- Mistral SDK 2.4.5 pinned (internal import: `from mistralai.client.sdk import Mistral`)
+
+**Infrastructure (Pub/Sub + Cloud Run):**
+
+- Topic `paper-processing` + DLQ `paper-processing-dlq` (max 5 attempts, 7d retention)
+- Push subscription `spectra-worker-papers-push` → `/papers/process` endpoint
+- IAM: Vercel SA `firebase-adminsdk-fbsvc@` → `roles/pubsub.publisher` on topic
+- IAM: Worker SA `spectra-worker@` → `roles/pubsub.subscriber` + `roles/secretmanager.secretAccessor`
+- Cloud Run service: memory=4Gi, timeout=3600s, concurrency=1
+- Secret Manager: `mistral-api-key`, `voyage-api-key`, `pinecone-api-key`
+
+**labyra-app (Vercel publisher cutover):**
+
+- `PubSubQueue` using REST API (gRPC SDK fails on Vercel serverless)
+- Factory `getJobQueue()` reads `PAPER_QUEUE_BACKEND` env (`pubsub` | `in-process`)
+- Reuses `getAuth()` from `src/lib/pubsub/publisher.ts` (R167-C2 export)
+- `PaperProcessingJob` interface extended with `storagePath` + `createdBy` per ADR-018
+- Routes updated: `/api/papers/upload`, `/api/papers/[id]/reprocess`
+- UI fix: `STEPS` array in `processing-timeline.tsx` now includes `extracting_citations` step (R166-ai6a-3b-fix2 missed this render path)
+- Removed duplicate `Paper` interface from `src/lib/ai/rag/types.ts` (source of truth: `src/types/papers.ts`)
+
+### Changed
+
+- **Pipeline runtime location**: TS Vercel function (sync) → Python Cloud Run worker (async via Pub/Sub)
+- **Vercel function role**: pipeline orchestrator → publish-only (returns 202 immediately after Pub/Sub publish)
+- **Storage path convention**: `gcs_client.parse_gs_url()` now accepts both `gs://bucket/path` and relative paths (worker B8)
+
+### Verified
+
+- **3-page paper Tungsten**: 8 seconds end-to-end (Pub/Sub receipt → indexed)
+- **16-page paper Surfactants**: 16.4 seconds end-to-end (vs Vercel 60s timeout — **blocker eliminated**)
+- Vercel → Pub/Sub publish via REST + GoogleAuth credentials decode
+- Worker pickup + full pipeline + Firestore status transition + Pinecone upsert
+- Citation step idempotent (Crossref lookup, deterministic IDs, stats recompute)
+
+### Rollback
+
+- Vercel env `PAPER_QUEUE_BACKEND=in-process` + redeploy → falls back to InProcessQueue (TS orchestrator code retained)
+
+### Architecture decisions
+
+- [ADR-018: Async worker architecture](docs/adr/ADR-018-async-worker-architecture.md)
+
+### Known Issues / Tech Debt → R168
+
+- DOI regex false positives (OCR noise creates variants `.1`, `.l`, `J` suffix)
+- `metadata.py` year=0 bug (Haiku JSON type coercion)
+- Vercel 4.5MB body limit blocks paper > 4.5MB upload — needs browser-direct-to-Storage pattern
+- `src/lib/pubsub/` duplicates HTTP boilerplate between spectra and papers — refactor generic util
+- Husky pre-push runs full `pnpm build` (blocked by unrelated branches with TS errors)
+- `_force-reset-paper.mjs` misleading name (sets cancelled not queued)
+- See `docs/round-r167-handoff.md` for full backlog
+
+---
+
 ## R166 — ai-6 GraphRAG Phase 6a (2026-05-15)
 
 <!-- R166-docs-update-2026-05-15 -->

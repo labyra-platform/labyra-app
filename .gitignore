@@ -58,3 +58,9 @@ firebase-service-account.json
 # Agent context snapshots (regenerated via `pnpm snapshot`)
 .claude/
 *-sa.json
+
+# R168-3.13c: track .claude/skills/ (repo-versioned AI agent skills)
+!.claude/
+!.claude/skills/
+!.claude/skills/**
+.claude/memory/    # but exclude memory (session-local state)

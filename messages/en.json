@@ -47,7 +47,9 @@
     "new": "New",
     "edit": "Edit",
     "spectra": "Spectra",
-    "referenceCards": "Reference cards"
+    "referenceCards": "Reference cards",
+    "measurements": "Measurements",
+    "references": "References"
   },
   "auth": {
     "signInTitle": "Sign in to Labyra",

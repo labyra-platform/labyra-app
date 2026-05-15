@@ -47,7 +47,9 @@
     "new": "Thêm mới",
     "edit": "Chỉnh sửa",
     "spectra": "Phổ đo",
-    "referenceCards": "Thư viện reference"
+    "referenceCards": "Thư viện reference",
+    "measurements": "Đo phổ",
+    "references": "Tham chiếu"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",

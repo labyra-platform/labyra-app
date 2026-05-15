@@ -56,8 +56,9 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Spectra',
-        titleKey: 'nav.spectra',
+        // R165-phase-8-sidebar: renamed Spectra → Measurements (R164). URL kept for backward compat.
+        title: 'Measurements',
+        titleKey: 'nav.measurements',
         url: '/dashboard/spectra',
         icon: 'spectra',
         shortcut: ['s', 'p'],
@@ -115,6 +116,15 @@ export const navGroups: NavGroup[] = [
     label: 'AI',
     labelKey: 'nav.groups.ai',
     items: [
+      {
+        // R165-phase-8-sidebar: References entry (R164 — was buried under Spectra UI)
+        title: 'References',
+        titleKey: 'nav.references',
+        url: '/dashboard/reference-cards',
+        icon: 'papers',
+        shortcut: ['r', 'e'],
+        items: []
+      },
       {
         title: 'Papers',
         titleKey: 'nav.papers',

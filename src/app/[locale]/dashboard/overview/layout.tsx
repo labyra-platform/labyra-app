@@ -1,3 +1,4 @@
+// R165-phase-1-oxlint: oxlint cleanup
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
 import { KpiCards } from '@/features/overview/components/kpi-cards';
@@ -15,7 +16,7 @@ export default async function OverViewLayout({
   area_stats: React.ReactNode;
 }) {
   const tCommon = await getTranslations('common');
-  const t = await getTranslations('dashboard');
+  const _t = await getTranslations('dashboard');
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>

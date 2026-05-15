@@ -8,6 +8,7 @@
  * - Cache TTL: 1h (then reload from Firestore)
  * - On cold start (no state + ≥3 papers indexed): trigger immediate fit
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { BM25Encoder } from './bm25';
@@ -116,6 +117,7 @@ export async function refitTenant(tenantId: string): Promise<BM25Encoder | null>
   const cache = getCache();
   cache.set(tenantId, { encoder, loadedAt: Date.now() });
 
+  // eslint-disable-next-line no-console -- structured logging for audit
   console.log(
     JSON.stringify({
       level: 'info',

@@ -5,9 +5,10 @@
  *
  * @phase R160-spectra-4a-pdf
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import { randomUUID } from 'node:crypto';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import type { ReferenceCard, ReferenceCardPeak } from '@/types/spectra';
+import type { ReferenceCard } from '@/types/spectra';
 
 const COLLECTION = 'reference_cards';
 

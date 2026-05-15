@@ -2,6 +2,7 @@
  * Paper processing orchestrator — runs full pipeline with retry + cancellation.
  * @phase R160-ai-5b-2
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
@@ -46,6 +47,7 @@ export async function processPaperJob(job: PaperProcessingJob, signal: AbortSign
   const startedAt = Date.now();
 
   const log = (event: string, extra: Record<string, unknown> = {}) => {
+    // eslint-disable-next-line no-console -- structured logging for audit
     console.log(
       JSON.stringify({
         level: 'info',

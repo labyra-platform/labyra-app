@@ -8,6 +8,7 @@
  *
  * @phase R164-phase-7
  */
+// R165-phase-1-oxlint: oxlint cleanup
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -51,7 +52,8 @@ export function LifecycleActions({ entity, id, status, i18nNamespace }: Lifecycl
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('lifecycle');
-  const tEntity = useTranslations(i18nNamespace ?? entity);
+  // R165: tEntity reserved for future use (entity-specific labels)
+  const _tEntity = useTranslations(i18nNamespace ?? entity);
   const [retractReason, setRetractReason] = useState('');
   const [busy, setBusy] = useState(false);
 

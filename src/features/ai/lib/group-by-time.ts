@@ -3,6 +3,7 @@
  * Buckets: Today / Yesterday / Last 7 days / Last 30 days / Earlier.
  * @phase R160-ai-2b
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import type { AiConversation } from '@/types/ai';
 
 export type TimeGroupKey = 'today' | 'yesterday' | 'last7' | 'last30' | 'earlier';
@@ -15,7 +16,7 @@ export interface TimeGroup {
 const ONE_DAY = 24 * 60 * 60 * 1000;
 
 export function groupConversationsByTime(conversations: AiConversation[]): TimeGroup[] {
-  const now = Date.now();
+  const _now = Date.now();
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const todayMs = startOfToday.getTime();

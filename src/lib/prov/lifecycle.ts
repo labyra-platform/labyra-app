@@ -9,7 +9,7 @@
  *
  * @phase R164-phase-2-schemas
  */
-import type { Firestore } from 'firebase-admin/firestore';
+// R165-phase-1-oxlint: oxlint cleanup
 import { FieldValue } from 'firebase-admin/firestore';
 import type { LifecycleStatus } from '@/types/prov-base';
 

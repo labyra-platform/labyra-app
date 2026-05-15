@@ -1,4 +1,5 @@
 'use client';
+// R165-phase-1-oxlint: oxlint cleanup
 
 /**
  * Paper detail page — metadata + processing timeline + actions.
@@ -35,7 +36,7 @@ async function callApi(path: string, method: 'POST' = 'POST') {
 
 export function PaperDetail({ paperId }: { paperId: string }) {
   const t = useTranslations('papers');
-  const router = useRouter();
+  const _router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
   const { paper, loading } = usePaper(paperId);

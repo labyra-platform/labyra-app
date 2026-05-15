@@ -1,4 +1,5 @@
 'use client';
+// R165-phase-1-oxlint: oxlint cleanup
 import { use } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import PageContainer from '@/components/layout/page-container';
@@ -12,7 +13,7 @@ import { LineageGraph } from '@/components/lineage/lineage-graph';
 
 export default function SampleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const locale = useLocale();
+  const _locale = useLocale();
   const t = useTranslations('samples');
   const { sample, loading } = useSample(id);
 

@@ -10,6 +10,7 @@
  *
  * @phase R160-ai-5b-2
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
 import { selectProvider } from '@/lib/ai/providers';
 import { incrementPaperCost, throwIfCancelled } from './state';
@@ -42,6 +43,7 @@ export async function runEnrichStep(input: EnrichStepInput): Promise<EnrichedChu
   // Set ENABLE_ENRICHMENT=true in .env.local to re-enable (35% retrieval boost)
   const enrichmentEnabled = process.env.ENABLE_ENRICHMENT === 'true';
   if (!enrichmentEnabled) {
+    // eslint-disable-next-line no-console -- structured logging for audit
     console.log(
       JSON.stringify({
         level: 'info',

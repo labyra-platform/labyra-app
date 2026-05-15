@@ -9,8 +9,9 @@
  * @phase R164-phase-2-schemas
  * @see src/types/references.ts
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import { z } from 'zod';
-import { ProvBaseCreateInputSchema, ProvBasePatchSchema } from './prov-base-schema';
+import { ProvBaseCreateInputSchema } from './prov-base-schema';
 import {
   XRDPeakSchema,
   FTIRPeakSchema,

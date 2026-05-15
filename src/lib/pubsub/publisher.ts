@@ -2,6 +2,7 @@
  * Pub/Sub publisher using REST API (avoids gRPC issues in Vercel serverless).
  * @phase R160-spectra-3b
  */
+// R165-phase-1-oxlint: oxlint cleanup
 
 import 'server-only';
 
@@ -65,7 +66,7 @@ export type SpectrumAnalysisMessage = MeasurementAnalysisMessage;
 export async function publishMeasurementAnalysis(msg: MeasurementAnalysisMessage): Promise<string> {
   // Always set collection to 'measurements' if not specified (R164 default).
   if (!msg.collection) msg.collection = 'measurements';
-  return _publishImpl(msg);
+  return publishImpl(msg);
 }
 
 /** @deprecated Use publishMeasurementAnalysis. */
@@ -84,7 +85,7 @@ export async function publishSpectrumAnalysis(msg: {
   });
 }
 
-async function _publishImpl(msg: MeasurementAnalysisMessage): Promise<string> {
+async function publishImpl(msg: MeasurementAnalysisMessage): Promise<string> {
   if (!PROJECT_ID) {
     throw new Error('GCP_PROJECT_ID not configured');
   }

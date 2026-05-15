@@ -7,6 +7,7 @@
  *   - One namespace per tenant: namespace = tenantId
  *   - Query cost: 1 RU per 1 GB of tenant's data (vs 100 RU if metadata filter on 100 tenants)
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
 import { Pinecone, type Index, type RecordMetadata } from '@pinecone-database/pinecone';
 
@@ -68,6 +69,7 @@ export async function pineconeUpsert(tenantId: string, vectors: UpsertVector[]):
 
   // Validate first vector to catch malformed data early
   const v0 = vectors[0];
+  // eslint-disable-next-line no-console -- structured logging for audit
   console.log(
     JSON.stringify({
       level: 'info',

@@ -7,6 +7,7 @@
  *
  * Auth: requires CRON_SECRET environment variable matching request header.
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { refitTenant } from '@/lib/ai/rag/sparse/bm25-manager';
 
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
   }
 
   const elapsed = Date.now() - startedAt;
+  // eslint-disable-next-line no-console -- structured logging for audit
   console.log(
     JSON.stringify({
       level: 'info',

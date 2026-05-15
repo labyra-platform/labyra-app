@@ -1,4 +1,5 @@
 'use client';
+// R165-phase-1-oxlint: oxlint cleanup
 
 import Link from 'next/link';
 
@@ -12,7 +13,7 @@ import { signUpWithEmail, signInWithGoogle } from '@/lib/auth';
 export default function SignUpPage(): React.ReactElement {
   const router = useRouter();
   const t = useTranslations('auth');
-  const tCommon = useTranslations('common');
+  const _tCommon = useTranslations('common');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);

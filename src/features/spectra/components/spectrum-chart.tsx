@@ -1,4 +1,5 @@
 'use client';
+// R165-phase-1-oxlint: oxlint cleanup
 
 /**
  * SpectrumChart — Plotly chart with full spectrum curve + peak markers.
@@ -8,7 +9,7 @@
 
 import dynamic from 'next/dynamic';
 
-import type { SpectrumParsedData } from '@/types/spectra-analysis';
+import type { SpectrumParsedData, FTIRPeak } from '@/types/spectra-analysis';
 
 const Plot = dynamic(() => import('react-plotly.js'), {
   ssr: false,
@@ -227,7 +228,7 @@ function getFTIRTraces(parsed: SpectrumParsedData): PlotData[] {
       textposition: 'top center',
       hovertemplate: '%{customdata}<extra></extra>',
       customdata: parsed.peaks.map(
-        (p: any) => `ν = ${p.wavenumber_cm1.toFixed(1)} cm⁻¹, FWHM = ${p.fwhm.toFixed(1)}`
+        (p: FTIRPeak) => `ν = ${p.wavenumber_cm1.toFixed(1)} cm⁻¹, FWHM = ${p.fwhm.toFixed(1)}`
       )
     });
   }

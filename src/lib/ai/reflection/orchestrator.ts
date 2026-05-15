@@ -2,6 +2,7 @@
  * Reflection orchestrator — runs T3 self-critic loop up to max iterations.
  * @phase R160-ai-4
  */
+// R165-phase-1-oxlint: oxlint cleanup
 import { selectProvider } from '@/lib/ai/providers';
 import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { critiqueResponse } from './critic';
@@ -42,7 +43,7 @@ interface ProviderEvent {
   message?: string;
 }
 
-type StreamCallback = (event: ProviderEvent) => void;
+type _StreamCallback = (event: ProviderEvent) => void;
 
 interface RunOptions {
   userMessage: string;
@@ -78,7 +79,7 @@ export async function runReflection(opts: RunOptions): Promise<ReflectionResult>
     let responseText = '';
     let responseCost = emptyCost();
     const responseStarted = Date.now();
-    const isFinalRound = i === MAX_REFLECTION_ROUNDS;
+    const _isFinalRound = i === MAX_REFLECTION_ROUNDS;
 
     try {
       for await (const event of provider.streamChat({

@@ -202,7 +202,13 @@
     "confidenceDoiExact": "DOI verified",
     "confidenceManual": "Manual",
     "confidenceTitleFuzzy": "Title match",
-    "confidenceUnverified": "Unverified"
+    "confidenceUnverified": "Unverified",
+    "filterLabel": "Filter:",
+    "filterInLibrary": "In library only",
+    "filterInLibraryHint": "Show only citations resolved to papers in your lab's library",
+    "filteredCount": "({count} shown)",
+    "noFilterMatches": "No citations match current filter.",
+    "clearFilter": "Clear filter"
   },
   "materials": {
     "title": "Materials",

@@ -202,7 +202,13 @@
     "confidenceDoiExact": "DOI đã xác minh",
     "confidenceManual": "Thủ công",
     "confidenceTitleFuzzy": "Khớp tiêu đề",
-    "confidenceUnverified": "Chưa xác minh"
+    "confidenceUnverified": "Chưa xác minh",
+    "filterLabel": "Lọc:",
+    "filterInLibrary": "Chỉ trong thư viện",
+    "filterInLibraryHint": "Chỉ hiện trích dẫn đã liên kết với paper trong thư viện",
+    "filteredCount": "(hiện {count})",
+    "noFilterMatches": "Không có trích dẫn nào khớp bộ lọc.",
+    "clearFilter": "Xoá bộ lọc"
   },
   "materials": {
     "title": "Vật liệu",

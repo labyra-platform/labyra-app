@@ -18,8 +18,17 @@ export function useCitationsBySource(paperId: string | null) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!tenantId || !paperId) {
+    // R166-6b-1a: distinguish 'no paperId' (nothing to load) from
+    // 'tenantId still resolving' (auth claims pending). Only the
+    // former should clear loading; the latter must keep loading=true
+    // so the effect re-runs once tenantId materializes — otherwise
+    // we render empty state during the race window.
+    if (!paperId) {
       setLoading(false);
+      return;
+    }
+    if (!tenantId) {
+      // claim pending; effect will re-run when tenantId resolves
       return;
     }
     setLoading(true);
@@ -54,8 +63,12 @@ export function useCitationsByTargetPaperId(paperId: string | null) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!tenantId || !paperId) {
+    // R166-6b-1a: same race fix as useCitationsBySource above.
+    if (!paperId) {
       setLoading(false);
+      return;
+    }
+    if (!tenantId) {
       return;
     }
     setLoading(true);
@@ -90,8 +103,12 @@ export function usePaperCitationStats(paperId: string | null) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!tenantId || !paperId) {
+    // R166-6b-1a: same race fix.
+    if (!paperId) {
       setLoading(false);
+      return;
+    }
+    if (!tenantId) {
       return;
     }
     setLoading(true);

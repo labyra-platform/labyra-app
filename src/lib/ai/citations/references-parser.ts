@@ -13,8 +13,8 @@
 import 'server-only';
 import { DOI_REGEX } from '@/lib/schemas/citation-schema';
 
-// Global DOI regex for scanning text (R168-3.3 strict shape)
-const DOI_SCAN_REGEX = /\b10\.\d{4,9}\/[-._;()/:a-zA-Z0-9]*[a-zA-Z0-9](?![.\d])/g;
+// R168-3.3g: suffix ≥3 chars rule
+const DOI_SCAN_REGEX = /\b10\.\d{4,9}\/[-_;()/:a-zA-Z0-9]+(?:\.[a-zA-Z0-9]{3,})*\b(?![./])/g;
 
 // Common section headers — case insensitive, anchored to line start
 const SECTION_HEADERS = [

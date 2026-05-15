@@ -13,6 +13,16 @@ import { useSamples } from '@/lib/firestore/queries/samples';
 import type { Sample, SampleStatus } from '@/types/samples';
 import { SciText } from '@/features/spectra/utils/format-units';
 
+// R165-phase-6-samples-status: Sample.status renamed to workflowStatus in R164 Phase 1.
+// Old data may still have `status` field; new data uses workflowStatus.
+// Defensive fallback prevents tStatus(undefined) → MISSING_MESSAGE → DataTable crash.
+function getStatus(s: Sample): SampleStatus {
+  const ws = (s as Sample & { status?: SampleStatus }).workflowStatus;
+  if (ws) return ws;
+  const legacy = (s as Sample & { status?: SampleStatus }).status;
+  return legacy ?? 'prepared';
+}
+
 const statusColor: Record<SampleStatus, string> = {
   prepared: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
   in_use: 'bg-green-500/10 text-green-700 dark:text-green-400',
@@ -72,11 +82,11 @@ export function SamplesTable() {
       key: 'status',
       header: t('colStatus'),
       cell: (s) => (
-        <Badge className={statusColor[s.workflowStatus]} variant='secondary'>
-          {tStatus(s.workflowStatus)}
+        <Badge className={statusColor[getStatus(s)]} variant='secondary'>
+          {tStatus(getStatus(s))}
         </Badge>
       ),
-      sortValue: (s) => tStatus(s.workflowStatus)
+      sortValue: (s) => tStatus(getStatus(s))
     },
     {
       key: 'location',
@@ -98,7 +108,7 @@ export function SamplesTable() {
         if (key === 'name') return s.name;
         if (key === 'massVolume')
           return s.mass != null ? `${s.mass} g` : s.volume != null ? `${s.volume} mL` : '';
-        if (key === 'status') return tStatus(s.workflowStatus);
+        if (key === 'status') return tStatus(getStatus(s));
         if (key === 'location') return s.location ?? '';
         return null;
       }}

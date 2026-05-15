@@ -1,5 +1,110 @@
 # Changelog
 
+## R166 — ai-6 GraphRAG Phase 6a (2026-05-15)
+
+<!-- R166-docs-update-2026-05-15 -->
+
+### Added
+
+- **Citation network data layer** ([ADR-017](docs/adr/ADR-017-citation-network.md)):
+  - `Citation` type extends `ProvBase` (PROV-O compliant first-class entity)
+  - Zod schemas with DOI regex validation + title fallback + confidence enum
+  - Deterministic ID generation for idempotent dedup
+  - Service: 13 exports (CRUD + lineage queries + lifecycle + denormalized stats)
+- **External metadata clients**:
+  - Crossref REST API client (free, no key, polite User-Agent with mailto)
+  - OpenAlex fallback client (used when Crossref 404)
+  - Unified `lookupDoi()` entry point
+- **References parser**: DOI extraction from OCR text
+  - Heuristic detection of "References" / "Bibliography" / "Tài liệu tham khảo" section
+  - Global DOI regex scan with dedup + context capture (±25 chars)
+  - Max 100 results safety cap
+- **Citation extraction pipeline step**: `runCitationStep()` after indexing (Step 6)
+  - Non-blocking (paper indexing succeeds even if Crossref down)
+  - Rate limited (200ms between Crossref calls = 5 req/s, well below 50/s limit)
+  - Cancellable via AbortSignal at each lookup
+  - Cross-references against existing internal papers (auto-link `targetPaperId`)
+  - Recomputes denormalized stats per paper
+
+### Changed
+
+- **`PaperStatus` enum**: added `'extracting_citations'` between `'indexing'` and `'indexed'`
+- **`STATUS_COLORS` + `STEP_ORDER` records**: updated with new status
+
+### Known Issues
+
+- Vercel OCR timeout (60s default) blocks papers > ~5 pages from indexing
+- → Pivoting to **R167 async Cloud Run worker** (see [ADR-018](docs/adr/ADR-018-async-worker-architecture.md))
+
+---
+
+## R165 — Cleanup + Polish (2026-05-15)
+
+### Added
+
+- **`src/instrumentation.ts`** (Next.js auto-discover boot hook): wires `processPaperJob`
+  to InProcessQueue via `setJobProcessor()`. Without this, ai-5b pipeline throws
+  "processor not registered" on enqueue.
+- **`<ReferenceDetailActions>` + `<ReferenceLineageSection>`** client wrappers for R164 patterns
+- **Real Lineage Explorer page** at `/dashboard/lineage`:
+  - 2 dropdowns (entity type + entity instance)
+  - Renders `<LineageGraph>` on selected entity (depth 3)
+  - Replaces R160 "Coming soon" placeholder
+- **Sidebar updates**: "Spectra" → "Đo phổ" (Measurements), new "Tham chiếu" (References) entry
+
+### Changed
+
+- **Oxlint 28 → 0 warnings**: unused vars `_` prefix, console.* eslint-disable for audit logs,
+  FTIRPeak type fix in spectrum-chart, `_publishImpl` → `publishImpl` rename
+- **Worker FTIR/Raman/UV-Vis prompts**: upgraded to strict-grounding parity with XRD
+  (5 RULES: ranking authoritative, top candidate threshold 0.4, secondary from candidates[1+],
+  no ID invention, internal library trust)
+- **Reference detail page**: dual-read service (`references` new → `reference_cards` legacy fallback,
+  skip `_migrated: true`)
+- **`getReferenceCard` service**: returns from new `references` collection first
+
+### Fixed
+
+- **FTIR FWHM negative bug**: PerkinElmer ASC files have descending x-array (4000→400 cm⁻¹)
+  causing `dx < 0` and FWHM negative. Fix: sort ascending at entry of `_detect_peaks` +
+  defensive `abs(dx)`.
+- **Samples list crash** (`MISSING_MESSAGE: Cannot read properties of undefined`):
+  Sample.workflowStatus fallback to legacy `status` + migration script
+- **`fix(samples): workflowStatus fallback`**: defensive `getStatus(s) ?? 'prepared'` helper
+
+---
+
+## R164 — PROV-O ELN Architecture (2026-05-15)
+
+### Added
+
+- **PROV-O ELN data model** ([ADR-016](docs/adr/ADR-016-prov-o-eln-architecture.md)):
+  7 entity/activity types (Material, Sample, Experiment, Measurement, Analysis,
+  Reference, Paper) with `ProvBase` fields (createdBy, derivedFrom, lifecycleStatus).
+- **30 REST API endpoints** for 7 entities with Zod validation + rate limits.
+- **Soft delete lifecycle** (active/deprecated/retracted) with retraction reason audit.
+- **Versioning sub-collection** for Papers + References — transactional snapshot
+  on PATCH preserves history.
+- **D3 lineage graph** `<LineageGraph>` — interactive force-directed PROV-O graph
+  with 7 entity types color-coded, draggable nodes, click navigation.
+- **Version history viewer** `<VersionHistoryViewer>` — expandable diff view
+  for papers/references.
+- **Reusable lifecycle UI components** — `<LifecycleStatusBadge>`,
+  `<LifecycleFilter>`, `<LifecycleActions>`.
+- **AI citation → Paper link** — when an AI-identified Reference has `paperId`
+  set, the citation chip links to the internal Paper detail page.
+- **Lineage queries** in services: `findSamplesByParentMaterial`,
+  `findExperimentsByContainsSample`, `findReferencesByPaper`,
+  `findAnalysesByCitedReference`, etc.
+
+### Changed
+
+- **`spectra` collection → `measurements`** (data + URL routes).
+  Old `/api/spectra/*` URLs return 308 redirects.
+- **`reference_cards` collection → `references`** (data + URL routes).
+  Old `/api/reference-cards/*` URLs return 308 redirects.
+- **`Sample.status` → `Sample.workflowStatus`** (disambiguated from new
+
 ## R164 — PROV-O ELN Architecture (2026-05-15)
 
 ### Added

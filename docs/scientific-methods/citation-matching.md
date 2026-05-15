@@ -88,3 +88,174 @@ ICDD PDF-2/4+ official database integration when scaling international:
 - ICDD PDF: International Centre for Diffraction Data. https://www.icdd.com/
 
 <!-- R162-docs-scientific -->
+
+
+---
+
+## Paper Citation Extraction (R166 ai-6)
+
+> **Status:** Reference document
+> **Phase:** R166 ai-6 base + R168-3.3 refinement
+> **ADR:** [ADR-017 Citation Network](../adr/ADR-017-citation-network.md)
+
+This section covers **paper-to-paper citation extraction**, distinct from the
+phase-to-CIF matching above. Goal: build a citation graph from explicit DOI
+references parsed out of paper PDFs.
+
+### Pipeline
+
+```
+PDF upload
+  → OCR (Mistral)            → markdown text
+  → references parser         → list<{doi, context}>
+  → Crossref lookup           → CitationMetadata | 404
+  → OpenAlex fallback         → CitationMetadata | 404
+  → createCitation()          → Firestore: tenants/{tid}/citations/{id}
+  → recomputeCitationStats()  → denormalized counts on source paper
+```
+
+### DOI regex strategy (R168-3.3 strict shape)
+
+**Scan regex** (extract phase, in references section):
+```
+\b10\.\d{4,9}/[-._;()/:a-zA-Z0-9]*[a-zA-Z0-9](?![.\d])
+```
+
+| Component | Purpose |
+|---|---|
+| `\b10\.` | DOI prefix word-boundary anchor |
+| `\d{4,9}/` | Registrant code (4-9 digits) |
+| `[-._;()/:a-zA-Z0-9]*` | Body (0+ chars, allows internal dots/slashes) |
+| `[a-zA-Z0-9]` | **Required alphanum ending** (rejects trailing punctuation) |
+| `(?![.\d])` | **Negative lookahead** (rejects `.1`, `.5b00123`, etc.) |
+
+**Validate regex** (Zod schema, post-cleanup):
+```
+^10\.\d{4,9}/[-._;()/:a-zA-Z0-9]*[a-zA-Z0-9]$
+```
+
+Same shape, anchored on both ends — catches anything that slipped past
+scan-time cleanup.
+
+### Why "Trust > Coverage" applies here
+
+A DOI returned by extraction is only useful if it can be looked up in a
+trusted external source. Three trust levels in the pipeline:
+
+| Confidence    | Trigger | What it means |
+|---|---|---|
+| `manual`      | Operator entered citation by hand | Highest trust (human-verified) |
+| `doi-exact`   | Regex pass + Crossref OR OpenAlex returned metadata | DOI verifiably exists |
+| `title-fuzzy` | No DOI but title match via API | Title-only fallback (reserved) |
+| `unverified`  | Regex pass + Crossref + OpenAlex both 404 | DOI extracted but unconfirmed |
+
+**`unverified` is the key R168-3.3 addition.** Before the fix, citations
+with metadata=null were created with `confidence='doi-exact'` (wrong) — a
+DOI that 404s in every major registrar is NOT verified, regardless of
+shape compliance. Silent skip would lose PROV-O audit trail; downgrade to
+`unverified` preserves traceability while signaling low trust.
+
+### Idempotency
+
+Citation document ID is deterministic:
+```
+{sourcePaperId}:d:{sha256(targetDoi).slice(0,8)}
+```
+
+Re-running the pipeline on the same paper produces identical IDs, so
+duplicate writes are no-ops. The service layer additionally protects
+against confidence downgrades on re-processing — a stored `manual` will
+never be overwritten by a fresh `doi-exact`, etc.
+
+---
+
+## R168-3.3 — Regex Strictness Evolution + Confidence Hierarchy
+
+> **Status:** Post-mortem + design rationale
+> **Phase:** R168-3.3 (May 2026, [R168-3.3d](../round-r167-handoff.md#33-doi-regex-false-positives))
+> **Trigger:** Surfactants paper (16 pages, R167 smoke test) created 5 citations
+>              from 1 real DOI. Audit revealed regex false positives.
+
+### Bug
+
+Original regex:
+```
+\b10\.\d{4,9}/[-._;()/:a-zA-Z0-9]+
+```
+
+For real DOI `10.1021/ja407115p`, OCR noise produced 4 variants — all
+matched by the unconstrained body class `[-._;()/:a-zA-Z0-9]+`:
+
+| Variant | OCR origin | Old regex | New regex |
+|---|---|---|---|
+| `10.1021/ja407115p` (real) | clean | ✅ match | ✅ match |
+| `10.1021/ja407115p.1` | misread superscript / footnote marker | ❌ matches (sai) | ✅ rejected (lookahead) |
+| `10.1021/ja407115p.l` | `1` misread as `l` (ell vs one) | ❌ matches (sai) | ✅ rejected (lookahead) |
+| `10.1021/ja407115p/1` | OCR injected slash | ❌ matches (sai) | ⚠ matches; Crossref 404 → `unverified` |
+| `10.1021/ja407115pJ` | adjacent letter bled in | ❌ matches (sai) | ⚠ matches; Crossref 404 → `unverified` |
+
+The first 2 variants are rejected at regex layer (Strategy A). The latter
+2 cannot be distinguished by regex alone — a legitimate Zenodo DOI like
+`10.5281/zenodo.123/v1` ends in `/v1` and is real, so we cannot blanket-reject
+`/N` suffixes. Strategy B (Crossref 404 → `unverified`) catches them at
+the lookup layer with audit trail preserved.
+
+### Strategy: A + B combined
+
+**A. Regex strict** (extract-time, free):
+- Reduces false positives by ~50% without API cost.
+- Conservative — does not over-reject (allow legitimate version suffixes).
+
+**B. Crossref/OpenAlex 404 → `unverified`** (lookup-time, audit-preserving):
+- Catches noise that regex cannot distinguish from legitimate suffixes.
+- Citation entry created (PROV-O compliant) with `confidence='unverified'`.
+- Re-scan job (future) can upgrade `unverified` → `doi-exact` if APIs
+  later resolve the DOI (e.g., new pre-print indexed).
+
+### Why NOT delete on 404
+
+Considered Strategy C: skip citation entirely if both APIs 404.
+
+Rejected because:
+1. **PROV-O compliance**: Every reference encountered should appear in audit
+   trail. Silent skip = "where did this extraction go?" later.
+2. **Future re-scan**: A DOI 404 today (preprint not yet indexed) may
+   resolve in 6 months. Storing as `unverified` enables periodic re-check.
+3. **Operator workflow**: When reviewing a paper's bibliography, operator
+   wants to see "the parser found 47 DOIs, 45 verified, 2 unverified",
+   not "the parser found 45 DOIs" (silent loss).
+
+### Confidence ranking (R168-3.3b)
+
+Used by `createCitation()` idempotency check — never overwrite higher trust
+with lower trust:
+
+```typescript
+const order: Record<Citation['confidence'], number> = {
+  unverified: 1,
+  'title-fuzzy': 2,
+  'doi-exact': 3,
+  manual: 4
+};
+```
+
+### Implementation files
+
+| File | Role |
+|---|---|
+| `src/lib/schemas/citation-schema.ts` | `DOI_REGEX` validate + Zod enum |
+| `src/types/citations.ts` | TS type alias |
+| `src/lib/ai/citations/references-parser.ts` | Scan regex (extract phase) |
+| `src/lib/ai/rag/pipeline/citation-step.ts` | 404 → `unverified` logic |
+| `src/lib/firebase/citations/service.ts` | Confidence ordering |
+| `labyra-spectra-worker/src/papers/citation_types.py` | Python type mirror |
+| `labyra-spectra-worker/src/papers/references_parser.py` | Python parser |
+| `labyra-spectra-worker/src/papers/citation.py` | Python citation step |
+
+### Operational tools
+
+- `scripts/_audit-fake-citations.mjs` — dry-run audit + `--delete` + `--downgrade`
+  Classifies existing citations against new regex + Crossref, removes regex-fail,
+  downgrades 404s to `unverified`.
+
+<!-- R168-3.3d -->

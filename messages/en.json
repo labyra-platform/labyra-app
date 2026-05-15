@@ -182,6 +182,7 @@
       "enriching": "Enriching",
       "embedding": "Embedding",
       "indexing": "Indexing",
+      "extracting_citations": "Extracting Citations",
       "indexed": "Indexed",
       "failed": "Failed",
       "cancelling": "Cancelling",

@@ -182,6 +182,7 @@
       "enriching": "Enriching",
       "embedding": "Embedding",
       "indexing": "Indexing",
+      "extracting_citations": "Trích xuất trích dẫn",
       "indexed": "Đã index",
       "failed": "Thất bại",
       "cancelling": "Đang hủy",

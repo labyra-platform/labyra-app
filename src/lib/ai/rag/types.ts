@@ -19,28 +19,9 @@ export interface PaperChunk {
   section?: string;
 }
 
-/** Paper metadata */
-export interface Paper {
-  id: string;
-  tenantId: string;
-  title: string;
-  authors: string[];
-  year?: number;
-  doi?: string;
-  abstract?: string;
-  /** Source: 'upload' | 'doi-import' | 'crossref' */
-  source: 'upload' | 'doi-import' | 'crossref';
-  /** Storage path of original PDF in Firebase Storage */
-  storagePath?: string;
-  /** Total page count */
-  pageCount: number;
-  /** Processing status */
-  status: 'queued' | 'ocr' | 'chunking' | 'embedding' | 'indexed' | 'failed';
-  /** Last error if status === 'failed' */
-  error?: string;
-  createdAt: number;
-  uploadedBy: string;
-}
+// @phase R167-B0: Paper interface moved entirely to src/types/papers.ts
+// (PROV-O extended schemaVersion=2 per ADR-016).
+// This file keeps only retrieval-side types (PaperChunk, RagSource, RetrievalResult).
 
 /** A retrieved chunk with similarity score */
 export interface RagSource {

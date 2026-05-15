@@ -1,5 +1,5 @@
 'use client';
-// R166-ai6a-3b-fix2: + extracting_citations (step 6, indexed bumped to 7)
+// R167-B7: STEPS array now includes extracting_citations (was missing from R166 fix2)
 
 /**
  * Status timeline UI — shows pipeline steps with progress.
@@ -17,6 +17,7 @@ const STEPS: Array<{ status: PaperStatus; key: string }> = [
   { status: 'enriching', key: 'enriching' },
   { status: 'embedding', key: 'embedding' },
   { status: 'indexing', key: 'indexing' },
+  { status: 'extracting_citations', key: 'extracting_citations' },
   { status: 'indexed', key: 'indexed' }
 ];
 

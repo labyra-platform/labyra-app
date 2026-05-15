@@ -113,6 +113,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     paperId,
     tenantId,
     version: paper.version + 1,
+    storagePath: paper.storagePath,
+    createdBy: paper.createdBy ?? paper.uploadedBy,
     enqueuedAt: Date.now()
   });
 

@@ -190,6 +190,8 @@ export async function POST(request: Request) {
       paperId,
       tenantId,
       version,
+      storagePath,
+      createdBy: userId,
       enqueuedAt: now
     });
   } catch (err) {

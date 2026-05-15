@@ -1,5 +1,64 @@
 # Changelog
 
+## R164 — PROV-O ELN Architecture (2026-05-15)
+
+### Added
+- **PROV-O ELN data model** ([ADR-016](docs/adr/ADR-016-prov-o-eln-architecture.md)):
+  7 entity/activity types (Material, Sample, Experiment, Measurement, Analysis,
+  Reference, Paper) with `ProvBase` fields (createdBy, derivedFrom, lifecycleStatus).
+- **30 REST API endpoints** for 7 entities with Zod validation + rate limits.
+- **Soft delete lifecycle** (active/deprecated/retracted) with retraction reason audit.
+- **Versioning sub-collection** for Papers + References — transactional snapshot
+  on PATCH preserves history.
+- **D3 lineage graph** `<LineageGraph>` — interactive force-directed PROV-O graph
+  with 7 entity types color-coded, draggable nodes, click navigation.
+- **Version history viewer** `<VersionHistoryViewer>` — expandable diff view
+  for papers/references.
+- **Reusable lifecycle UI components** — `<LifecycleStatusBadge>`,
+  `<LifecycleFilter>`, `<LifecycleActions>`.
+- **AI citation → Paper link** — when an AI-identified Reference has `paperId`
+  set, the citation chip links to the internal Paper detail page.
+- **Lineage queries** in services: `findSamplesByParentMaterial`,
+  `findExperimentsByContainsSample`, `findReferencesByPaper`,
+  `findAnalysesByCitedReference`, etc.
+
+### Changed
+- **`spectra` collection → `measurements`** (data + URL routes).
+  Old `/api/spectra/*` URLs return 308 redirects.
+- **`reference_cards` collection → `references`** (data + URL routes).
+  Old `/api/reference-cards/*` URLs return 308 redirects.
+- **`Sample.status` → `Sample.workflowStatus`** (disambiguated from new
+  `lifecycleStatus`). `Experiment.status` same.
+- **Pub/Sub message format** accepts both `spectrumId` (legacy) and
+  `measurementId` (new); worker handles both.
+- **Document ID format** for entities: slug + sequence (`mat_wo3_001`)
+  instead of UUID. Activities (measurements/analyses) keep UUIDs.
+
+### Deprecated
+- `spectrumRawPath/ProcessedPath/ThumbnailPath` — use `measurement*Path`.
+- `publishSpectrumAnalysis` — use `publishMeasurementAnalysis`.
+- `SampleStatus/ExperimentStatus` types — use `SampleWorkflowStatus/ExperimentWorkflowStatus`.
+- `SpectrumAnalysisMessage` interface — use `MeasurementAnalysisMessage`.
+- Old paths `/api/spectra/*` and `/api/reference-cards/*` (308 redirects).
+  Will be removed in R166.
+
+### Migrated (one-time)
+- 28 spectra documents → measurements collection (tenant-dev-001).
+- 1 reference_card → references collection (tenant-dev-001).
+- Source documents marked `_migrated: true` (kept for audit, not deleted).
+
+### Fixed
+- Multiple migration script credential conventions support
+  (FIREBASE_ADMIN_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY etc.).
+- D3 TypeScript strict mode types in `LineageGraph` (explicit `D3Node`/`D3Edge`
+  fields, generic `selectAll<...>`).
+
+### Infrastructure
+- Worker `labyra-spectra-worker` v0.2.x: accepts both `spectrumId` +
+  `measurementId` in Pub/Sub payload. Deploy-first compatibility.
+
+---
+
 ## [R162] - 2026-05-14
 
 ### Added

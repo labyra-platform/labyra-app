@@ -11,7 +11,7 @@
  */
 import 'server-only';
 import { InProcessQueue } from './in-process';
-import { PubSubQueue } from './pubsub';
+import { PubSubQueue } from '@/lib/pubsub/topics/paper-processing'; // R168-3.1b
 import type { JobQueue } from './types';
 
 let _queue: JobQueue | null = null;
@@ -49,5 +49,5 @@ export async function getJobQueue(): Promise<JobQueue> {
 }
 
 export { setJobProcessor } from './in-process';
-export { requestPaperCancellation } from './pubsub';
+export { requestPaperCancellation } from '@/lib/pubsub/topics/paper-processing'; // R168-3.1b
 export type { JobQueue, PaperProcessingJob } from './types';

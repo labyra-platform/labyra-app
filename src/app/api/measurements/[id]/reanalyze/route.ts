@@ -15,7 +15,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
-import { publishSpectrumAnalysis } from '@/lib/pubsub/publisher';
+import { publishSpectrumAnalysis } from '@/lib/pubsub/topics/measurement-analysis'; // R168-3.1b
 import type { SpectrumMetadata } from '@/types/spectra';
 import { getTenantIdFromToken } from '@/lib/auth/token';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';

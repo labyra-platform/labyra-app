@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 // R164-phase-5b-1: switch to measurements collection + publishMeasurementAnalysis
-import { publishMeasurementAnalysis } from '@/lib/pubsub/publisher';
+import { publishMeasurementAnalysis } from '@/lib/pubsub/topics/measurement-analysis'; // R168-3.1b
 import { fileExists, getFileMetadata } from '@/lib/firebase/storage';
 import { SPECTRA_CONFIG } from '@/lib/spectra/config';
 import type { SpectrumMetadata, SpectrumType } from '@/types/spectra';

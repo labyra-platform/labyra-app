@@ -142,14 +142,24 @@ in runtime — those operations use service account via admin SDK scripts.
   but intentional — repo predates org consolidation; do NOT transfer ownership during R167
   to avoid breaking deploy.sh refs + Cloud Build webhooks)
 
-**Service**: deployed to Cloud Run `asia-southeast1` (project `labyra-app-dev`)
+**Service** (verified 2026-05-15 audit, [R166-handoff-correct]):
+- **Cloud Run service name**: `spectra-worker` (NOT `labyra-spectra-worker` — repo name ≠ service name)
+- **Region**: `asia-southeast1`
+- **GCP project**: `labyra-app-dev`
+- **Service account**: `spectra-worker@labyra-app-dev.iam.gserviceaccount.com`
+- **FastAPI app version**: `0.2.0`
+
+**Existing Pub/Sub infrastructure** (R164-5a measurement pattern — blueprint for R167):
+- **Topic**: `spectra-analysis`
+- **Dead-letter topic**: `spectra-analysis-dlq`
+- **Subscription**: `spectra-worker-push` (**push pattern** — Pub/Sub HTTPS POST to Cloud Run, not pull)
 
 **Stack**:
-- Python 3.11+ FastAPI
+- Python 3.11+ FastAPI 0.2.0
 - Mistral OCR Python SDK
 - numpy / scipy / lmfit (XRD Tier 2 analysis)
 - Firebase Admin SDK (Firestore writes)
-- google-cloud-pubsub (R164 phase 5a — measurement Pub/Sub already wired)
+- google-cloud-pubsub
 - Deploy: `bash deploy.sh` (Cloud Build + gcloud run deploy)
 
 **Latest commits** (top of `main`):
@@ -163,29 +173,61 @@ fix(ai): strict score-based grounding for XRD prompt [R162-grounding]
 
 **Existing endpoints** (FastAPI routes):
 - `POST /spectra/analyze` — XRD/FTIR/Raman/UV-Vis/TGA/DSC/OCP analysis (sync, ~30-60s)
-- `POST /pubsub/measurement` — Pub/Sub push subscription for spectra measurement jobs (R164 phase 5a)
+- Pub/Sub push handler — **CURRENTLY IN `main.py` DIRECTLY** (no separate `src/pubsub/` folder)
 - Various `/spectra/*` endpoints per measurement type
 
-**Existing src structure** (verify before R167-B):
+**ACTUAL src structure** (verified, NOT guessed):
 ```
 labyra-spectra-worker/
 ├── src/
 │   ├── ai/           # prompts + analysis logic
 │   ├── parsers/      # spectra parsers (XRD, FTIR, Raman, UV-Vis, TGA, DSC, OCP)
 │   ├── citations/    # CIF/COD/MP lookups for XRD (R161+)
-│   ├── pubsub/       # existing measurement pubsub handler (R164-5a)
 │   ├── firestore/    # Firestore admin helpers
-│   └── main.py       # FastAPI app + route definitions
+│   └── main.py       # FastAPI app + Pub/Sub handler (no separate pubsub/ folder)
 ├── deploy.sh
 ├── requirements.txt
 └── Dockerfile
 ```
 
-**R167 will extend this repo** with:
-- `src/papers/` — paper processing pipeline (OCR → chunk → embed → index → citations)
-- `src/pubsub/papers_handler.py` — new Pub/Sub subscription for paper jobs
-- Reuse existing `src/firestore/`, `src/citations/` (XRD citations module — same Crossref API)
-- Reuse existing `src/pubsub/` infrastructure (measurement pattern is blueprint for paper pattern)
+**R167 implementation plan**:
+
+R167-A — Reuse existing Pub/Sub infrastructure (don't recreate):
+- Create NEW topic `paper-processing` + dlq `paper-processing-dlq` (parallel to spectra-analysis)
+- Create NEW push subscription `spectra-worker-papers-push` → same Cloud Run service
+- Add NEW endpoint `POST /papers/process` in `main.py` (mirror existing spectra pubsub handler)
+- Service account already has Pub/Sub subscriber role (reuse)
+
+R167-B — Add paper pipeline modules:
+- `src/papers/__init__.py` — package init
+- `src/papers/ocr.py` — Mistral OCR (port from labyra-app TS)
+- `src/papers/chunking.py` — text → chunks
+- `src/papers/embedding.py` — Voyage REST embed (port from TS)
+- `src/papers/indexing.py` — Pinecone upsert (port from TS)
+- `src/papers/orchestrator.py` — full pipeline runner
+
+R167-C — Citation step migration:
+- `src/papers/citations.py` — port Phase 6a Python (extractDois, lookupDoi Crossref/OpenAlex)
+- Reuse `src/citations/` (XRD existing — same Crossref API client base)
+- labyra-app `/api/papers/upload` → publish to `paper-processing` topic instead of in-process queue
+- Remove TS orchestrator code in labyra-app (or keep for short transition)
+
+**Verification commands** (run in worker repo):
+```bash
+cd ~/LAB-MANAGER/labyra-spectra-worker
+
+# Check service deployed
+gcloud run services list --region=asia-southeast1 --filter=name~spectra
+
+# Check existing topics
+gcloud pubsub topics list --filter=name~spectra
+
+# Check subscription endpoint
+gcloud pubsub subscriptions describe spectra-worker-push --format='value(pushConfig.pushEndpoint)'
+
+# Verify main.py has pubsub handler
+grep -n "pubsub\|@app.post.*pubsub" src/main.py
+```
 
 ---
 

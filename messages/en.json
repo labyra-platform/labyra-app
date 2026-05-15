@@ -189,7 +189,20 @@
       "cancelled": "Cancelled"
     },
     "title": "Papers",
-    "subtitle": "Research papers in your lab's knowledge base"
+    "subtitle": "Research papers in your lab's knowledge base",
+    "citations": "Citations",
+    "citationsOutTitle": "{count, plural, =0 {No outbound citations} one {1 outbound citation} other {# outbound citations}}",
+    "citationsInTitle": "{count, plural, =0 {No inbound citations} one {1 inbound citation} other {# inbound citations}}",
+    "citationsOutEmpty": "No outbound citations extracted yet.",
+    "loadingCitations": "Loading citations…",
+    "showAllCitations": "Show all {count}",
+    "showLess": "Show less",
+    "inLibrary": "✓ In library",
+    "citationUntitled": "Untitled reference",
+    "confidenceDoiExact": "DOI verified",
+    "confidenceManual": "Manual",
+    "confidenceTitleFuzzy": "Title match",
+    "confidenceUnverified": "Unverified"
   },
   "materials": {
     "title": "Materials",

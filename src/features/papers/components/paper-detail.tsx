@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { IconLoader2, IconX, IconRefresh, IconArrowLeft, IconFileText } from '@tabler/icons-react';
 import Link from 'next/link';
 import { ProcessingTimeline } from './processing-timeline';
+import { CitationsSection } from './citations-section'; // R166-6b-1
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { TERMINAL_STATUSES, CANCELLABLE_STATUSES } from '@/types/papers';
 
@@ -193,6 +194,9 @@ export function PaperDetail({ paperId }: { paperId: string }) {
           </button>
         )}
       </section>
+
+      {/* R166-6b-1: citations */}
+      <CitationsSection paperId={paperId} />
 
       {/* R164-phase-8-9b: version history */}
       <section className='space-y-2'>

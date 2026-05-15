@@ -189,7 +189,20 @@
       "cancelled": "Đã hủy"
     },
     "title": "Thư viện paper",
-    "subtitle": "Nguồn kiến thức trong lab của bạn"
+    "subtitle": "Nguồn kiến thức trong lab của bạn",
+    "citations": "Trích dẫn",
+    "citationsOutTitle": "{count, plural, =0 {Không có trích dẫn ra} one {1 trích dẫn ra} other {# trích dẫn ra}}",
+    "citationsInTitle": "{count, plural, =0 {Không có trích dẫn vào} one {1 trích dẫn vào} other {# trích dẫn vào}}",
+    "citationsOutEmpty": "Chưa trích xuất được trích dẫn nào.",
+    "loadingCitations": "Đang tải trích dẫn…",
+    "showAllCitations": "Hiện tất cả {count}",
+    "showLess": "Thu gọn",
+    "inLibrary": "✓ Trong thư viện",
+    "citationUntitled": "Tham khảo không tiêu đề",
+    "confidenceDoiExact": "DOI đã xác minh",
+    "confidenceManual": "Thủ công",
+    "confidenceTitleFuzzy": "Khớp tiêu đề",
+    "confidenceUnverified": "Chưa xác minh"
   },
   "materials": {
     "title": "Vật liệu",

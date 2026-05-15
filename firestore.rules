@@ -102,21 +102,35 @@ service cloud.firestore {
     }
 
 
-    // ── Papers (R160-ai-5b-1) ─────────────────────────────────────
+    // ── Papers (R160-ai-5b-1, R168-3.12: isAuthenticated → isSignedIn) ──
     match /tenants/{tenantId}/papers/{paperId} {
-      allow read: if isAuthenticated() && belongsToTenant(tenantId);
+      allow read: if isSignedIn() && belongsToTenant(tenantId);
       // Writes through API + Admin SDK only
       allow create, update, delete: if false;
 
       match /chunks/{chunkId} {
-        allow read: if isAuthenticated() && belongsToTenant(tenantId);
+        allow read: if isSignedIn() && belongsToTenant(tenantId);
+        allow create, update, delete: if false;
+      }
+
+      // Citations stats subcollection (R166-6b)
+      match /_stats/{statsId} {
+        allow read: if isSignedIn() && belongsToTenant(tenantId);
         allow create, update, delete: if false;
       }
     }
 
+    // ── Citations (R166-6a, explicit R168-3.12) ───────────────────
+    // Tenant-isolated citation graph. Read-only from client; writes via
+    // Admin SDK in paper-processing pipeline.
+    match /tenants/{tenantId}/citations/{citationId} {
+      allow read: if isSignedIn() && belongsToTenant(tenantId);
+      allow create, update, delete: if false;
+    }
+
     // ── Monthly usage (R160-ai-5b-1) ──────────────────────────────
     match /tenants/{tenantId}/usage/{yearMonth} {
-      allow read: if isAuthenticated() && belongsToTenant(tenantId);
+      allow read: if isSignedIn() && belongsToTenant(tenantId);
       allow create, update, delete: if false;
     }
   }

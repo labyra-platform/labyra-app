@@ -613,6 +613,12 @@ interactive widgets). Pattern documented in `ARCHITECTURE.md` Section 🤖.
 
 ## 6. Anti-Hallucination — 9 Layers
 
+<!-- R167-D-section-notes-2026-05-15 -->
+> **NOTE**: This section is the original v2.0 design spec (R110-R114 era,
+> inherited from labbook-bku). For Labyra implementation reality, see
+> **Section 25** (what was built) and **Section 27** (current 9-layer
+> implementation checklist with progress tracking).
+
 ### Layer 1: Strict Grounding (System Prompt)
 
 ```
@@ -1664,6 +1670,17 @@ Original AI_ARCHITECTURE plan specified Chandra OCR. Replaced with Mistral OCR 3
 
 
 ## Section 25: Anti-Hallucination Layers 2-7 (R160-ai-5e)
+
+<!-- R167-D-section-notes-2026-05-15 -->
+> **REDEFINITION NOTICE**: L6 and L7 in this section have different semantics
+> from the original Section 6 spec:
+>
+> - **L6 here** = On-topic classifier *(original Section 6: Cross-source verification)*
+> - **L7 here** = Empty Result Guard *(original Section 6: OOD Detection)*
+>
+> Original L6 (cross-source RAG vs lab vs Python compute) and original L7
+> (full OOD for unknown materials) remain unimplemented. Section 27 is the
+> single source of truth for layer status.
 
 ### Context
 Section 6 of this document describes the original 9-layer plan (inherited from labbook-bku).

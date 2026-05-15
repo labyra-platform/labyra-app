@@ -102,7 +102,18 @@ export async function runCitationStep(input: CitationStepInput): Promise<Citatio
   result.doisFound = refs.length;
   log('extract_done', { paperId: paper.id, doisFound: refs.length });
 
-  if (refs.length === 0) return result;
+  if (refs.length === 0) {
+    // R168-3.6: still create _stats doc with count=0 so UI queries don't 404
+    try {
+      await recomputeCitationStats(tenantId, paper.id);
+    } catch (err) {
+      log('stats_recompute_failed_empty', {
+        paperId: paper.id,
+        error: err instanceof Error ? err.message : String(err)
+      });
+    }
+    return result;
+  }
 
   // 2. Check existing citations (skip re-lookup of already-resolved DOIs)
   const existing = await listCitationsBySource(tenantId, paper.id, {

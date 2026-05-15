@@ -1,2 +1,6 @@
+# R168-3.5: clear stale Next dev types cache before tsc
+# (orphan .ts files in .next/dev/types/ from deleted routes break tsc)
+rm -rf .next/dev/types
+
 pnpm exec tsc --noEmit
 pnpm exec oxlint

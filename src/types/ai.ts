@@ -4,8 +4,16 @@
  * @phase R160-ai-1
  */
 
-/** LLM tier — see docs/ai/AI_ARCHITECTURE.md Section 2 */
-export type AiTier = 1 | 2 | 3;
+/**
+ * LLM tier — see docs/ai/AI_ARCHITECTURE.md Section 2.
+ *
+ * R169-2: Extended from 1|2|3 (3-tier legacy) to 0|1|2|3|4|5 (6-tier).
+ * Production routes (R169) dispatch tier 1|2|3 same as before.
+ * Tier 0 (Shield+Router): merged into intent classifier flow.
+ * Tier 4 (Writer) + Tier 5 (Auditor): declared in TIER_CONFIG, route
+ * handlers added in R170+.
+ */
+export type AiTier = 0 | 1 | 2 | 3 | 4 | 5;
 
 /** Single message in a chat thread */
 export interface GroundingDetails {

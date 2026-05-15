@@ -1,12 +1,18 @@
 /**
- * Intent classifier using Haiku 4.5.
+ * Intent classifier — Tier 0 (Shield + Router).
+ *
  * Input: user message
  * Output: tier decision + reason + confidence
  *
- * Strategy: Balanced (20% T1 / 60% T2 / 20% T3).
- * Default to Tier 2 (Sonnet) when uncertain.
+ * R169-2 changes:
+ *   - Model: Haiku 4.5 → Gemini 3.1 Flash-Lite preview (4× cheaper).
+ *   - Output tier: 1|2|3 (production tiers — T0 self, T4/T5 reserved).
+ *   - Fallback tier 2 (Sonnet) unchanged.
  *
- * @phase R160-ai-3b
+ * Strategy: Balanced (20% T1 / 60% T2 / 20% T3).
+ * Default to Tier 2 (Sonnet) when uncertain or low confidence.
+ *
+ * @phase R160-ai-3b base, R169-2 model swap
  */
 import { getHaikuDispatcher } from '@/lib/ai/providers';
 import type { IntentDecision } from './types';
@@ -14,33 +20,32 @@ import type { AiTier } from '@/types/ai';
 
 const CLASSIFIER_SYSTEM = `You are an intent classifier for a materials science lab AI.
 
-Classify the user's message into ONE of three tiers based on cognitive complexity required:
+Classify the user's message into ONE of three production tiers:
 
-**Tier 1 (Gemini Flash)** — Simple lookup, lab data query, conversational
-- "How many experiments are running?"
+**Tier 1 (Gemini Flash-Lite — Lab Manager)** — Lab data lookups
+- "How many experiments running?"
 - "List my XRD equipment"
-- "What's on tomorrow's booking?"
-- Greetings, clarifications, simple yes/no
+- "Tomorrow's bookings"
+- Greetings, simple yes/no
 - Pure data retrieval without reasoning
 
-**Tier 2 (Sonnet 4.6)** — Analysis, single-topic reasoning, technical Q&A
+**Tier 2 (Sonnet 4.6 — Librarian + Engineer)** — Analysis, single-topic reasoning
 - "What is bandgap of WO₃?"
 - "Explain Tauc plot for indirect semiconductor"
-- "Compare CV vs LSV for HER characterization"
+- "Compare CV vs LSV for HER"
 - Spectrum interpretation, formula derivation
 - Single-paper questions
-- Most technical chat (default tier — when in doubt, choose this)
+- Most technical chat (default when uncertain)
 
-**Tier 3 (Opus 4.7)** — Multi-step research synthesis, complex reasoning
+**Tier 3 (Opus 4.7 — Auditor / Multi-step Research)** — Complex synthesis
 - "Summarize 5 years of WO₃ photocatalysis literature"
 - "Design experiment for HER catalyst optimization"
-- "Build hypothesis for why MoS₂ shows X behavior"
+- "Build hypothesis for why MoS₂ shows X"
 - Multi-paper synthesis, multi-step planning
-- Cross-disciplinary reasoning
 
 DEFAULT BIAS: When uncertain, choose Tier 2 (60% of queries should be T2).
 Tier 1 only for clearly simple lab data queries.
-Tier 3 only for clearly complex multi-step research questions.
+Tier 3 only for clearly complex multi-step research.
 
 Output ONLY a JSON object, no other text:
 {
@@ -82,7 +87,6 @@ export async function classifyIntent(userMessage: string): Promise<IntentDecisio
       return fallback(usage.usd, latencyMs, `invalid_tier_${parsed.tier}`);
     }
 
-    // Apply confidence threshold
     if (parsed.confidence < CONFIDENCE_THRESHOLD) {
       return {
         tier: FALLBACK_TIER,
@@ -107,7 +111,6 @@ export async function classifyIntent(userMessage: string): Promise<IntentDecisio
 }
 
 function parseClassifierResponse(text: string): ClassifierJsonResponse | null {
-  // Strip code fences if present
   const cleaned = text.replace(/```json|```/g, '').trim();
   try {
     const obj = JSON.parse(cleaned);
@@ -120,7 +123,6 @@ function parseClassifierResponse(text: string): ClassifierJsonResponse | null {
     }
     return null;
   } catch {
-    // Try to extract JSON from surrounding text
     const match = cleaned.match(/\{[^}]*\}/);
     if (!match) return null;
     try {
@@ -131,6 +133,11 @@ function parseClassifierResponse(text: string): ClassifierJsonResponse | null {
   }
 }
 
+/**
+ * R169-2: Production tiers from intent classifier are 1|2|3.
+ * Tier 0 is the classifier itself (this function).
+ * Tier 4|5 are reserved for future writer/auditor flows (R170+).
+ */
 function normalizeTier(value: number): AiTier | null {
   if (value === 1 || value === 2 || value === 3) return value;
   return null;

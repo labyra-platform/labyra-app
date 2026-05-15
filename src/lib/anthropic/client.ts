@@ -1,6 +1,11 @@
 /**
  * Anthropic SDK singleton. Server-only — never import in client components.
- * @phase R160-ai-1
+ *
+ * R169-2: MODELS constant DEPRECATED. Use getModelForTier(tier) from
+ * '@/lib/ai/config/capabilities' instead. The const is kept temporarily
+ * for any straggler caller; remove in R170.
+ *
+ * @phase R160-ai-1 base, R169-2 deprecation
  */
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -20,9 +25,12 @@ export function getAnthropicClient(): Anthropic {
   return _client;
 }
 
-// Model strings for each tier — see docs/ai/AI_ARCHITECTURE.md Section 2
+/**
+ * @deprecated Use getModelForTier(tier) from '@/lib/ai/config/capabilities'.
+ * R169-2: Kept temporarily for legacy callers. Will be removed R170.
+ */
 export const MODELS = {
-  tier1Dispatcher: 'claude-haiku-4-5-20251001', // intent classification only
-  tier2: 'claude-sonnet-4-6', // default chat + spectrum analysis
-  tier3: 'claude-opus-4-7' // research synthesis (NO_SAMPLING_PARAMS)
+  tier1Dispatcher: 'gemini-3.1-flash-lite-preview',
+  tier2: 'claude-sonnet-4-6',
+  tier3: 'claude-opus-4-7'
 } as const;

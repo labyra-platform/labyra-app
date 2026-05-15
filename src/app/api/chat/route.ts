@@ -14,6 +14,9 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { selectProvider } from '@/lib/ai/providers';
 import { runReflection } from '@/lib/ai/reflection/orchestrator';
 import { classifyIntent } from '@/lib/ai/dispatcher/intent-classifier';
+// R169-4: cost telemetry
+import { recordCost } from '@/lib/ai/cost/telemetry';
+import { getCapabilityForTier } from '@/lib/ai/config/capabilities';
 import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { writeProvenance } from '@/lib/ai/provenance-writer';
 import { generateConversationTitle } from '@/lib/ai/title-generator';
@@ -309,6 +312,26 @@ export async function POST(request: Request) {
             'totalCost.cacheWriteTokens': FieldValue.increment(totalUsage.cacheWriteTokens),
             'totalCost.usd': FieldValue.increment(totalUsage.usd + intentDecision.classifierCostUsd)
           });
+
+          // R169-4: cost telemetry (best-effort, non-blocking)
+
+          try {
+            await recordCost({
+              tenantId,
+
+              tier,
+
+              capability: getCapabilityForTier(tier),
+
+              feature: 'chat',
+
+              costUsd: totalUsage.usd
+            });
+          } catch (e) {
+            // eslint-disable-next-line no-console
+
+            console.warn('[chat-route] recordCost failed (non-fatal):', e);
+          }
 
           await writeProvenance({
             tenantId,

@@ -103,39 +103,31 @@ Citation extraction approach (uy tín, bền vững):
 
 ---
 
-## 🚧 Active: R167 — Async Cloud Run Worker (BLOCKER)
+<!-- R167-followup-2026-05-15 -->
 
-**Problem**: Vercel function timeout (60s Pro, 300s max) không đủ cho OCR papers > 5 pages.
-Phase 6a smoke test fail: paper 16-page → OCR timeout → pipeline stuck.
+## 🚧 Active: R167 cleanup + R166 Phase 6b
 
-**Decision** ([ADR-018](adr/ADR-018-async-worker-architecture.md)):
+R167 async worker pipeline shipped + verified end-to-end. Next focus splits in two:
 
-- **Worker**: Extend `labyra-spectra-worker` (existing Python Cloud Run, FastAPI)
-- **Queue**: Cloud Pub/Sub (event-driven, scale tốt, free tier)
-- **Language**: Python (consistency với existing worker, Mistral Python SDK canonical)
+### R167 cleanup (tech debt from async cutover)
 
-**Phases**:
+See `docs/round-r167-handoff.md` §3 for full backlog. High-priority items:
 
-- **R167-A** (~1h): Pub/Sub topic + subscription + worker skeleton + health check
-- **R167-B** (~2h): Port OCR + chunking + embed + index TS → Python, wire vào worker
-- **R167-C** (~30p): Migrate citation step vào worker, labyra-app chỉ publish
+- **Refactor `src/lib/pubsub/`** → generic `publishToTopic(topic, message, attributes)` util. Current state: `publisher.ts` (spectra) + `jobs/pubsub.ts` (papers) duplicate REST publish boilerplate. Refactor isolates transport from domain.
+- **Vercel 4.5MB upload limit** → implement browser-direct-to-Firebase-Storage upload via signed URL. Vercel function only receives `storagePath` metadata. Unblocks papers > 4.5MB which currently return HTTP 413 before reaching upload route.
+- **DOI regex false positives** → OCR noise creates variants (`.1`, `.l`, `J` suffix). Fix in both `src/lib/ai/citations/references-parser.ts` (TS, R166) AND worker `src/papers/references_parser.py` (Python, R167). Either stricter regex or Crossref 404 → `confidence='unverified'`.
+- **`metadata.py` year=0 bug** — Haiku returns year correctly but persisted as 0. Type coercion in `_parse_metadata_json()`.
 
-**Architecture**:
+Lower priority: husky pre-push aggressive; `_force-reset-paper.mjs` misleading name; Mistral SDK fragile internal import; uncommitted utility scripts.
 
-```
-Browser → /api/papers/upload (Vercel, <5s)
-            ↓ Pub/Sub publish
-        Cloud Run worker (labyra-spectra-worker, 60-min timeout)
-            ↓ subscribe
-        Full pipeline: OCR → chunk → embed → index → citation
-            ↓ each step
-        Firestore status update (realtime to UI)
-```
+### R166 Phase 6b — Citation network UI
 
-**Pending** after R167:
+Citation extraction data layer + worker pipeline complete (R166 Phase 6a + R167-B5/B6). UI viz pending:
 
-- R166 ai-6 Phase 6b — UI cho citation network (Cited-by section, D3 viz)
-- R166 ai-6 Phase 6c — AI tool `searchCitations` + dispatcher integration
+- **D3 force-directed graph** on paper detail page — nodes = papers, edges = citations
+- **"Cited by" section** listing inbound citations (paper.citedByCount + list)
+- **Filter by confidence**: `doi-exact` / `title-fuzzy` / `unverified` / `manual`
+- **Cross-tenant safe**: only show citations within current tenant namespace
 
 ---
 

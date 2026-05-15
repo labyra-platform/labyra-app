@@ -133,10 +133,59 @@ in runtime — those operations use service account via admin SDK scripts.
 
 ### Repo: `labyra-spectra-worker` (Python Cloud Run)
 
-- Service: deployed to Cloud Run `asia-southeast1`
-- Stack: FastAPI + Mistral OCR + numpy/scipy
-- Phase markers: R160 → R165 (most recent: prompts strict-grounding for FTIR/Raman/UV-Vis)
-- **R167 will extend this** with `src/papers/*` + `src/pubsub/*` modules
+<!-- R166-handoff-worker-info -->
+
+**Location**: `~/LAB-MANAGER/labyra-spectra-worker/` (same machine, separate folder from labyra-app)
+
+**GitHub**: https://github.com/emnam009009/labyra-spectra-worker (private)
+- Note: under `emnam009009` user, NOT `labyra-platform` org (inconsistent with labyra-app
+  but intentional — repo predates org consolidation; do NOT transfer ownership during R167
+  to avoid breaking deploy.sh refs + Cloud Build webhooks)
+
+**Service**: deployed to Cloud Run `asia-southeast1` (project `labyra-app-dev`)
+
+**Stack**:
+- Python 3.11+ FastAPI
+- Mistral OCR Python SDK
+- numpy / scipy / lmfit (XRD Tier 2 analysis)
+- Firebase Admin SDK (Firestore writes)
+- google-cloud-pubsub (R164 phase 5a — measurement Pub/Sub already wired)
+- Deploy: `bash deploy.sh` (Cloud Build + gcloud run deploy)
+
+**Latest commits** (top of `main`):
+```
+feat(prompts): FTIR/Raman/UV-Vis strict grounding [R165-phase-2]
+feat: accept measurementId in pubsub message [R164-phase-5a]
+feat(ftir): parse PerkinElmer ASC + JCAMP-DX header formats [R163-worker-ftir-pe]
+chore(worker): bump analysis_version to spectra-4b-1.5.0 [R162-version]
+fix(ai): strict score-based grounding for XRD prompt [R162-grounding]
+```
+
+**Existing endpoints** (FastAPI routes):
+- `POST /spectra/analyze` — XRD/FTIR/Raman/UV-Vis/TGA/DSC/OCP analysis (sync, ~30-60s)
+- `POST /pubsub/measurement` — Pub/Sub push subscription for spectra measurement jobs (R164 phase 5a)
+- Various `/spectra/*` endpoints per measurement type
+
+**Existing src structure** (verify before R167-B):
+```
+labyra-spectra-worker/
+├── src/
+│   ├── ai/           # prompts + analysis logic
+│   ├── parsers/      # spectra parsers (XRD, FTIR, Raman, UV-Vis, TGA, DSC, OCP)
+│   ├── citations/    # CIF/COD/MP lookups for XRD (R161+)
+│   ├── pubsub/       # existing measurement pubsub handler (R164-5a)
+│   ├── firestore/    # Firestore admin helpers
+│   └── main.py       # FastAPI app + route definitions
+├── deploy.sh
+├── requirements.txt
+└── Dockerfile
+```
+
+**R167 will extend this repo** with:
+- `src/papers/` — paper processing pipeline (OCR → chunk → embed → index → citations)
+- `src/pubsub/papers_handler.py` — new Pub/Sub subscription for paper jobs
+- Reuse existing `src/firestore/`, `src/citations/` (XRD citations module — same Crossref API)
+- Reuse existing `src/pubsub/` infrastructure (measurement pattern is blueprint for paper pattern)
 
 ---
 

@@ -10,7 +10,7 @@
  * @phase R160-ai-3a
  */
 
-import type { AiTier, AiCostBreakdown } from '@/types/ai';
+import type { AiCostBreakdown, AiTier } from '@/types/ai';
 
 /** Standard chat message shape, provider-agnostic */
 export interface LLMMessage {
@@ -41,6 +41,10 @@ export interface LLMToolCall {
   id: string;
   name: string;
   input: Record<string, unknown>;
+  /** R176-2bc-thought-signature: Gemini 3 thoughtSignature for multi-turn function calls.
+   *  Required by Gemini API when sending functionResponse back.
+   *  Anthropic providers leave undefined. */
+  thoughtSignature?: string;
 }
 
 /** Tool result passed back in followup messages */
@@ -79,7 +83,11 @@ export interface LLMStreamRequest {
   /** Tools available for the LLM to call */
   tools?: LLMToolDefinition[];
   /** Tool results from previous turn (for multi-turn tool conversations) */
-  toolResults?: Array<{ toolCallId: string; result: unknown; isError?: boolean }>;
+  toolResults?: Array<{
+    toolCallId: string;
+    result: unknown;
+    isError?: boolean;
+  }>;
 }
 
 /** Provider interface — every LLM backend implements this */

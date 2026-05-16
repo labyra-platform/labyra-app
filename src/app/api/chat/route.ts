@@ -9,31 +9,32 @@
  *
  * @phase R160-ai-3c1
  */
-import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+
 import { Timestamp } from 'firebase-admin/firestore';
-import { selectProvider } from '@/lib/ai/providers';
-import { runReflection } from '@/lib/ai/reflection/orchestrator';
-import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
-import { classifyIntent } from '@/lib/ai/dispatcher/intent-classifier';
+import { NextResponse } from 'next/server';
+import { getCapabilityForTier } from '@/lib/ai/config/capabilities';
+import { loadConversationHistory } from '@/lib/ai/conversation-history';
+import { estimateCost } from '@/lib/ai/cost/estimator';
 // R169-4: cost telemetry
 import { recordCost } from '@/lib/ai/cost/telemetry';
+import { classifyIntent } from '@/lib/ai/dispatcher/intent-classifier';
 // R170-5: Cost Guard pre-check
 import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
-import { estimateCost } from '@/lib/ai/cost/estimator';
-import { getCapabilityForTier } from '@/lib/ai/config/capabilities';
-import { NextResponse } from 'next/server';
-import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
-import { writeProvenance } from '@/lib/ai/provenance-writer';
-import { generateConversationTitle } from '@/lib/ai/title-generator';
-import { getToolDefinitions } from '@/lib/ai/tools/registry';
-import { executeToolCall } from '@/lib/ai/tools/dispatch';
-import type { ChatRequestBodyV2, ChatStreamEventV2, AiTier, AiCostBreakdown } from '@/types/ai';
-import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
 import { checkGrounding } from '@/lib/ai/grounding';
-import { loadConversationHistory } from '@/lib/ai/conversation-history';
 import { classifyOnTopic, offTopicResponse } from '@/lib/ai/grounding/on-topic-check';
+import { writeProvenance } from '@/lib/ai/provenance-writer';
+import { selectProvider } from '@/lib/ai/providers';
+import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
+import { runReflection } from '@/lib/ai/reflection/orchestrator';
+import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
+import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
+import { generateConversationTitle } from '@/lib/ai/title-generator';
+import { executeToolCall } from '@/lib/ai/tools/dispatch';
+import { getToolDefinitions } from '@/lib/ai/tools/registry';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import type { AiCostBreakdown, AiTier, ChatRequestBodyV2, ChatStreamEventV2 } from '@/types/ai';
 
 export const runtime = 'nodejs';
 
@@ -108,7 +109,10 @@ export async function POST(request: Request) {
   if (!rl.allowed) {
     return new Response(JSON.stringify({ error: 'rate_limited' }), {
       status: 429,
-      headers: { 'content-type': 'application/json', 'Retry-After': String(rl.resetSec) }
+      headers: {
+        'content-type': 'application/json',
+        'Retry-After': String(rl.resetSec)
+      }
     });
   }
 
@@ -359,7 +363,11 @@ export async function POST(request: Request) {
           const reflectionHistory: Array<{
             round: number;
             response: string;
-            critique: { sufficient: boolean; issues: string[]; summary: string };
+            critique: {
+              sufficient: boolean;
+              issues: string[];
+              summary: string;
+            };
           }> = [];
 
           const result = await runReflection({
@@ -473,7 +481,11 @@ export async function POST(request: Request) {
             try {
               const title = await generateConversationTitle(userText);
               await convRef.update({ title });
-              send({ type: 'title_update', conversationId: conversationId!, title });
+              send({
+                type: 'title_update',
+                conversationId: conversationId!,
+                title
+              });
             } catch {
               // keep Untitled
             }
@@ -574,7 +586,13 @@ export async function POST(request: Request) {
           // Hotfix R160-ai-5d-3: include tool_use blocks (Anthropic requires matching tool_use_id).
           type AssistantBlock =
             | { type: 'text'; text: string }
-            | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
+            | {
+                type: 'tool_use';
+                id: string;
+                name: string;
+                input: Record<string, unknown>;
+                thoughtSignature?: string;
+              };
           const assistantBlocks: AssistantBlock[] = [];
           if (roundText.trim().length > 0) {
             assistantBlocks.push({ type: 'text', text: roundText });
@@ -584,7 +602,8 @@ export async function POST(request: Request) {
               type: 'tool_use',
               id: call.id,
               name: call.name,
-              input: call.input
+              input: call.input,
+              ...(call.thoughtSignature ? { thoughtSignature: call.thoughtSignature } : {})
             });
           }
           // Build tool_result blocks for the user turn following this assistant
@@ -706,7 +725,11 @@ export async function POST(request: Request) {
           try {
             const title = await generateConversationTitle(userText);
             await convRef.update({ title });
-            send({ type: 'title_update', conversationId: conversationId!, title });
+            send({
+              type: 'title_update',
+              conversationId: conversationId!,
+              title
+            });
           } catch {
             // keep Untitled
           }

@@ -1,17 +1,15 @@
 /**
- * Google Gemini provider — @google/genai SDK (R176-2a migration).
+ * Google Gemini provider — @google/genai SDK.
  *
- * Migration from legacy @google/generative-ai@0.24.1:
- * - GoogleGenerativeAI → GoogleGenAI
- * - getGenerativeModel({...}).startChat() → ai.models.generateContentStream({...})
- * - SchemaType → Type
- * - Stream: async iterable directly (no .stream/.response split)
- * - History: Content[] with parts incl. thoughtSignature pass-through (forward-compat Gemini 3)
- * - role='function' for functionResponse → SDK handles via standard 'user' role with functionResponse part
+ * R176-2a: migrated from @google/generative-ai@0.24.1 legacy SDK.
+ * R176-2bc-hotfix: extract thoughtSignature from raw candidates[*].content.parts
+ *   (not SDK helper .functionCalls which strips signature). Required for
+ *   Gemini 3 multi-turn tool calling — sending functionResponse back
+ *   without matching thought_signature returns 400 INVALID_ARGUMENT.
  *
  * Provider abstraction preserved — caller-facing interface unchanged.
  *
- * @phase R176-2a
+ * @phase R176-2a → R176-2bc-hotfix
  */
 import {
   type Content,
@@ -49,24 +47,6 @@ function toSystemInstruction(blocks: LLMStreamRequest['system']): string {
 // ─────────────────────────────────────────────────────────────────────────────
 // Message → Content[] history
 // ─────────────────────────────────────────────────────────────────────────────
-//
-// Anthropic block shape (Labyra internal):
-//   { type: 'text', text }
-//   { type: 'tool_use', id, name, input }
-//   { type: 'tool_result', tool_use_id, content }
-//
-// Gemini @google/genai Content shape:
-//   { role: 'user' | 'model', parts: Part[] }
-//   Part: { text } | { functionCall: { name, args, id? } } |
-//         { functionResponse: { name, response, id? } } |
-//         { thoughtSignature } // forward-compat Gemini 3
-//
-// R174-hotfix3 historical context: legacy SDK rejected functionResponse on
-// role='user', requiring role='function'. @google/genai accepts
-// functionResponse on standard roles + auto-routes — we keep functionResponse
-// parts in their natural role and let SDK handle.
-//
-// @phase R176-2a
 
 type LabyraBlock = {
   type: string;
@@ -76,11 +56,10 @@ type LabyraBlock = {
   input?: unknown;
   tool_use_id?: string;
   content?: unknown;
-  thoughtSignature?: string; // forward-compat from prior assistant turn
+  thoughtSignature?: string; // R176-2bc-thought-signature
 };
 
 function buildHistory(messages: LLMStreamRequest['messages']): Content[] {
-  // Exclude last message — caller sends that as the new turn
   const historicalMessages = messages.slice(0, -1);
   const out: Content[] = [];
 
@@ -99,13 +78,13 @@ function buildHistory(messages: LLMStreamRequest['messages']): Content[] {
       if (b.type === 'text' && typeof b.text === 'string') {
         parts.push({ text: b.text });
       } else if (b.type === 'tool_use') {
+        // R176-2bc-thought-signature: attach signature to part if persisted
         const part: Part = {
           functionCall: {
             name: b.name ?? '',
             args: (b.input as Record<string, unknown>) ?? {}
           }
         };
-        // Forward-compat: preserve thoughtSignature if we ever store it
         if (b.thoughtSignature) {
           (part as Part & { thoughtSignature?: string }).thoughtSignature = b.thoughtSignature;
         }
@@ -126,7 +105,6 @@ function buildHistory(messages: LLMStreamRequest['messages']): Content[] {
     if (parts.length > 0) {
       out.push({ role, parts });
     } else {
-      // Empty fallback to keep history non-broken
       out.push({ role, parts: [{ text: '' }] });
     }
   }
@@ -233,13 +211,8 @@ export class GeminiProvider implements LLMProvider {
   async *streamChat(request: LLMStreamRequest): AsyncIterable<LLMStreamEvent> {
     try {
       const ai = getClient();
-
-      // Build full contents: history + current turn parts
       const history = buildHistory(request.messages);
 
-      // Handle two cases:
-      //   (a) toolResults passed separately (post-tool execution from caller)
-      //   (b) lastMessage is the current turn
       let currentParts: Part[];
       if (request.toolResults && request.toolResults.length > 0) {
         currentParts = request.toolResults.map<Part>((tr) => ({
@@ -288,12 +261,22 @@ export class GeminiProvider implements LLMProvider {
   }
 
   private async *consumeStream(
+    // R176-2bc-thought-signature: walk raw candidates[0].content.parts to
+    // extract thoughtSignature alongside functionCall. SDK helper
+    // chunk.functionCalls strips this field.
     stream: AsyncIterable<{
-      text?: string;
-      functionCalls?: Array<{
-        name?: string;
-        args?: Record<string, unknown>;
-        id?: string;
+      candidates?: Array<{
+        content?: {
+          parts?: Array<{
+            text?: string;
+            functionCall?: {
+              name?: string;
+              args?: Record<string, unknown>;
+              id?: string;
+            };
+            thoughtSignature?: string;
+          }>;
+        };
       }>;
       usageMetadata?: {
         promptTokenCount?: number;
@@ -307,21 +290,21 @@ export class GeminiProvider implements LLMProvider {
     let toolCallsEmitted = 0;
 
     for await (const chunk of stream) {
-      // Text delta — .text is a string getter in @google/genai
-      if (chunk.text) {
-        yield { type: 'text_delta', delta: chunk.text };
-      }
-
-      // Function calls — array property (not method) in @google/genai
-      if (chunk.functionCalls && chunk.functionCalls.length > 0) {
-        for (const call of chunk.functionCalls) {
+      const parts = chunk.candidates?.[0]?.content?.parts ?? [];
+      for (const part of parts) {
+        if (typeof part.text === 'string' && part.text.length > 0) {
+          yield { type: 'text_delta', delta: part.text };
+        }
+        if (part.functionCall) {
           toolCallsEmitted++;
+          const fc = part.functionCall;
           yield {
             type: 'tool_use',
             toolCall: {
-              id: call.id ?? `gemini-tc-${toolCallsEmitted}`,
-              name: call.name ?? '',
-              input: call.args ?? {}
+              id: fc.id ?? `gemini-tc-${toolCallsEmitted}`,
+              name: fc.name ?? '',
+              input: fc.args ?? {},
+              ...(part.thoughtSignature ? { thoughtSignature: part.thoughtSignature } : {})
             }
           };
         }

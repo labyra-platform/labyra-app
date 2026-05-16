@@ -3,6 +3,26 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "cd $RESOURCE_DIR && pnpm install --frozen-lockfile=false",
+        "cd $RESOURCE_DIR && pnpm build"
+      ]
+    }
+  ],
   "emulators": {
     "auth": {
       "port": 9099
@@ -16,13 +36,14 @@
     "storage": {
       "port": 9199
     },
+    "functions": {
+      "port": 5001
+    },
     "ui": {
       "enabled": true,
       "port": 4000
     },
     "singleProjectMode": true
   },
-  "storage": {
-    "rules": "storage.rules"
-  }
+  "// R171-0b": "Added functions deploy config (asia-southeast1 region set in code)"
 }

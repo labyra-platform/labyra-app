@@ -18,6 +18,40 @@ import { NavGroup } from '@/types';
  *   access: { plan: 'pro' }
  *   access: { role: 'admin' }
  */
+const SUPERADMIN_GROUP: NavGroup = {
+  label: 'Superadmin',
+  labelKey: 'nav.groups.superadmin',
+  items: [
+    {
+      title: 'Cost Overview',
+      titleKey: 'nav.superadminCosts',
+      url: '/dashboard/superadmin/costs',
+      icon: 'dashboard',
+      shortcut: ['s', 'c'],
+      items: [],
+      access: { role: 'superadmin' }
+    },
+    {
+      title: 'Quality Evals',
+      titleKey: 'nav.superadminEvals',
+      url: '/dashboard/superadmin/evals',
+      icon: 'check',
+      shortcut: ['s', 'e'],
+      items: [],
+      access: { role: 'superadmin' }
+    },
+    {
+      title: 'Cost Drift',
+      titleKey: 'nav.superadminDrift',
+      url: '/dashboard/superadmin/drift',
+      icon: 'alertCircle',
+      shortcut: ['s', 'd'],
+      items: [],
+      access: { role: 'superadmin' }
+    }
+  ]
+};
+
 export const navGroups: NavGroup[] = [
   {
     label: 'Workspace',
@@ -179,5 +213,6 @@ export const navGroups: NavGroup[] = [
         ]
       }
     ]
-  }
+  },
+  SUPERADMIN_GROUP
 ];

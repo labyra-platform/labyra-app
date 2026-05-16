@@ -8,7 +8,7 @@
  */
 import 'server-only';
 import { NextResponse } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
+import { getAdminAuthService } from '@/lib/firebase/admin';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getTenantIdFromToken } from '@/lib/auth/token';
 import type { AiCostBreakdown, AiConversation } from '@/types/ai';
@@ -31,7 +31,7 @@ export async function GET(
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
     const token = authHeader.slice(7);
-    const decoded = await getAuth().verifyIdToken(token);
+    const decoded = await getAdminAuthService().verifyIdToken(token);
     const tenantId = getTenantIdFromToken(decoded);
     if (!tenantId) {
       return NextResponse.json({ error: 'no_tenant' }, { status: 403 });

@@ -43,6 +43,21 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
     { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
     { title: 'Papers', titleKey: 'nav.papers', link: '/dashboard/papers' },
     { title: 'Upload', titleKey: 'nav.upload', link: '/dashboard/papers/upload' }
+  ],
+  '/dashboard/superadmin/costs': [
+    { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
+    { title: 'Superadmin', titleKey: 'nav.superadmin', link: '/dashboard/superadmin' },
+    { title: 'Cost Overview', titleKey: 'nav.superadminCosts', link: '/dashboard/superadmin/costs' }
+  ],
+  '/dashboard/superadmin/evals': [
+    { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
+    { title: 'Superadmin', titleKey: 'nav.superadmin', link: '/dashboard/superadmin' },
+    { title: 'Quality Evals', titleKey: 'nav.superadminEvals', link: '/dashboard/superadmin/evals' }
+  ],
+  '/dashboard/superadmin/drift': [
+    { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
+    { title: 'Superadmin', titleKey: 'nav.superadmin', link: '/dashboard/superadmin' },
+    { title: 'Cost Drift', titleKey: 'nav.superadminDrift', link: '/dashboard/superadmin/drift' }
   ]
   // Add more mappings as new routes land
 };

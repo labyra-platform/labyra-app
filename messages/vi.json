@@ -38,7 +38,8 @@
       "workspace": "Không gian làm việc",
       "labResources": "Tài nguyên Lab",
       "ai": "AI",
-      "admin": "Quản trị"
+      "admin": "Quản trị",
+      "superadmin": "Quan tri cao cap"
     },
     "employee": "Nhân viên",
     "debugAuth": "Debug Auth",
@@ -49,7 +50,11 @@
     "spectra": "Phổ đo",
     "referenceCards": "Thư viện reference",
     "measurements": "Đo phổ",
-    "references": "Tham chiếu"
+    "references": "Tham chiếu",
+    "superadmin": "Quan tri cao cap",
+    "superadminCosts": "Tong quan chi phi",
+    "superadminEvals": "Danh gia chat luong",
+    "superadminDrift": "Sai lech chi phi"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",

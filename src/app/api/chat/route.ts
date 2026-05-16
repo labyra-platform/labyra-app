@@ -231,6 +231,24 @@ export async function POST(request: Request) {
     intentDecision.feature,
     estimated
   );
+
+  // R171-4: structured logging for Cost Guard decisions (Vercel logs)
+  // eslint-disable-next-line no-console -- intentional structured log
+  console.info(
+    JSON.stringify({
+      event: 'cost_guard_check',
+      tenantId,
+      tier: intentDecision.tier,
+      feature: intentDecision.feature,
+      estimated,
+      allowed: costCheck.allowed,
+      reason: costCheck.reason ?? null,
+      dailyCurrent: costCheck.dailyCurrent,
+      dailyLimit: costCheck.dailyLimit,
+      monthlyCurrent: costCheck.monthlyCurrent,
+      monthlyLimit: costCheck.monthlyLimit
+    })
+  );
   if (!costCheck.allowed) {
     return new Response(
       JSON.stringify({

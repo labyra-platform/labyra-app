@@ -1,6 +1,7 @@
 {
   "projects": {
-    "dev": "labyra-app-dev"
+    "dev": "labyra-app-dev",
+    "default": "labyra-app-dev"
   },
   "targets": {},
   "etags": {}

@@ -38,7 +38,8 @@
       "workspace": "Workspace",
       "labResources": "Lab Resources",
       "ai": "AI",
-      "admin": "Admin"
+      "admin": "Admin",
+      "superadmin": "Superadmin"
     },
     "employee": "Employee",
     "debugAuth": "Auth Debug",
@@ -49,7 +50,11 @@
     "spectra": "Spectra",
     "referenceCards": "Reference cards",
     "measurements": "Measurements",
-    "references": "References"
+    "references": "References",
+    "superadmin": "Superadmin",
+    "superadminCosts": "Cost Overview",
+    "superadminEvals": "Quality Evals",
+    "superadminDrift": "Cost Drift"
   },
   "auth": {
     "signInTitle": "Sign in to Labyra",

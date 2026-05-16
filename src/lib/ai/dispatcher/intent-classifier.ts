@@ -15,36 +15,37 @@
  * @phase R160-ai-3b base, R169-2 model swap
  */
 import { getHaikuDispatcher } from '@/lib/ai/providers';
-import type { IntentDecision } from './types';
 import type { AiTier } from '@/types/ai';
 import type { FeatureKind } from '@/types/cost';
+import type { IntentDecision } from './types';
 
 const CLASSIFIER_SYSTEM = `You are an intent classifier for a materials science lab AI.
 
 Classify the user's message into ONE of four production tiers:
 
-**Tier 1 (Gemini Flash-Lite — Lab Manager)** — Lab data lookups
+**Tier 1 (Lab Manager — fast tool calling)** — Lab data lookups via Firestore tools
 - "How many experiments running?"
 - "List my XRD equipment"
 - "Tomorrow's bookings"
 - Greetings, simple yes/no
 - Pure data retrieval without reasoning
 
-**Tier 2 (Sonnet 4.6 — Librarian + Engineer)** — Analysis, single-topic reasoning
+**Tier 2 (Librarian — RAG default)** — Literature questions, theoretical concepts
 - "What is bandgap of WO₃?"
 - "Explain Tauc plot for indirect semiconductor"
-- "Compare CV vs LSV for HER"
-- Spectrum interpretation, formula derivation
-- Single-paper questions
-- Most technical chat (default when uncertain)
+- "What does this paper say about ..."
+- Conceptual definitions, formula meaning
+- Default when uncertain (most technical chat)
 
-**Tier 3 (Opus 4.7 — Auditor / Multi-step Research)** — Complex synthesis
-- "Summarize 5 years of WO₃ photocatalysis literature"
+**Tier 3 (Engineer — spectrum analysis + reasoning)** — Multi-step interpretation
+- "Phân tích phổ XRD của mẫu này" (analyze XRD data)
+- "Interpret this UV-Vis curve"
+- "Compare CV vs LSV for HER on my data"
 - "Design experiment for HER catalyst optimization"
-- "Build hypothesis for why MoS₂ shows X"
-- Multi-paper synthesis, multi-step planning
+- Multi-paper synthesis, multi-step planning, spectrum interpretation
+- Reflection loop active (max 3 rounds)
 
-**Tier 4 (Sonnet 4.6 — Writer)** — Manuscript section drafting
+**Tier 4 (Writer — paper section drafting)** — Manuscript section drafting
 - "Draft methods section for WO₃ hydrothermal synthesis"
 - "Write the results paragraph for XRD data on Sample X"
 - "Compose discussion for our photocatalysis findings"

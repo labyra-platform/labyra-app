@@ -1,22 +1,26 @@
 'use client';
-import { useMemo, useState, type ReactNode } from 'react';
-import type { AiMessage } from '@/types/ai';
+import { useTranslations } from 'next-intl';
+import { type ReactNode, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
+import type { AiMessage } from '@/types/ai';
 import 'katex/dist/katex.min.css';
+import { useChatSources } from '../hooks/use-chat-sources';
 import { CitationChip } from './citation-chip';
 import { CitationModal } from './citation-modal';
 import { GroundingWarning } from './grounding-warning';
-import { useChatSources } from '../hooks/use-chat-sources';
 
+// R176-2a-hotfix-role-labels
+// Role-based labels decouple UI from model identity. Researcher sees what
+// the AI is doing (Lab Manager / Librarian / Engineer / Writer / Auditor)
+// not which underlying model. Stable across R176-2b/c model swaps.
 const TIER_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
-  1: 'tierFlash',
-  2: 'tierSonnet',
-  3: 'tierOpus',
+  1: 'tierLabManager',
+  2: 'tierLibrarian',
+  3: 'tierEngineer',
   4: 'tierWriter',
   5: 'tierAuditor'
 };
@@ -104,7 +108,7 @@ export function MessageBubble({ message }: { message: AiMessage }) {
       )
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sources.length]
+    [sources.length, handleCitationClick]
   );
 
   return (

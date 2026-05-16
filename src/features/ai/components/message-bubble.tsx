@@ -13,18 +13,22 @@ import { CitationModal } from './citation-modal';
 import { GroundingWarning } from './grounding-warning';
 import { useChatSources } from '../hooks/use-chat-sources';
 
-const TIER_LABELS: Record<1 | 2 | 3, string> = {
+const TIER_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: 'tierFlash',
   2: 'tierSonnet',
-  3: 'tierOpus'
+  3: 'tierOpus',
+  4: 'tierWriter',
+  5: 'tierAuditor'
 };
-const TIER_COLORS: Record<1 | 2 | 3, string> = {
+const TIER_COLORS: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   2: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
-  3: 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
+  3: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  4: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  5: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
 };
 
-function TierBadge({ tier }: { tier: 1 | 2 | 3 }) {
+function TierBadge({ tier }: { tier: 1 | 2 | 3 | 4 | 5 }) {
   const t = useTranslations('ai');
   return (
     <span

@@ -144,7 +144,9 @@
     "conversationDeleted": "Conversation deleted",
     "conversationRestored": "Conversation restored",
     "undo": "Undo",
-    "deleteFailed": "Failed to delete"
+    "deleteFailed": "Failed to delete",
+    "tierWriter": "Writer",
+    "tierAuditor": "Auditor"
   },
   "papers": {
     "uploadPageTitle": "Upload paper",

@@ -144,7 +144,9 @@
     "conversationDeleted": "Đã xóa cuộc trò chuyện",
     "conversationRestored": "Đã khôi phục cuộc trò chuyện",
     "undo": "Hoàn tác",
-    "deleteFailed": "Xóa thất bại"
+    "deleteFailed": "Xóa thất bại",
+    "tierWriter": "Người viết",
+    "tierAuditor": "Kiểm duyệt"
   },
   "papers": {
     "uploadPageTitle": "Tải lên paper",

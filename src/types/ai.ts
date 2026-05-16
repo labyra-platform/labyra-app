@@ -31,7 +31,7 @@ export interface AiMessage {
   content: string;
   createdAt: number; // epoch ms
   /** Tier used for assistant message (R160-ai-3b). undefined for user messages. */
-  tier?: 1 | 2 | 3;
+  tier?: 1 | 2 | 3 | 4 | 5;
   /** Tool calls made during this assistant message (R160-ai-3c1) */
   toolCalls?: Array<{
     id: string;
@@ -153,5 +153,12 @@ export type ChatStreamEventV2 =
       };
     }
   | { type: 'message_complete'; usage: AiCostBreakdown; messageId: string }
+  | { type: 'rag_search_complete'; paperCount: number }
+  | {
+      type: 'writer_complete';
+      section: 'methods' | 'results' | 'discussion' | 'introduction';
+      citationCount: number;
+      sourceCount: number;
+    }
   | { type: 'title_update'; conversationId: string; title: string }
   | { type: 'error'; message: string };

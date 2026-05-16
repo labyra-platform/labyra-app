@@ -13,6 +13,7 @@ import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/ad
 import { Timestamp } from 'firebase-admin/firestore';
 import { selectProvider } from '@/lib/ai/providers';
 import { runReflection } from '@/lib/ai/reflection/orchestrator';
+import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
 import { classifyIntent } from '@/lib/ai/dispatcher/intent-classifier';
 // R169-4: cost telemetry
 import { recordCost } from '@/lib/ai/cost/telemetry';
@@ -323,6 +324,31 @@ export async function POST(request: Request) {
           usd: 0
         };
         const toolCallRecords: ToolCallRecord[] = [];
+
+        // R173-4: Branch for Tier 4 (Writer) — paper section drafting
+        if (tier === 4) {
+          const writerResult = await runWriter({
+            userMessage: userText,
+            tenantId,
+            sectionType: 'auto',
+            onSearchComplete: (paperCount) => {
+              send({ type: 'rag_search_complete', paperCount });
+            },
+            onTextDelta: (delta) => {
+              fullText += delta;
+              send({ type: 'text_delta', delta });
+            }
+          });
+
+          fullText = writerResult.draft;
+          totalUsage = writerResult.totalCost;
+          send({
+            type: 'writer_complete',
+            section: writerResult.section,
+            citationCount: writerResult.citations.length,
+            sourceCount: writerResult.sourceCount
+          });
+        }
 
         // Branch for Tier 3 (Opus) reflection
         if (tier === 3) {

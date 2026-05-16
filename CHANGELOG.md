@@ -1,6 +1,399 @@
-# Changelog
+# Labyra App — CHANGELOG
 
-<!-- R167-D-2026-05-15 -->
+> Chronological history of shipped phases. Each phase = one or more atomic commits.
+> See ROADMAP.md cho long-term planning, ADRs trong `docs/adr/` cho architectural decisions.
+
+<!-- R175-docs-update-2026-05-16 -->
+
+**Last updated**: 2026-05-16
+
+---
+
+## R175-1 — Writer citation format `[authorYear]` (May 16, 2026)
+
+**Commit**: `9f834a2`
+
+T4 Writer outputs now use academic-style citation keys (`[smith2024]`) instead of chunk hash IDs (`[ab008565301d]`).
+
+### NEW
+
+- `src/lib/ai/tier4-writer/citation-loader.ts`:
+  - `loadPapersMetadata(tenantId, paperIds[])` — batched Firestore read of `tenants/{tid}/papers/{paperId}` docs
+  - `buildCitationKey(meta, existingKeys)` — `authorSurname + year` format with collision suffix (smith2024, smith2024a, smith2024b, ...)
+  - `extractSurname()` — handles "Last, First" / "First Last" / Vietnamese name order (Nguyen/Tran/Le/Pham heuristic)
+  - `stripDiacritics()` — NFD normalize + đ→d for Vietnamese names
+  - `fallbackCitationKey()` — `unknown<hash>` when paper metadata absent
+
+### EDIT
+
+- `src/lib/ai/tier4-writer/orchestrator.ts`:
+  - Two-pass context block construction
+  - Load metadata BEFORE generation
+  - `extractCitations` does direct key lookup (no fuzzy match)
+
+### Known limitation
+
+Papers without `authors`/`year` metadata still use fallback hash. R176+ paper metadata backfill (DOI lookup + LLM extraction from first-page text) addresses this.
+
+---
+
+## R174 — UX polish + T4 routing + Gemini stability (May 16, 2026)
+
+**Commit**: `fd304fd`
+
+Major UX overhaul + fix Gemini 3 series breakage. 8 atomic hotfixes in single commit.
+
+### R174-1 — Gemini stability rollback
+
+`capabilities.ts`: T0+T1+T2 models `gemini-3.1-flash-lite-preview` / `gemini-3-flash-preview` → `gemini-2.5-flash`.
+
+Reason: Gemini 3 series requires `thought_signature` field in multi-turn function calls. SDK `@google/generative-ai` 2026-05 release doesn't yet expose signature pass-through. Until SDK stable, fall back to 2.5-flash (no signature required, identical tool-calling semantics).
+
+Defer Gemini 3 re-adoption to R175+ when SDK signature handling lands.
+
+### R174-2 — Tier badge realtime update
+
+`ChatStreamEventV2.message_start` now carries `tier` field. `chat/route.ts` emits tier at message_start. `useChatStream` sets tier on pending assistant message immediately. Badge appears live, no F5 reload needed.
+
+### R174-3 — Thinking indicator (Gemini-style)
+
+NEW `src/features/ai/components/thinking-indicator.tsx` (3 animated dots).
+
+MessageList renders ThinkingIndicator in place of empty assistant bubble while `isStreaming`.
+
+i18n: `ai.thinking` ('Thinking...' / 'Đang suy nghĩ...').
+
+### R174-4 — Widen chat container
+
+`ChatShell`: `max-w-3xl` → `max-w-5xl`, `h-[calc(100vh-7rem)]` → `h-[calc(100vh-4rem)]`. Better use of wide-screen real estate.
+
+### R174-5 — Gemini functionResponse role split (P0 fix)
+
+`gemini.ts` `toGeminiHistory()`: previously placed `functionResponse` parts on role='user', which Gemini 2.5-flash rejects with `[400] Content with role user cannot contain functionResponse part`.
+
+Fix: split message into multiple history entries — text+functionCall on role='model', functionResponse on role='function'. Restores T1 tool calling.
+
+### R174-6 — T4 Writer keyword override (workaround)
+
+Gemini 2.5-flash classifier with few-shot prompt cannot reliably emit tier=4 for "Draft methods section" queries. Default to T2.
+
+Workaround: pre-classifier regex check; if message matches strong drafting keywords (draft|write|compose|viết|soạn + methods|results|discussion|introduction|phần phương pháp|kết quả|thảo luận|giới thiệu), force tier=4 + feature=paper_writing, bypass classifier.
+
+Reliable trigger for T4 Writer flow.
+
+### R174-7 — Classifier prompt + tier expansion
+
+Updated `CLASSIFIER_SYSTEM` to include Tier 4 (Writer) section with 4 example queries. JSON spec tier union `1|2|3` → `1|2|3|4`.
+
+`normalizeTier` accepts tier=4. Confidence threshold maxTokens 100 → 256 (previous truncated JSON output of Gemini 2.5-flash). FALLBACK_TIER = 2 (Sonnet) when parse fail or low confidence.
+
+### R174-8 — Writer prompt strict no-questions
+
+`tier4-writer/prompts.ts`: `BASE_WRITER_PROMPT` added rules:
+- DO NOT ask for clarification or additional info.
+- Use placeholder values (X g, Y mL) when info missing.
+- DO NOT end with follow-up questions or 'Bạn có muốn...' prompts.
+- DO NOT include parameter-asking section at end.
+
+### R174-9 — Tier label consistency
+
+`messages/{en,vi}.json`: tier labels updated:
+- `tierWriter`: 'Writer' → 'T4 Writer'
+- `tierAuditor`: 'Auditor' / 'Kiểm duyệt' → 'T5 Auditor' / 'T5 Kiểm duyệt'
+
+Matches T1 Flash / T2 Sonnet / T3 Opus naming pattern.
+
+---
+
+## R173-hotfix4 — Vercel build fix (May 16, 2026)
+
+**Commit**: `9fda56c`
+
+Vercel build failed with `Cannot find module 'firebase-functions/v2'`. Root cause: TS tried to type-check `functions/` directory which has its own `package.json` with `firebase-functions` dep not in root `node_modules`.
+
+Fix: Added `"functions"` to root `tsconfig.json` exclude array.
+
+---
+
+## R173-4 + R173-5 — T4 Writer + T5 Auditor orchestrators (May 16, 2026)
+
+**Commit**: `5da428c`
+
+Completes 6-tier AI architecture. T4/T5 now wired with actual route handlers, not just config stubs.
+
+### R173-4 — T4 Writer (paper section drafting)
+
+NEW `src/lib/ai/tier4-writer/`:
+- `types.ts` — `WriterResult`, `SectionType` ('methods' | 'results' | 'discussion' | 'introduction'), `WriterCitation`
+- `prompts.ts` — Section-specific system prompts:
+  - Methods: past-tense passive, materials/procedure/characterization sections
+  - Results: observations BEFORE interpretation, no causal claims
+  - Discussion: present tense + mechanism explanation + literature comparison
+  - Introduction: funnel context → gap → contribution
+- `orchestrator.ts` — `runWriter()`:
+  - Detect section type (methods/results/discussion/introduction) via heuristic
+  - RAG search top-8 papers via `searchPapers`
+  - Stream draft with Sonnet 4.6 (reasoning-balanced capability)
+  - Extract inline citations `[citationKey]`
+  - Output: `{ draft, section, citations, totalCost, sourceCount }`
+
+WIRED `src/app/api/chat/route.ts`:
+- `if (tier === 4)` → `runWriter()` branch
+- Stream events: `rag_search_complete`, `writer_complete`
+- Cost telemetry via existing `recordCost` flow
+
+### R173-5 — T5 Auditor (peer-review audit endpoint)
+
+NEW `src/lib/ai/tier5-auditor/`:
+- `types.ts` — `AuditFinding`, `Verdict` ('supported' | 'partially_supported' | 'unsupported' | 'contradicted'), `ClaimType` ('numerical' | 'citation' | 'mechanism' | 'definition')
+- `claim-extractor.ts` — Heuristic claim extraction:
+  - Numerical pattern: value + units (e.g., "2.6 eV", "150 mA/cm²")
+  - Citation pattern: `[keyYear]` regex
+  - Mechanism hints: "due to", "caused by", "do", "bởi vì" (EN+VI)
+  - Definition hints: "is defined as", "là", "được định nghĩa"
+  - Max 15 claims per run
+- `audit-prompts.ts` — Opus 4.7 evaluator system prompt (strict JSON output)
+- `orchestrator.ts` — `runAuditor()`:
+  - Extract claims (numerical/citation/mechanism/definition)
+  - Build evidence block from RAG chunks
+  - Single Opus 4.7 batch evaluation
+  - Parse JSON findings + compute weighted overall confidence
+  - Verdict weights: supported=1.0, partial=0.6, unsupported=0.3, contradicted=0.0
+  - Save `tenants/{tid}/aiAudits/{auditId}`
+
+NEW endpoint: `POST /api/messages/[id]/audit` (explicit trigger):
+- Auth: Bearer token + tenantId claim
+- Loads message + aiProvenance for RAG chunks
+- Cost Guard pre-check (Tier 5 daily Opus quota)
+- Returns AuditResult JSON
+
+Auto-trigger after T3 deferred — need Lab BKU baseline data first.
+
+### Type updates
+
+- `src/types/ai.ts`:
+  - `AiMessage.tier` expanded `1|2|3` → `1|2|3|4|5`
+  - `ChatStreamEventV2` union: + `rag_search_complete` + `writer_complete`
+- `src/features/ai/components/message-bubble.tsx`:
+  - `TierBadge` prop expanded `1|2|3` → `1|2|3|4|5`
+  - `TIER_COLORS` + `TIER_LABELS` expanded to 5 entries
+  - Tier 4: orange (writer), Tier 5: red (auditor)
+- `messages/{en,vi}.json`:
+  - `ai.tierWriter`, `ai.tierAuditor`
+
+---
+
+## R171 + R172 — Cloud Functions cron + Superadmin dashboard (May 16, 2026)
+
+**Commit**: `a91a9c2`
+
+### R171 — Firebase Functions cron infrastructure (7 sub-rounds)
+
+#### R171-0 — Setup functions/ directory + IAM
+
+NEW `functions/` with TypeScript template, region `asia-southeast1`. `setGlobalOptions` memory 512MiB, timeout 540s (9 min Gen 2 max).
+
+`scripts/setup/r171-functions-iam.sh`:
+- cron-runner service account
+- 4 IAM roles: `datastore.user`, `storage.objectAdmin`, `logging.logWriter`, `monitoring.metricWriter`
+- Compute SA impersonation for Functions Gen 2 runtime
+- 5 GCP APIs enabled (Functions, Scheduler, Build, Run, Pub/Sub)
+
+Secret Manager: `ANTHROPIC_API_KEY`, `ANTHROPIC_ADMIN_KEY`, `GCP_BILLING_ACCOUNT_ID` (= `01545E-FF945F-4AF504`).
+
+`roles/billing.viewer` granted at billing account level. `cloudbilling.googleapis.com` enabled.
+
+#### R171-1 — Tenant.tier setup
+
+NEW `scripts/set-tenant-tier.mjs`. Lab BKU `tenant-dev-001` set to `'enterprise'` (no Cost Guard quota block).
+
+#### R171-2 — Founder CLI cost-query
+
+NEW `scripts/cost-query.mjs` (--tier/feature/capability breakdowns + CSV export).
+
+#### R171-3 — Daily cost backup function (LIVE asia-southeast1)
+
+NEW `functions/src/scheduled/backup-costs.ts`. Cron `0 2 * * *` (02:00 UTC daily). Exports `tenants/{tid}/_costs/{date}` to `gs://labyra-app-dev.firebasestorage.app/_admin/cost-backups/{date}/{tenantId}.json`.
+
+#### R171-4 — Cost Guard structured logging
+
+EDIT `src/app/api/chat/route.ts`: `console.info` JSON `event: cost_guard_check` with tenantId, tier, feature, estimated, allowed, reason, daily/monthly current+limits. Visible in Vercel logs.
+
+#### R171-5 — Weekly Ragas eval function (LIVE asia-southeast1)
+
+NEW `functions/src/scheduled/ragas-eval.ts`. Cron `0 3 * * 0` (03:00 UTC Sunday). Samples 10 random conversations from past 7 days (tier ≥ 2). 11 metrics via Opus 4.7 evaluator:
+- Core RAG (3): faithfulness, contextRelevance, answerRelevance
+- Quality (5): conciseness, vietnameseFluency, technicalAccuracy, citationQuality, subscriptFormatting
+- Safety (2): toxicity, piiLeakage
+- Domain (1): materialsSciencePlausibility
+
+Weighted overall score. Auto-flag if core RAG <0.5 OR safety >0.3. Cost cap $5/run. Output: `tenants/{tid}/_evals/{yyyy-Www}/conversations/{id}`.
+
+#### R171-6 — Daily drift detection function (LIVE asia-southeast1)
+
+NEW `functions/src/scheduled/cost-drift.ts`. Cron `30 2 * * *` (02:30 UTC daily). Reconciles `_costs/{D-2}` estimates with:
+- Anthropic Usage API (cross-org via Admin Key)
+- Google Billing (placeholder; BigQuery export R173-3+)
+
+Per-tenant attribution via share ratio. Alert if |drift| > 20%.
+
+### R172 — Superadmin dashboard (UI + API + RBAC)
+
+#### R172-1 — Superadmin role infrastructure
+
+NEW `scripts/set-superadmin.mjs` (promote by uid or `--email`).
+NEW `src/lib/auth/superadmin-guard.ts` (server-side guard).
+EDIT `src/hooks/use-nav.ts` (filter by `access.role`).
+
+#### R172-2/3/4 — Superadmin API routes
+
+- NEW `/api/superadmin/costs` (aggregate 30-day cost data)
+- NEW `/api/superadmin/evals` (Ragas weekly summaries + flagged conversations)
+- NEW `/api/superadmin/drift` (drift reports + alerts)
+
+#### R172-5 — Dashboard pages
+
+- NEW `/[locale]/dashboard/superadmin/layout.tsx` (client guard)
+- NEW `/[locale]/dashboard/superadmin/costs/page.tsx` (KPI + timeseries + table)
+- NEW `/[locale]/dashboard/superadmin/evals/page.tsx` (weekly + flagged)
+- NEW `/[locale]/dashboard/superadmin/drift/page.tsx` (reports + alerts)
+
+#### R172-6 — Chart components
+
+- NEW `src/features/superadmin/components/cost-kpi-cards.tsx` (4 cards)
+- NEW `src/features/superadmin/components/cost-timeseries.tsx` (stacked area by tier, recharts)
+
+#### R172-7 — Nav config + i18n
+
+- EDIT `src/config/nav-config.ts`: add Superadmin nav group (3 items)
+- EDIT `messages/{en,vi}.json`: flat keys `nav.superadminCosts/Evals/Drift` (avoid next-intl path conflict)
+- EDIT `src/hooks/use-breadcrumbs.tsx`: routeMapping for `/superadmin/*`
+
+### Hotfixes during R172 dev
+
+- `getAuth()` → `getAdminAuthService()` (admin SDK default app not exist in dev)
+- Same fix for `/api/conversations/[id]/cost/route.ts`
+- i18n nested → flat (next-intl `INSUFFICIENT_PATH` conflict)
+- Breadcrumb parent link unique (React duplicate keys warning)
+- Icon `activity` → `alertCircle` (not in Icons type)
+
+Lab BKU tenant promoted `nvhn.7202@gmail.com` → `role: 'superadmin'`.
+
+---
+
+## R170 — Cost Guard v2 + per-feature telemetry + dry-run mode (May 16, 2026)
+
+**Commit**: `c1aff61`
+
+### Cost Guard v2 (4-gate pre-check)
+
+NEW `src/lib/ai/governance/cost-guard.ts`. Before every LLM call:
+
+1. **Per-call estimate cap** (USD) — block if single call > threshold
+2. **Daily cap per tenant** — accumulated cost today < limit
+3. **Monthly cap per tenant** — accumulated cost this month < limit
+4. **Feature-specific quota** — per `tenant.tier` (free/pro/enterprise) × feature
+
+Limits encoded in `src/lib/ai/governance/limits.ts` per tenant tier.
+
+### Cost estimator
+
+NEW `src/lib/ai/cost/estimator.ts`. Predicts cost (USD) before LLM call based on:
+- Tier → Capability → Model
+- Input token estimate (message length + system prompt + tools + context)
+- Output token estimate (max_tokens cap)
+- Pricing from `CAPABILITY_MAP`
+
+Used by Cost Guard pre-check + dry-run mode.
+
+### Dry-run mode
+
+EDIT `src/app/api/chat/route.ts`: query param `?dry_run=1` returns:
+- `intentDecision` (tier, feature, reason, confidence)
+- `capability` (from `getCapabilityForTier`)
+- `estimatedCostUsd`
+- Without calling LLM
+
+Useful for testing routing logic + cost estimation.
+
+### Per-feature telemetry
+
+`recordCost()` extended to break down by `feature` (lab_ops / theory / spectrum_analysis / paper_writing / audit). Aggregated in `tenants/{tid}/_costs/{date}.byFeature.{feature}`.
+
+ADR-020 documents cost control architecture.
+
+---
+
+## R169 — 6-tier capability abstraction + cost telemetry (May 16, 2026)
+
+**Commit**: `ea20db8`
+
+### Capability abstraction (single source of truth)
+
+NEW `src/lib/ai/config/capabilities.ts`:
+
+```ts
+export type Capability =
+  | 'security-router'      // Tier 0
+  | 'tool-calling-cheap'   // Tier 1
+  | 'rag-balanced'         // Tier 2
+  | 'reasoning-balanced'   // Tier 3, Tier 4
+  | 'reasoning-frontier'   // Tier 5
+  | 'embedding' | 'rerank' | 'ocr';
+```
+
+`CAPABILITY_MAP`: Capability → `{ provider, model, inputCost, outputCost, cacheReadCost, maxTokens, contextWindow, tokenizerInflation, notes }`.
+
+`TIER_CAPABILITY`: AiTier → Capability mapping.
+
+`TIER_CONFIG` (in `src/lib/ai/providers/index.ts`) auto-derives from `CAPABILITY_MAP` via `buildTierConfig()`. Edit one place to swap model.
+
+### AiTier expansion
+
+`src/types/ai.ts`:
+```ts
+export type AiTier = 0 | 1 | 2 | 3 | 4 | 5; // was 0|1|2|3
+```
+
+### Cost telemetry
+
+NEW `src/lib/ai/cost/telemetry.ts`: `recordCost({ tenantId, tier, capability, feature, costUsd, inputTokens, outputTokens, latencyMs, grounding })`.
+
+Aggregated in `tenants/{tid}/_costs/{date}` with breakdowns by tier, feature, capability. Latency + token + grounding warning counts.
+
+### Latency + provenance enrichment
+
+`writeProvenance()` extended to capture per-call latency, embedding model, rerank scores, grounding stats. Cost telemetry pairs with provenance for cost-quality analysis.
+
+ADR-019 documents 6-tier capability architecture.
+
+---
+
+## R168-3.13 — AI architecture refresh + economics skill (May 16, 2026)
+
+**Commits**: `ddb83dd`, `f9481ff`
+
+### AI architecture v3.0
+
+Replaced outdated `docs/ai/AI_ARCHITECTURE.md` v2.x (~2046 LOC of pre-R168 state) with v3.0 (303 LOC). Focused on 6-tier production with capability abstraction.
+
+### Economics skill
+
+NEW `.claude/skills/labyra-economics/SKILL.md`:
+- Pricing reference for all model providers
+- Unit economics rules (cost per query target by tenant tier)
+- Cost-quality trade-off heuristics
+- Profitability scenarios
+
+`.claude/skills/labyra-economics/` + `.claude/skills/database-architecture/` + `.claude/skills/ui-ux-standards/` versioned in `.claude/`.
+
+### Repo tracking
+
+R168-3.13c chore: whitelisted `.claude/skills/` in `.gitignore` exception list — skills now tracked in repo, available across all sessions.
+
+---
+
+---
 
 ## R167-D — Anti-hallucination doc reconciliation + L8 priority bump (2026-05-15)
 
@@ -346,4 +739,3 @@
 - All new endpoints (reference-cards CRUD, reanalyze) require Firebase auth + tenantId claim
 - Zod validation with strict length/range limits (max 50KB pasted text, 3-200 peaks, etc.)
 - Tenant isolation via Firestore path scoping
-

@@ -1,113 +1,191 @@
-# ADR-019: AI 6-Tier Architecture with Capability Abstraction
+# ADR-019: AI Tier Architecture (6-tier Capability Abstraction)
 
 **Status**: Accepted
 **Date**: 2026-05-16
-**Phase**: R168-3.13a
-**Owner**: nAM
+**Phase**: R169
+
+---
 
 ## Context
 
-Labyra v2.0 used a 3-tier AI architecture (Lab Manager / Analyst / Research Agent) inherited from labbook-bku. Two problems:
+Labyra AI started with 3 tiers (T1 Haiku tools / T2 Sonnet RAG / T3 Opus reflection) wired directly to model strings in `TIER_CONFIG`. This created problems:
 
-1. **Cost inefficiency**: Sonnet/Opus called for tasks where Gemini Flash-Lite would suffice.
-2. **No capability abstraction**: model strings hardcoded everywhere — vendor swap = grep across codebase.
-
-Upstream design report `LABRYA_AI_TIER_ARCHITECTURE.md` proposed 6-tier, but had inaccurate cost numbers (3-5× underestimate) and wrong model strings (`gemini-3.1-flash-lite` listed as if GA — actually preview).
+1. **Vendor lock-in**: Swapping Opus 4.6 → 4.7 required hunting down all `'claude-opus-4-6'` strings across codebase.
+2. **No abstraction over capability**: "Reasoning-balanced" and "RAG-balanced" are semantic roles, but tiers tied them to specific models.
+3. **3 tiers insufficient**: Paper drafting (T4 Writer) and peer-review audit (T5 Auditor) need different cost profiles than reasoning T3.
+4. **Cost tracking siloed**: No per-capability aggregation for optimization analysis.
 
 ## Decision
 
-Adopt **6-tier architecture** with **capability abstraction**:
+Introduce **capability abstraction layer** between AiTier and model strings.
 
-### Tier assignments
+### Architecture
 
-| Tier | Capability | Provider/Model |
-|---|---|---|
-| 0 (Shield+Router) | `security-router` | Google `gemini-3.1-flash-lite-preview` |
-| 1 (Lab Manager) | `tool-calling-cheap` | Google `gemini-3.1-flash-lite-preview` (share T0) |
-| 2 (Librarian) | `rag-balanced` | Google `gemini-3-flash-preview` |
-| 3 (Engineer) | `reasoning-balanced` | Anthropic `claude-sonnet-4-6` |
-| 4 (Writer) | `reasoning-balanced` | Anthropic `claude-sonnet-4-6` |
-| 5 (Auditor) | `reasoning-frontier` | Anthropic `claude-opus-4-7` |
-
-### Embedding stack (unchanged)
-
-- `voyage-3-large` (1024-dim) for embedding
-- `voyage-rerank-2.5` for reranking
-- `mistral-ocr` for paper upload OCR
-
-### Capability abstraction pattern
-
-```typescript
-// Tier → Capability → Model mapping
-TIER_CAPABILITY[5] → 'reasoning-frontier' → CAPABILITY_MAP['reasoning-frontier'] → { provider: 'anthropic', model: 'claude-opus-4-7', ... }
+```
+AiTier (0-5)
+  ↓ TIER_CAPABILITY[tier]
+Capability (semantic role)
+  ↓ CAPABILITY_MAP[capability]
+CapabilityProfile { provider, model, pricing, context window, ... }
 ```
 
-Single source of truth: `src/lib/ai/config/capabilities.ts` (to be created in R169).
+### Capability types
 
-## Alternatives Considered
+```ts
+export type Capability =
+  | 'security-router'      // Tier 0 — fast intent classification + safety
+  | 'tool-calling-cheap'   // Tier 1 — Firestore data lookups
+  | 'rag-balanced'         // Tier 2 — RAG with paper context
+  | 'reasoning-balanced'   // Tier 3 + Tier 4 — analysis + drafting
+  | 'reasoning-frontier'   // Tier 5 — audit/peer review
+  | 'embedding'            // RAG indexing (Voyage)
+  | 'rerank'               // Post-retrieval (Voyage rerank-2.5)
+  | 'ocr';                 // Paper upload (Mistral)
+```
 
-### Alt 1: Add Haiku 4.5 as Tier 0 (rejected)
+### Tier expansion
 
-- Haiku $1/$5 vs Gemini 3.1 Flash-Lite $0.25/$1.50.
-- For Tier 0 (intent classify + PII detect), Gemini sufficient. 4× cost not justified.
-- May reconsider as **failover** when Gemini rate-limited (defer R170+).
+`AiTier` expanded from `0|1|2|3` to `0|1|2|3|4|5`:
 
-### Alt 2: Migrate embedding to Gemini Embedding 1 (rejected for Stage 1)
+- T0 — Shield + Router (intent classifier)
+- T1 — Lab Manager (tools)
+- T2 — Librarian (RAG default)
+- T3 — Engineer (reflection loop)
+- **T4 — Writer (paper section drafting)** ← NEW
+- **T5 — Auditor (peer review)** ← NEW
 
-- Saving $0.03/MTok × ~100M tokens/year = $3-5/year.
-- Migration cost: re-create Pinecone index 3072-dim or truncate to 1024 (Matryoshka), re-embed all papers.
-- Voyage rerank-2.5 is designed pair with voyage-3-large; switching means using cross-vendor rerank.
-- **Net not worth Stage 1.** Reconsider R175+ if volume scales.
+### CapabilityProfile shape
 
-### Alt 3: Keep 3-tier (rejected)
+```ts
+interface CapabilityProfile {
+  provider: 'anthropic' | 'google' | 'voyage' | 'mistral';
+  model: string;
+  inputCost: number;          // USD per 1M tokens
+  outputCost: number;
+  cacheReadCost: number;
+  maxTokens: number;
+  contextWindow: number;
+  tokenizerInflation?: number; // e.g., Opus 4.7 = 1.35
+  notes?: string;
+}
+```
 
-- Sonnet for lab ops queries = wasted budget.
-- 6-tier separates cost by value: $0.0003 (Tier 0) to $0.40 (Tier 5) — 1300× range.
+### Mapping
 
-### Alt 4: Vendor monolith (Anthropic only) (rejected)
+```ts
+export const TIER_CAPABILITY: Record<AiTier, Capability> = {
+  0: 'security-router',
+  1: 'tool-calling-cheap',
+  2: 'rag-balanced',
+  3: 'reasoning-balanced',
+  4: 'reasoning-balanced',
+  5: 'reasoning-frontier'
+};
+```
 
-- Single vendor = single point of failure.
-- Gemini Flash-Lite cheaper than Haiku for routing.
-- Multi-vendor enables failover (future).
+### Auto-derive TIER_CONFIG
+
+`src/lib/ai/providers/index.ts`:
+
+```ts
+function buildTierConfig(): Record<AiTier, LLMProviderConfig> {
+  const config: Partial<Record<AiTier, LLMProviderConfig>> = {};
+  for (const t of [0, 1, 2, 3, 4, 5] as const) {
+    const profile = CAPABILITY_MAP[TIER_CAPABILITY[t]];
+    config[t] = {
+      id: profile.provider === 'anthropic' ? 'anthropic' : 'gemini',
+      tier: t,
+      model: profile.model,
+      label: `${labels[t]} (${profile.model})`
+    };
+  }
+  return config as Record<AiTier, LLMProviderConfig>;
+}
+
+export const TIER_CONFIG: Record<AiTier, LLMProviderConfig> = buildTierConfig();
+```
+
+To swap a model (e.g., Opus 4.7 → 4.8 when released), edit ONE field in `CAPABILITY_MAP`. All tier handlers auto-pick up new model.
+
+---
 
 ## Consequences
 
 ### Positive
 
-- **Cost separation**: $0.0003 (T0) → $0.40 (T5) reflects task complexity.
-- **Vendor diversification**: Google for cheap tiers, Anthropic for reasoning.
-- **Capability swap**: change model 1 file.
-- **Audit transparency**: each tier output has cost record in TierContext.
+- **Vendor-agnostic**: Swap providers per capability without touching tier handlers
+- **Capability reuse**: T3 + T4 share `reasoning-balanced` (Sonnet 4.6) — single config
+- **Cost aggregation**: Telemetry tracks `byCapability` for optimization analysis
+- **Future-proof**: Add new tiers by adding new capability (no code refactor)
+- **Documentation**: `CapabilityProfile.notes` documents why a model was chosen
 
 ### Negative
 
-- **Preview model risk**: Gemini 3.1 Flash-Lite + 3 Flash are preview (pricing not locked). Risk: price hike at GA.
-  - Mitigation: drift detection cron alerts on actual cost changes.
-- **Tokenizer drift**: Opus 4.7 has +35% same text vs Opus 4.6.
-  - Mitigation: factor 1.35 hardcoded in cost estimator.
-- **Multi-vendor complexity**: 2 SDKs (Anthropic + Google) + Voyage + Mistral = 4 vendors.
-  - Mitigation: capability abstraction hides vendor details from tier code.
+- **Indirection**: Two-step lookup (Tier → Capability → Model) vs one-step (Tier → Model)
+- **Cognitive overhead**: New devs must understand capability concept
 
-### Risks tracked
+### Mitigations
 
-| Risk | Severity | Mitigation |
-|---|---|---|
-| Gemini 3.1 Flash-Lite preview deprecates | HIGH | Fallback to 2.5 Flash-Lite (GA) prepared in CAPABILITY_MAP |
-| Gemini 3 Flash GA pricing higher than preview | MEDIUM | Drift detection alerts, switch to 2.5 Flash ($0.30/$2.50) if needed |
-| Opus 4.7 tokenizer +35% drift outside model estimate | LOW | Reconcile with actual billing weekly |
+- `buildTierConfig()` derived eagerly at boot — no runtime overhead
+- Clear inline JSDoc comments at `Capability` type definition
+- ADR documents intent + examples
 
-## Implementation Tracking
+---
 
-- R168-3.13b (next): fix `cost-calculator.ts` pricing.
-- R169 (planned): create `src/lib/ai/config/capabilities.ts` with full CAPABILITY_MAP.
-- R169: refactor existing dispatcher to use TIER_CAPABILITY mapping.
-- R170+: add failover mechanism (Haiku for Tier 0 if Gemini down).
+## Implementation phases
+
+- **R169-1** (this ADR): Create `capabilities.ts` SSOT + `TIER_CAPABILITY` map
+- **R169-2**: Expand `AiTier` 0|1|2|3 → 0|1|2|3|4|5 in `src/types/ai.ts`
+- **R169-3**: Cost telemetry uses `byCapability` aggregation
+- **R169-4**: `getCapabilityForTier()` helper for runtime queries
+- **R173-4**: T4 Writer orchestrator using `reasoning-balanced` capability
+- **R173-5**: T5 Auditor orchestrator using `reasoning-frontier` capability
+- **R174-1**: Model rollback within capability without touching tier handlers (Gemini 3 → 2.5)
+
+---
+
+## Model selection rationale (May 2026)
+
+Current `CAPABILITY_MAP`:
+
+| Capability | Provider | Model | Reasoning |
+|---|---|---|---|
+| security-router | google | gemini-2.5-flash | Fastest cheap classifier; 4× cheaper than Haiku |
+| tool-calling-cheap | google | gemini-2.5-flash | Same model as router, share singleton |
+| rag-balanced | google | gemini-2.5-flash | Sufficient for RAG + grounding; saves Sonnet quota |
+| reasoning-balanced | anthropic | claude-sonnet-4-6 | Best price/quality for complex reasoning |
+| reasoning-frontier | anthropic | claude-opus-4-7 | Best quality for audit/peer review (+35% tokenizer inflation acceptable for low-frequency T5) |
+| embedding | voyage | voyage-3-large | 1024-dim, best matryoshka representation |
+| rerank | voyage | rerank-2.5 | Best dense reranker |
+| ocr | mistral | mistral-ocr-latest | Best layout-aware OCR for scientific PDFs |
+
+**R174-1 rollback**: T0+T1+T2 from `gemini-3.1-flash-lite-preview` / `gemini-3-flash-preview` → `gemini-2.5-flash`.
+
+Reason: Gemini 3 series requires `thought_signature` field in multi-turn function calls. SDK `@google/generative-ai` 2026-05 release doesn't yet expose signature pass-through. Restore to Gemini 3 when SDK signature handling lands (planned R195+).
+
+---
+
+## Alternatives considered
+
+| Alternative | Rejected because |
+|---|---|
+| Hardcoded model strings per tier | Vendor lock-in (original problem) |
+| Single tier with prompt routing | Loses cost discipline; all queries use frontier model |
+| LangChain abstraction | Heavy framework, doesn't match Labyra's TypeScript-native style |
+| Direct LLMProvider abstraction without capability | Provider-level (e.g., `AnthropicProvider`) ties tier to vendor; capability separates semantic role from vendor |
+
+---
 
 ## References
 
-- `LABRYA_AI_TIER_ARCHITECTURE.md` — original 6-tier design report (cost numbers superseded)
-- `docs/ai/AI_ARCHITECTURE.md` — current single source of truth
-- `docs/adr/ADR-020-ai-cost-controls.md` — cost guard + drift detection
-- `docs/adr/ADR-021-inter-tier-protocols.md` — communication techniques
-- Anthropic pricing 2026-05: https://www.anthropic.com/pricing
-- Google Gemini pricing 2026-05: https://ai.google.dev/gemini-api/docs/pricing
+- `src/lib/ai/config/capabilities.ts` — implementation
+- `src/lib/ai/providers/index.ts` — auto-derive TIER_CONFIG
+- ADR-020 — Cost Controls (uses capability for telemetry)
+- ADR-021 — Inter-tier Protocols (deferred — Tech 1-9 cross-tier patterns)
+- Anthropic pricing: https://www.anthropic.com/pricing
+- Google AI pricing: https://ai.google.dev/pricing
+- Voyage pricing: https://docs.voyageai.com/docs/pricing
+
+---
+
+@phase R169-architecture-decision

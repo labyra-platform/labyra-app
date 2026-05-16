@@ -1,303 +1,675 @@
-# Labyra AI Architecture
+# Labyra AI Architecture v3.1
 
-**Version**: 3.0 — Stage 1 Production
-**Last updated**: 2026-05-16 (R168-3.13a)
-**Status**: Active. Supersedes v2.0 (labbook-bku inherited 2046 LOC).
-**Owner**: nAM (superadmin)
+> 6-tier production AI system for materials science lab management.
+> See ADR-019 (Tier Architecture), ADR-020 (Cost Controls), ADR-021 (Inter-tier).
 
-> **⚠ Major revision from v2.0:**
-> - Three-Tier → **6-Tier** architecture (Shield+Router/LabManager/Librarian/Engineer/Writer/Auditor)
-> - Cost numbers recalculated with verified 2026 pricing (Anthropic + Google official)
-> - Capability abstraction replaces hardcoded model strings
-> - Cost controls (estimator, drift detection, quota guard v2) integrated
-> - 9 inter-tier protocol techniques specified
->
-> For detailed decision rationale, see:
-> - `docs/adr/ADR-019-ai-tier-architecture.md`
-> - `docs/adr/ADR-020-ai-cost-controls.md`
-> - `docs/adr/ADR-021-inter-tier-protocols.md`
+<!-- R175-docs-update-2026-05-16 -->
+
+**Version**: 3.1 (R175)
+**Last updated**: 2026-05-16
+**State**: Production (all 6 tiers live)
 
 ---
 
-## Table of Contents
+## 1. Overview
 
-1. [Vision](#1-vision)
-2. [6-Tier Architecture](#2-6-tier-architecture)
-3. [Capability Abstraction](#3-capability-abstraction)
-4. [Model Stack — Stage 1](#4-model-stack--stage-1)
-5. [Cost Model — Verified 2026](#5-cost-model--verified-2026)
-6. [Inter-Tier Protocols](#6-inter-tier-protocols)
-7. [Cost Controls](#7-cost-controls)
-8. [Anti-Hallucination — 9 Layers](#8-anti-hallucination--9-layers)
-9. [Plan Tiers](#9-plan-tiers)
-10. [Migration Path](#10-migration-path)
-11. [Decision Log](#11-decision-log)
+Labyra's AI stack uses **6 tiers** organized by capability + cost tradeoff. Each user query routes through Tier 0 (intent classifier + security shield) which dispatches to one of T1-T5 based on intent.
+
+Key principles:
+- **Trust > Coverage**: Citations are ground truth (DOI from Crossref/OpenAlex), not LLM hallucinations
+- **Cost discipline**: Cheapest model that suffices. Cost Guard 4-gate pre-check before every call
+- **Telemetry-first**: Every call logged for offline analysis (cost, latency, grounding)
+- **Multi-tenant isolation**: All Firestore queries filtered by `tenantId`
 
 ---
 
-## 1. Vision
+## 2. Tier roster
 
-Labyra AI là hệ sinh thái 6-tier cho lab vật liệu, ưu tiên:
+### T0 — Shield + Router (intent classifier)
 
-1. **Uy tín**: mọi claim có audit trail (PROV-O), citations verified.
-2. **Bền vững**: gross margin ≥60% mọi plan tier, không VC subsidy.
-3. **Trust > Coverage**: thà thiếu data còn hơn bịa.
+**Model**: `gemini-2.5-flash` (`security-router` capability)
+**Role**: Classify user message into tier 1-4 + feature kind + safety screen
+**Latency**: ~500ms
+**Cost**: ~$0.0001/call
 
----
-
-## 2. 6-Tier Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  User Query (Vietnamese / English)                       │
-└─────────────────────────┬───────────────────────────────┘
-                          ▼
-              ┌─────────────────────────┐
-              │  Tier 0: Shield+Router  │ ← ALWAYS RUNS
-              │  Gemini 3.1 Flash-Lite  │   ~$0.00025/query
-              └────────┬──────────┬─────┘
-                       │          │
-       ┌───────────────┘          └───────────────┐
-       ▼                                          ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ Tier 1       │  │ Tier 2       │  │ Tier 3       │  │ Tier 4       │
-│ Lab Manager  │  │ Librarian    │  │ Engineer     │  │ Writer       │
-│ Gemini 3.1FL │  │ Gemini 3F    │  │ Sonnet 4.6   │  │ Sonnet 4.6   │
-│ ~$0.002      │  │ ~$0.018      │  │ ~$0.10       │  │ ~$0.18       │
-└──────────────┘  └──────────────┘  └──────────────┘  └──────┬───────┘
-   lab_ops          theory            spectrum            writing
-                                                              │
-                                                              │ (background async)
-                                                              ▼
-                                                  ┌──────────────────┐
-                                                  │ Tier 5: Auditor  │
-                                                  │ Opus 4.7         │
-                                                  │ ~$0.40/audit     │
-                                                  │ (trigger ~25%)   │
-                                                  └──────────────────┘
+Outputs:
+```json
+{
+  "tier": 1 | 2 | 3 | 4,
+  "feature": "lab_ops" | "theory" | "spectrum_analysis" | "paper_writing",
+  "reason": "<10 words>",
+  "confidence": 0.0-1.0
+}
 ```
 
-### Tier responsibilities
+**Fallback** (parse fail OR confidence < 0.7): `tier=2, feature='theory'` (Sonnet RAG default).
 
-| Tier | Vai trò | Khi nào chạy | Trigger source |
-|---|---|---|---|
-| **0** | Security shield + intent router | 100% queries | Always — first gate |
-| **1** | Lab ops (chemicals, equipment, booking, compliance) | ~45% queries | Router: intent=`lab_ops` |
-| **2** | Paper RAG (theory, mechanisms, comparisons) | ~25% queries | Router: intent=`theory` |
-| **3** | Spectrum analysis + Python worker interpret | ~20% queries | Router: intent=`spectrum_analysis` |
-| **4** | Draft writing (Results/Discussion/Methods) | ~10% queries | User explicit "Write [section]" |
-| **5** | Peer review audit (background async) | ~25% of T4 calls | Triggered by T4 output (selective) |
+**R174-6 keyword override**: regex pre-check bypasses classifier when message matches strong drafting keywords + section types → forces `tier=4`. Reason: Gemini 2.5-flash few-shot prompt unreliable for tier=4 emission.
+
+### T1 — Lab Manager (tools)
+
+**Model**: `gemini-2.5-flash` (`tool-calling-cheap` capability)
+**Role**: Lab data lookups via tool calls
+**Latency**: ~2-5s (with tool round)
+**Cost**: ~$0.0005/query
+
+Tools:
+- `listChemicals`, `recentMaterials`, `recentSamples`, `recentExperiments`
+- `searchPapers` (RAG)
+- Action tools: `recordExperimentResultDraft`, etc.
+
+Max tool rounds: 3 (R160).
+
+**R174-5 fix**: `functionResponse` parts must be on role='function', not role='user'.
+
+### T2 — Librarian (RAG default)
+
+**Model**: `gemini-2.5-flash` (`rag-balanced` capability)
+**Role**: Single-topic technical Q&A with paper RAG context
+**Latency**: ~3-5s
+**Cost**: ~$0.001/query
+
+Uses hybrid RAG (vector + BM25 + RRF + Voyage rerank-2.5). Most common tier (~50% of queries).
+
+### T3 — Engineer (reflection)
+
+**Model**: `claude-sonnet-4-6` (`reasoning-balanced` capability)
+**Role**: Complex single-topic analysis with self-critique loop
+**Latency**: ~10-20s (multiple rounds)
+**Cost**: ~$0.005-0.015/query
+
+Reflection orchestrator: max 3 rounds of self-critique. Critic decides "sufficient" or "needs revision". Final round streams to UI.
+
+Use cases:
+- Spectrum interpretation (XRD, FTIR, Raman analysis)
+- Mechanism explanations
+- Formula derivations
+
+### T4 — Writer (paper drafting) ← R173-4
+
+**Model**: `claude-sonnet-4-6` (`reasoning-balanced` capability)
+**Role**: Manuscript section drafting
+**Latency**: ~10-20s
+**Cost**: ~$0.01-0.02/query
+
+Section types: methods / results / discussion / introduction (auto-detected from message).
+
+Flow:
+1. RAG search top-8 papers via `searchPapers`
+2. Load paper metadata via `citation-loader.ts` (R175-1)
+3. Build context block with `[authorYear]` citation keys
+4. Stream draft with section-specific system prompt
+5. Extract inline citations
+
+Trigger: `feature: 'paper_writing'` (via keyword override in R174-6).
+
+Strict prompt rules (R174-8):
+- DO NOT ask for clarification
+- Use placeholder values (X g, Y mL) when info missing
+- DO NOT end with follow-up questions
+- Output draft only
+
+### T5 — Auditor (peer review) ← R173-5
+
+**Model**: `claude-opus-4-7` (`reasoning-frontier` capability, +35% tokenizer inflation)
+**Role**: Verify claims in T3/T4 responses against RAG sources
+**Latency**: ~10-15s
+**Cost**: ~$0.05-0.15/audit (max 15 claims/run)
+
+Endpoint: `POST /api/messages/[id]/audit` (explicit trigger).
+
+Flow:
+1. Load source message + aiProvenance (RAG chunks used)
+2. Extract claims (numerical, citation, mechanism, definition)
+3. Single Opus 4.7 batch call evaluating all claims
+4. Verdict per claim: supported / partially_supported / unsupported / contradicted
+5. Confidence score + evidence chunkIds
+6. Save `tenants/{tid}/aiAudits/{auditId}`
+
+Weighted overall confidence: supported=1.0, partial=0.6, unsupported=0.3, contradicted=0.0.
+
+Auto-trigger after T3 deferred — need Lab BKU baseline data first to calibrate cost-effectiveness.
 
 ---
 
-## 3. Capability Abstraction
+## 3. Capability abstraction (R169)
 
-**Anti-pattern**: hardcode `claude-opus-4-7` everywhere → đổi model = sửa nhiều chỗ.
+Single source of truth: `src/lib/ai/config/capabilities.ts`.
 
-**Pattern**: tier maps to **capability**, capability maps to **model profile**.
-
-```typescript
-// src/lib/ai/config/capabilities.ts
-
+```ts
 export type Capability =
-  | 'security-router'    // T0
-  | 'tool-calling-cheap' // T1
-  | 'rag-balanced'       // T2
-  | 'reasoning-balanced' // T3, T4
-  | 'reasoning-frontier' // T5
-  | 'embedding'          // RAG indexing
-  | 'rerank'             // Retrieval post-processing
-  | 'ocr';               // Paper upload
+  | 'security-router'      // Tier 0
+  | 'tool-calling-cheap'   // Tier 1
+  | 'rag-balanced'         // Tier 2
+  | 'reasoning-balanced'   // Tier 3, Tier 4
+  | 'reasoning-frontier'   // Tier 5
+  | 'embedding' | 'rerank' | 'ocr';
 
-export const TIER_CAPABILITY: Record<TierNumber, Capability> = {
+export const CAPABILITY_MAP: Record<Capability, CapabilityProfile> = {
+  'security-router': {
+    provider: 'google',
+    model: 'gemini-2.5-flash',
+    inputCost: 0.25, outputCost: 1.5,
+    cacheReadCost: 0.025,
+    maxTokens: 512,
+    contextWindow: 1_000_000
+  },
+  'reasoning-frontier': {
+    provider: 'anthropic',
+    model: 'claude-opus-4-7',
+    inputCost: 15, outputCost: 75,
+    cacheReadCost: 1.5,
+    maxTokens: 4096,
+    contextWindow: 200_000,
+    tokenizerInflation: 1.35 // +35% vs Opus 4.6
+  },
+  // ... etc.
+};
+
+export const TIER_CAPABILITY: Record<AiTier, Capability> = {
   0: 'security-router',
   1: 'tool-calling-cheap',
   2: 'rag-balanced',
   3: 'reasoning-balanced',
   4: 'reasoning-balanced',
-  5: 'reasoning-frontier',
+  5: 'reasoning-frontier'
 };
 ```
 
-**Lợi ích**:
-- Đổi model (vd Opus 4.7 → 4.8) = sửa 1 chỗ.
-- A/B test = đổi `TIER_CAPABILITY[5]` từ frontier xuống balanced để đo quality.
-- Cost data co-located với model string trong `CAPABILITY_MAP`.
+`TIER_CONFIG` (in `src/lib/ai/providers/index.ts`) auto-derives from `CAPABILITY_MAP`. Edit one place to swap model.
+
+**R174-1 rollback**: T0+T1+T2 models from `gemini-3.1-flash-lite-preview` / `gemini-3-flash-preview` → `gemini-2.5-flash`. Reason: Gemini 3 series requires `thought_signature` field in multi-turn function calls, SDK 2026-05 doesn't expose pass-through.
 
 ---
 
-## 4. Model Stack — Stage 1
+## 4. Cost controls (R170)
 
-Verified Anthropic + Google official pricing 2026-05.
+### 4-gate pre-check
 
-| Capability | Provider | Model | Input $/MTok | Output $/MTok | Cache hit | Notes |
-|---|---|---|---|---|---|---|
-| security-router | Google | `gemini-3.1-flash-lite-preview` | 0.25 | 1.50 | 0.025 | Preview, AI Studio quota 4K RPM |
-| tool-calling-cheap | Google | `gemini-3.1-flash-lite-preview` | 0.25 | 1.50 | 0.025 | Share singleton with T0 |
-| rag-balanced | Google | `gemini-3-flash-preview` | 0.50 | 3.00 | 0.05 | Preview, monitor GA pricing |
-| reasoning-balanced | Anthropic | `claude-sonnet-4-6` | 3.00 | 15.00 | 0.30 | Stable, 1M context |
-| reasoning-frontier | Anthropic | `claude-opus-4-7` | 5.00 | 25.00 | 0.50 | **+35% tokenizer inflation vs 4.6** |
-| embedding | Voyage | `voyage-3-large` | 0.18 | — | — | 1024-dim, paired with rerank-2.5 |
-| rerank | Voyage | `rerank-2.5` | — | — | — | Designed pair with voyage-3-large |
-| ocr | Mistral | `mistral-ocr` | ~$1/1000 pages | — | — | Paper upload one-time |
+`src/lib/ai/governance/cost-guard.ts`:
 
-### Why these choices?
+```ts
+const costCheck = await checkCostGuard(tenantId, tier, feature, estimated);
+// Gates:
+// 1. Per-call estimate <= per-call cap (tenant.tier dependent)
+// 2. Today's accumulated <= daily cap
+// 3. This month's accumulated <= monthly cap
+// 4. Feature-specific quota (e.g., paper_writing 10/day for 'pro' tier)
+```
 
-- **Tier 0+1 Gemini 3.1 Flash-Lite**: cheapest reasoning model with strict JSON mode + adequate quality. Share singleton between T0 (router) + T1 (lab ops) for cache reuse.
-- **Tier 2 Gemini 3 Flash**: balance cost ($0.50/MTok) and reasoning for RAG. Long context (1M) eliminates chunking concerns.
-- **Tier 3+4 Sonnet 4.6**: Anthropic's reasoning + tool calling are best-in-class for scientific interpretation. Cache hit -90% makes prompt reuse cheap.
-- **Tier 5 Opus 4.7**: peer review needs highest quality. Tokenizer inflation factor 1.35 modeled in cost estimator. Always background, never blocks UI.
-- **Voyage embedding kept**: Pinecone index already 1024-dim. Voyage rerank-2.5 is designed pair. Migration to Gemini Embedding 1 deferred to R175+ (saving $3-5/year not worth re-indexing cost).
-- **No Haiku in tiers**: not needed. Gemini 3.1 Flash-Lite is 4× cheaper for T0 task. Haiku may join later as failover only.
+If any gate fails, return HTTP 429 with reason.
 
----
+### Tenant tiers
 
-## 5. Cost Model — Verified 2026
+`tenants/{tid}.tier`: `'free' | 'pro' | 'enterprise'`
 
-### Per-query cost (realistic, including hidden cost)
-
-| Query type | % traffic | Tiers used | Cost/query |
+| Tier | Per-call cap | Daily cap | Monthly cap |
 |---|---|---|---|
-| Lab ops (chemical inventory, booking) | 45% | T0+T1 | ~$0.002 |
-| Theory chat (RAG paper) | 25% | T0+T2 | ~$0.018 |
-| Spectrum analysis | 20% | T0+T3 | ~$0.10 |
-| Paper writing draft | 10% | T0+T2+T3+T4 | ~$0.20 |
-| Audit (background, ~25% of writing) | 2.5% effective | T5 | ~$0.40 |
+| free | $0.01 | $0.10 | $1 |
+| pro | $0.10 | $5 | $50 |
+| enterprise | $1 | unlimited | unlimited |
 
-**Weighted average**: ~$0.054/query (vs report claim $0.018 — corrected 3×).
+Lab BKU (`tenant-dev-001`) tier = `enterprise` (no quota block dev).
 
-### Infrastructure baseline (não AI)
+### Cost estimator
 
-| Service | Monthly cost @ 1K queries |
-|---|---|
-| Cloud Run (Python worker, asia-southeast1) | $30-50 (min-instance) |
-| Vercel functions | $5-15 |
-| Firestore reads/writes | $5-10 |
-| Firebase Storage | $1-3 |
-| Pinecone serverless | $0.50-2 |
-| Voyage embedding | $0.50 (re-embedding new papers) |
-| Mistral OCR | $1.50 (10 papers/mo × 15 pages) |
-| **Infra subtotal** | **~$45-80/month baseline** |
+`src/lib/ai/cost/estimator.ts`:
 
-### Sensitivity scenarios
+```ts
+const estimated = estimateCost(tier, feature, {
+  inputTokenEstimate, // from message + system + tools + context
+  outputTokenEstimate // from maxTokens cap
+});
+```
 
-| Scenario | Volume/mo | AI cost | Infra | TCO | Per-paying-user revenue for 60% margin |
-|---|---|---|---|---|---|
-| Conservative (Lab BKU only) | 500 q | ~$27 | $50 | $77 | ≥ $193 |
-| Realistic (10 labs Pro) | 5,000 q | ~$270 | $80 | $350 | ≥ $35/lab |
-| Aggressive (50 labs scale) | 50,000 q | ~$2,700 | $200 | $2,900 | ≥ $58/lab |
+Used by Cost Guard pre-check + dry-run mode.
 
-→ **Pro plan $30/mo gives ~62% margin at realistic scale.** Stable.
+### Dry-run
 
----
+Query param `?dry_run=1` returns intent decision + cost estimate without calling LLM. Useful for testing routing.
 
-## 6. Inter-Tier Protocols
+### Telemetry
 
-9 techniques formalized in `docs/adr/ADR-021-inter-tier-protocols.md`. Summary:
+`recordCost()` writes to `tenants/{tid}/_costs/{date}` with:
+- `totalCostUsd`
+- `byTier: { 1: ..., 2: ..., 3: ..., 4: ..., 5: ... }`
+- `byFeature: { lab_ops: ..., theory: ..., ... }`
+- `byCapability: { ... }`
+- `latencyP50, latencyP95`
+- `groundingWarnings: { unverifiedNumbers, unsourcedClaims }`
 
-| # | Technique | Stage 1 | Cost impact |
-|---|---|---|---|
-| 1 | Parallel T2+T3 (Promise.all) | ✅ | 0% cost, -40% latency |
-| 2 | TierContext shared state | ✅ | Eliminates redundant fetches |
-| 3 | Streaming SSE | ✅ | 0% cost, UX win |
-| 4 | Zod JSON schema strict | ✅ | -90% retry rate |
-| 5 | Prompt caching | ✅ | -90% input cost (cached) |
-| 6 | Speculative decoding | ❌ defer R175+ | High risk of wasted cost |
-| 7 | Result memoization (Tier 2 theory) | ✅ | -30% Tier 2 cost (cache hit rate) |
-| 8 | Adaptive tier downgrade | ❌ defer R170+ | Requires Cost Guard v2 |
-| 9 | Cross-tier dedup (T4 sources → T5) | ✅ | -$0.13/1K queries |
-| A | Circuit breaker fallback | ❌ defer R170+ | Premature for 1 tenant |
-| B | Token budget per request | ✅ | Defense in depth |
-| C | Async batching (-50%) | ✅ | For paper OCR, Ragas eval |
+Aggregated by `backupCostsDaily` Cloud Function to GCS for offline analysis.
 
 ---
 
-## 7. Cost Controls
+## 5. Cron infrastructure (R171)
 
-5 fixes shipped in Phase 1 (see `docs/adr/ADR-020-ai-cost-controls.md`):
+3 Cloud Functions live `asia-southeast1`:
 
-1. **Capability abstraction** — model swap = 1 file change.
-2. **Cost estimator** — `src/lib/ai/cost/estimator.ts` per-token calculation with tokenizer inflation.
-3. **Tier 5 trigger refinement** — critical/standard/skip 3 levels (instead of always-on).
-4. **Quota guard v2** — daily + monthly + per-feature caps.
-5. **Drift detection cron** — reconcile estimate vs actual billing, alert ±20% drift.
+### backupCostsDaily
+
+**Schedule**: `0 2 * * *` (02:00 UTC daily)
+**File**: `functions/src/scheduled/backup-costs.ts`
+
+Exports yesterday's `tenants/{tid}/_costs/{D-1}` to GCS:
+```
+gs://labyra-app-dev.firebasestorage.app/_admin/cost-backups/{date}/{tenantId}.json
+```
+
+GCS lifecycle: 90-day auto-delete for `_admin/cost-backups/` prefix (R173-2).
+
+### reconcileCostDrift
+
+**Schedule**: `30 2 * * *` (02:30 UTC daily)
+**File**: `functions/src/scheduled/cost-drift.ts`
+
+Compares estimated vs actual costs:
+- Anthropic Usage API (cross-org via `ANTHROPIC_ADMIN_KEY`)
+- Google Billing (placeholder; BigQuery integration in R176-2)
+
+Per-tenant attribution via share ratio. Alert if |drift| > 20%.
+
+### ragasEvalWeekly
+
+**Schedule**: `0 3 * * 0` (03:00 UTC Sunday)
+**File**: `functions/src/scheduled/ragas-eval.ts`
+
+Samples 10 random conversations from past 7 days (tier ≥ 2). 11 metrics via Opus 4.7 evaluator:
+
+**Core RAG (3)**:
+- Faithfulness
+- Context Relevance
+- Answer Relevance
+
+**Quality (5)**:
+- Conciseness
+- Vietnamese Fluency
+- Technical Accuracy
+- Citation Quality
+- Subscript Formatting
+
+**Safety (2)**:
+- Toxicity
+- PII Leakage
+
+**Domain (1)**:
+- Materials Science Plausibility
+
+Weighted overall score. Auto-flag if core RAG < 0.5 OR safety > 0.3.
+
+Cost cap $5/run.
+
+Output: `tenants/{tid}/_evals/{yyyy-Www}/conversations/{id}`.
+
+### IAM
+
+Service account: `cron-runner@labyra-app-dev.iam.gserviceaccount.com`
+
+Roles:
+- `roles/datastore.user`
+- `roles/storage.objectAdmin`
+- `roles/logging.logWriter`
+- `roles/monitoring.metricWriter`
+- `roles/bigquery.dataViewer` (R173-3)
+- `roles/bigquery.jobUser` (R173-3)
+- `roles/billing.viewer` (at billing account level)
+
+Compute SA `802854518465-compute@developer.gserviceaccount.com` impersonates cron-runner for Gen 2 runtime.
+
+### Secrets
+
+Secret Manager:
+- `ANTHROPIC_API_KEY` (for Ragas Opus calls)
+- `ANTHROPIC_ADMIN_KEY` (for Usage API)
+- `GCP_BILLING_ACCOUNT_ID` = `01545E-FF945F-4AF504`
 
 ---
 
-## 8. Anti-Hallucination — 9 Layers
+## 6. Founder dashboard (R172)
 
-Integrated across tiers (see `docs/ai/AI_ARCHITECTURE.md` Section 13 legacy for L1-L9 detail):
+`/dashboard/superadmin/{costs,evals,drift}` — superadmin-only:
 
-| Layer | Tier | Status |
+### Costs page
+
+- 4 KPI cards: Total cost (period), Total queries, Avg cost/query, Projected monthly
+- Daily cost trend chart (recharts AreaChart stacked by tier)
+- Recent days raw data table
+
+### Evals page
+
+- Weekly Ragas eval summaries (last 12 weeks)
+- Flagged conversations list (low confidence)
+- Per-metric trend charts
+
+### Drift page
+
+- Drift reports (estimated vs actual cost)
+- Alert when |drift| > 20%
+- Per-tenant breakdown
+
+### API routes
+
+- `GET /api/superadmin/costs?range=30`
+- `GET /api/superadmin/evals`
+- `GET /api/superadmin/drift?range=14`
+
+All guarded by `requireSuperadmin()` in `src/lib/auth/superadmin-guard.ts`.
+
+### Promote superadmin
+
+```bash
+node --env-file=.env.local scripts/set-superadmin.mjs --email <user@example.com>
+```
+
+Sets custom claim `role: 'superadmin'` on user. Effective on next token refresh.
+
+---
+
+## 7. UI/UX patterns (R174)
+
+### Tier badge realtime
+
+`ChatStreamEventV2.message_start` carries `tier` field. `useChatStream` sets tier on pending assistant message immediately (no F5 reload):
+
+```tsx
+<MessageBubble message={m}>
+  {m.tier && <TierBadge tier={m.tier} />}
+</MessageBubble>
+```
+
+Colors:
+- T1 emerald
+- T2 sky
+- T3 violet
+- T4 orange
+- T5 red
+
+### Thinking indicator
+
+NEW `src/features/ai/components/thinking-indicator.tsx`:
+
+```tsx
+<div className='flex items-center gap-2'>
+  <span className='animate-pulse rounded-full bg-foreground/60' style={{ animationDelay: '0ms' }} />
+  <span className='animate-pulse rounded-full bg-foreground/60' style={{ animationDelay: '200ms' }} />
+  <span className='animate-pulse rounded-full bg-foreground/60' style={{ animationDelay: '400ms' }} />
+  <span>{t('thinking')}</span>
+</div>
+```
+
+Renders in place of empty assistant bubble while `isStreaming`.
+
+### Chat container width
+
+`max-w-5xl` (R174-4), `h-[calc(100vh-4rem)]`. Better wide-screen use.
+
+---
+
+## 8. Citation format (R175-1)
+
+T4 Writer uses academic-style `[authorYear]` citation keys via `citation-loader.ts`.
+
+### Build flow
+
+1. After RAG search, collect unique `paperIds`
+2. Batch load `tenants/{tid}/papers/{paperId}` docs
+3. For each paper, extract first author surname + year
+4. Build citation key (with collision suffix if needed):
+
+```ts
+// Examples
+buildCitationKey({ authors: ['John Smith'], year: 2024 }) // → 'smith2024'
+buildCitationKey({ authors: ['Smith, J.'], year: 2024 })  // → 'smith2024'
+buildCitationKey({ authors: ['Nguyễn Văn A'], year: 2024 }) // → 'nguyen2024'
+// Collision:
+// Second 'smith2024' → 'smith2024a'
+// Third → 'smith2024b'
+```
+
+### Vietnamese name heuristic
+
+Names starting with common Vietnamese surnames (Nguyen, Tran, Le, Pham, Hoang, Huynh, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly) → use first word as surname (Vietnamese order).
+
+Other names → use last word (Western order).
+
+### Diacritic stripping
+
+NFD normalize + đ→d (e.g., "Nguyễn" → "nguyen").
+
+### Fallback
+
+When metadata missing → `unknown<hash>` (paperId slice).
+
+R176+ paper metadata backfill addresses fallback case.
+
+---
+
+## 9. RAG pipeline (R166-R167)
+
+### Indexing (async via R167 Cloud Run worker)
+
+Vercel `/api/papers/upload` → Pub/Sub topic `paper-processing` → `spectra-worker` Cloud Run:
+
+1. **OCR** (Mistral `mistral-ocr-latest`, $1/1000 pages batch)
+2. **Chunking** (sliding window 1024 tokens, 100 overlap, CHARS_PER_TOKEN=3.5)
+3. **Embed** (Voyage `voyage-3-large` REST, batch 128, 1024-dim, $0.18/1M tokens)
+4. **Index** (Firestore chunks subcollection + Pinecone serverless namespace=tenantId)
+5. **Enrich** (Haiku 4.5 — paused, `ENABLE_ENRICHMENT=false`)
+6. **Metadata** (Haiku 4.5 first-page title/authors/year/DOI — known year=0 bug in R167-handoff §3.4)
+7. **Citations** (R166: Crossref + OpenAlex DOI resolution, save edges)
+
+16-page paper: ~16s. 3-page: ~8s.
+
+### Retrieval (hybrid)
+
+`src/lib/ai/rag/search.ts` `searchPapers()`:
+
+```ts
+const result = await searchPapers({
+  tenantId,
+  query: userMessage,
+  vectorTopK: 50,  // top-50 from Pinecone
+  topN: 8          // top-8 after rerank
+});
+```
+
+Steps:
+1. **Vector retrieval** (Voyage embed query → Pinecone search)
+2. **BM25 retrieval** (Firestore-indexed sparse from `bm25-manager.ts`)
+3. **RRF fusion** (reciprocal rank fusion top-30)
+4. **Rerank** (Voyage `rerank-2.5` top-8)
+
+Output: `{ hits: HitCandidate[], cost, tokensUsed, latencyMs }`.
+
+`HitCandidate`: `{ paperId, chunkIdx, text, pages, section }`.
+
+References sections excluded from BM25 results.
+
+### Citation network (ai-6 Phase 6a, R166)
+
+`tenants/{tid}/citations/{id}` — one doc per citation edge.
+
+Confidence tiers:
+- `manual` (highest)
+- `doi-exact` (Crossref/OpenAlex resolved)
+- `title-fuzzy`
+- `unverified` (R167 tech debt — should drop DOI 404s)
+
+Cross-tenant safe: citations always within tenant namespace.
+
+UI (Phase 6b, deferred R185+): D3 force-directed graph + "Cited by" section.
+
+---
+
+## 10. Reflection orchestrator (T3)
+
+`src/lib/ai/reflection/orchestrator.ts`:
+
+```ts
+runReflection({
+  userMessage,
+  onRoundStart: (round) => send({ type: 'reflection_start', round }),
+  onFinalDelta: (delta) => send({ type: 'text_delta', delta }),
+  onRoundComplete: (round) => send({ type: 'reflection_round_complete', ... })
+}): Promise<ReflectionResult>
+```
+
+Max 3 rounds. Each round:
+1. Generate response with Sonnet 4.6
+2. Critic decides "sufficient" or "needs revision"
+3. If sufficient, return; else loop
+
+Cost accumulation across rounds. Final round streams to UI (`onFinalDelta`). Earlier rounds silent.
+
+Reflection history saved to `tenants/{tid}/aiConversations/{cid}/messages/{mid}.reflectionHistory[]`.
+
+---
+
+## 11. Anti-hallucination layers (Section 27 reference)
+
+State of 9-layer anti-hallucination architecture (R167-D audit):
+
+| Layer | Status | Notes |
 |---|---|---|
-| L1 System prompt constraints | T0 | Shipped R162 |
-| L2 Citation enforcement | T2 + T5 | R166-6b UI shipped, R166-6c next |
-| L3 Numerical verification (Python ground truth) | T3 | Shipped R161 XRD |
-| L4 CRAG rerank threshold | T2 | Shipped R160 Voyage rerank-2.5 |
-| L5 Reflection loop | T5 | Defer R170+ (after Ragas eval) |
-| L6 OOD detection | T0 Shield | Shipped R162 |
-| L7 Empty result guard | T1/T2/T3 | Partial ship |
-| **L8 Ragas eval** | Offline cron | **R169 priority** |
-| L9 Human verify UI badge | UI | Defer R170+ |
+| L1 — Strict system prompts | ✅ Shipped | Per-tier prompts |
+| L2 — Tool calling | ✅ Shipped | Read-only + action tools |
+| L3 — RAG with citations | ✅ Shipped | Hybrid vector+BM25+rerank |
+| L4 — Grounding check | ✅ Shipped | `checkGrounding()` on T3 |
+| L5 — Reflection critique | ⚠ Partial | T3 only, no T2/T4 critique |
+| L6 — Off-topic refusal | ✅ Shipped | `classifyOnTopic()` |
+| L7 — Cost Guard quota | ✅ Shipped | 4-gate pre-check (R170) |
+| L8 — Eval dashboard | ✅ Shipped | Ragas weekly (R171-5) |
+| L9 — Audit/peer review | ✅ Shipped | T5 Auditor (R173-5) |
+
+R175 status: all 9 layers shipped. L5 still partial (only T3 reflection has critique; could extend to T2/T4).
 
 ---
 
-## 9. Plan Tiers
+## 12. Provider abstraction
 
-Aligned with existing `src/lib/ai/governance/tiers.ts` naming.
+`src/lib/ai/providers/`:
+- `anthropic.ts` — Anthropic Claude
+- `gemini.ts` — Google Gemini
+- `types.ts` — `LLMProvider` interface
 
-| Plan | Price | Daily cap | Monthly cap | Opus quota | Use case |
-|---|---|---|---|---|---|
-| Free | $0 | $0.50 | $5 | **0.10/day (1 audit)** | Demo + small labs |
-| Starter | $15/mo | $2 | $50 | $0.50/day (~3 audits) | Solo researchers |
-| Pro | $30/mo | $5 | $100 | $1.50/day (~3 audits) | Active labs |
-| Enterprise | custom | ∞ | ∞ | ∞ | Multi-lab orgs |
+```ts
+interface LLMProvider {
+  streamChat(request: LLMStreamRequest): AsyncIterable<LLMStreamEvent>;
+  complete(request: CompleteRequest): Promise<CompleteResponse>;
+}
+```
 
-**Free tier strategy**: 1 Opus audit/day enables "Verified by Auditor" badge demo → drive upgrade.
+All providers must support:
+- Streaming text deltas
+- Tool calling with function calls/responses
+- Cost tracking (token counts + USD)
+- Prompt caching (Anthropic ephemeral, Gemini context cache)
 
----
-
-## 10. Migration Path
-
-### From current state (May 2026)
-
-| Component | Current | Target | Migration effort |
-|---|---|---|---|
-| Cost calculator pricing | Has wrong `gemini-2.5-flash` $0.075/$0.30 | $0.30/$2.50 + add 3.1 Flash-Lite + 3 Flash | **R168-3.13b code fix** |
-| Tier governance | `free/starter/pro/enterprise` ✅ aligned | Same | None |
-| Model strings hardcoded | Scattered | Capability map | R169 refactor |
-| Cost estimator | Partial (`cost-calculator.ts`) | Full with telemetry | R169 |
-| Tier 5 trigger logic | Not implemented | 3-level decision | R170+ |
-| Quota guard v2 | v1 only | Monthly + per-feature | R170+ |
-| Drift detection cron | None | Daily reconcile | R171+ |
-
-### Roadmap
-
-| Round | Phase | Deliverables |
-|---|---|---|
-| R169 | Capability + cost refactor | Capability map, estimator complete, telemetry to Firestore |
-| R170 | Cost controls | Trigger refinement, quota v2, basic Sentry alerts |
-| R171 | Drift detection | Cron + Anthropic + Google billing reconciliation |
-| R172-175 | Feature scaling | A/B framework, free tier Opus demo, etc. |
+Future providers: implement `LLMProvider`, add capability profile to `CAPABILITY_MAP`, map AiTier in `TIER_CAPABILITY`.
 
 ---
 
-## 11. Decision Log
+## 13. Conversation persistence
 
-| Date | Decision | Rationale |
-|---|---|---|
-| 2026-05-16 | Adopt 6-tier from 3-tier | Cost separation by value tier |
-| 2026-05-16 | No Haiku in tiers | Gemini 3.1 Flash-Lite 4× cheaper, sufficient for T0 task |
-| 2026-05-16 | Keep Voyage embedding | Pinecone 1024-dim already indexed, switch saves only $3-5/yr |
-| 2026-05-16 | Defer speculative/adaptive/circuit-breaker | Premature optimization for 1 tenant |
-| 2026-05-16 | Tier 5 ~25% trigger (not always) | Original 100% trigger inflates cost 3-5× |
-| 2026-05-16 | Capability abstraction | Single point of change for model swap |
-| 2026-05-16 | Cost estimator with tokenizer inflation | Opus 4.7 has +35% same text vs 4.6 |
-| 2026-05-16 | Free tier 1 Opus audit/day | Break catch-22, demo value-add |
+Firestore structure:
+```
+tenants/{tid}/aiConversations/{cid}
+  - userId, title, createdAt, updatedAt
+  - messages/{mid}
+    - role: 'user' | 'assistant' | 'system'
+    - content: string
+    - tier?: 1 | 2 | 3 | 4 | 5
+    - toolCalls?: ToolCall[]
+    - reflectionHistory?: ReflectionRound[]
+    - grounding?: GroundingDetails
+    - createdAt: Timestamp
+```
+
+Provenance:
+```
+tenants/{tid}/aiProvenance/{auto-id}
+  - messageId
+  - tenantId
+  - ragChunksUsed?: ChunkRef[]
+  - toolCallsExecuted?: ToolCallRecord[]
+  - reflectionRounds?: ReflectionRound[]
+  - costBreakdown
+  - latencyMs
+  - embeddingModel
+  - rerankScores?
+```
+
+Audits:
+```
+tenants/{tid}/aiAudits/{auditId}
+  - sourceMessageId, sourceConversationId
+  - findings: AuditFinding[]
+  - overallConfidence
+  - supportedCount, unsupportedCount, contradictedCount
+  - totalCost
+  - evaluatorModel: 'claude-opus-4-7'
+  - evaluatedAt
+```
+
+Costs:
+```
+tenants/{tid}/_costs/{yyyy-MM-dd}
+  - totalCostUsd
+  - byTier: Record<AiTier, { costUsd, queryCount, ... }>
+  - byFeature: Record<FeatureKind, { costUsd, queryCount, ... }>
+  - byCapability: Record<Capability, { ... }>
+  - latencyP50, latencyP95
+```
+
+Evals:
+```
+tenants/{tid}/_evals/{yyyy-Www}/conversations/{cid}
+  - metrics: { faithfulness, contextRelevance, ... } (11 metrics)
+  - overallScore
+  - flagged: boolean
+  - flagReason?: string
+```
 
 ---
 
-*Living document. Update khi ADR-019/020/021 thay đổi.*
-*Mọi deviation từ design ở đây phải tạo ADR mới.*
+## 14. Roadmap
 
-@phase R168-3.13a
+### R176 (Active)
+
+- **R176-1** — Paper metadata backfill (DOI + LLM extract) → resolves citation fallback
+- **R176-2** — BigQuery cost-drift integration (data ready May 17+)
+- **R176-3** — T2 empty response edge case
+- **R176-4** — Long-conversation Writer prompt drift
+- **R176-5** — Audit findings UI
+
+### R177-R179 — Domain expansion
+
+- Spectra 3d (PL/EDS/BET)
+- Spectra 3e (CV/LSV/EIS)
+- Domain content docs deep
+
+### R185+ — Citation network UI
+
+- D3 force-directed graph
+- "Cited by" section
+- `searchCitations` AI tool
+
+### R195+ — Gemini 3 re-adoption
+
+- Monitor SDK signature support
+- Restore T0+T1+T2 to gemini-3.x-*
+
+---
+
+## 15. References
+
+- ADR-019 — AI Tier Architecture (capability abstraction)
+- ADR-020 — Cost Controls (Cost Guard 4-gate)
+- ADR-021 — Inter-tier Protocols (R169-R170 partial)
+- `src/lib/ai/config/capabilities.ts` — SSOT for models
+- `src/lib/ai/governance/cost-guard.ts` — Cost Guard logic
+- `docs/scientific-methods/` — domain method docs
+
+---
+
+@phase R175 (continuation R168-R175)

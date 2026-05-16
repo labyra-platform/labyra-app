@@ -1,189 +1,337 @@
-# ADR-020: AI Cost Controls — Estimator, Quota Guard, Drift Detection
+# ADR-020: Cost Controls (Cost Guard v2 + Per-feature Telemetry + Dry-run)
 
 **Status**: Accepted
 **Date**: 2026-05-16
-**Phase**: R168-3.13a
-**Owner**: nAM
+**Phase**: R170
+
+---
 
 ## Context
 
-Without cost controls, a single runaway query or compromised user can drain monthly AI budget in hours. Original `cost-calculator.ts` exists but has:
+After R169 expanded to 6 tiers, cost variance per query increased:
+- T1 Flash: $0.0005/query
+- T2 RAG: $0.001/query
+- T3 Reflection: $0.005-0.015/query (3 rounds Sonnet)
+- T4 Writer: $0.01-0.02/query (long output Sonnet)
+- T5 Auditor: $0.05-0.15/query (Opus + max claims)
 
-1. **Wrong pricing**: `gemini-2.5-flash` listed at $0.075/$0.30 (official $0.30/$2.50).
-2. **No tokenizer inflation** for Opus 4.7 (+35% same text vs 4.6).
-3. **No telemetry**: costs calculated per request but not aggregated to Firestore for audit.
-4. **No daily/monthly enforcement** — `governance/tiers.ts` defines limits but no enforce path.
-5. **No drift detection**: estimate may differ from actual billing by 20%+.
+Without cost discipline, a single tenant could:
+1. Spam T5 audits → $50+/day
+2. Run T4 Writer in tight loop → drain monthly budget
+3. Tools mode tool spam → unbounded tool rounds
+
+Existing infra was minimal Cost Guard v1 (R168-3): per-call cap only. Insufficient.
 
 ## Decision
 
-Implement 5-component cost control system:
+Implement **Cost Guard v2** with 4-gate pre-check before every non-T0 LLM call, plus per-feature telemetry and dry-run mode.
 
-### Component 1: Capability-aware estimator
+### 4-gate Cost Guard
 
-```typescript
-// src/lib/ai/cost/estimator.ts (R169)
+`src/lib/ai/governance/cost-guard.ts`:
 
-export function estimateCost(usage: TokenUsage, capability: Capability): number {
-  const profile = CAPABILITY_MAP[capability];
-
-  const uncachedInput = usage.inputTokens - (usage.cachedInputTokens ?? 0);
-  const inputCost = (uncachedInput / 1_000_000) * profile.inputCost;
-  const cachedCost = ((usage.cachedInputTokens ?? 0) / 1_000_000) * profile.cacheReadCost;
-  const cacheWriteCost = ((usage.cacheCreationTokens ?? 0) / 1_000_000) * profile.inputCost * 1.25;
-  const totalOutput = usage.outputTokens + (usage.thinkingTokens ?? 0);
-  const outputCost = (totalOutput / 1_000_000) * profile.outputCost;
-
-  return inputCost + cachedCost + cacheWriteCost + outputCost;
-}
-```
-
-Already implemented in `src/lib/ai/providers/cost-calculator.ts` — extend with capability mapping in R169.
-
-### Component 2: Cost telemetry to Firestore
-
-```
-tenants/{tid}/_costs/{yyyy-mm-dd}
-  totalCost: number
-  byTier: { 0: { queries, cost }, 1: ..., 5: ... }
-  byCapability: { 'reasoning-balanced': { cost }, ... }
-  byFeature: { spectrum_analysis: { cost }, paper_writing: { cost }, chat: { cost } }
-  updatedAt: Timestamp
-```
-
-Cost records aggregated daily for fast dashboard reads + monthly rollup.
-
-### Component 3: Tier 5 trigger refinement
-
-Original design "always background for >500 words" = 80-100% trigger. With realistic Opus pricing $0.40/audit, this inflates Writer cost from $0.18 to $0.58 (3.2× claim).
-
-**New 3-level trigger:**
-
-```typescript
-type AuditPriority = 'critical' | 'standard' | 'skip';
-
-function decideTier5(tier4: WriterResult, ctx: TierContext, plan: Plan): AuditPriority {
-  if (plan === 'free') return 'skip';
-
-  // CRITICAL — always audit
-  if (ctx.labContext?.spectrumId && tier4.hasNumericalClaims) return 'critical';
-  if (tier4.context === 'paper_submission') return 'critical';
-
-  // SKIP — no value
-  if (tier4.wordCount < 200) return 'skip';
-  if (ctx.intent !== 'writing') return 'skip';
-  if (!tier4.hasNumericalClaims && !tier4.hasCitations) return 'skip';
-
-  return 'standard';  // → adaptive sampling based on quota
-}
-```
-
-**Adaptive sampling for 'standard' priority:**
-- Quota < 50% used → audit 100%
-- Quota 50-80% → sample 50%
-- Quota > 80% → reserve for 'critical' only
-
-Expected trigger rate: 80% → ~25%. Cost reduction: -65%.
-
-### Component 4: Quota Guard v2
-
-Extends `src/lib/ai/governance/quota.ts` with 4 gates:
-
-```typescript
-interface PlanLimits {
-  daily: { total: number; opus: number };
-  monthly: { total: number; opus: number };
-  perFeature: { spectrum_analysis: number; paper_writing: number; chat: number };
-}
-
-async function checkCostGuard(tenantId, feature, tier, estimatedCost) {
-  // Gate 1: daily total
-  if (today.total + estimatedCost > limits.daily.total) return reject;
-  // Gate 2: monthly total
-  if (thisMonth.total + estimatedCost > limits.monthly.total) return reject;
-  // Gate 3: daily Opus (Tier 5 specifically)
-  if (tier === 5 && today.opus + estimatedCost > limits.daily.opus) return reject;
-  // Gate 4: per-feature daily
-  if (today.byFeature[feature] + estimatedCost > limits.perFeature[feature]) return reject;
-  return allow;
-}
-```
-
-### Component 5: Drift detection cron
-
-Daily reconcile estimate vs actual billing API:
-
-```typescript
-async function reconcileDailyCost(date: string) {
-  const estimated = await getEstimatedCost(date);
-  const actualAnthropic = await fetchAnthropicUsage(date);
-  const actualGoogle = await fetchGoogleBilling(date);
-  const drift = (actual - estimated) / estimated;
-
-  if (Math.abs(drift) > 0.20) {
-    await alertOps({ severity: 'high', drift, date });
+```ts
+export async function checkCostGuard(
+  tenantId: string,
+  tier: AiTier,
+  feature: FeatureKind,
+  estimatedCostUsd: number
+): Promise<{
+  allowed: boolean;
+  reason?: string;
+  dailyCurrent: number;
+  dailyLimit: number | null;
+  monthlyCurrent: number;
+  monthlyLimit: number | null;
+}> {
+  const limits = await getTenantLimits(tenantId);
+  
+  // Gate 1: Per-call estimate cap
+  if (estimatedCostUsd > limits.perCallCap) {
+    return { allowed: false, reason: 'per_call_cap_exceeded', ... };
   }
-
-  await writeReport(tenantId, date, { estimated, actual, drift });
+  
+  // Gate 2: Daily cap
+  const todayCost = await getTodayCost(tenantId);
+  if (todayCost + estimatedCostUsd > limits.dailyCap) {
+    return { allowed: false, reason: 'daily_cap_exceeded', ... };
+  }
+  
+  // Gate 3: Monthly cap
+  const monthCost = await getMonthCost(tenantId);
+  if (monthCost + estimatedCostUsd > limits.monthlyCap) {
+    return { allowed: false, reason: 'monthly_cap_exceeded', ... };
+  }
+  
+  // Gate 4: Feature-specific quota
+  const featureQuota = await getFeatureQuota(tenantId, feature);
+  if (featureQuota.used + 1 > featureQuota.limit) {
+    return { allowed: false, reason: 'feature_quota_exceeded', ... };
+  }
+  
+  return { allowed: true, dailyCurrent: todayCost, ... };
 }
 ```
 
-Cloud Function scheduler — daily 02:00 UTC (after billing delay).
+### Tenant tiers
 
-## Alternatives Considered
+`tenants/{tid}.tier`: `'free' | 'pro' | 'enterprise'`
 
-### Alt 1: Use Anthropic Usage API in real-time (rejected)
+Limits encoded in `src/lib/ai/governance/limits.ts`:
 
-- Anthropic Usage API delayed 24h.
-- Real-time enforcement requires estimates anyway.
-- Drift detection is the right pattern (estimate + reconcile).
+```ts
+const TENANT_LIMITS: Record<TenantTier, TenantLimits> = {
+  free: {
+    perCallCap: 0.01,    // $0.01/call max
+    dailyCap: 0.10,      // $0.10/day max
+    monthlyCap: 1,       // $1/month max
+    features: {
+      paper_writing: { limit: 5, period: 'day' },
+      audit: { limit: 2, period: 'day' }
+    }
+  },
+  pro: {
+    perCallCap: 0.10,
+    dailyCap: 5,
+    monthlyCap: 50,
+    features: {
+      paper_writing: { limit: 50, period: 'day' },
+      audit: { limit: 20, period: 'day' }
+    }
+  },
+  enterprise: {
+    perCallCap: 1,
+    dailyCap: Infinity,
+    monthlyCap: Infinity,
+    features: {} // no feature limits
+  }
+};
+```
 
-### Alt 2: Per-token in-line tracking (rejected for Stage 1)
+Lab BKU (`tenant-dev-001`) tier = `enterprise` (no quota block dev).
 
-- Increment Firestore counter every API call.
-- High write cost on Firestore (1 write per request = $0.18/1M writes).
-- Better: aggregate daily, accept ±5% intra-day error.
+### Cost estimator
 
-### Alt 3: External cost monitoring (Helicone, Langsmith) (rejected)
+`src/lib/ai/cost/estimator.ts`:
 
-- 3rd party = data leak risk.
-- Cost = $50-200/mo overhead.
-- Self-hosted via Firestore aggregate is simpler + private.
+```ts
+export function estimateCost(
+  tier: AiTier,
+  feature: FeatureKind,
+  options?: {
+    inputTokenEstimate?: number;
+    outputTokenEstimate?: number;
+  }
+): number {
+  const capability = TIER_CAPABILITY[tier];
+  const profile = CAPABILITY_MAP[capability];
+  
+  // Heuristics per feature
+  const inputTokens = options?.inputTokenEstimate ?? defaultInputTokens(tier, feature);
+  const outputTokens = options?.outputTokenEstimate ?? Math.min(profile.maxTokens, defaultOutputTokens(tier, feature));
+  
+  const inflation = profile.tokenizerInflation ?? 1.0;
+  
+  return (
+    (inputTokens / 1_000_000) * profile.inputCost * inflation +
+    (outputTokens / 1_000_000) * profile.outputCost * inflation
+  );
+}
+```
+
+Default heuristics tuned from production telemetry.
+
+### Per-feature telemetry
+
+`src/lib/ai/cost/telemetry.ts`:
+
+```ts
+export async function recordCost(params: {
+  tenantId: string;
+  tier: AiTier;
+  capability: Capability;
+  feature: FeatureKind;
+  costUsd: number;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs: number;
+  grounding?: { unverifiedNumbers: number; unsourcedClaims: number };
+}): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10); // yyyy-MM-dd
+  const ref = db.doc(`tenants/${params.tenantId}/_costs/${today}`);
+  
+  await ref.set({
+    totalCostUsd: FieldValue.increment(params.costUsd),
+    [`byTier.${params.tier}.costUsd`]: FieldValue.increment(params.costUsd),
+    [`byTier.${params.tier}.queryCount`]: FieldValue.increment(1),
+    [`byFeature.${params.feature}.costUsd`]: FieldValue.increment(params.costUsd),
+    [`byFeature.${params.feature}.queryCount`]: FieldValue.increment(1),
+    [`byCapability.${params.capability}.costUsd`]: FieldValue.increment(params.costUsd),
+    [`byCapability.${params.capability}.queryCount`]: FieldValue.increment(1),
+    [`byTier.${params.tier}.inputTokens`]: FieldValue.increment(params.inputTokens),
+    [`byTier.${params.tier}.outputTokens`]: FieldValue.increment(params.outputTokens),
+    [`byTier.${params.tier}.latencyMsTotal`]: FieldValue.increment(params.latencyMs),
+    // ... grounding warnings, etc.
+  }, { merge: true });
+}
+```
+
+Document shape:
+```
+tenants/{tid}/_costs/{yyyy-MM-dd}
+  totalCostUsd: number
+  byTier: {
+    1: { costUsd, queryCount, inputTokens, outputTokens, latencyMsTotal }
+    2: { ... }
+    ...
+  }
+  byFeature: { lab_ops: ..., theory: ..., spectrum_analysis: ..., paper_writing: ..., audit: ... }
+  byCapability: { ... }
+  latencyP50, latencyP95
+  groundingWarnings: { unverifiedNumbers, unsourcedClaims }
+```
+
+Backed up daily by `backupCostsDaily` Cloud Function (R171-3) to GCS for offline analysis.
+
+### Dry-run mode
+
+`src/app/api/chat/route.ts` accepts query param `?dry_run=1`:
+
+```ts
+if (request.nextUrl.searchParams.get('dry_run') === '1') {
+  return NextResponse.json({
+    mode: 'dry_run',
+    tier: intentDecision.tier,
+    feature: intentDecision.feature,
+    capability: getCapabilityForTier(intentDecision.tier),
+    intentDecision,
+    estimatedCostUsd: estimateCost(intentDecision.tier, intentDecision.feature),
+    costGuardCheck: await checkCostGuard(tenantId, intentDecision.tier, intentDecision.feature, estimated)
+  });
+}
+```
+
+Returns routing decision + cost estimate without calling LLM. Useful for:
+- Testing classifier behavior
+- Debug "why did this query route to T2 not T3?"
+- Estimate cost before bulk operation
+
+### Structured logging (R171-4)
+
+In `src/app/api/chat/route.ts`, after `checkCostGuard`:
+
+```ts
+console.info(JSON.stringify({
+  event: 'cost_guard_check',
+  tenantId,
+  tier,
+  feature,
+  estimated,
+  allowed: costCheck.allowed,
+  reason: costCheck.reason,
+  dailyCurrent: costCheck.dailyCurrent,
+  dailyLimit: costCheck.dailyLimit,
+  monthlyCurrent: costCheck.monthlyCurrent,
+  monthlyLimit: costCheck.monthlyLimit
+}));
+```
+
+Visible in Vercel logs + Cloud Logging (if Vercel logs forwarded). Queryable by `event:"cost_guard_check"`.
+
+---
 
 ## Consequences
 
 ### Positive
 
-- **Hard budget cap**: 4-gate check prevents runaway cost.
-- **Drift alerting**: catch silent pricing changes within 24h.
-- **Audit trail**: every query has cost in PROV-O lineage.
-- **Tier 5 cost reduction 65%** through trigger refinement.
+- **Predictable spend**: 4 gates prevent any single tenant from runaway cost
+- **Per-feature visibility**: Optimize quotas based on actual usage patterns
+- **Pre-call rejection**: Failed requests return 429 fast (no LLM call), saving cost
+- **Dry-run testing**: Validate routing/cost without LLM cost
+- **Audit trail**: Structured logs for cost forensics
 
 ### Negative
 
-- **Estimate-vs-actual gap ±20% initially**: needs 30-day baseline.
-- **Firestore aggregate write cost**: minimal (~$0.50/mo per tenant).
-- **Cron complexity**: requires Anthropic billing API access + service account permissions.
+- **Firestore reads per call**: 2 reads (today + month aggregates) before every LLM call
+- **Estimator accuracy**: ~80% accurate; over/under-estimates by ~20%
+- **Cap rigidity**: Hard limits may block legitimate high-quality queries near month-end
 
-### Risks
+### Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Estimate undercounts → unexpected bill | Drift detection alerts +20% within 24h |
-| Cron job fails silently → no reconciliation | Cloud Functions error alerting via Slack |
-| Anthropic billing API rate limits | Backoff + retry; fallback to manual monthly reconcile |
+- Firestore reads cached briefly (5s) — same tenant within window reuses cache
+- Calibrate estimator quarterly based on telemetry drift
+- Enterprise tier has `Infinity` caps (no block)
+- Override mechanism: superadmin can bump tenant tier via `set-tenant-tier.mjs`
 
-## Implementation Tracking
+---
 
-- R168-3.13b: fix existing `cost-calculator.ts` pricing (1h).
-- R169: extend with capability mapping + Firestore telemetry.
-- R170: Tier 5 trigger refinement + quota guard v2.
-- R171: drift detection cron.
+## Implementation phases
+
+- **R170-1**: Capability getter helper `getCapabilityForTier()`
+- **R170-2**: Cost estimator with feature-aware defaults
+- **R170-3**: Cost Guard 4-gate pre-check
+- **R170-4**: Per-feature telemetry in `recordCost`
+- **R170-5**: Wire Cost Guard into `/api/chat/route.ts`
+- **R170-6**: Conversation cost endpoint `/api/conversations/[id]/cost`
+- **R170-7**: Dry-run mode `?dry_run=1`
+- **R171-4**: Structured logging for Cost Guard decisions
+- **R171-5**: Ragas eval cost cap $5/run (mirror Cost Guard)
+- **R172**: Superadmin dashboard reads telemetry aggregates
+
+---
+
+## Monitoring
+
+### Cost Guard alerts (Cloud Functions cron)
+
+R171-6 `reconcileCostDrift` cron 02:30 UTC daily:
+1. Sum estimated costs from `tenants/{tid}/_costs/{D-2}.totalCostUsd`
+2. Fetch actual costs:
+   - Anthropic Usage API (cross-org via Admin Key)
+   - Google Billing BigQuery export (R176-2)
+3. Per-tenant attribution via share ratio
+4. Alert if |estimated - actual| / actual > 20%
+
+### Founder dashboard (R172)
+
+`/dashboard/superadmin/costs`:
+- 4 KPI cards (period total, queries, avg/query, projected monthly)
+- Daily cost trend chart (stacked area by tier)
+- Recent days raw data table
+
+`/dashboard/superadmin/drift`:
+- Drift reports + alerts when |drift| > 20%
+- Per-tenant breakdown
+
+---
+
+## Cost optimization roadmap
+
+Phase 1 (current R175):
+- Hard caps prevent runaway
+- Telemetry reveals usage patterns
+
+Phase 2 (R180+):
+- Auto-adjust quotas based on drift
+- Per-feature CPM optimization (e.g., move paper_writing to gemini-3-flash-preview when SDK stable)
+- Prompt caching audit (Anthropic ephemeral 5m/1h, Gemini context cache)
+
+Phase 3 (R190+):
+- Multi-region routing (latency-aware)
+- Spot pricing arbitrage (when available)
+- Self-hosted models for high-volume capabilities
+
+---
 
 ## References
 
-- `src/lib/ai/providers/cost-calculator.ts` — current implementation
-- `src/lib/ai/governance/tiers.ts` — quota definitions
-- `docs/adr/ADR-019-ai-tier-architecture.md` — tier design
-- Anthropic Usage API: https://docs.anthropic.com/en/api/admin-api/usage_cost/get-cost-report
-- Google Cloud Billing API: https://cloud.google.com/billing/docs/reference/rest
+- ADR-019 — AI Tier Architecture (capability abstraction)
+- ADR-021 — Inter-tier Protocols (deferred — Tech 5 prompt caching, Tech 7 memoization, Tech 9 cross-tier dedup)
+- `src/lib/ai/governance/cost-guard.ts` — implementation
+- `src/lib/ai/cost/estimator.ts` — cost estimator
+- `src/lib/ai/cost/telemetry.ts` — telemetry writer
+- `functions/src/scheduled/cost-drift.ts` — drift detection cron
+
+---
+
+@phase R170-architecture-decision

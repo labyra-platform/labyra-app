@@ -7,11 +7,14 @@
  * single-file change. Hardcoding model strings in tier handlers makes vendor
  * swap painful. This abstraction makes it trivial.
  *
- * Stack (verified 2026-05, R168-3.13):
- *   T0+T1 → gemini-3.1-flash-lite-preview
- *   T2    → gemini-3-flash-preview
+ * Stack (verified 2026-05-17, R176-2bc):
+ *   T0    → gemini-3.1-flash-lite (GA)
+ *   T1+T2 → gemini-3-flash-preview (GA on Vertex AI, preview on Gemini API)
  *   T3+T4 → claude-sonnet-4-6
  *   T5    → claude-opus-4-7 (+35% tokenizer)
+ *
+ * R176-2a migrated SDK @google/generative-ai → @google/genai 2.3.0
+ *   which auto-handles thought_signature (Gemini 3 requirement).
  *
  * @phase R169-1
  * @see docs/adr/ADR-019-ai-tier-architecture.md
@@ -54,35 +57,36 @@ export interface CapabilityProfile {
 export const CAPABILITY_MAP: Record<Capability, CapabilityProfile> = {
   'security-router': {
     provider: 'google',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.1-flash-lite',
     inputCost: 0.25,
     outputCost: 1.5,
     cacheReadCost: 0.025,
     maxTokens: 512,
     contextWindow: 1_000_000,
     notes:
-      'R174-1: rolled back from gemini-3.1-flash-lite-preview due to thought_signature requirement breaking multi-turn tool calling. Restore when Gemini 3 SDK stable.'
+      'R176-2bc-gemini-3-swap: re-adopted after @google/genai SDK 2.3.0 auto-handles thought_signature. GA model since 2026-05-07.'
   },
   'tool-calling-cheap': {
     provider: 'google',
-    model: 'gemini-2.5-flash',
-    inputCost: 0.25,
-    outputCost: 1.5,
-    cacheReadCost: 0.025,
+    model: 'gemini-3-flash-preview',
+    inputCost: 0.5,
+    outputCost: 3.0,
+    cacheReadCost: 0.05,
     maxTokens: 2048,
     contextWindow: 1_000_000,
-    notes: 'Share singleton with security-router. R174-1 rolled back from gemini-3.1.'
+    notes:
+      'R176-2bc-gemini-3-swap: GA gemini-3-flash not yet on Gemini API (Vertex AI only). Using -preview which is functionally GA quality. Migrate to gemini-3-flash when published.'
   },
   'rag-balanced': {
     provider: 'google',
-    model: 'gemini-2.5-flash',
-    // R174-hotfix4: rolled back from gemini-3-flash-preview (thought_signature)
+    model: 'gemini-3-flash-preview',
     inputCost: 0.5,
     outputCost: 3.0,
     cacheReadCost: 0.05,
     maxTokens: 4096,
     contextWindow: 1_000_000,
-    notes: 'Preview pricing. Monitor GA pricing changes via drift detection.'
+    notes:
+      'R176-2bc-gemini-3-swap: re-adopted Gemini 3 after R176-2a SDK migration (@google/genai 2.3.0). Same pricing as legacy 2.5-flash configuration estimate, actual model is 3-flash-preview.'
   },
   'reasoning-balanced': {
     provider: 'anthropic',

@@ -1,74 +1,125 @@
+#!/usr/bin/env node
 /**
- * Force-requeue a paper for reprocessing.
+ * Force requeue stuck papers (R168 §3.7 utility)
+ * @phase R176-1c-utility
  *
- * Resets a paper document to queued state and clears all processing
- * metadata. Use when:
- *   - Paper stuck in 'extracting_*' state after worker crash
- *   - Need to re-run pipeline after fixing a bug (without re-uploading PDF)
- *   - Cancelled paper should be retried
+ * Use case: paper stuck in non-terminal status (cancelling, processing,
+ * indexing, ...) → state machine refuse reprocess. Force reset to 'queued'
+ * + clear cancel/processing fields → next reprocess accepts.
  *
- * Does NOT republish Pub/Sub message — use /api/papers/[id]/reprocess
- * REST endpoint instead if you need full requeue including Pub/Sub.
- * This script only resets Firestore state for manual republish flows.
+ * KHÁC với _force-reset-paper.mjs (sets cancelled — misleading name).
  *
- * Usage:
- *   FIRESTORE_DATABASE_ID='(default)' node --env-file=.env.local \
- *     scripts/_force-requeue-paper.mjs <paperId> [--tenant <tenantId>]
+ * Idempotent. Dry-run mode mặc định khuyến khích.
  *
- * @phase R168-3.7b
+ * Run:
+ *   FIRESTORE_DATABASE_ID="(default)" \
+ *   GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/application_default_credentials.json \
+ *   GCP_PROJECT_ID=labyra-app-dev \
+ *   node scripts/_force-requeue-paper.mjs --tenant tenant-dev-001 --id <paperId> [--dry]
+ *
+ * Multi-ID:
+ *   --ids id1,id2,id3
  */
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 
-const creds = {
-  type: 'service_account',
-  project_id: process.env.FIREBASE_ADMIN_PROJECT_ID,
-  client_email: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-  private_key: process.env.FIREBASE_ADMIN_PRIVATE_KEY.replace(/\\n/g, '\n')
-};
-initializeApp({ credential: cert(creds) });
-const db = getFirestore();
-db.settings({ databaseId: '(default)' });
+import admin from 'firebase-admin';
+import process from 'node:process';
 
-// Parse args: <paperId> [--tenant <tenantId>]
-const args = process.argv.slice(2);
-const PAPER_ID = args[0];
-let TENANT_ID = 'tenant-dev-001';
-const tenantFlagIdx = args.indexOf('--tenant');
-if (tenantFlagIdx >= 0 && args[tenantFlagIdx + 1]) {
-  TENANT_ID = args[tenantFlagIdx + 1];
+function arg(name, def = null) {
+  const i = process.argv.indexOf(`--${name}`);
+  if (i === -1) return def;
+  const v = process.argv[i + 1];
+  return v && !v.startsWith('--') ? v : true;
 }
 
-if (!PAPER_ID || PAPER_ID.startsWith('--')) {
-  console.error('Usage: node _force-requeue-paper.mjs <paperId> [--tenant <tenantId>]');
-  console.error('Default tenant: tenant-dev-001');
+const tenant = arg('tenant');
+const id = arg('id');
+const ids = arg('ids');
+const dry = arg('dry', false) === true;
+
+if (!tenant) {
+  console.error('ERROR: --tenant required');
+  process.exit(1);
+}
+if (!id && !ids) {
+  console.error('ERROR: --id or --ids required');
   process.exit(1);
 }
 
-const ref = db.doc(`tenants/${TENANT_ID}/papers/${PAPER_ID}`);
-const snap = await ref.get();
-if (!snap.exists) {
-  console.error(`✗ Paper not found: tenants/${TENANT_ID}/papers/${PAPER_ID}`);
-  process.exit(2);
+const idList = ids ? ids.split(',').map((s) => s.trim()).filter(Boolean) : [id];
+
+if (!admin.apps.length) {
+  admin.initializeApp({ projectId: process.env.GCP_PROJECT_ID || 'labyra-app-dev' });
+}
+const db = admin.firestore();
+
+console.log(`\n=== Force Requeue (R176-1c) ===`);
+console.log(`Tenant: ${tenant}`);
+console.log(`Papers: ${idList.length}`);
+console.log(`Dry:    ${dry}\n`);
+
+// Fields to clear from previous run/cancel state.
+// Worker reprocess endpoint guard: only acts when status terminal
+// (failed | cancelled | indexed). Setting to 'queued' bypasses guard
+// — caller bears responsibility for state correctness.
+// // R176-1c-1b-terminal-status
+// Set status='cancelled' (terminal) so reprocess endpoint accepts.
+// Endpoint guard: only TERMINAL_STATUSES (indexed|failed|cancelled).
+// 'cancelled' is the cleanest terminal — semantically "previous run aborted".
+// Clear processing/cancel artifacts to give worker a fresh slate.
+const RESET_FIELDS = {
+  status: 'cancelled',
+  cancelRequestedAt: admin.firestore.FieldValue.delete(),
+  cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+  failedAt: admin.firestore.FieldValue.delete(),
+  error: admin.firestore.FieldValue.delete(),
+  processingStartedAt: admin.firestore.FieldValue.delete(),
+  // version NOT bumped here — reprocess endpoint bumps it on accept.
+  requeuedAt: admin.firestore.FieldValue.serverTimestamp(),
+  requeuedBy: 'admin-script-R176-1c',
+};
+
+let success = 0;
+let fail = 0;
+
+for (const pid of idList) {
+  const ref = db.doc(`tenants/${tenant}/papers/${pid}`);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    console.log(`✗ ${pid.slice(0, 16)}: not found`);
+    fail++;
+    continue;
+  }
+  const data = snap.data();
+  const before = {
+    status: data.status,
+    cancelRequestedAt: data.cancelRequestedAt ? 'set' : null,
+    cancelledAt: data.cancelledAt ? 'set' : null,
+    version: data.version,
+  };
+
+  if (dry) {
+    console.log(`DRY ${pid.slice(0, 16)}: ${JSON.stringify(before)} → status=cancelled (terminal)`);
+    success++;
+    continue;
+  }
+
+  try {
+    await ref.update(RESET_FIELDS);
+    console.log(`✓ ${pid.slice(0, 16)}: ${before.status} → cancelled (terminal, ready for reprocess)`);
+    success++;
+  } catch (e) {
+    console.log(`✗ ${pid.slice(0, 16)}: ${e.message}`);
+    fail++;
+  }
 }
 
-const before = snap.data();
-console.log(`Before: status=${before?.status}, version=${before?.version}`);
+console.log(`\n=== Result ===`);
+console.log(`Success: ${success}`);
+console.log(`Failed:  ${fail}`);
 
-// Reset to queued + clear all processing fields
-await ref.update({
-  status: 'queued',
-  statusUpdatedAt: Timestamp.now(),
-  cancelRequestedAt: FieldValue.delete(),
-  cancelledAt: FieldValue.delete(),
-  cancelReason: FieldValue.delete(),
-  processingStartedAt: FieldValue.delete(),
-  processingFinishedAt: FieldValue.delete(),
-  errorMessage: FieldValue.delete(),
-  errorStack: FieldValue.delete(),
-  // Bump version to invalidate stale worker pickups
-  version: FieldValue.increment(1)
-});
+if (success > 0 && !dry) {
+  console.log(`\nNext: re-run batch reprocess to trigger pipeline:`);
+  console.log(`  node scripts/_batch-reprocess-papers.mjs --ids ${idList.join(',')}`);
+}
 
-console.log(`✓ Requeued ${PAPER_ID} (tenant=${TENANT_ID})`);
-console.log(`  Next: trigger reprocess via /api/papers/${PAPER_ID}/reprocess to republish Pub/Sub message`);
+process.exit(fail > 0 ? 1 : 0);

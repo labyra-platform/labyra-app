@@ -84,11 +84,11 @@ export function ChatShell() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div ref={containerRef} className='flex h-[calc(100vh-7rem)] w-full overflow-hidden'>
+    <div ref={containerRef} className='flex h-[calc(100vh-4rem)] w-full overflow-hidden'>
       <ConversationPanel />
 
       <div className='flex min-w-0 flex-1 flex-col px-4 py-4'>
-        <div className='mx-auto flex w-full min-h-0 max-w-3xl flex-1 flex-col gap-4'>
+        <div className='mx-auto flex w-full min-h-0 max-w-5xl flex-1 flex-col gap-4'>
           <header className='shrink-0'>
             <h1 className='text-xl font-semibold'>{t('title')}</h1>
             <p className='text-muted-foreground text-sm'>{t('subtitle')}</p>
@@ -97,7 +97,7 @@ export function ChatShell() {
           {/* min-h-0 critical: lets flex-1 child shrink below content size,
               enabling MessageList's overflow-y-auto to engage */}
           <div className='flex min-h-0 flex-1 flex-col'>
-            <MessageList messages={messages} />
+            <MessageList messages={messages} isStreaming={isStreaming} />
           </div>
 
           {error && (

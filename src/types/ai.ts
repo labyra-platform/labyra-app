@@ -107,7 +107,7 @@ export interface ChatRequestBody {
 /** Server-sent event payload — discriminated union over `type` */
 export type ChatStreamEvent =
   | { type: 'text_delta'; delta: string }
-  | { type: 'message_start'; messageId: string }
+  | { type: 'message_start'; messageId: string; tier: 1 | 2 | 3 | 4 | 5 }
   | { type: 'message_complete'; usage: AiCostBreakdown }
   | { type: 'error'; message: string };
 
@@ -132,7 +132,7 @@ export interface ChatRequestBodyV2 {
 /** Server-sent event payload v2 — adds conversationId for client to track */
 export type ChatStreamEventV2 =
   | { type: 'conversation_init'; conversationId: string; isNew: boolean }
-  | { type: 'message_start'; messageId: string }
+  | { type: 'message_start'; messageId: string; tier: 1 | 2 | 3 | 4 | 5 }
   | { type: 'text_delta'; delta: string }
   | { type: 'tool_call'; toolCallId: string; toolName: string; input: Record<string, unknown> }
   | { type: 'tool_result'; toolCallId: string; toolName: string; result: unknown; isError: boolean }

@@ -145,8 +145,9 @@
     "conversationRestored": "Đã khôi phục cuộc trò chuyện",
     "undo": "Hoàn tác",
     "deleteFailed": "Xóa thất bại",
-    "tierWriter": "Người viết",
-    "tierAuditor": "Kiểm duyệt"
+    "tierWriter": "T4 Writer",
+    "tierAuditor": "T5 Kiểm duyệt",
+    "thinking": "Đang suy nghĩ..."
   },
   "papers": {
     "uploadPageTitle": "Tải lên paper",

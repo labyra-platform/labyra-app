@@ -54,27 +54,29 @@ export interface CapabilityProfile {
 export const CAPABILITY_MAP: Record<Capability, CapabilityProfile> = {
   'security-router': {
     provider: 'google',
-    model: 'gemini-3.1-flash-lite-preview',
+    model: 'gemini-2.5-flash',
     inputCost: 0.25,
     outputCost: 1.5,
     cacheReadCost: 0.025,
     maxTokens: 512,
     contextWindow: 1_000_000,
-    notes: 'Preview pricing. AI Studio quota 4K RPM, 4M TPM, 150K RPD.'
+    notes:
+      'R174-1: rolled back from gemini-3.1-flash-lite-preview due to thought_signature requirement breaking multi-turn tool calling. Restore when Gemini 3 SDK stable.'
   },
   'tool-calling-cheap': {
     provider: 'google',
-    model: 'gemini-3.1-flash-lite-preview',
+    model: 'gemini-2.5-flash',
     inputCost: 0.25,
     outputCost: 1.5,
     cacheReadCost: 0.025,
     maxTokens: 2048,
     contextWindow: 1_000_000,
-    notes: 'Share singleton with security-router (same model, different task).'
+    notes: 'Share singleton with security-router. R174-1 rolled back from gemini-3.1.'
   },
   'rag-balanced': {
     provider: 'google',
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.5-flash',
+    // R174-hotfix4: rolled back from gemini-3-flash-preview (thought_signature)
     inputCost: 0.5,
     outputCost: 3.0,
     cacheReadCost: 0.05,

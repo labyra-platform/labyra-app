@@ -12,11 +12,18 @@
  */
 import type { AiMessage } from '@/types/ai';
 import { MessageBubble } from './message-bubble';
+import { ThinkingIndicator } from './thinking-indicator';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const NEAR_BOTTOM_THRESHOLD_PX = 100;
 
-export function MessageList({ messages }: { messages: AiMessage[] }) {
+export function MessageList({
+  messages,
+  isStreaming
+}: {
+  messages: AiMessage[];
+  isStreaming?: boolean;
+}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
 
@@ -59,7 +66,19 @@ export function MessageList({ messages }: { messages: AiMessage[] }) {
       {messages.length === 0 ? (
         <p className='text-muted-foreground py-8 text-center text-sm'>Start a conversation...</p>
       ) : (
-        messages.map((m) => <MessageBubble key={m.id} message={m} />)
+        <>
+          {messages.map((m) => {
+            const isLastEmpty =
+              isStreaming &&
+              m === messages[messages.length - 1] &&
+              m.role === 'assistant' &&
+              !m.content;
+            if (isLastEmpty) {
+              return <ThinkingIndicator key={m.id} />;
+            }
+            return <MessageBubble key={m.id} message={m} />;
+          })}
+        </>
       )}
     </div>
   );

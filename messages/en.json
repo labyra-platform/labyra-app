@@ -145,8 +145,9 @@
     "conversationRestored": "Conversation restored",
     "undo": "Undo",
     "deleteFailed": "Failed to delete",
-    "tierWriter": "Writer",
-    "tierAuditor": "Auditor"
+    "tierWriter": "T4 Writer",
+    "tierAuditor": "T5 Auditor",
+    "thinking": "Thinking..."
   },
   "papers": {
     "uploadPageTitle": "Upload paper",

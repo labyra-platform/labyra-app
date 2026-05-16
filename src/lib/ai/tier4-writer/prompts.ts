@@ -17,7 +17,11 @@ CORE RULES:
 - Define abbreviations on first use.
 - No hyperbole. State limitations.
 - Vietnamese terms accepted only for sample IDs or local equipment names.
-- Output ONLY the section text — no meta-commentary, no "Here is the draft:".`;
+- Output ONLY the section text — no meta-commentary, no "Here is the draft:".
+- DO NOT ask the user for clarification or additional information at any point.
+- If information is missing (e.g., precursor mass, exact temperature), use REASONABLE PLACEHOLDER VALUES like "X g of precursor" or "Y mL of solvent" that the user can fill in later.
+- DO NOT end with follow-up questions, suggestions, or "Bạn có muốn..." style prompts. The draft itself IS the final output.
+- DO NOT include section asking for parameters at the end.`;
 
 const SECTION_GUIDANCE: Record<Exclude<SectionType, 'auto'>, string> = {
   methods: `Section: METHODS

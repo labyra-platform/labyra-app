@@ -39,27 +39,34 @@ function toGeminiHistory(messages: LLMStreamRequest['messages']): unknown[] {
     tool_use_id?: string;
     content?: unknown;
   };
-  return all.map((m) => {
-    const role = m.role === 'assistant' ? 'model' : 'user';
+  // R174-hotfix3: split each message into separate entries by part type.
+  // Gemini 2.5+ rejects role='user' containing functionResponse parts; they
+  // must be on role='function' (or a separate user message). Splitting also
+  // keeps order intact.
+  const out: Array<{ role: string; parts: Array<Record<string, unknown>> }> = [];
+  for (const m of all) {
+    const baseRole = m.role === 'assistant' ? 'model' : 'user';
     if (typeof m.content === 'string') {
-      return { role, parts: [{ text: m.content }] };
+      out.push({ role: baseRole, parts: [{ text: m.content }] });
+      continue;
     }
-    // Block array — convert Anthropic-style to Gemini parts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const blocks = m.content as any as Block[];
-    const parts: Array<Record<string, unknown>> = [];
+    const textParts: Array<Record<string, unknown>> = [];
+    const toolUseParts: Array<Record<string, unknown>> = [];
+    const toolResultParts: Array<Record<string, unknown>> = [];
     for (const b of blocks) {
       if (b.type === 'text' && typeof b.text === 'string') {
-        parts.push({ text: b.text });
+        textParts.push({ text: b.text });
       } else if (b.type === 'tool_use') {
-        parts.push({
+        toolUseParts.push({
           functionCall: {
             name: b.name ?? '',
             args: (b.input as object) ?? {}
           }
         });
       } else if (b.type === 'tool_result') {
-        parts.push({
+        toolResultParts.push({
           functionResponse: {
             name: b.tool_use_id ?? '',
             response:
@@ -70,11 +77,20 @@ function toGeminiHistory(messages: LLMStreamRequest['messages']): unknown[] {
         });
       }
     }
-    if (parts.length === 0) {
-      parts.push({ text: '' });
+    // Emit text + toolUse on baseRole (typically 'model' if assistant)
+    const combinedAssistant = [...textParts, ...toolUseParts];
+    if (combinedAssistant.length > 0) {
+      out.push({ role: baseRole, parts: combinedAssistant });
     }
-    return { role, parts };
-  });
+    // Emit toolResult on role='function' (Gemini 2.5+ requirement)
+    if (toolResultParts.length > 0) {
+      out.push({ role: 'function', parts: toolResultParts });
+    }
+    if (combinedAssistant.length === 0 && toolResultParts.length === 0) {
+      out.push({ role: baseRole, parts: [{ text: '' }] });
+    }
+  }
+  return out;
 }
 
 function mapJsonSchemaTypeToGemini(type: string): SchemaType {

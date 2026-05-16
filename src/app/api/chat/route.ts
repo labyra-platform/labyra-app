@@ -309,7 +309,11 @@ export async function POST(request: Request) {
           conversationId: conversationId!,
           isNew: isNewConversation
         });
-        send({ type: 'message_start', messageId: assistantMessageId });
+        send({
+          type: 'message_start',
+          messageId: assistantMessageId,
+          tier: tier as 1 | 2 | 3 | 4 | 5
+        });
 
         let fullText = '';
         // R170-4: capture grounding for telemetry (set in T3 branch)

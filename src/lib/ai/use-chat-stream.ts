@@ -144,9 +144,12 @@ export function useChatStream(): UseChatStreamResult {
             } else if (event.type === 'message_start') {
               realAssistantId = event.messageId;
               setMessages((prev) =>
-                prev.map((m) => (m.id === assistantMsg.id ? { ...m, id: event.messageId } : m))
+                prev.map((m) =>
+                  m.id === assistantMsg.id ? { ...m, id: event.messageId, tier: event.tier } : m
+                )
               );
-            } else if (event.type === 'text_delta') {
+            }
+            if (event.type === 'text_delta') {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === (realAssistantId ?? assistantMsg.id)

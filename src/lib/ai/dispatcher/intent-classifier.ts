@@ -21,7 +21,7 @@ import type { FeatureKind } from '@/types/cost';
 
 const CLASSIFIER_SYSTEM = `You are an intent classifier for a materials science lab AI.
 
-Classify the user's message into ONE of three production tiers:
+Classify the user's message into ONE of four production tiers:
 
 **Tier 1 (Gemini Flash-Lite — Lab Manager)** — Lab data lookups
 - "How many experiments running?"
@@ -44,13 +44,21 @@ Classify the user's message into ONE of three production tiers:
 - "Build hypothesis for why MoS₂ shows X"
 - Multi-paper synthesis, multi-step planning
 
-DEFAULT BIAS: When uncertain, choose Tier 2 (60% of queries should be T2).
+**Tier 4 (Sonnet 4.6 — Writer)** — Manuscript section drafting
+- "Draft methods section for WO₃ hydrothermal synthesis"
+- "Write the results paragraph for XRD data on Sample X"
+- "Compose discussion for our photocatalysis findings"
+- "Help me write the introduction for a paper on HER catalysts"
+- Specifically requesting drafted text (methods/results/discussion/introduction)
+
+DEFAULT BIAS: When uncertain, choose Tier 2 (50% of queries should be T2).
 Tier 1 only for clearly simple lab data queries.
 Tier 3 only for clearly complex multi-step research.
+Tier 4 ONLY when user explicitly requests drafted paper section text.
 
 Output ONLY a JSON object, no other text:
 {
-  "tier": 1 | 2 | 3,
+  "tier": 1 | 2 | 3 | 4,
   "feature": "lab_ops" | "theory" | "spectrum_analysis" | "paper_writing",
   "reason": "<10 words explaining why>",
   "confidence": <0.0 to 1.0>
@@ -72,14 +80,50 @@ interface ClassifierJsonResponse {
 const CONFIDENCE_THRESHOLD = 0.7;
 const FALLBACK_TIER: AiTier = 2;
 
+/**
+ * R174-hotfix7: Pre-classifier keyword override for T4 Writer.
+ *
+ * Gemini 2.5-flash few-shot classification unreliable for T4. Force T4 if
+ * message contains strong drafting intent + section type keywords.
+ */
+function detectT4Override(message: string): IntentDecision | null {
+  const lower = message.toLowerCase();
+
+  // Drafting intent verbs (EN + VI)
+  const draftVerbs =
+    /\b(draft|write|compose|help me write|prepare|tổng hợp|viết|soạn|soạn thảo|biên soạn|dự thảo)\b/i;
+
+  // Section type nouns (EN + VI)
+  const sectionTypes =
+    /\b(methods|method section|materials and methods|results|discussion|introduction|experimental section|phần (?:phương pháp|kết quả|thảo luận|giới thiệu|thực nghiệm)|methodology)\b/i;
+
+  if (draftVerbs.test(lower) && sectionTypes.test(lower)) {
+    return {
+      tier: 4,
+      feature: 'paper_writing',
+      reason: 'keyword_override: draft+section match',
+      confidence: 0.95,
+      classifierCostUsd: 0,
+      classifierLatencyMs: 0
+    };
+  }
+  return null;
+}
+
 export async function classifyIntent(userMessage: string): Promise<IntentDecision> {
   const startedAt = Date.now();
+
+  // R174-hotfix7: T4 keyword override bypasses classifier
+  const t4Override = detectT4Override(userMessage);
+  if (t4Override) {
+    return t4Override;
+  }
 
   try {
     const { provider, config } = getHaikuDispatcher();
     const { text, usage } = await provider.complete({
       model: config.model,
-      maxTokens: 100,
+      maxTokens: 256,
       system: [{ text: CLASSIFIER_SYSTEM, cache: true, cacheTtl: '1h' }],
       messages: [{ role: 'user', content: userMessage }]
     });

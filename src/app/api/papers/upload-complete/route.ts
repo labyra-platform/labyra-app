@@ -15,17 +15,17 @@
  */
 import { randomUUID } from 'node:crypto';
 import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
-import {
-  fileExists,
-  getFileMetadata,
-  deleteFile,
-  movePaperFile,
-  paperStoragePath
-} from '@/lib/firebase/storage';
 import { trackUsage } from '@/lib/ai/governance/quota';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import {
+  deleteFile,
+  fileExists,
+  getFileMetadata,
+  movePaperFile,
+  paperStoragePath
+} from '@/lib/firebase/storage';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { Paper } from '@/types/papers';
 
@@ -103,7 +103,9 @@ export async function POST(request: Request) {
   // ─── Verify file in Storage + get metadata ───────────────────
   const tempPath = reservation.storagePath;
   if (!(await fileExists(tempPath))) {
-    return jsonError(409, 'file_not_uploaded', { hint: 'PUT to signedUploadUrl first' });
+    return jsonError(409, 'file_not_uploaded', {
+      hint: 'PUT to signedUploadUrl first'
+    });
   }
 
   let metadata;
@@ -185,6 +187,10 @@ export async function POST(request: Request) {
     year: 0,
     doi: '',
     abstract: '',
+    // R177-1e: book detection defaults (worker overwrites after OCR)
+    documentType: 'unknown',
+    isbn: '',
+    publisher: '',
     pageCount: 0,
     status: 'queued',
     statusUpdatedAt: now,

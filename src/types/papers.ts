@@ -4,6 +4,11 @@
  * @see docs/ai/ai-5b-pipeline.md
  */
 
+// R177-1e: documentType for book/article/thesis classification (Python
+// worker R177-1d detects this from page-1 OCR signals; routes resolution
+// path: article→Crossref+OpenAlex, book→Google Books API).
+export type DocumentType = 'article' | 'book' | 'thesis' | 'unknown';
+
 // R166-ai6a-3b-fix: added 'extracting_citations' for ai-6 pipeline step 6
 export type PaperStatus =
   | 'queued'
@@ -71,6 +76,19 @@ export interface Paper extends ProvBase {
   doi: string;
   abstract: string;
   pageCount: number;
+
+  // R177-1e: documentType + book/non-article fields.
+  // documentType defaults 'unknown' for legacy papers (pre-R177-1d).
+  // Book fields (isbn, publisher, bookSubtitle, bookPageCount,
+  // bookSourceId, bookResolvedAt) populated only when documentType='book'
+  // via Google Books API resolution.
+  documentType: DocumentType;
+  isbn: string;
+  publisher: string;
+  bookSubtitle?: string;
+  bookPageCount?: number;
+  bookSourceId?: string;
+  bookResolvedAt?: number;
 
   // State machine
   status: PaperStatus;

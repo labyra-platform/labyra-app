@@ -17,13 +17,13 @@
  */
 import { createHash, randomUUID } from 'node:crypto';
 import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
-import { paperStoragePath, uploadBuffer } from '@/lib/firebase/storage';
 import { checkQuota, trackUsage } from '@/lib/ai/governance/quota';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
-import type { Paper } from '@/types/papers';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { paperStoragePath, uploadBuffer } from '@/lib/firebase/storage';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import type { Paper } from '@/types/papers';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Vercel: 60s for upload (processing is async)
@@ -151,6 +151,10 @@ export async function POST(request: Request) {
     year: 0,
     doi: '',
     abstract: '',
+    // R177-1e: book detection defaults (worker overwrites after OCR)
+    documentType: 'unknown',
+    isbn: '',
+    publisher: '',
     pageCount: 0,
     status: 'queued',
     statusUpdatedAt: now,

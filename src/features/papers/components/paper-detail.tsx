@@ -1,24 +1,31 @@
 'use client';
+
 // R165-phase-1-oxlint: oxlint cleanup
 
+import {
+  IconArrowLeft,
+  IconEye,
+  IconFileText,
+  IconLoader2,
+  IconRefresh,
+  IconX
+} from '@tabler/icons-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 /**
  * Paper detail page — metadata + processing timeline + actions.
  * @phase R160-ai-5b-2
  */
 import { useState } from 'react';
-import { usePaper } from '@/lib/firestore/queries/papers';
-import { useTranslations } from 'next-intl';
-import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { IconLoader2, IconX, IconRefresh, IconArrowLeft, IconFileText } from '@tabler/icons-react';
-import Link from 'next/link';
-import { ProcessingTimeline } from './processing-timeline';
-import { CitationsSection } from './citations-section'; // R166-6b-1
-import { getFirebaseAuth } from '@/lib/firebase/client';
-import { TERMINAL_STATUSES, CANCELLABLE_STATUSES } from '@/types/papers';
-
 // R164-phase-8-9b: version history
 import { VersionHistoryViewer } from '@/components/versioning/version-history-viewer';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { usePaper } from '@/lib/firestore/queries/papers';
+import { CANCELLABLE_STATUSES, TERMINAL_STATUSES } from '@/types/papers';
+import { CitationsSection } from './citations-section'; // R166-6b-1
+import { ProcessingTimeline } from './processing-timeline';
 
 async function callApi(path: string, method: 'POST' = 'POST') {
   const user = getFirebaseAuth().currentUser;
@@ -165,6 +172,15 @@ export function PaperDetail({ paperId }: { paperId: string }) {
       )}
 
       <section className='flex flex-wrap gap-2'>
+        {/* R178-1b: View PDF — always available regardless of status */}
+        <Link
+          href={`/${locale}/dashboard/papers/${paperId}/view`}
+          className='inline-flex items-center gap-2 rounded-md border bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+          aria-label={t('viewPdf')}
+        >
+          <IconEye className='size-3.5' />
+          {t('viewPdf')}
+        </Link>
         {canCancel && (
           <button
             onClick={handleCancel}

@@ -35,6 +35,10 @@ export { ragasEvalWeekly } from './scheduled/ragas-eval.js';
 // R171-6: daily drift reconciliation between estimated and actual billing
 export { reconcileCostDrift } from './scheduled/cost-drift.js';
 
+// R179: Layer 2 orphan audit — scan-only, weekly Sunday 04:00 UTC
+// @r179-applied
+export { auditOrphansWeekly } from './scheduled/orphan-audit.js';
+
 // Stub export so deploy doesn't fail before scheduled functions added
 export const healthCheck = (() => {
   // Placeholder — replaced when first scheduled function ships

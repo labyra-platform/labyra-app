@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
+import type * as React from 'react';
 import { Icons } from '@/components/icons';
 
 import { cn } from '@/lib/utils';
@@ -120,11 +120,11 @@ function SheetDescription({
 
 export {
   Sheet,
-  SheetTrigger,
   SheetClose,
   SheetContent,
-  SheetHeader,
+  SheetDescription,
   SheetFooter,
+  SheetHeader,
   SheetTitle,
-  SheetDescription
+  SheetTrigger
 };

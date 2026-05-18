@@ -123,17 +123,17 @@ export function computeInternalCandidates(
 // R163-spectra-4c-5b — Multi-type internal candidates
 // ============================================================
 import { matchScoreFTIR, matchScoreRaman, matchScoreUVVis } from '@/lib/spectra/multi-match-score';
+import type { FTIRReferenceCard, RamanReferenceCard, UVVisReferenceCard } from '@/types/spectra';
 import type {
-  SpectrumParsedData,
   FTIRCitationCandidate,
-  RamanCitationCandidate,
-  UVVisCitationCandidate,
-  MultiCitationCandidate,
   FTIRPeak,
+  MultiCitationCandidate,
+  RamanCitationCandidate,
   RamanPeak,
+  SpectrumParsedData,
+  UVVisCitationCandidate,
   UVVisPeak
 } from '@/types/spectra-analysis';
-import type { FTIRReferenceCard, RamanReferenceCard, UVVisReferenceCard } from '@/types/spectra';
 
 const THRESHOLD_MULTI = 0.3;
 

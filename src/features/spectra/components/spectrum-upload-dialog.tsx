@@ -16,7 +16,12 @@ interface SpectrumUploadDialogProps {
   sampleId: string;
   sampleLabel?: string;
   /** Demo file preloaded. R162-demo-visibility */
-  initialDemo?: { file: File; formula: string; anode: string; monochromator: string };
+  initialDemo?: {
+    file: File;
+    formula: string;
+    anode: string;
+    monochromator: string;
+  };
 }
 
 export function SpectrumUploadDialog({

@@ -1,17 +1,18 @@
 'use client';
+
 // R166-ai6a-3b-fix2: + extracting_citations
 
+import { IconFileText, IconLoader2, IconUpload } from '@tabler/icons-react';
 /**
  * Realtime paper list with status badges.
  * @phase R160-ai-5b-2
  */
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { usePapers } from '@/lib/firestore/queries/papers';
 import { useTranslations } from 'next-intl';
-import { IconFileText, IconUpload, IconLoader2 } from '@tabler/icons-react';
-import type { PaperStatus } from '@/types/papers';
+import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
+import type { PaperStatus } from '@/types/papers';
 
 const STATUS_COLORS: Record<PaperStatus, string> = {
   queued: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',

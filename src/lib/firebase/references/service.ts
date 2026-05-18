@@ -11,17 +11,17 @@
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { generateEntityId } from '@/lib/prov/id-generator';
-import { buildDeprecatePatch, buildRetractPatch, buildReactivatePatch } from '@/lib/prov/lifecycle';
+import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
+import type { CreateAnyReferenceInput } from '@/lib/schemas/reference-schema';
+import type { LifecycleStatus } from '@/types/prov-base';
 import type {
-  Reference,
-  ReferenceVersion,
-  XRDReference,
   FTIRReference,
   RamanReference,
-  UVVisReference
+  Reference,
+  ReferenceVersion,
+  UVVisReference,
+  XRDReference
 } from '@/types/references';
-import type { LifecycleStatus } from '@/types/prov-base';
-import type { CreateAnyReferenceInput } from '@/lib/schemas/reference-schema';
 
 const COLLECTION = 'references';
 const VERSIONS_SUB = 'versions';

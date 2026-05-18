@@ -40,10 +40,19 @@ function getCitationLink(c: CitationCandidate): string | null {
 
 function confidenceLabel(score: number): { label: string; color: string } {
   if (score >= 0.7)
-    return { label: 'High', color: 'bg-green-500/10 text-green-700 dark:text-green-400' };
+    return {
+      label: 'High',
+      color: 'bg-green-500/10 text-green-700 dark:text-green-400'
+    };
   if (score >= 0.4)
-    return { label: 'Medium', color: 'bg-amber-500/10 text-amber-700 dark:text-amber-400' };
-  return { label: 'Low', color: 'bg-red-500/10 text-red-700 dark:text-red-400' };
+    return {
+      label: 'Medium',
+      color: 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+    };
+  return {
+    label: 'Low',
+    color: 'bg-red-500/10 text-red-700 dark:text-red-400'
+  };
 }
 
 export function XRDPhaseSummary({ candidates }: XRDPhaseSummaryProps) {

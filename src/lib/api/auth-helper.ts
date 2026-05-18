@@ -7,9 +7,9 @@
  * @phase R164-phase-4a
  */
 import 'server-only';
-import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuthService } from '@/lib/firebase/admin';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getAdminAuthService } from '@/lib/firebase/admin';
 
 export interface AuthSuccess {
   tenantId: string;

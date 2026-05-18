@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 // import { persist } from 'zustand/middleware';
-import type { NotificationStatus, NotificationAction } from '@/components/ui/notification-card';
+import type { NotificationAction, NotificationStatus } from '@/components/ui/notification-card';
 
 export type Notification = {
   id: string;

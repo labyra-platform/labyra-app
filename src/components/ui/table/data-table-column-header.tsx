@@ -1,8 +1,8 @@
 'use client';
 
+import { CaretSortIcon, ChevronDownIcon, ChevronUpIcon, Cross2Icon } from '@radix-ui/react-icons';
 import type { Column } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
-
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { ChevronDownIcon, ChevronUpIcon, CaretSortIcon, Cross2Icon } from '@radix-ui/react-icons';
 
 interface DataTableColumnHeaderProps<TData, TValue> extends React.ComponentProps<
   typeof DropdownMenuTrigger

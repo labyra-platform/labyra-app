@@ -12,10 +12,10 @@
  */
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { buildDeprecatePatch, buildRetractPatch, buildReactivatePatch } from '@/lib/prov/lifecycle';
+import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
+import type { UpdatePaperMetadataInput } from '@/lib/schemas/paper-schema';
 import type { Paper, PaperVersion } from '@/types/papers';
 import type { LifecycleStatus } from '@/types/prov-base';
-import type { UpdatePaperMetadataInput } from '@/lib/schemas/paper-schema';
 
 const COLLECTION = 'papers';
 const VERSIONS_SUB = 'versions';
@@ -188,5 +188,5 @@ export async function findPaperByDoi(tenantId: string, doi: string): Promise<Pap
     .limit(1)
     .get();
   if (snap.empty) return null;
-  return snap.docs[0]!.data() as Paper;
+  return snap.docs[0]?.data() as Paper;
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -9,9 +11,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-import { Icons } from '@/components/icons';
 import { useKpiSummary } from '@/lib/firestore/queries/dashboard';
-import { useTranslations } from 'next-intl';
 
 function KpiCard({
   description,

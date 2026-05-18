@@ -3,7 +3,7 @@
  * @phase R160-ai-3c1
  */
 import { getTool } from './registry';
-import type { ToolCall, ToolResult, ToolContext } from './types';
+import type { ToolCall, ToolContext, ToolResult } from './types';
 
 /** Execute a single tool call. Errors are captured as result with isError=true. */
 export async function executeToolCall(call: ToolCall, context: ToolContext): Promise<ToolResult> {

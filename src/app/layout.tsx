@@ -1,13 +1,13 @@
-import Providers from '@/components/layout/providers';
-import { Toaster } from '@/components/ui/sonner';
-import { fontVariables } from '@/components/themes/font.config';
-import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
-import ThemeProvider from '@/components/themes/theme-provider';
-import { cn } from '@/lib/utils';
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import NextTopLoader from 'nextjs-toploader';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import Providers from '@/components/layout/providers';
+import { fontVariables } from '@/components/themes/font.config';
+import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
+import ThemeProvider from '@/components/themes/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
+import { cn } from '@/lib/utils';
 import '../styles/globals.css';
 
 const META_THEME_COLORS = {

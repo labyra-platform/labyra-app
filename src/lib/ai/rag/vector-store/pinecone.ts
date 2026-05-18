@@ -9,7 +9,7 @@
  */
 // R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
-import { Pinecone, type Index, type RecordMetadata } from '@pinecone-database/pinecone';
+import { type Index, Pinecone, type RecordMetadata } from '@pinecone-database/pinecone';
 
 let _client: Pinecone | null = null;
 let _index: Index<PaperChunkMetadata> | null = null;
@@ -35,7 +35,7 @@ export interface PaperChunkMetadata extends RecordMetadata {
 function getClient(): Pinecone {
   if (_client) return _client;
   const apiKey = process.env.PINECONE_API_KEY;
-  if (!apiKey || !apiKey.startsWith('pcsk_')) {
+  if (!apiKey?.startsWith('pcsk_')) {
     throw new Error('PINECONE_API_KEY missing or malformed (expected pcsk_...). Set in .env.local');
   }
   _client = new Pinecone({ apiKey });
@@ -61,7 +61,13 @@ export interface UpsertVector {
  */
 export async function pineconeUpsert(tenantId: string, vectors: UpsertVector[]): Promise<void> {
   if (vectors.length === 0) {
-    console.warn(JSON.stringify({ level: 'warn', event: 'pinecone_upsert_empty', tenantId }));
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        event: 'pinecone_upsert_empty',
+        tenantId
+      })
+    );
     return;
   }
   const index = getIndex();

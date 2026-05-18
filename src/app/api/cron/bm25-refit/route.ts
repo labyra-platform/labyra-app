@@ -8,8 +8,9 @@
  * Auth: requires CRON_SECRET environment variable matching request header.
  */
 // R165-phase-1-oxlint: oxlint cleanup
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
+
 import { refitTenant } from '@/lib/ai/rag/sparse/bm25-manager';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 min — should fit < 10K docs total
@@ -19,7 +20,9 @@ export async function POST(request: Request) {
   const auth = request.headers.get('authorization');
   const expected = `Bearer ${process.env.CRON_SECRET ?? ''}`;
   if (!process.env.CRON_SECRET || auth !== expected) {
-    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401
+    });
   }
 
   const startedAt = Date.now();

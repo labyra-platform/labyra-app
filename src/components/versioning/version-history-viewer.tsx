@@ -4,9 +4,9 @@
  * @phase R164-phase-8-9a
  */
 'use client';
-import { useState } from 'react';
+import { IconChevronDown, IconChevronRight, IconHistory } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { IconHistory, IconChevronRight, IconChevronDown } from '@tabler/icons-react';
+import { useState } from 'react';
 import { useVersionHistory, type VersionRecord } from './use-version-history';
 
 interface VersionHistoryViewerProps {

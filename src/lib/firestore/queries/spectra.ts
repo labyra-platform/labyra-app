@@ -1,18 +1,18 @@
 'use client';
+import {
+  collection,
+  type DocumentSnapshot,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  where
+} from 'firebase/firestore';
 /**
  * Firestore queries for spectra.
  * @phase R164-phase-5b-1 (was R160-spectra-1) — collection renamed spectra→measurements
  */
 import { useEffect, useState } from 'react';
-import {
-  collection,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  where,
-  type DocumentSnapshot
-} from 'firebase/firestore';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { getFirebaseFirestore as db } from '@/lib/firebase/client';
 import type { SpectrumMetadata } from '@/types/spectra';

@@ -79,7 +79,7 @@ function isInNegationContext(responseText: string, position: number): boolean {
   const lookbackStart = Math.max(0, position - 80);
   const before = responseText.slice(lookbackStart, position).toLowerCase();
   for (const neg of NEGATION_TOKENS) {
-    const re = new RegExp('\\b' + neg + '\\b', 'i');
+    const re = new RegExp(`\\b${neg}\\b`, 'i');
     if (re.test(before)) {
       const lastNegIdx = before.toLowerCase().lastIndexOf(neg);
       if (lastNegIdx >= 0) {

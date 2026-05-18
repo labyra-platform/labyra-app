@@ -9,22 +9,21 @@
  * @phase R162-spectra-4b
  */
 
-import { getTranslations } from 'next-intl/server';
+import { IconBook, IconChevronLeft } from '@tabler/icons-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { IconBook, IconChevronLeft } from '@tabler/icons-react';
-
-import { Badge } from '@/components/ui/badge';
+import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
-import { getReferenceCard } from '@/lib/firebase/reference-cards/service';
+import { Badge } from '@/components/ui/badge';
 import { ReferenceCardActions } from '@/features/spectra/components/reference-card-actions';
 // R165-phase-4-ref-ui: lifecycle + lineage UI
 import {
   ReferenceDetailActions,
   ReferenceLineageSection
 } from '@/features/spectra/components/reference-detail-actions';
-import { getCurrentTenantId } from '@/lib/auth/server';
 import { formatSciText } from '@/features/spectra/utils/format-units';
+import { getCurrentTenantId } from '@/lib/auth/server';
+import { getReferenceCard } from '@/lib/firebase/reference-cards/service';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,8 +82,11 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
             <ReferenceDetailActions
               id={card.id}
               status={
-                (card as { lifecycleStatus?: 'active' | 'deprecated' | 'retracted' })
-                  .lifecycleStatus ?? 'active'
+                (
+                  card as {
+                    lifecycleStatus?: 'active' | 'deprecated' | 'retracted';
+                  }
+                ).lifecycleStatus ?? 'active'
               }
             />
             <ReferenceCardActions card={card} />

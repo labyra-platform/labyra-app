@@ -7,7 +7,7 @@
  */
 import 'server-only';
 import { Mistral } from '@mistralai/mistralai';
-import type { OcrProvider, OcrResult, OcrPage } from './types';
+import type { OcrPage, OcrProvider, OcrResult } from './types';
 
 let _client: Mistral | null = null;
 

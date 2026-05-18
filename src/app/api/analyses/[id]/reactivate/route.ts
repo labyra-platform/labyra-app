@@ -3,10 +3,10 @@
  *
  * @phase R164-phase-4b
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate } from '@/lib/api/auth-helper';
-import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import { reactivateAnalysis } from '@/lib/firebase/analyses/service';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 

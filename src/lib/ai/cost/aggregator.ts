@@ -7,7 +7,7 @@
  */
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import type { TenantCostDoc, FeatureKind } from '@/types/cost';
+import type { FeatureKind, TenantCostDoc } from '@/types/cost';
 
 function todayUtcYmd(): string {
   const d = new Date();

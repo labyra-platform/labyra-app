@@ -1,16 +1,15 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Bar, BarChart, XAxis } from 'recharts';
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  ChartConfig,
+  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart';
 import { useExperimentsByStatus } from '@/lib/firestore/queries/dashboard';
-import { useTranslations } from 'next-intl';
 
 const chartConfig = {
   count: {

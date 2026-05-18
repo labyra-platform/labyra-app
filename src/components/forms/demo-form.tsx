@@ -1,24 +1,16 @@
 'use client';
 
-import * as React from 'react';
-import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { useStore } from '@tanstack/react-form';
+import { format } from 'date-fns';
+import * as React from 'react';
+import type { DateRange } from 'react-day-picker';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FieldDescription } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-  InputOTPSeparator
-} from '@/components/ui/input-otp';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Command,
   CommandEmpty,
@@ -27,11 +19,19 @@ import {
   CommandItem,
   CommandList
 } from '@/components/ui/command';
-import { Calendar } from '@/components/ui/calendar';
+import { FieldDescription } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot
+} from '@/components/ui/input-otp';
 import { Label } from '@/components/ui/label';
-import { format } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
-import { Icons } from '@/components/icons';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 
 // Schema (form-level safety net — onSubmit catches anything field-level missed)

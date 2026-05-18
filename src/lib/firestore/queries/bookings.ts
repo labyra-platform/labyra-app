@@ -1,17 +1,17 @@
 'use client';
+import {
+  collection,
+  type DocumentSnapshot,
+  doc,
+  onSnapshot,
+  orderBy,
+  query
+} from 'firebase/firestore';
 /**
  * Firestore queries for bookings.
  * @phase R160-data-2
  */
 import { useEffect, useState } from 'react';
-import {
-  collection,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  type DocumentSnapshot
-} from 'firebase/firestore';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { getFirebaseFirestore as db } from '@/lib/firebase/client';
 import type { Booking } from '@/types/bookings';

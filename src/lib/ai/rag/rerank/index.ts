@@ -3,8 +3,8 @@
  * @phase R160-ai-5d-1
  */
 import 'server-only';
-import { VoyageRerankProvider } from './voyage';
 import type { RerankProvider } from './types';
+import { VoyageRerankProvider } from './voyage';
 
 let _provider: RerankProvider | null = null;
 
@@ -14,4 +14,4 @@ export function getRerankProvider(): RerankProvider {
   return _provider;
 }
 
-export type { RerankProvider, RerankInput, RerankResponse, RerankedResult } from './types';
+export type { RerankedResult, RerankInput, RerankProvider, RerankResponse } from './types';

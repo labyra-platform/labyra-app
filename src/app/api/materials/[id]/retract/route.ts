@@ -3,11 +3,11 @@
  *
  * @phase R164-phase-4a
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticate } from '@/lib/api/auth-helper';
-import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import { retractMaterial } from '@/lib/firebase/materials/service';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 

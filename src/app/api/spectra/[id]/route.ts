@@ -7,12 +7,12 @@
  * @phase R160-spectra-1
  * R164 R164-phase-5b-1: backend now reads from measurements collection (URL unchanged).
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { deleteFile } from '@/lib/firebase/storage';
-import type { SpectrumMetadata } from '@/types/spectra';
-import { getTenantIdFromToken } from '@/lib/auth/token';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import type { SpectrumMetadata } from '@/types/spectra';
 
 export const runtime = 'nodejs';
 
@@ -66,6 +66,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('DELETE /api/spectra error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    return new NextResponse(err instanceof Error ? err.message : 'error', {
+      status: 500
+    });
   }
 }

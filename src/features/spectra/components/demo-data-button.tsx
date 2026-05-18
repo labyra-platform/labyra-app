@@ -7,14 +7,12 @@
  * @phase R162-demo-dataset
  */
 
-import { useEffect, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 import { IconFlask, IconLoader2 } from '@tabler/icons-react';
-
-import { Button } from '@/components/ui/button';
+import { useLocale, useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { SciText } from '@/features/spectra/utils/format-units';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,8 +21,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { loadDemoManifest, fetchDemoFile } from '@/lib/spectra/load-demo';
+import { SciText } from '@/features/spectra/utils/format-units';
 import type { DemoSample } from '@/lib/spectra/load-demo';
+import { fetchDemoFile, loadDemoManifest } from '@/lib/spectra/load-demo';
 
 interface DemoDataButtonProps {
   onLoad: (

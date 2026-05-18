@@ -1,4 +1,5 @@
 'use client';
+import { IconCheck, IconLibrary, IconQuestionMark, IconQuote } from '@tabler/icons-react';
 /**
  * Citation filter — controlled component.
  *
@@ -11,7 +12,6 @@
  * @phase R166-6b-2
  */
 import { useTranslations } from 'next-intl';
-import { IconCheck, IconQuote, IconQuestionMark, IconLibrary } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import type { CitationConfidence } from '@/types/citations';
 

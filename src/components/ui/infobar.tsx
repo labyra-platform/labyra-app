@@ -1,5 +1,10 @@
 'use client';
 
+import { Slot } from '@radix-ui/react-slot';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { usePathname } from 'next/navigation';
+import * as React from 'react';
+import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -14,11 +19,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { Slot } from '@radix-ui/react-slot';
-import { VariantProps, cva } from 'class-variance-authority';
-import { Icons } from '@/components/icons';
-import { usePathname } from 'next/navigation';
-import * as React from 'react';
 
 const INFOBAR_WIDTH = '22rem';
 const INFOBAR_WIDTH_MOBILE = '22rem';
@@ -111,13 +111,13 @@ function InfobarProvider({
   // Helper to toggle the infobar.
   const toggleInfobar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
-  }, [isMobile, setOpen, setOpenMobile]);
+  }, [isMobile, setOpen]);
 
   // Close infobar when switching between mobile and desktop to prevent state desync
   React.useEffect(() => {
     setOpenMobile(false);
     _setOpen(false);
-  }, [isMobile]);
+  }, []);
 
   // Adds a keyboard shortcut to toggle the infobar.
   React.useEffect(() => {
@@ -147,7 +147,7 @@ function InfobarProvider({
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- setOpen is a stable React state setter
-  }, [pathname, contentPathname]);
+  }, [pathname, contentPathname, setOpen]);
 
   // Update setContent to also track pathname
   const handleSetContent = React.useCallback(
@@ -182,7 +182,6 @@ function InfobarProvider({
       setOpen,
       isMobile,
       openMobile,
-      setOpenMobile,
       toggleInfobar,
       content,
       handleSetContent,

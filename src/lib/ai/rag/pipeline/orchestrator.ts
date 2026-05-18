@@ -5,21 +5,21 @@
 // R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
 import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { runOcrStep } from './ocr-step';
-import { chunkPaper } from './chunking';
-import { runEnrichStep } from './enrich-step';
-import { runEmbedStep } from './embed-step';
-import { runIndexStep } from './index-step';
-import { updatePaperStatus, setPaperError, setPaperCancelled, CancelledError } from './state';
 import type { PaperProcessingJob } from '@/lib/ai/rag/jobs/types';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { Paper } from '@/types/papers';
-import { extractMetadata } from './metadata-extract';
+import { chunkPaper } from './chunking';
 // R166-ai6a-3b: citation extraction step
 import { runCitationStep } from './citation-step';
+import { runEmbedStep } from './embed-step';
+import { runEnrichStep } from './enrich-step';
+import { runIndexStep } from './index-step';
+import { extractMetadata } from './metadata-extract';
+import { runOcrStep } from './ocr-step';
+import { CancelledError, setPaperCancelled, setPaperError, updatePaperStatus } from './state';
 
 function backoffDelayMs(retryCount: number): number {
-  const base = Math.pow(2, retryCount) * 1000;
+  const base = 2 ** retryCount * 1000;
   const jitter = Math.random() * 500;
   return base + jitter;
 }
@@ -92,7 +92,10 @@ export async function processPaperJob(job: PaperProcessingJob, signal: AbortSign
       storagePath: paper.storagePath,
       signal
     });
-    log('step_ocr_done', { pages: ocrResult.pageCount, costUsd: ocrResult.costUsd });
+    log('step_ocr_done', {
+      pages: ocrResult.pageCount,
+      costUsd: ocrResult.costUsd
+    });
 
     // Hotfix-5d-4: extract real title/year/DOI from first page (~$0.001/paper)
     try {
@@ -232,7 +235,10 @@ export async function processPaperJob(job: PaperProcessingJob, signal: AbortSign
     // Hotfix-3: check retry cap STRICTLY (don't schedule retry if would exceed)
     const nextRetryCount = paper.retryCount + 1;
     if (nextRetryCount > paper.maxRetries) {
-      log('pipeline_max_retries_exceeded', { retries: paper.retryCount, error: msg });
+      log('pipeline_max_retries_exceeded', {
+        retries: paper.retryCount,
+        error: msg
+      });
       await setPaperError(
         tenantId,
         paperId,

@@ -1,8 +1,9 @@
 'use client';
 
+import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
 import type { Table } from '@tanstack/react-table';
+import * as React from 'react';
 import { Icons } from '@/components/icons';
-
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -14,8 +15,6 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import * as React from 'react';
-import { CheckIcon, CaretSortIcon } from '@radix-ui/react-icons';
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;

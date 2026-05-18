@@ -5,10 +5,10 @@
  * Status timeline UI — shows pipeline steps with progress.
  * @phase R160-ai-5b-2
  */
-import { IconCheck, IconCircle, IconLoader2, IconX, IconAlertTriangle } from '@tabler/icons-react';
-import { cn } from '@/lib/utils';
+import { IconAlertTriangle, IconCheck, IconCircle, IconLoader2, IconX } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import type { PaperStatus, Paper } from '@/types/papers';
+import { cn } from '@/lib/utils';
+import type { Paper, PaperStatus } from '@/types/papers';
 
 const STEPS: Array<{ status: PaperStatus; key: string }> = [
   { status: 'queued', key: 'queued' },

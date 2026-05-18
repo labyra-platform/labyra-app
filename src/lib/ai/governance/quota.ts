@@ -5,10 +5,10 @@
  * Quota check at API boundary. Track after operation succeeds.
  */
 import 'server-only';
-import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { getTierLimits, SOFT_CAP_FRACTION, type TenantTier, type TenantLimits } from './tiers';
-import type { UsageAction, MonthlyUsage } from '@/types/papers';
+import type { MonthlyUsage, UsageAction } from '@/types/papers';
+import { getTierLimits, SOFT_CAP_FRACTION, type TenantLimits, type TenantTier } from './tiers';
 
 function currentYearMonth(): string {
   const d = new Date();

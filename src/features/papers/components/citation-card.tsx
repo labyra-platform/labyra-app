@@ -1,4 +1,7 @@
 'use client';
+import { IconCheck, IconExternalLink, IconQuestionMark, IconQuote } from '@tabler/icons-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 /**
  * Render a single citation entry with confidence badge.
  *
@@ -8,9 +11,6 @@
  * @phase R166-6b-1
  */
 import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { IconExternalLink, IconQuote, IconCheck, IconQuestionMark } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import type { Citation, CitationConfidence } from '@/types/citations';
 

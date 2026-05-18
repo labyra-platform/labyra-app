@@ -1,10 +1,10 @@
 'use client';
 
-import { Icons } from '@/components/icons';
 import Image from 'next/image';
 import * as React from 'react';
 import Dropzone, { type DropzoneProps, type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
+import { Icons } from '@/components/icons';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -172,7 +172,7 @@ export function FileUploader(props: FileUploaderProps) {
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [files?.forEach, files]);
 
   const isDisabled = disabled || (files?.length ?? 0) >= maxFiles;
 

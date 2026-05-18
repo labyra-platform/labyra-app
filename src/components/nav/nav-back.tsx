@@ -9,8 +9,8 @@
  */
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { IconArrowLeft } from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 interface NavBackProps {

@@ -4,8 +4,8 @@
  * @phase R160-ai-3c1
  */
 import { countExperiments, findSample, recentMaterials } from './lab-tools';
-import type { RegisteredTool, ToolDefinition } from './types';
 import { paperTools } from './paper-tools';
+import type { RegisteredTool, ToolDefinition } from './types';
 
 /** All tools available to LLMs */
 export const ALL_TOOLS: RegisteredTool[] = [

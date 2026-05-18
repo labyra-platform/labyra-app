@@ -1,5 +1,7 @@
 'use client';
 
+import { getAuth } from 'firebase/auth';
+import { useTranslations } from 'next-intl';
 /**
  * LineageExplorer — pick entity → render LineageGraph.
  *
@@ -9,8 +11,9 @@
  * @phase R165-phase-7-lineage-page
  */
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { getAuth } from 'firebase/auth';
+import { LineageGraph } from '@/components/lineage/lineage-graph';
+import type { EntityType } from '@/components/lineage/use-lineage-data';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -18,9 +21,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { LineageGraph } from '@/components/lineage/lineage-graph';
-import type { EntityType } from '@/components/lineage/use-lineage-data';
 
 const ENTITY_TYPES: EntityType[] = [
   'material',
@@ -93,7 +93,9 @@ export function LineageExplorer() {
           headers: { authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error(await res.text());
-        const data = (await res.json()) as { items?: Record<string, unknown>[] };
+        const data = (await res.json()) as {
+          items?: Record<string, unknown>[];
+        };
         const items = data.items ?? [];
         if (!cancelled) {
           const options = items

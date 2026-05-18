@@ -1,8 +1,8 @@
 // R165-phase-1-oxlint: oxlint cleanup
 import { getTranslations } from 'next-intl/server';
+import type React from 'react';
 import PageContainer from '@/components/layout/page-container';
 import { KpiCards } from '@/features/overview/components/kpi-cards';
-import React from 'react';
 
 export default async function OverViewLayout({
   sales,

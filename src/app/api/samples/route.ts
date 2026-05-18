@@ -3,11 +3,11 @@
  *
  * @phase R164-phase-4a
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate } from '@/lib/api/auth-helper';
-import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import { createSample, listSamples } from '@/lib/firebase/samples/service';
 import { CreateSampleSchema } from '@/lib/schemas/sample-schema';
-import { listSamples, createSample } from '@/lib/firebase/samples/service';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -29,7 +29,11 @@ export async function GET(req: NextRequest) {
   const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 50, 200) : undefined;
 
   try {
-    const items = await listSamples(auth.tenantId, { includeDeprecated, includeRetracted, limit });
+    const items = await listSamples(auth.tenantId, {
+      includeDeprecated,
+      includeRetracted,
+      limit
+    });
     return NextResponse.json({ items });
   } catch (err) {
     console.error('GET /api/samples', err);

@@ -1,4 +1,5 @@
 'use client';
+import { collection, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 /**
  * Client-side Firestore realtime queries for citations.
  * Mirrors papers.ts pattern: useTenantId + onSnapshot.
@@ -6,7 +7,6 @@
  * @phase R166-6b-1
  */
 import { useEffect, useState } from 'react';
-import { collection, doc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { getFirebaseFirestore as db } from '@/lib/firebase/client';
 import type { Citation, PaperCitationStats } from '@/types/citations';

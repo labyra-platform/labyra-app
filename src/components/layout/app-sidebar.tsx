@@ -1,4 +1,7 @@
 'use client';
+import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import * as React from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
@@ -27,9 +30,6 @@ import { navGroups } from '@/config/nav-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
 import { Link } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
-import * as React from 'react';
 import { Icons } from '../icons';
 
 export default function AppSidebar() {
@@ -42,7 +42,7 @@ export default function AppSidebar() {
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
-  }, [isOpen]);
+  }, []);
 
   return (
     <Sidebar collapsible='icon'>

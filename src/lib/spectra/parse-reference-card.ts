@@ -148,7 +148,7 @@ function parsePeakWithSchema(
 }
 
 export function parseReferenceCard(text: string): ParsedReferenceCard {
-  if (!text || !text.trim()) throw new Error('Empty text');
+  if (!text?.trim()) throw new Error('Empty text');
 
   const lines = text
     .split('\n')

@@ -10,15 +10,15 @@
  */
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
 import {
+  IconArrowsSort,
   IconChevronDown,
   IconChevronUp,
-  IconArrowsSort,
+  IconDownload,
   IconSortAscending,
-  IconSortDescending,
-  IconDownload
+  IconSortDescending
 } from '@tabler/icons-react';
+import { type ReactNode, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 
@@ -73,7 +73,7 @@ export function DataTable<T>({
   const sortedRows = useMemo(() => {
     if (!sortKey || !sortDir) return rows;
     const col = columns.find((c) => c.key === sortKey);
-    if (!col || !col.sortValue) return rows;
+    if (!col?.sortValue) return rows;
     const accessor = col.sortValue;
     return [...rows].toSorted((a, b) => {
       const av = accessor(a);

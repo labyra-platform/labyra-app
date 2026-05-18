@@ -1,8 +1,7 @@
 'use client';
 
-import * as React from 'react';
+import type * as React from 'react';
 import { Icons } from '@/components/icons';
-import { Link } from '@/i18n/navigation';
 import {
   Infobar,
   InfobarContent,
@@ -12,6 +11,7 @@ import {
   InfobarTrigger,
   useInfobar
 } from '@/components/ui/infobar';
+import { Link } from '@/i18n/navigation';
 
 // Default/fallback data when no content is set
 const defaultData = {

@@ -9,11 +9,11 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { getFirebaseAuth } from '@/lib/firebase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SciText } from '@/features/spectra/utils/format-units';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { ReferenceCard } from '@/types/spectra';
 
 interface ReferenceCardsManagerProps {

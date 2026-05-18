@@ -68,3 +68,6 @@ firebase-service-account.json
 # R171-0: Firebase Functions build output
 functions/lib/
 functions/node_modules/
+may-costs.csv
+*.bak178*
+*.bakR178

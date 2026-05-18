@@ -11,9 +11,9 @@
  * Wrap root layout với <AuthProvider> để cung cấp context.
  */
 
-import type React from 'react';
-import { createContext, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, onIdTokenChanged, type User } from 'firebase/auth';
+import type React from 'react';
+import { createContext, type ReactNode, useEffect, useState } from 'react';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 
 export interface AuthClaims {

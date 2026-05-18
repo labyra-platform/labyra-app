@@ -1,5 +1,7 @@
 'use client';
 
+import { IconTrash } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 /**
  * Single conversation row. 1-click delete with Undo toast (Gmail pattern).
  *
@@ -11,15 +13,13 @@
  *
  * @phase R160-ai-3c1-hotfix-4
  */
-import { type KeyboardEvent } from 'react';
-import { cn } from '@/lib/utils';
-import { IconTrash } from '@tabler/icons-react';
+import type { KeyboardEvent } from 'react';
+import { toast } from 'sonner';
 import {
   useDeleteConversation,
   useRestoreConversationCache
 } from '@/lib/firestore/queries/ai-conversations';
-import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import type { AiConversation } from '@/types/ai';
 
 interface Props {

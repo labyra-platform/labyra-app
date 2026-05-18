@@ -29,7 +29,10 @@ export function XRDQualityCard({
   const [rangeMin, rangeMax] = quality.scan_range_2theta;
 
   const items = [
-    { label: 'Scan range', value: `${fmt(rangeMin, 1)}° – ${fmt(rangeMax, 1)}°` },
+    {
+      label: 'Scan range',
+      value: `${fmt(rangeMin, 1)}° – ${fmt(rangeMax, 1)}°`
+    },
     { label: 'Step size', value: `${fmt(quality.step_size_deg, 4)}°` },
     { label: 'Data points', value: quality.data_points.toLocaleString() },
     { label: 'λ effective', value: `${fmt(wavelength, 5)} Å` },

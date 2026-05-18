@@ -5,9 +5,9 @@
 // R165-phase-1-oxlint: oxlint cleanup
 import { selectProvider } from '@/lib/ai/providers';
 import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
+import type { AiCostBreakdown, AiMessage } from '@/types/ai';
 import { critiqueResponse } from './critic';
 import type { ReflectionResult, ReflectionRound } from './types';
-import type { AiCostBreakdown, AiMessage } from '@/types/ai';
 
 const MAX_REFLECTION_ROUNDS = 3;
 
@@ -66,7 +66,12 @@ export async function runReflection(opts: RunOptions): Promise<ReflectionResult>
 
   const rounds: ReflectionRound[] = [];
   let conversationContext: AiMessage[] = [
-    { id: 'initial-user', role: 'user', content: userMessage, createdAt: Date.now() }
+    {
+      id: 'initial-user',
+      role: 'user',
+      content: userMessage,
+      createdAt: Date.now()
+    }
   ];
 
   let stoppedReason: ReflectionResult['stoppedReason'] = 'max_iterations';
@@ -166,8 +171,18 @@ export async function runReflection(opts: RunOptions): Promise<ReflectionResult>
 
     conversationContext = [
       ...conversationContext,
-      { id: `r${i}-resp`, role: 'assistant', content: responseText, createdAt: Date.now() },
-      { id: `r${i}-crit`, role: 'user', content: critiqueMessage, createdAt: Date.now() }
+      {
+        id: `r${i}-resp`,
+        role: 'assistant',
+        content: responseText,
+        createdAt: Date.now()
+      },
+      {
+        id: `r${i}-crit`,
+        role: 'user',
+        content: critiqueMessage,
+        createdAt: Date.now()
+      }
     ];
   }
 

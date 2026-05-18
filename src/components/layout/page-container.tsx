@@ -1,6 +1,6 @@
-import React from 'react';
-import { Heading } from '../ui/heading';
+import type React from 'react';
 import type { InfobarContent } from '@/components/ui/infobar';
+import { Heading } from '../ui/heading';
 
 function PageSkeleton() {
   return (

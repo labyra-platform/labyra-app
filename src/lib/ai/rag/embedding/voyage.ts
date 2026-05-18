@@ -13,7 +13,7 @@ export const VOYAGE_RERANK_MODEL = 'rerank-2.5';
 
 function getApiKey(): string {
   const key = process.env.VOYAGE_API_KEY;
-  if (!key || !key.startsWith('pa-')) {
+  if (!key?.startsWith('pa-')) {
     throw new Error('VOYAGE_API_KEY missing or malformed (expected pa-...). Set in .env.local');
   }
   return key;

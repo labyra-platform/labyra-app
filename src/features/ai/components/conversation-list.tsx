@@ -1,5 +1,8 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 /**
  * Time-grouped conversation list.
  * @phase R160-ai-2b
@@ -7,9 +10,6 @@
 import { useConversations } from '@/lib/firestore/queries/ai-conversations';
 import { groupConversationsByTime, type TimeGroupKey } from '../lib/group-by-time';
 import { ConversationItem } from './conversation-item';
-import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 const GROUP_LABEL_KEY: Record<TimeGroupKey, string> = {
   today: 'groupToday',

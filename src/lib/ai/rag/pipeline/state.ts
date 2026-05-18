@@ -3,7 +3,7 @@
  * @phase R160-ai-5b-2
  */
 import 'server-only';
-import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { PaperStatus } from '@/types/papers';
 

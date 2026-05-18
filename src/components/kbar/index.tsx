@@ -1,11 +1,11 @@
 'use client';
-import { navGroups } from '@/config/nav-config';
 import { KBarAnimator, KBarPortal, KBarPositioner, KBarProvider, KBarSearch } from 'kbar';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
+import { navGroups } from '@/config/nav-config';
+import { useFilteredNavGroups } from '@/hooks/use-nav';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
-import { useFilteredNavGroups } from '@/hooks/use-nav';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();

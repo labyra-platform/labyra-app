@@ -12,15 +12,15 @@
  *
  * @phase R163-spectra-4c-5a
  */
-import { matchScoreGeneric, type MatchScoreGenericResult } from '@/lib/spectra/match-score';
-import { MATCH_TOLERANCE } from '@/types/spectra';
+import { type MatchScoreGenericResult, matchScoreGeneric } from '@/lib/spectra/match-score';
 import type {
-  ReferenceCardPeak,
   FTIRReferenceCardPeak,
   RamanReferenceCardPeak,
+  ReferenceCardPeak,
   UVVisReferenceCardPeak
 } from '@/types/spectra';
-import type { XRDPeak, FTIRPeak, RamanPeak, UVVisPeak } from '@/types/spectra-analysis';
+import { MATCH_TOLERANCE } from '@/types/spectra';
+import type { FTIRPeak, RamanPeak, UVVisPeak, XRDPeak } from '@/types/spectra-analysis';
 
 export type { MatchScoreGenericResult };
 

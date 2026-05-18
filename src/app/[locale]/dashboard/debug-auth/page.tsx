@@ -13,10 +13,10 @@
  * Access via direct URL: /dashboard/_debug-auth
  */
 
-import { useAuth, useTenantId, useRole, useIsAdmin, refreshAuthClaims } from '@/lib/auth';
-import { Button } from '@/components/ui/button';
-import PageContainer from '@/components/layout/page-container';
 import { useState } from 'react';
+import PageContainer from '@/components/layout/page-container';
+import { Button } from '@/components/ui/button';
+import { refreshAuthClaims, useAuth, useIsAdmin, useRole, useTenantId } from '@/lib/auth';
 
 export default function DebugAuthPage() {
   const { user, claims, loading } = useAuth();

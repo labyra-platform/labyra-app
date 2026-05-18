@@ -1,12 +1,11 @@
-import React from 'react';
-import { SidebarTrigger } from '../ui/sidebar';
-import { Separator } from '../ui/separator';
+import { NotificationCenter } from '@/features/notifications/components/notification-center';
 import { Breadcrumbs } from '../breadcrumbs';
 import SearchInput from '../search-input';
-import { ThemeSelector } from '../themes/theme-selector';
 import { ThemeModeToggle } from '../themes/theme-mode-toggle';
+import { ThemeSelector } from '../themes/theme-selector';
+import { Separator } from '../ui/separator';
+import { SidebarTrigger } from '../ui/sidebar';
 import CtaGithub from './cta-github';
-import { NotificationCenter } from '@/features/notifications/components/notification-center';
 
 export default function Header() {
   return (

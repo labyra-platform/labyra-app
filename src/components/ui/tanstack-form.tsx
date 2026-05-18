@@ -8,6 +8,24 @@
 import { createFormHook } from '@tanstack/react-form';
 import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
+import {
+  CheckboxField,
+  FileUploadField,
+  FormCheckboxField,
+  FormFileUploadField,
+  FormRadioGroupField,
+  FormSelectField,
+  FormSliderField,
+  FormSwitchField,
+  FormTextareaField,
+  FormTextField,
+  RadioGroupField,
+  SelectField,
+  SliderField,
+  SwitchField,
+  TextareaField,
+  TextField
+} from '@/components/forms/fields';
 import { Button, type buttonVariants } from '@/components/ui/button';
 import {
   FieldContent,
@@ -19,32 +37,14 @@ import {
   FieldTitle
 } from '@/components/ui/field';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
-import {
-  TextField,
-  TextareaField,
-  SelectField,
-  CheckboxField,
-  SwitchField,
-  RadioGroupField,
-  SliderField,
-  FileUploadField,
-  FormTextField,
-  FormTextareaField,
-  FormSelectField,
-  FormCheckboxField,
-  FormSwitchField,
-  FormRadioGroupField,
-  FormSliderField,
-  FormFileUploadField
-} from '@/components/forms/fields';
 import { cn } from '@/lib/utils';
 import {
+  FormField,
+  FormFieldError,
+  FormFieldSet,
   fieldContext,
   formContext,
-  useFormContext,
-  FormFieldSet,
-  FormField,
-  FormFieldError
+  useFormContext
 } from './form-context';
 
 // ---------------------------------------------------------------------------
@@ -211,24 +211,22 @@ function useFormFields<TValues extends Record<string, unknown>>() {
 // Exports
 // ---------------------------------------------------------------------------
 
-export { useAppForm, withForm, withFieldGroup, useFormFields };
-
 export type {
   FieldConfig,
-  FieldValidatorConfig,
   FieldListenerConfig,
+  FieldValidatorConfig,
   WithTypedName
 } from './form-context';
-
 export {
   createFormField,
-  typedField,
-  revalidateLogic,
-  scrollToFirstError,
-  useFieldContext,
-  useFormContext,
-  FormFieldSet,
+  FormErrors,
   FormField,
   FormFieldError,
-  FormErrors
+  FormFieldSet,
+  revalidateLogic,
+  scrollToFirstError,
+  typedField,
+  useFieldContext,
+  useFormContext
 } from './form-context';
+export { useAppForm, useFormFields, withFieldGroup, withForm };

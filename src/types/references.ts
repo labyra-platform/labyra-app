@@ -16,11 +16,11 @@
 
 import type { ProvBase } from './prov-base';
 import type {
-  ReferenceCardPeak,
   FTIRReferenceCardPeak,
   RamanReferenceCardPeak,
-  UVVisReferenceCardPeak,
-  SpectrumTypeRefCard
+  ReferenceCardPeak,
+  SpectrumTypeRefCard,
+  UVVisReferenceCardPeak
 } from './spectra';
 
 export type { SpectrumTypeRefCard };

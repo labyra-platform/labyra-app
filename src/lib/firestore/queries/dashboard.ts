@@ -7,8 +7,8 @@
  * the overview dashboard. Built on useTenantCollection.
  */
 
+import { limit as fsLimit, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
-import { orderBy, limit as fsLimit } from 'firebase/firestore';
 import { useTenantCollection } from '../use-tenant-collection';
 
 // ─── KPI types ──────────────────────────────────────────────────────
@@ -48,9 +48,13 @@ interface ChemicalDoc {
 
 // ─── KPI hook — single query per collection, in-memory aggregation ──
 export function useKpiSummary(): KpiSummary {
-  const experiments = useTenantCollection<ExperimentDoc>({ collection: 'experiments' });
+  const experiments = useTenantCollection<ExperimentDoc>({
+    collection: 'experiments'
+  });
   const samples = useTenantCollection<SampleDoc>({ collection: 'samples' });
-  const equipment = useTenantCollection<EquipmentDoc>({ collection: 'equipment' });
+  const equipment = useTenantCollection<EquipmentDoc>({
+    collection: 'equipment'
+  });
 
   return useMemo(() => {
     const expData = experiments.data ?? [];
@@ -89,11 +93,17 @@ export function useExperimentsByStatus(): {
   data: ExperimentStatusBucket[];
   isLoading: boolean;
 } {
-  const { data, isLoading } = useTenantCollection<ExperimentDoc>({ collection: 'experiments' });
+  const { data, isLoading } = useTenantCollection<ExperimentDoc>({
+    collection: 'experiments'
+  });
 
   const buckets = useMemo<ExperimentStatusBucket[]>(() => {
     if (!data) return [];
-    const counts: Record<string, number> = { planned: 0, running: 0, completed: 0 };
+    const counts: Record<string, number> = {
+      planned: 0,
+      running: 0,
+      completed: 0
+    };
     for (const doc of data) {
       const status = doc.data.status;
       if (status in counts) counts[status]++;
@@ -118,7 +128,9 @@ export function useChemicalsByHazard(): {
   data: ChemicalHazardBucket[];
   isLoading: boolean;
 } {
-  const { data, isLoading } = useTenantCollection<ChemicalDoc>({ collection: 'chemicals' });
+  const { data, isLoading } = useTenantCollection<ChemicalDoc>({
+    collection: 'chemicals'
+  });
 
   const buckets = useMemo<ChemicalHazardBucket[]>(() => {
     if (!data) return [];
@@ -144,20 +156,41 @@ export interface EquipmentTypeBucket {
   fill: string;
 }
 
-export function useEquipmentByType(): { data: EquipmentTypeBucket[]; isLoading: boolean } {
-  const { data, isLoading } = useTenantCollection<EquipmentDoc>({ collection: 'equipment' });
+export function useEquipmentByType(): {
+  data: EquipmentTypeBucket[];
+  isLoading: boolean;
+} {
+  const { data, isLoading } = useTenantCollection<EquipmentDoc>({
+    collection: 'equipment'
+  });
 
   const buckets = useMemo<EquipmentTypeBucket[]>(() => {
     if (!data) return [];
-    const counts: Record<string, number> = { microscopy: 0, spectroscopy: 0, analysis: 0 };
+    const counts: Record<string, number> = {
+      microscopy: 0,
+      spectroscopy: 0,
+      analysis: 0
+    };
     for (const doc of data) {
       const t = doc.data.type;
       if (t in counts) counts[t]++;
     }
     return [
-      { type: 'Microscopy', count: counts.microscopy, fill: 'var(--color-microscopy)' },
-      { type: 'Spectroscopy', count: counts.spectroscopy, fill: 'var(--color-spectroscopy)' },
-      { type: 'Analysis', count: counts.analysis, fill: 'var(--color-analysis)' }
+      {
+        type: 'Microscopy',
+        count: counts.microscopy,
+        fill: 'var(--color-microscopy)'
+      },
+      {
+        type: 'Spectroscopy',
+        count: counts.spectroscopy,
+        fill: 'var(--color-spectroscopy)'
+      },
+      {
+        type: 'Analysis',
+        count: counts.analysis,
+        fill: 'var(--color-analysis)'
+      }
     ];
   }, [data]);
 

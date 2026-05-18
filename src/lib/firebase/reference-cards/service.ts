@@ -15,14 +15,14 @@ const COLLECTION_NEW = 'references';
 const COLLECTION_LEGACY = 'reference_cards';
 const COLLECTION = COLLECTION_LEGACY; // other fns still use legacy until R166
 
+import type { CreateAnyRefCardInput } from '@/lib/spectra/reference-card-schema';
 // R163-spectra-4c-4a: discriminated-union create supporting all spectrum types.
 import type {
-  XRDReferenceCard,
   FTIRReferenceCard,
   RamanReferenceCard,
-  UVVisReferenceCard
+  UVVisReferenceCard,
+  XRDReferenceCard
 } from '@/types/spectra';
-import type { CreateAnyRefCardInput } from '@/lib/spectra/reference-card-schema';
 
 type CreateInputWithMeta = CreateAnyRefCardInput & {
   tenantId: string;

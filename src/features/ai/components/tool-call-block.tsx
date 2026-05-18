@@ -1,14 +1,14 @@
 'use client';
 
+import { IconAlertTriangle, IconCheck, IconChevronDown, IconTool } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 /**
  * Displays a tool call + result within an assistant message.
  * Collapsed by default, click to expand JSON.
  * @phase R160-ai-3c1
  */
 import { useState } from 'react';
-import { IconChevronDown, IconCheck, IconAlertTriangle, IconTool } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
 
 interface ToolCallProps {
   name: string;

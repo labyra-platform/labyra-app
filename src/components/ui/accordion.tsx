@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
+import type * as React from 'react';
 import { Icons } from '@/components/icons';
 
 import { cn } from '@/lib/utils';
@@ -61,4 +61,4 @@ function AccordionContent({
   );
 }
 
-export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+export { Accordion, AccordionContent, AccordionItem, AccordionTrigger };

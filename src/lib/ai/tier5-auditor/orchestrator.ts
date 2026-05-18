@@ -13,10 +13,10 @@
 import 'server-only';
 import { selectProvider } from '@/lib/ai/providers';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { extractClaims } from './claim-extractor';
-import { AUDITOR_SYSTEM_PROMPT } from './audit-prompts';
-import type { AuditorOptions, AuditResult, AuditFinding, Verdict } from './types';
 import type { AiCostBreakdown } from '@/types/ai';
+import { AUDITOR_SYSTEM_PROMPT } from './audit-prompts';
+import { extractClaims } from './claim-extractor';
+import type { AuditFinding, AuditorOptions, AuditResult, Verdict } from './types';
 
 const MAX_CLAIMS_PER_RUN = 15;
 const VERDICT_WEIGHTS: Record<Verdict, number> = {
@@ -101,7 +101,12 @@ export async function runAuditor(opts: AuditorOptions): Promise<AuditResult> {
       { text: AUDITOR_SYSTEM_PROMPT, cache: true, cacheTtl: '1h' },
       { text: evidenceBlock, cache: false }
     ],
-    messages: [{ role: 'user', content: claimsBlock + '\n\nOutput JSON array of findings.' }]
+    messages: [
+      {
+        role: 'user',
+        content: `${claimsBlock}\n\nOutput JSON array of findings.`
+      }
+    ]
   })) {
     if (event.type === 'text_delta') {
       auditJson += event.delta;

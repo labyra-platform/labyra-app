@@ -56,7 +56,10 @@ export function DRSChart({ reflectance, km, reflectanceMode }: DRSChartProps) {
         height: 400,
         margin: { l: 60, r: 60, t: 40, b: 50 },
         title: { text: 'DRS — Reflectance & Kubelka-Munk', font: { size: 14 } },
-        xaxis: { title: { text: 'Wavelength (nm)' }, gridcolor: 'hsl(var(--border))' },
+        xaxis: {
+          title: { text: 'Wavelength (nm)' },
+          gridcolor: 'hsl(var(--border))'
+        },
         yaxis: {
           title: { text: yLabel },
           gridcolor: 'hsl(var(--border))',

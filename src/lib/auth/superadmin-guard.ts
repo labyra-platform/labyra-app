@@ -9,9 +9,9 @@
  * @phase R172-1
  */
 import 'server-only';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import { NextResponse } from 'next/server';
 import { getAdminAuthService } from '@/lib/firebase/admin';
-import type { DecodedIdToken } from 'firebase-admin/auth';
 
 export interface SuperadminGuardResult {
   allowed: boolean;
@@ -33,7 +33,7 @@ export async function requireSuperadmin(request: Request): Promise<SuperadminGua
   let decoded: DecodedIdToken;
   try {
     decoded = await getAdminAuthService().verifyIdToken(token);
-  } catch (err) {
+  } catch (_err) {
     return {
       allowed: false,
       response: NextResponse.json({ error: 'invalid_token' }, { status: 401 })

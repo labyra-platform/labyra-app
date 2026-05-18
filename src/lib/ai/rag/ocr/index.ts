@@ -15,4 +15,4 @@ export function getOcrProvider(): OcrProvider {
   return _provider;
 }
 
-export type { OcrProvider, OcrResult, OcrPage } from './types';
+export type { OcrPage, OcrProvider, OcrResult } from './types';

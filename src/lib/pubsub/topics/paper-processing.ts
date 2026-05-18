@@ -9,8 +9,8 @@
  */
 import 'server-only';
 import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { JobQueue, PaperProcessingJob } from '@/lib/ai/rag/jobs/types';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { publishToTopic } from '../publish-to-topic';
 
 const DEFAULT_TOPIC = 'paper-processing';

@@ -6,7 +6,7 @@
  * Approximate tokens by chars (English ~4 chars/token, Vietnamese ~3 chars/token).
  * Conservative: assume 3.5 chars/token.
  */
-import type { OcrResult, OcrPage } from '@/lib/ai/rag/ocr';
+import type { OcrPage, OcrResult } from '@/lib/ai/rag/ocr';
 
 const TARGET_TOKENS = 1024;
 const OVERLAP_TOKENS = 100;

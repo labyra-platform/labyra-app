@@ -1,6 +1,7 @@
 'use client';
 
 import { useThemeConfig } from '@/components/themes/active-theme';
+import { Kbd } from '@/components/ui/kbd';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -11,9 +12,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-
 import { Icons } from '../icons';
-import { Kbd } from '@/components/ui/kbd';
 import { THEMES } from './theme.config';
 
 export function ThemeSelector() {
@@ -38,16 +37,14 @@ export function ThemeSelector() {
         </SelectTrigger>
         <SelectContent align='end'>
           {THEMES.length > 0 && (
-            <>
-              <SelectGroup>
-                <SelectLabel>themes</SelectLabel>
-                {THEMES.map((theme) => (
-                  <SelectItem key={theme.name} value={theme.value}>
-                    {theme.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </>
+            <SelectGroup>
+              <SelectLabel>themes</SelectLabel>
+              {THEMES.map((theme) => (
+                <SelectItem key={theme.name} value={theme.value}>
+                  {theme.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           )}
         </SelectContent>
       </Select>

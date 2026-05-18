@@ -8,10 +8,10 @@
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { generateEntityId } from '@/lib/prov/id-generator';
-import { buildDeprecatePatch, buildRetractPatch, buildReactivatePatch } from '@/lib/prov/lifecycle';
+import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
+import type { CreateExperimentInput, UpdateExperimentInput } from '@/lib/schemas/experiment-schema';
 import type { Experiment } from '@/types/experiments';
 import type { LifecycleStatus } from '@/types/prov-base';
-import type { CreateExperimentInput, UpdateExperimentInput } from '@/lib/schemas/experiment-schema';
 
 const COLLECTION = 'experiments';
 

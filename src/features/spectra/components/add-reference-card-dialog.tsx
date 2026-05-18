@@ -12,9 +12,10 @@
 // R164-phase-6b: fetch URL migrated /api/reference-cards → /api/references
 'use client';
 
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -23,21 +24,20 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { parseReferenceCard, type ParsedReferenceCard } from '@/lib/spectra/parse-reference-card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { SciText } from '@/features/spectra/utils/format-units';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { type ParsedReferenceCard, parseReferenceCard } from '@/lib/spectra/parse-reference-card';
 import {
+  detectSpectrumType,
+  type ParsedMultiReferenceCard,
   parseFTIRReferenceCard,
   parseRamanReferenceCard,
-  parseUVVisReferenceCard,
-  detectSpectrumType,
-  type ParsedMultiReferenceCard
+  parseUVVisReferenceCard
 } from '@/lib/spectra/parse-reference-card-multi';
-import { getFirebaseAuth } from '@/lib/firebase/client';
-import { SciText } from '@/features/spectra/utils/format-units';
 import type { SpectrumTypeRefCard } from '@/types/spectra';
 
 interface AddReferenceCardDialogProps {
@@ -152,13 +152,20 @@ export function AddReferenceCardDialog({
           };
           break;
         case 'uvvis':
-          payload = { ...base, spectrumType: 'uvvis', solvent: solvent || undefined };
+          payload = {
+            ...base,
+            spectrumType: 'uvvis',
+            solvent: solvent || undefined
+          };
           break;
       }
 
       const res = await fetch('/api/references', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       });
 

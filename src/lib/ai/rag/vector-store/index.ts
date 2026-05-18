@@ -5,13 +5,13 @@
  */
 import 'server-only';
 import {
-  pineconeUpsert,
-  pineconeQuery,
+  type PaperChunkMetadata,
+  type PineconeQueryMatch,
   pineconeDeleteByPaperId,
   pineconeDeleteTenant,
-  type UpsertVector,
-  type PineconeQueryMatch,
-  type PaperChunkMetadata
+  pineconeQuery,
+  pineconeUpsert,
+  type UpsertVector
 } from './pinecone';
 
 export type VectorMetadata = PaperChunkMetadata;

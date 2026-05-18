@@ -43,7 +43,7 @@ export async function loadPapersMetadata(
   const snaps = await Promise.all(reads);
 
   for (const { paperId, snap } of snaps) {
-    if (!snap || !snap.exists) continue;
+    if (!snap?.exists) continue;
     const data = snap.data();
     if (!data) continue;
 

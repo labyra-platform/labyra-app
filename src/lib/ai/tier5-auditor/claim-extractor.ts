@@ -6,7 +6,7 @@
  *
  * @phase R173-5
  */
-import type { ExtractedClaim, ClaimType } from './types';
+import type { ClaimType, ExtractedClaim } from './types';
 
 /** Match numerical values with units (e.g., "2.6 eV", "150 mA/cm²") */
 const NUMERICAL_PATTERN =

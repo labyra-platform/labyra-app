@@ -1,11 +1,11 @@
 'use client';
+import { IconAlertTriangle, IconX } from '@tabler/icons-react';
 /**
  * Grounding warning banner — appears below message when L2/L3 finds issues.
  * Click to open modal with details.
  * @phase R160-ai-5e-1
  */
 import { useState } from 'react';
-import { IconAlertTriangle, IconX } from '@tabler/icons-react';
 import type { NumberMatch, UnsourcedClaim } from '@/lib/ai/grounding';
 
 export interface GroundingDetails {

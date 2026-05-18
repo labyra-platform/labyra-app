@@ -1,4 +1,6 @@
 'use client';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 /**
  * Superadmin section layout — client-side role guard.
  *
@@ -8,8 +10,6 @@
  * @phase R172-5
  */
 import { useIsSuperAdmin } from '@/lib/auth/use-claims';
-import { useRouter } from 'next/navigation';
-import * as React from 'react';
 
 export default function SuperadminLayout({ children }: { children: React.ReactNode }) {
   const isSuperadmin = useIsSuperAdmin();

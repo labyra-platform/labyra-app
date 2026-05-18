@@ -4,7 +4,7 @@
  * @phase R164-phase-5b-2
  * @deprecated Use /api/measurements/notify-complete. Will be removed in R166.
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 

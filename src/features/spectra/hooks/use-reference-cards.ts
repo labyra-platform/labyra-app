@@ -78,7 +78,10 @@ export function useReferenceCards() {
   const activeCards: ActiveReferenceCard[] = activeIds
     .map((id) => allCards.find((c) => c.id === id))
     .filter((c): c is ReferenceCard => c !== undefined)
-    .map((c, i) => ({ ...c, color: OVERLAY_COLORS[i % OVERLAY_COLORS.length] }));
+    .map((c, i) => ({
+      ...c,
+      color: OVERLAY_COLORS[i % OVERLAY_COLORS.length]
+    }));
 
   return {
     allCards,

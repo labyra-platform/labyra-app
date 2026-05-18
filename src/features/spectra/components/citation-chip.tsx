@@ -9,9 +9,9 @@
  * @phase R164-phase-10 (was R160-spectra-4a)
  */
 
-import { useLocale } from 'next-intl';
+import { IconAlertCircle, IconBook, IconCircleCheck, IconExternalLink } from '@tabler/icons-react';
 import Link from 'next/link';
-import { IconCircleCheck, IconExternalLink, IconAlertCircle, IconBook } from '@tabler/icons-react';
+import { useLocale } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -66,7 +66,6 @@ function getSourceConfig(type: CitationSourceType): {
         icon: IconExternalLink,
         description: 'Web search result'
       };
-    case 'unverified':
     default:
       return {
         label: 'Unverified',
@@ -85,7 +84,10 @@ interface ResolvedUrl {
 function buildEntryUrl(source: PhaseSource, locale: string): ResolvedUrl | null {
   // R164: internal Reference with linked Paper → internal nav, top priority
   if (source.type === 'internal' && source.paperId) {
-    return { href: `/${locale}/dashboard/papers/${source.paperId}`, external: false };
+    return {
+      href: `/${locale}/dashboard/papers/${source.paperId}`,
+      external: false
+    };
   }
   if (!source.id) return null;
   if (source.doi) {
@@ -115,7 +117,7 @@ function buildEntryUrl(source: PhaseSource, locale: string): ResolvedUrl | null 
 
 export function CitationChip({ source, className }: CitationChipProps) {
   const locale = useLocale();
-  if (!source || !source.type) return null;
+  if (!source?.type) return null;
 
   const config = getSourceConfig(source.type);
   const Icon = config.icon;

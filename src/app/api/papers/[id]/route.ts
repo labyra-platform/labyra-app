@@ -3,11 +3,11 @@
  *
  * @phase R164-phase-4b
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate } from '@/lib/api/auth-helper';
-import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import { deprecatePaper, getPaper, updatePaperMetadata } from '@/lib/firebase/papers/service';
 import { UpdatePaperMetadataSchema } from '@/lib/schemas/paper-schema';
-import { getPaper, updatePaperMetadata, deprecatePaper } from '@/lib/firebase/papers/service';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 

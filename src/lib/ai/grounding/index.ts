@@ -3,8 +3,9 @@
  * Returns aggregated warnings for UI display.
  * @phase R160-ai-5e-1
  */
-import { buildNumberWhitelist, findUnverifiedNumbers, type NumberMatch } from './extract-numbers';
+
 import { findUnsourcedClaims, type UnsourcedClaim } from './citation-check';
+import { buildNumberWhitelist, findUnverifiedNumbers, type NumberMatch } from './extract-numbers';
 
 export interface GroundingResult {
   unverifiedNumbers: NumberMatch[];
@@ -40,4 +41,4 @@ export function checkGrounding(responseText: string, chunks: ChunkInput[]): Grou
   };
 }
 
-export { type NumberMatch, type UnsourcedClaim };
+export type { NumberMatch, UnsourcedClaim };

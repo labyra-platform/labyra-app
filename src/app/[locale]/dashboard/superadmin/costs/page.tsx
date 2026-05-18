@@ -5,10 +5,10 @@
  * @phase R172-5
  */
 import * as React from 'react';
-import { useAuth } from '@/lib/auth/use-auth';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CostKpiCards } from '@/features/superadmin/components/cost-kpi-cards';
 import { CostTimeseries } from '@/features/superadmin/components/cost-timeseries';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth/use-auth';
 
 interface CostApiRow {
   date: string;

@@ -13,9 +13,9 @@
 import 'server-only';
 import { selectProvider } from '@/lib/ai/providers';
 import { searchPapers } from '@/lib/ai/rag/search';
-import { buildWriterSystemPrompt, detectSection, CONTEXT_INSTRUCTION } from './prompts';
-import type { WriterOptions, WriterResult, WriterCitation, SectionType } from './types';
 import type { AiCostBreakdown } from '@/types/ai';
+import { buildWriterSystemPrompt, CONTEXT_INSTRUCTION, detectSection } from './prompts';
+import type { SectionType, WriterCitation, WriterOptions, WriterResult } from './types';
 
 const TOP_K_PAPERS = 8;
 const MAX_DRAFT_TOKENS = 4096;

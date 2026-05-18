@@ -1,11 +1,11 @@
 'use client';
+import { IconExternalLink, IconFileText, IconX } from '@tabler/icons-react';
 /**
  * Citation modal — appears when user clicks a citation chip.
  * Renders full source detail: paper info + chunk text + DOI link + score.
  * @phase R160-ai-5d-3b
  */
 import { useEffect } from 'react';
-import { IconX, IconExternalLink, IconFileText } from '@tabler/icons-react';
 import type { SourceHit } from './sources-panel';
 
 interface CitationModalProps {

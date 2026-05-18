@@ -10,13 +10,12 @@
  */
 // R165-phase-1-oxlint: oxlint cleanup
 'use client';
-import { useState } from 'react';
+import { IconAlertOctagon, IconArchive, IconRotateClockwise } from '@tabler/icons-react';
+import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { getAuth } from 'firebase/auth';
-import { IconArchive, IconAlertOctagon, IconRotateClockwise } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,8 +27,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import type { LifecycleStatus } from '@/types/prov-base';
 
 interface LifecycleActionsProps {

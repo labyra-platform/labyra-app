@@ -6,26 +6,25 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-
+import { Button } from '@/components/ui/button';
+import { AddReferenceCardDialog } from '@/features/spectra/components/add-reference-card-dialog';
 import { AnalysisResultCard } from '@/features/spectra/components/analysis-result-card';
 import { DRSChart } from '@/features/spectra/components/drs-chart';
+// R163-4c-5c1
+import { MultiCitationsPanel } from '@/features/spectra/components/multi-citations-panel';
+import { ReferenceCardsManager } from '@/features/spectra/components/reference-cards-manager';
 import { SpectrumChart } from '@/features/spectra/components/spectrum-chart';
+import { DSCChart, OCPChart, TGAChart } from '@/features/spectra/components/spectrum-chart-ext';
+import { TaucChart } from '@/features/spectra/components/tauc-chart';
 import { XRDPeakDetailTable } from '@/features/spectra/components/xrd-peak-detail-table';
-import { XRDQualityCard } from '@/features/spectra/components/xrd-quality-card';
 import { XRDPhaseSummary } from '@/features/spectra/components/xrd-phase-summary';
+import { XRDQualityCard } from '@/features/spectra/components/xrd-quality-card';
+import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import {
   computeInternalCandidates,
   computeMultiInternalCandidates
 } from '@/lib/spectra/internal-candidates';
-// R163-4c-5c1
-import { MultiCitationsPanel } from '@/features/spectra/components/multi-citations-panel';
-import { AddReferenceCardDialog } from '@/features/spectra/components/add-reference-card-dialog';
-import { ReferenceCardsManager } from '@/features/spectra/components/reference-cards-manager';
-import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';
-import { Button } from '@/components/ui/button';
-import { TaucChart } from '@/features/spectra/components/tauc-chart';
-import { DSCChart, OCPChart, TGAChart } from '@/features/spectra/components/spectrum-chart-ext';
-import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { AnalysisResult } from '@/types/spectra-analysis';
 
 interface SpectrumAnalysisSectionProps {
@@ -133,7 +132,8 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
               </Button>
               {activeCards.length > 0 && (
                 <span className='text-xs text-muted-foreground'>
-                  {activeCards.length} active overlay{activeCards.length > 1 ? 's' : ''}
+                  {activeCards.length} active overlay
+                  {activeCards.length > 1 ? 's' : ''}
                 </span>
               )}
             </div>

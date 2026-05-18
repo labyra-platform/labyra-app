@@ -1,28 +1,25 @@
 'use client';
-import { use, useState } from 'react';
+import { IconPlus } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { toast } from 'sonner';
-import { getAuth } from 'firebase/auth';
-import { IconPlus } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { use, useState } from 'react';
 import PageContainer from '@/components/layout/page-container';
-import { useExperiment } from '@/lib/firestore/queries/experiments';
-import { ExperimentForm } from '@/features/experiments/components/experiment-form';
 // R164-phase-7-integration: lifecycle actions integration
 import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 // R164-phase-8-9b: lineage graph
 import { LineageGraph } from '@/components/lineage/lineage-graph';
-import { LifecycleStatusBadge } from '@/components/lifecycle/lifecycle-status-badge';
+import { NavBack } from '@/components/nav/nav-back';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ExperimentForm } from '@/features/experiments/components/experiment-form';
+import { DemoDataButton } from '@/features/spectra/components/demo-data-button';
 import { SpectraList } from '@/features/spectra/components/spectra-list';
 import { SpectrumUploadDialog } from '@/features/spectra/components/spectrum-upload-dialog';
-import { DemoDataButton } from '@/features/spectra/components/demo-data-button';
-import { NavBack } from '@/components/nav/nav-back';
+import { useExperiment } from '@/lib/firestore/queries/experiments';
 
 export default function ExperimentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
+  const _router = useRouter();
   const locale = useLocale();
   const t = useTranslations('experiments');
   const tSpectra = useTranslations('spectra');
@@ -51,7 +48,7 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
   // For sample linkage in spectrum upload
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = experiment as any;
-  const firstSampleId = (data.sampleIds && data.sampleIds[0]) ?? '';
+  const firstSampleId = data.sampleIds?.[0] ?? '';
 
   return (
     <PageContainer

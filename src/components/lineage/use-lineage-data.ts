@@ -7,8 +7,8 @@
  * @phase R164-phase-8-9a
  */
 'use client';
-import { useEffect, useState } from 'react';
 import { getAuth } from 'firebase/auth';
+import { useEffect, useState } from 'react';
 
 export type EntityType =
   | 'material'
@@ -141,7 +141,11 @@ export function useLineageData(
               });
               // Infer parent type by ID prefix (mat_/sam_/exp_/pap_/ref_) or fallback heuristic
               const parentType = inferTypeFromId(parentId, current.type);
-              queue.push({ type: parentType, id: parentId, depth: current.depth + 1 });
+              queue.push({
+                type: parentType,
+                id: parentId,
+                depth: current.depth + 1
+              });
             }
           }
 

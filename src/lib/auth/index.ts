@@ -5,25 +5,25 @@
  * Server-side: import explicit từ './server' để Next.js bundler split đúng
  */
 
-export { AuthProvider, AuthContext } from './auth-provider';
-export type { AuthClaims, AuthContextValue } from './auth-provider';
-export { useAuth } from './use-auth';
 export {
-  useTenantId,
-  useRole,
-  useIsAdmin,
-  useIsSuperAdmin,
-  useIsAuthenticated
-} from './use-claims';
-export type { AuthRole } from './use-claims';
-export { refreshAuthClaims } from './refresh-claims';
-export {
+  resetPassword,
   signInWithEmail,
   signInWithGoogle,
-  signUpWithEmail,
   signOut,
-  resetPassword
+  signUpWithEmail
 } from './actions';
+export type { AuthClaims, AuthContextValue } from './auth-provider';
+export { AuthContext, AuthProvider } from './auth-provider';
+export { refreshAuthClaims } from './refresh-claims';
+export { useAuth } from './use-auth';
+export type { AuthRole } from './use-claims';
+export {
+  useIsAdmin,
+  useIsAuthenticated,
+  useIsSuperAdmin,
+  useRole,
+  useTenantId
+} from './use-claims';
 
 // Server-only: import explicit
 // import { getCurrentUser, requireAuth, requireRole } from '@/lib/auth/server';

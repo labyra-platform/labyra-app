@@ -81,7 +81,10 @@ export function TaucChart({ curve, bandgap, yLabel, title }: TaucChartProps) {
         height: 380,
         margin: { l: 60, r: 30, t: 40, b: 50 },
         title: { text: title ?? 'Tauc Plot', font: { size: 14 } },
-        xaxis: { title: { text: 'Photon energy hν (eV)' }, gridcolor: 'hsl(var(--border))' },
+        xaxis: {
+          title: { text: 'Photon energy hν (eV)' },
+          gridcolor: 'hsl(var(--border))'
+        },
         yaxis: { title: { text: yLabel }, gridcolor: 'hsl(var(--border))' },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',

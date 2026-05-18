@@ -4,8 +4,8 @@
  * @phase R164-phase-8-9a
  */
 'use client';
-import { useEffect, useState } from 'react';
 import { getAuth } from 'firebase/auth';
+import { useEffect, useState } from 'react';
 
 export interface VersionRecord {
   id: string;

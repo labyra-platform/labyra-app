@@ -13,13 +13,13 @@
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { generateActivityId } from '@/lib/prov/id-generator';
-import { buildDeprecatePatch, buildRetractPatch, buildReactivatePatch } from '@/lib/prov/lifecycle';
-import type { Measurement, MeasurementProcessingStatus } from '@/types/measurements';
-import type { LifecycleStatus } from '@/types/prov-base';
+import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
 import type {
   CreateMeasurementInput,
   UpdateMeasurementInput
 } from '@/lib/schemas/measurement-schema';
+import type { Measurement, MeasurementProcessingStatus } from '@/types/measurements';
+import type { LifecycleStatus } from '@/types/prov-base';
 
 const COLLECTION = 'measurements';
 

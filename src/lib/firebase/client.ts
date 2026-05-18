@@ -5,11 +5,11 @@
  * Safe to import từ Server Components vì check 'undefined' window.
  */
 
-import { getApps, getApp, initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getDatabase, type Database } from 'firebase/database';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import { type FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
+import { type Auth, getAuth } from 'firebase/auth';
+import { type Database, getDatabase } from 'firebase/database';
+import { type Firestore, getFirestore } from 'firebase/firestore';
+import { type FirebaseStorage, getStorage } from 'firebase/storage';
 
 import { firebaseClientConfig, validateClientConfig } from './config';
 

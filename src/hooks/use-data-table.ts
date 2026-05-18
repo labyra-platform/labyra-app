@@ -3,13 +3,6 @@
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
-  type PaginationState,
-  type RowSelectionState,
-  type SortingState,
-  type TableOptions,
-  type TableState,
-  type Updater,
-  type VisibilityState,
   getCoreRowModel,
   getFacetedMinMaxValues,
   getFacetedRowModel,
@@ -17,14 +10,21 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable
+  type PaginationState,
+  type RowSelectionState,
+  type SortingState,
+  type TableOptions,
+  type TableState,
+  type Updater,
+  useReactTable,
+  type VisibilityState
 } from '@tanstack/react-table';
 import {
   type Parser,
-  type UseQueryStateOptions,
   parseAsArrayOf,
   parseAsInteger,
   parseAsString,
+  type UseQueryStateOptions,
   useQueryState,
   useQueryStates
 } from 'nuqs';

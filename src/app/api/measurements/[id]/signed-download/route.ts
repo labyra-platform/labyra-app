@@ -9,12 +9,12 @@
  * R164 R164-phase-5b-2: moved from /api/spectra/* → /api/measurements/*.
  * R164 R164-phase-5b-1: backend now reads from measurements collection (URL unchanged).
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getSignedDownloadUrl } from '@/lib/firebase/storage';
-import type { SpectrumMetadata } from '@/types/spectra';
-import { getTenantIdFromToken } from '@/lib/auth/token';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import type { SpectrumMetadata } from '@/types/spectra';
 
 export const runtime = 'nodejs';
 
@@ -53,6 +53,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ url, expiresAt: Date.now() + 15 * 60 * 1000 });
   } catch (err) {
     console.error('GET signed-download error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    return new NextResponse(err instanceof Error ? err.message : 'error', {
+      status: 500
+    });
   }
 }

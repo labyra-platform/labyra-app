@@ -2,9 +2,9 @@
  * API: POST /api/bookings — create new Booking
  * @phase R160-data-2
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export async function POST(req: NextRequest) {
@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: docRef.id });
   } catch (err) {
     console.error('POST /bookings error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    return new NextResponse(err instanceof Error ? err.message : 'error', {
+      status: 500
+    });
   }
 }

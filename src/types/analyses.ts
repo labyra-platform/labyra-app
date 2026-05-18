@@ -16,9 +16,9 @@
 
 import type { ProvBase } from './prov-base';
 import type {
-  SpectrumParsedData,
+  MultiCitationCandidate,
   SpectrumAIOutput,
-  MultiCitationCandidate
+  SpectrumParsedData
 } from './spectra-analysis';
 
 export interface Analysis extends ProvBase {

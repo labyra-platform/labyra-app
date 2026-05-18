@@ -3,8 +3,8 @@
  * @phase R169-3 base, R170-3 latency + token extension, R170-4 grounding
  */
 
-import type { AiTier } from './ai';
 import type { Capability } from '@/lib/ai/config/capabilities';
+import type { AiTier } from './ai';
 
 /** Feature kind that triggered an AI call (for cost attribution) */
 export type FeatureKind =

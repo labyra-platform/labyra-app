@@ -1,4 +1,6 @@
 'use client';
+import { IconChevronDown, IconChevronRight, IconLoader2 } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 /**
  * Citations section for paper detail page.
  *
@@ -10,21 +12,19 @@
  *
  * @phase R166-6b-1 base, R166-6b-2 filter, R166-6b-2-hotfix2 hook-order fix
  */
-import { useState, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
-import { IconLoader2, IconChevronDown, IconChevronRight } from '@tabler/icons-react';
-import { cn } from '@/lib/utils';
+import { useMemo, useState } from 'react';
 import {
   useCitationsBySource,
   useCitationsByTargetPaperId,
   usePaperCitationStats
 } from '@/lib/firestore/queries/citations';
+import { cn } from '@/lib/utils';
 import { CitationCard } from './citation-card';
 import {
   CitationFilter,
+  type CitationFilterValue,
   citationPassesFilter,
-  createDefaultFilter,
-  type CitationFilterValue
+  createDefaultFilter
 } from './citation-filter';
 
 const COLLAPSED_LIMIT = 5;

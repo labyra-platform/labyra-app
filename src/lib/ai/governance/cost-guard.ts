@@ -11,11 +11,11 @@
  * @see docs/adr/ADR-020-ai-cost-controls.md
  */
 import 'server-only';
+import { getDailyFeatureSpend, getDailyTotal, getMonthlyTotal } from '@/lib/ai/cost/aggregator';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { AiTier } from '@/types/ai';
 import type { FeatureKind } from '@/types/cost';
 import type { TenantTier } from './tiers';
-import { getDailyTotal, getMonthlyTotal, getDailyFeatureSpend } from '@/lib/ai/cost/aggregator';
 
 export interface CostGuardCheck {
   allowed: boolean;

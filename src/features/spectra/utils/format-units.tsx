@@ -4,8 +4,6 @@
  * @phase R160-spectra-3c-hotfix
  */
 
-import * as React from 'react';
-
 const SUPERSCRIPT_MAP: Record<string, string> = {
   '0': '⁰',
   '1': '¹',

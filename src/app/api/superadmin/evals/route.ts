@@ -8,8 +8,8 @@
  */
 import 'server-only';
 import { NextResponse } from 'next/server';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { requireSuperadmin } from '@/lib/auth/superadmin-guard';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 
 export async function GET(request: Request): Promise<NextResponse> {
   const guard = await requireSuperadmin(request);

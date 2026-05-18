@@ -4,11 +4,11 @@
  */
 import 'server-only';
 import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getVectorStore } from '@/lib/ai/rag/vector-store';
-import { throwIfCancelled } from './state';
-import type { EmbeddedChunk } from './embed-step';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { Paper, PaperChunkDoc } from '@/types/papers';
+import type { EmbeddedChunk } from './embed-step';
+import { throwIfCancelled } from './state';
 
 interface IndexStepInput {
   tenantId: string;

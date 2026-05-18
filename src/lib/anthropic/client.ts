@@ -15,7 +15,7 @@ export function getAnthropicClient(): Anthropic {
   if (_client) return _client;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+  if (!apiKey?.startsWith('sk-ant-')) {
     throw new Error(
       'ANTHROPIC_API_KEY missing or malformed. Set in .env.local (get from https://console.anthropic.com)'
     );

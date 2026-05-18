@@ -1,5 +1,12 @@
 'use client';
 
+import {
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
+  IconPlus
+} from '@tabler/icons-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 /**
  * Collapsible left panel containing conversation history list.
  * State persists in localStorage.
@@ -7,15 +14,8 @@
  */
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarLeftExpand,
-  IconPlus
-} from '@tabler/icons-react';
-import { useTranslations } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
-import { ConversationList } from './conversation-list';
 import { cn } from '@/lib/utils';
+import { ConversationList } from './conversation-list';
 
 const STORAGE_KEY = 'labyra:aiPanel:open';
 

@@ -5,12 +5,12 @@
  */
 
 import type {
-  TGAParsedData,
-  TGAAIOutput,
-  DSCParsedData,
   DSCAIOutput,
+  DSCParsedData,
+  OCPAIOutput,
   OCPParsedData,
-  OCPAIOutput
+  TGAAIOutput,
+  TGAParsedData
 } from '@/types/spectra-analysis-ext';
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high';

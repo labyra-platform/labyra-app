@@ -1,13 +1,13 @@
 'use client';
-import { use } from 'react';
+import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { use } from 'react';
 import { toast } from 'sonner';
-import { getAuth } from 'firebase/auth';
-import { Button } from '@/components/ui/button';
 import PageContainer from '@/components/layout/page-container';
-import { useBooking } from '@/lib/firestore/queries/bookings';
+import { Button } from '@/components/ui/button';
 import { BookingForm } from '@/features/bookings/components/booking-form';
+import { useBooking } from '@/lib/firestore/queries/bookings';
 
 export default function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

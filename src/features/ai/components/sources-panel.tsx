@@ -1,11 +1,11 @@
 'use client';
+import { IconChevronDown, IconChevronRight, IconFileText } from '@tabler/icons-react';
 /**
  * Sources panel — collapsible list of retrieved chunks.
  * Auto-expanded by default (NotebookLM pattern).
  * @phase R160-ai-5d-3
  */
 import { useState } from 'react';
-import { IconChevronDown, IconChevronRight, IconFileText } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
 export interface SourceHit {

@@ -2,9 +2,9 @@
  * API: PATCH/DELETE /api/equipment/[id] — update / delete Equipment
  * @phase R160-data-2
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 async function authorize(
@@ -44,7 +44,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('PATCH /equipment/[id] error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    return new NextResponse(err instanceof Error ? err.message : 'error', {
+      status: 500
+    });
   }
 }
 
@@ -59,6 +61,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('DELETE /equipment/[id] error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    return new NextResponse(err instanceof Error ? err.message : 'error', {
+      status: 500
+    });
   }
 }

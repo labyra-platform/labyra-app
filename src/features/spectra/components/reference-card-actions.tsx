@@ -6,14 +6,14 @@
 // R164-phase-6b: fetch URL migrated /api/reference-cards → /api/references
 'use client';
 
-import { useState } from 'react';
+import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
-import { getFirebaseAuth } from '@/lib/firebase/client';
 import { EditReferenceCardDialog } from '@/features/spectra/components/edit-reference-card-dialog';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { ReferenceCard } from '@/types/spectra';
 
 interface ReferenceCardActionsProps {

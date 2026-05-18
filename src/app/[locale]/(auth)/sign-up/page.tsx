@@ -2,13 +2,11 @@
 // R165-phase-1-oxlint: oxlint cleanup
 
 import Link from 'next/link';
-
-import { useTranslations } from 'next-intl';
-
-import type React from 'react';
-import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { signUpWithEmail, signInWithGoogle } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
+import type React from 'react';
+import { type FormEvent, useState } from 'react';
+import { signInWithGoogle, signUpWithEmail } from '@/lib/auth';
 
 export default function SignUpPage(): React.ReactElement {
   const router = useRouter();

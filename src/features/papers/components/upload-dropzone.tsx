@@ -1,5 +1,8 @@
 'use client';
 
+import { IconFile, IconLoader2, IconUpload, IconX } from '@tabler/icons-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 /**
  * Drag-drop PDF upload component — 3-step signed URL flow (R168-3.2).
  *
@@ -13,14 +16,11 @@
  *
  * @phase R160-ai-5b-1 base, R168-3.2 signed URL flow
  */
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { IconUpload, IconFile, IconX, IconLoader2 } from '@tabler/icons-react';
-import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
-import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { getFirebaseAuth } from '@/lib/firebase/client';
+import { cn } from '@/lib/utils';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 const VERCEL_BODY_LIMIT = 4 * 1024 * 1024; // 4 MB (under 4.5 to leave headroom for multipart wrapping)

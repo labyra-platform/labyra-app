@@ -17,15 +17,15 @@
  * circular dependencies.
  */
 
-import { createFormHookContexts, revalidateLogic, useStore } from '@tanstack/react-form';
 import type { AnyFieldApi, DeepKeys } from '@tanstack/react-form';
+import { createFormHookContexts, revalidateLogic, useStore } from '@tanstack/react-form';
 import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 import {
   Field as DefaultField,
   FieldError as DefaultFieldError,
   FieldSet as DefaultFieldSet,
-  fieldVariants
+  type fieldVariants
 } from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 
@@ -355,30 +355,28 @@ type WithTypedName<C, TValues> =
  * ```
  */
 function typedField<TValues extends Record<string, unknown>>() {
-  return function <C extends React.ComponentType<{ name: string }>>(
+  return <C extends React.ComponentType<{ name: string }>>(
     Component: C
-  ): WithTypedName<C, TValues> {
-    return Component as WithTypedName<C, TValues>;
-  };
+  ): WithTypedName<C, TValues> => Component as WithTypedName<C, TValues>;
 }
 
 // ---------------------------------------------------------------------------
 // 7. Exports
 // ---------------------------------------------------------------------------
 
-export type { FieldConfig, FieldValidatorConfig, FieldListenerConfig, WithTypedName };
+export type { FieldConfig, FieldListenerConfig, FieldValidatorConfig, WithTypedName };
 
 export {
-  fieldContext,
-  formContext,
-  useFieldContext,
-  useFormContext,
   createFormField,
-  typedField,
-  revalidateLogic,
-  scrollToFirstError,
-  FieldSet as FormFieldSet,
   Field as FormField,
   FieldError as FormFieldError,
-  FormErrors
+  FieldSet as FormFieldSet,
+  FormErrors,
+  fieldContext,
+  formContext,
+  revalidateLogic,
+  scrollToFirstError,
+  typedField,
+  useFieldContext,
+  useFormContext
 };

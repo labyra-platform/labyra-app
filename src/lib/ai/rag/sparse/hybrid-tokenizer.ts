@@ -4,9 +4,9 @@
  */
 import 'server-only';
 import { franc } from 'franc-min';
-import { VietnameseTokenizer } from './vi-tokenizer';
 import { EnglishTokenizer } from './en-tokenizer';
 import type { Tokenizer } from './types';
+import { VietnameseTokenizer } from './vi-tokenizer';
 
 const viTokenizer = new VietnameseTokenizer();
 const enTokenizer = new EnglishTokenizer();

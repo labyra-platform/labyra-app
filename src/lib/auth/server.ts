@@ -7,10 +7,10 @@ import 'server-only';
  * Verifies Firebase ID token từ session cookie.
  */
 
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyIdToken } from '@/lib/firebase/admin';
-import type { DecodedIdToken } from 'firebase-admin/auth';
 
 /**
  * Get current authenticated user từ session cookie.

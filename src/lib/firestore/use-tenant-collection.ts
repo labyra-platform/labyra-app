@@ -10,14 +10,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
+  type DocumentData,
   collection as fsCollection,
-  getDocs,
   query as fsQuery,
-  type QueryConstraint,
-  type DocumentData
+  getDocs,
+  type QueryConstraint
 } from 'firebase/firestore';
-import { getFirebaseFirestore } from '@/lib/firebase/client';
 import { useTenantId } from '@/lib/auth';
+import { getFirebaseFirestore } from '@/lib/firebase/client';
 
 export interface TenantDoc<T = DocumentData> {
   id: string;

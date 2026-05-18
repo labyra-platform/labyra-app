@@ -5,7 +5,7 @@
  * the original LaTeX source. We extract that on copy and put it in clipboard.
  * @phase R160-ai-5d-3d
  */
-import { useEffect, type RefObject } from 'react';
+import { type RefObject, useEffect } from 'react';
 
 /**
  * Walk a DOM fragment, building text string. KaTeX elements are replaced with

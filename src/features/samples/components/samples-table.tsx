@@ -9,9 +9,9 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
+import { SciText } from '@/features/spectra/utils/format-units';
 import { useSamples } from '@/lib/firestore/queries/samples';
 import type { Sample, SampleStatus } from '@/types/samples';
-import { SciText } from '@/features/spectra/utils/format-units';
 
 // R165-phase-6-samples-status: Sample.status renamed to workflowStatus in R164 Phase 1.
 // Old data may still have `status` field; new data uses workflowStatus.

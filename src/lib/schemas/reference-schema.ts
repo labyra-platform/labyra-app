@@ -11,18 +11,18 @@
  */
 // R165-phase-1-oxlint: oxlint cleanup
 import { z } from 'zod';
-import { ProvBaseCreateInputSchema } from './prov-base-schema';
 import {
-  XRDPeakSchema,
-  FTIRPeakSchema,
-  RamanPeakSchema,
-  UVVisPeakSchema,
+  AnodeSchema,
   CardNumberSchema,
-  PhaseNameSchema,
   FormulaSchema,
+  FTIRPeakSchema,
+  PhaseNameSchema,
+  RamanPeakSchema,
   SpaceGroupSchema,
-  AnodeSchema
+  UVVisPeakSchema,
+  XRDPeakSchema
 } from '@/lib/spectra/reference-card-schema';
+import { ProvBaseCreateInputSchema } from './prov-base-schema';
 
 /**
  * Common fields for all spectrum types (refs).

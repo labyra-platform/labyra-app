@@ -3,10 +3,10 @@
  * @phase R160-ai-5b-2
  */
 import 'server-only';
+import type { OcrResult } from '@/lib/ai/rag/ocr';
 import { getOcrProvider } from '@/lib/ai/rag/ocr';
 import { getAdminStorageService } from '@/lib/firebase/admin';
-import { updatePaperStatus, incrementPaperCost, throwIfCancelled } from './state';
-import type { OcrResult } from '@/lib/ai/rag/ocr';
+import { incrementPaperCost, throwIfCancelled, updatePaperStatus } from './state';
 
 interface OcrStepInput {
   tenantId: string;

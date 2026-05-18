@@ -9,7 +9,7 @@
 
 import dynamic from 'next/dynamic';
 
-import type { SpectrumParsedData, FTIRPeak } from '@/types/spectra-analysis';
+import type { FTIRPeak, SpectrumParsedData } from '@/types/spectra-analysis';
 
 const Plot = dynamic(() => import('react-plotly.js'), {
   ssr: false,
@@ -113,7 +113,7 @@ function getXRDTraces(
           mode: 'lines',
           name: `${ref.cardNumber} ${ref.formula ?? ref.phaseName}`,
           line: { color: ref.color, width: 1.5 },
-          hovertemplate: `${ref.cardNumber}<br>2θ = ${p.twoTheta}°<br>I = ${p.intensity}%${p.hkl ? '<br>hkl: ' + p.hkl : ''}<extra></extra>`,
+          hovertemplate: `${ref.cardNumber}<br>2θ = ${p.twoTheta}°<br>I = ${p.intensity}%${p.hkl ? `<br>hkl: ${p.hkl}` : ''}<extra></extra>`,
           customdata: [p.hkl ?? '', p.hkl ?? '', p.hkl ?? '']
         });
       }
@@ -210,7 +210,7 @@ function getFTIRTraces(parsed: SpectrumParsedData): PlotData[] {
     // Marker y values: convert absorbance back to %T scale if needed for visual position
     const yValues =
       parsed.y_mode === 'transmittance'
-        ? parsed.peaks.map((p) => Math.pow(10, -p.absorbance) * 100)
+        ? parsed.peaks.map((p) => 10 ** -p.absorbance * 100)
         : parsed.peaks.map((p) => p.absorbance);
     traces.push({
       x: parsed.peaks.map((p) => p.wavenumber_cm1),

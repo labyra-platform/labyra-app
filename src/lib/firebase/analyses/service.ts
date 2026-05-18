@@ -10,10 +10,10 @@
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { generateActivityId } from '@/lib/prov/id-generator';
-import { buildDeprecatePatch, buildRetractPatch, buildReactivatePatch } from '@/lib/prov/lifecycle';
+import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
+import type { CreateAnalysisInput, UpdateAnalysisInput } from '@/lib/schemas/analysis-schema';
 import type { Analysis } from '@/types/analyses';
 import type { LifecycleStatus } from '@/types/prov-base';
-import type { CreateAnalysisInput, UpdateAnalysisInput } from '@/lib/schemas/analysis-schema';
 
 const COLLECTION = 'analyses';
 

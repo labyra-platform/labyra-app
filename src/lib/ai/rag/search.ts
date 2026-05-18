@@ -3,15 +3,15 @@
  * @phase R160-ai-5d-2 (upgraded from ai-5d-1 vector+rerank only)
  */
 import 'server-only';
-import { getEmbeddingProvider } from './embedding';
-import { getVectorStore } from './vector-store';
-import { getRerankProvider } from './rerank';
-import { getBM25ForTenant } from './sparse/bm25-manager';
-import { reciprocalRankFusion, toRankedList } from './fusion/rrf';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import type { SearchRequest, SearchResponse, SearchHit } from './search-types';
-import type { PaperChunkMetadata } from './vector-store/pinecone';
 import type { PaperChunkDoc } from '@/types/papers';
+import { getEmbeddingProvider } from './embedding';
+import { reciprocalRankFusion, toRankedList } from './fusion/rrf';
+import { getRerankProvider } from './rerank';
+import type { SearchHit, SearchRequest, SearchResponse } from './search-types';
+import { getBM25ForTenant } from './sparse/bm25-manager';
+import { getVectorStore } from './vector-store';
+import type { PaperChunkMetadata } from './vector-store/pinecone';
 
 const DEFAULT_VECTOR_TOP_K = 20;
 const DEFAULT_BM25_TOP_K = 20;

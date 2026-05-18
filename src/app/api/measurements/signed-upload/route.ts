@@ -12,14 +12,14 @@
  * R164 R164-phase-5b-2: moved from /api/spectra/* → /api/measurements/*.
  */
 import { randomUUID } from 'node:crypto';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 // R164-phase-5b-1: route URL stays /api/spectra/* until Phase 5b-2; collection switched to measurements
-import { measurementRawPath, getSignedUploadUrl } from '@/lib/firebase/storage';
+import { getSignedUploadUrl, measurementRawPath } from '@/lib/firebase/storage';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import { SPECTRA_CONFIG } from '@/lib/spectra/config';
 import type { SpectrumType } from '@/types/spectra';
-import { getTenantIdFromToken } from '@/lib/auth/token';
-import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -93,6 +93,8 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('POST /api/spectra/signed-upload error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    return new NextResponse(err instanceof Error ? err.message : 'error', {
+      status: 500
+    });
   }
 }

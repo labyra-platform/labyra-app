@@ -7,7 +7,7 @@
  * Our strategy: daily batch re-fit + cold start re-fit.
  */
 import 'server-only';
-import type { SparseEncoder, SparseVector, BM25Params, Tokenizer } from './types';
+import type { BM25Params, SparseEncoder, SparseVector, Tokenizer } from './types';
 
 // wink BM25Vectorizer is CommonJS — dynamic import
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -138,7 +138,7 @@ export class BM25Encoder implements SparseEncoder {
   }
 
   /** Restore from persisted state (skip fit, useful for cold-start with saved params) */
-  async restore(vocab: string[], params: BM25Params, corpus: string[]): Promise<void> {
+  async restore(_vocab: string[], params: BM25Params, corpus: string[]): Promise<void> {
     // wink BM25 doesn't support state import — must refit, but we can validate vocab matches
     await this.fit(corpus);
     if (this.params) {

@@ -5,14 +5,14 @@
  */
 'use client';
 
+import { IconAlertTriangle } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { IconAlertTriangle } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
-import { useMaterials } from '@/lib/firestore/queries/materials';
-import type { Material, HazardLevel } from '@/types/materials';
 import { SciText } from '@/features/spectra/utils/format-units';
+import { useMaterials } from '@/lib/firestore/queries/materials';
+import type { HazardLevel, Material } from '@/types/materials';
 
 const hazardColor: Record<HazardLevel, string> = {
   none: 'bg-muted text-muted-foreground',

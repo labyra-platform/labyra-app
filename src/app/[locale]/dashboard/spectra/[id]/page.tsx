@@ -1,16 +1,15 @@
 'use client';
-import { use } from 'react';
+import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { use } from 'react';
 import { toast } from 'sonner';
-import { getAuth } from 'firebase/auth';
-import { Button } from '@/components/ui/button';
 import PageContainer from '@/components/layout/page-container';
-import { useSpectrum } from '@/lib/firestore/queries/spectra';
-import { SpectrumDetailCard } from '@/features/spectra/components/spectrum-detail-card';
 import { NavBack } from '@/components/nav/nav-back';
-
+import { Button } from '@/components/ui/button';
 import { SpectrumAnalysisSection } from '@/features/spectra/components/spectrum-analysis-section';
+import { SpectrumDetailCard } from '@/features/spectra/components/spectrum-detail-card';
+import { useSpectrum } from '@/lib/firestore/queries/spectra';
 export default function SpectrumDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();

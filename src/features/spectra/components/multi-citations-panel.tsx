@@ -14,12 +14,12 @@ import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { SciText } from '@/features/spectra/utils/format-units';
 import type {
-  MultiCitationCandidate,
   FTIRCitationCandidate,
-  RamanCitationCandidate,
-  UVVisCitationCandidate,
   FTIRPeak,
+  MultiCitationCandidate,
+  RamanCitationCandidate,
   RamanPeak,
+  UVVisCitationCandidate,
   UVVisPeak
 } from '@/types/spectra-analysis';
 

@@ -4,15 +4,15 @@
  * @phase R164-phase-8-9a-fix-ts (was R164-phase-8-9a)
  */
 'use client';
-import { useEffect, useRef } from 'react';
+import * as d3 from 'd3';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import * as d3 from 'd3';
+import { useEffect, useRef } from 'react';
 import {
-  useLineageData,
   type EntityType,
+  type LineageEdge,
   type LineageNode,
-  type LineageEdge
+  useLineageData
 } from './use-lineage-data';
 
 interface LineageGraphProps {

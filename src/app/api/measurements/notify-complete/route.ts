@@ -10,14 +10,14 @@
  * @phase R160-spectra-1
  * R164 R164-phase-5b-2: moved from /api/spectra/* → /api/measurements/*.
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { fileExists, getFileMetadata } from '@/lib/firebase/storage';
 // R164-phase-5b-1: switch to measurements collection + publishMeasurementAnalysis
 import { publishMeasurementAnalysis } from '@/lib/pubsub/topics/measurement-analysis'; // R168-3.1b
-import { fileExists, getFileMetadata } from '@/lib/firebase/storage';
 import { SPECTRA_CONFIG } from '@/lib/spectra/config';
 import type { SpectrumMetadata, SpectrumType } from '@/types/spectra';
-import { getTenantIdFromToken } from '@/lib/auth/token';
 
 export const runtime = 'nodejs';
 
@@ -148,9 +148,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ id: spectrumId, status: queueStatus, publishError });
+    return NextResponse.json({
+      id: spectrumId,
+      status: queueStatus,
+      publishError
+    });
   } catch (err) {
     console.error('POST /api/spectra/notify-complete error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    return new NextResponse(err instanceof Error ? err.message : 'error', {
+      status: 500
+    });
   }
 }

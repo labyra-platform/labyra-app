@@ -15,10 +15,10 @@
 import 'server-only';
 import crypto from 'node:crypto';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { buildDeprecatePatch, buildRetractPatch, buildReactivatePatch } from '@/lib/prov/lifecycle';
+import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
+import type { CitationCreateInput, CitationPatch } from '@/lib/schemas/citation-schema';
 import type { Citation, PaperCitationStats } from '@/types/citations';
 import type { LifecycleStatus } from '@/types/prov-base';
-import type { CitationCreateInput, CitationPatch } from '@/lib/schemas/citation-schema';
 
 const COLLECTION = 'citations';
 const STATS_DOC = '_stats';

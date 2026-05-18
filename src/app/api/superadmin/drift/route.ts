@@ -8,8 +8,8 @@
  */
 import 'server-only';
 import { NextResponse } from 'next/server';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { requireSuperadmin } from '@/lib/auth/superadmin-guard';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 
 function utcYmd(daysAgo: number): string {
   const d = new Date();

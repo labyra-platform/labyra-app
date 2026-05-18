@@ -5,13 +5,13 @@
  */
 'use client';
 
+import { IconBook } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { IconBook } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
-import { SciText } from '@/features/spectra/utils/format-units';
 // R163-4c-2-narrow-list
 import { useReferenceCards } from '@/features/spectra/hooks/use-reference-cards';
+import { SciText } from '@/features/spectra/utils/format-units';
 
 export function ReferenceCardsList() {
   const t = useTranslations('referenceCards');

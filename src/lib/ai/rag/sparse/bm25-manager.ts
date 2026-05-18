@@ -11,10 +11,10 @@
 // R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { BM25Encoder } from './bm25';
-import { getHybridTokenizer } from './hybrid-tokenizer';
-import { loadBM25State, saveBM25State } from './firestore-store';
 import type { PaperChunkDoc } from '@/types/papers';
+import { BM25Encoder } from './bm25';
+import { loadBM25State, saveBM25State } from './firestore-store';
+import { getHybridTokenizer } from './hybrid-tokenizer';
 
 interface CachedEntry {
   encoder: BM25Encoder;

@@ -3,8 +3,9 @@
  * Writes go to /tenants/{tenantId}/aiProvenance/{messageId} via Admin SDK.
  * @phase R160-ai-2a
  */
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
+
 import { Timestamp } from 'firebase-admin/firestore';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { AiProvenance } from '@/types/ai';
 
 export async function writeProvenance(record: AiProvenance): Promise<void> {

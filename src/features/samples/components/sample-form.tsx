@@ -1,14 +1,12 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLocale, useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 import { getAuth } from 'firebase/auth';
-import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -17,6 +15,7 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -24,8 +23,9 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { sampleFormSchema, type SampleFormValues } from '../schema';
+import { Textarea } from '@/components/ui/textarea';
 import type { Sample } from '@/types/samples';
+import { type SampleFormValues, sampleFormSchema } from '../schema';
 
 interface SampleFormProps {
   defaultValues?: Partial<Sample>;
@@ -69,7 +69,10 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       const method = sampleId ? 'PATCH' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(values)
       });
       if (!res.ok) throw new Error(await res.text());

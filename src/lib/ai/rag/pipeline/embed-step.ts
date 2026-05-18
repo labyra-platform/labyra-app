@@ -3,10 +3,10 @@
  * @phase R160-ai-5b-2
  */
 import 'server-only';
-import { getEmbeddingProvider } from '@/lib/ai/rag/embedding';
-import { incrementPaperCost, throwIfCancelled } from './state';
 import { trackUsage } from '@/lib/ai/governance/quota';
+import { getEmbeddingProvider } from '@/lib/ai/rag/embedding';
 import type { EnrichedChunk } from './enrich-step';
+import { incrementPaperCost, throwIfCancelled } from './state';
 
 const EMBED_BATCH_SIZE = 128;
 

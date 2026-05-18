@@ -4,8 +4,8 @@
  * @phase R160-ai-5e-1c
  */
 import 'server-only';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { LLMMessage } from '@/lib/ai/providers/types';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 
 interface StoredMessage {
   role: 'user' | 'assistant';
@@ -62,7 +62,12 @@ export async function loadConversationHistory(
         // Has tools — need [text, tool_use blocks] then a user [tool_result] turn
         type AssistantBlock =
           | { type: 'text'; text: string }
-          | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
+          | {
+              type: 'tool_use';
+              id: string;
+              name: string;
+              input: Record<string, unknown>;
+            };
         const assistantBlocks: AssistantBlock[] = [];
         if (m.content && m.content.trim().length > 0) {
           assistantBlocks.push({ type: 'text', text: m.content });

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, type KeyboardEvent } from 'react';
+import { IconSend } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
+import { type KeyboardEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { IconSend } from '@tabler/icons-react';
 
 export function MessageInput({
   onSend,

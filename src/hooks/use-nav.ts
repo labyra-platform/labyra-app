@@ -1,6 +1,6 @@
 'use client';
-import type { NavItem, NavGroup } from '@/types';
 import { useRole } from '@/lib/auth/use-claims';
+import type { NavGroup, NavItem } from '@/types';
 
 /**
  * R172-1: filter nav items by access.role custom claim.

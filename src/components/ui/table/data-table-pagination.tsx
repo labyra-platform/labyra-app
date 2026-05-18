@@ -1,6 +1,6 @@
+import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import type { Table } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
-
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -10,7 +10,6 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
 interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;

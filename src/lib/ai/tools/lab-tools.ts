@@ -109,7 +109,7 @@ async function findSampleHandler(input: Record<string, unknown>, ctx: ToolContex
   // 4. Try name prefix (fuzzy)
   const prefixSnap = await sampleRef
     .where('name', '>=', query)
-    .where('name', '<=', query + '\uf8ff')
+    .where('name', '<=', `${query}\uf8ff`)
     .limit(5)
     .get();
   return {

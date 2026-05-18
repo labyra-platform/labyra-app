@@ -1,12 +1,12 @@
 'use client';
 
-import { Icons } from '@/components/icons';
 import { useTheme } from 'next-themes';
 import * as React from 'react';
+import { Icons } from '@/components/icons';
 
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Kbd } from '@/components/ui/kbd';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function ThemeModeToggle() {
   const { setTheme, resolvedTheme } = useTheme();

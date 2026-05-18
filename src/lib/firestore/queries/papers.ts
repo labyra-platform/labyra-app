@@ -1,22 +1,22 @@
 'use client';
 
+import {
+  collection,
+  type DocumentSnapshot,
+  doc,
+  onSnapshot,
+  orderBy,
+  query
+} from 'firebase/firestore';
 /**
  * Client-side Firestore queries for papers.
  * Uses TanStack Query with Firestore realtime listeners.
  * @phase R160-ai-5b-1
  */
 import { useEffect, useState } from 'react';
-import {
-  collection,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  type DocumentSnapshot
-} from 'firebase/firestore';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { getFirebaseFirestore as db } from '@/lib/firebase/client';
-import type { Paper, MonthlyUsage } from '@/types/papers';
+import type { MonthlyUsage, Paper } from '@/types/papers';
 
 function paperFromSnapshot(snap: DocumentSnapshot): Paper | null {
   if (!snap.exists()) return null;

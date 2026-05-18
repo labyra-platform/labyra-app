@@ -33,7 +33,9 @@ export function CostTimeseries({ rows }: { rows: CostRow[] }) {
   // Aggregate by date (sum across tenants)
   const byDate = new Map<string, Record<string, number>>();
   for (const r of rows) {
-    const existing = byDate.get(r.date) ?? { date: r.date as unknown as number };
+    const existing = byDate.get(r.date) ?? {
+      date: r.date as unknown as number
+    };
     for (const [tier, stats] of Object.entries(r.byTier)) {
       const key = `T${tier}`;
       existing[key] = ((existing[key] as number) ?? 0) + (stats.cost ?? 0);

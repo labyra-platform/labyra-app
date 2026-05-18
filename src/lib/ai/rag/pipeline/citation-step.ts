@@ -7,15 +7,15 @@
  * @phase R166-ai6a-3b
  */
 import 'server-only';
-import { extractDoisFromText } from '@/lib/ai/citations/references-parser';
 import { lookupDoi } from '@/lib/ai/citations/openalex';
+import { extractDoisFromText } from '@/lib/ai/citations/references-parser';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import {
   createCitation,
-  resolveInternalTarget,
+  listCitationsBySource,
   recomputeCitationStats,
-  listCitationsBySource
+  resolveInternalTarget
 } from '@/lib/firebase/citations/service';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { CancelledError } from './state';
 
 const CROSSREF_RATE_LIMIT_MS = 200; // 5 req/s — well below 50/s shared limit

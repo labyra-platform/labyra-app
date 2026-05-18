@@ -14,7 +14,10 @@ export interface UnsourcedClaim {
 
 const SPECIFIC_CLAIM_PATTERNS = [
   // Author citations
-  { regex: /\b[A-Z][a-z]+\s+(?:et\s+al\.|and\s+[A-Z][a-z]+)/, reason: 'author citation' },
+  {
+    regex: /\b[A-Z][a-z]+\s+(?:et\s+al\.|and\s+[A-Z][a-z]+)/,
+    reason: 'author citation'
+  },
   // Specific numerical claims (with units or %)
   {
     regex:
@@ -59,7 +62,7 @@ function splitSentences(text: string): string[] {
 export function findUnsourcedClaims(responseText: string): UnsourcedClaim[] {
   const sentences = splitSentences(responseText);
   const unsourced: UnsourcedClaim[] = [];
-  let charOffset = 0;
+  let _charOffset = 0;
 
   for (let i = 0; i < sentences.length; i++) {
     const sentence = sentences[i];
@@ -76,7 +79,7 @@ export function findUnsourcedClaims(responseText: string): UnsourcedClaim[] {
         for (const { regex, reason } of SPECIFIC_CLAIM_PATTERNS) {
           if (regex.test(sentence)) {
             unsourced.push({
-              sentence: sentence.length > 120 ? sentence.slice(0, 117) + '...' : sentence,
+              sentence: sentence.length > 120 ? `${sentence.slice(0, 117)}...` : sentence,
               reason,
               line: i
             });
@@ -85,7 +88,7 @@ export function findUnsourcedClaims(responseText: string): UnsourcedClaim[] {
         }
       }
     }
-    charOffset += sentence.length + 1;
+    _charOffset += sentence.length + 1;
   }
 
   return unsourced;

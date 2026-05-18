@@ -1,4 +1,7 @@
 'use client';
+import { useTranslations } from 'next-intl';
+import { Fragment } from 'react';
+import { Icons } from '@/components/icons';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,10 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import { useBreadcrumbs, type BreadcrumbItem as BcItem } from '@/hooks/use-breadcrumbs';
-import { Icons } from '@/components/icons';
-import { useTranslations } from 'next-intl';
-import { Fragment } from 'react';
+import { type BreadcrumbItem as BcItem, useBreadcrumbs } from '@/hooks/use-breadcrumbs';
 
 export function Breadcrumbs() {
   const items = useBreadcrumbs();

@@ -1,15 +1,15 @@
 'use client';
+import { useLocale, useTranslations } from 'next-intl';
 // R165-phase-1-oxlint: oxlint cleanup
 import { use } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
 import PageContainer from '@/components/layout/page-container';
-import { useMaterial } from '@/lib/firestore/queries/materials';
-import { MaterialForm } from '@/features/materials/components/material-form';
 // R164-phase-7-integration: lifecycle actions integration
 import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 import { LifecycleStatusBadge } from '@/components/lifecycle/lifecycle-status-badge';
 // R164-phase-8-9b: lineage graph
 import { LineageGraph } from '@/components/lineage/lineage-graph';
+import { MaterialForm } from '@/features/materials/components/material-form';
+import { useMaterial } from '@/lib/firestore/queries/materials';
 
 export default function MaterialDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

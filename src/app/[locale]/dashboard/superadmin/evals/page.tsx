@@ -4,8 +4,8 @@
  * @phase R172-6
  */
 import * as React from 'react';
-import { useAuth } from '@/lib/auth/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth/use-auth';
 
 interface EvalSummary {
   tenantId: string;

@@ -1,8 +1,8 @@
-import { getTranslations, getLocale } from 'next-intl/server';
-import Link from 'next/link';
 import { IconPlus } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { getLocale, getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
+import { Button } from '@/components/ui/button';
 import { EquipmentTable } from '@/features/equipment/components/equipment-table';
 
 export async function generateMetadata() {

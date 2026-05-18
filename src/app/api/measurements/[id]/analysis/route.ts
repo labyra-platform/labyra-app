@@ -4,10 +4,10 @@
  * @phase R160-spectra-3b
  * R164 R164-phase-5b-2: moved from /api/spectra/* → /api/measurements/*.
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 import { getLatestAnalysis } from '@/lib/firestore/queries/spectra-analysis';
-import { getTenantIdFromToken } from '@/lib/auth/token';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
@@ -41,6 +41,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json(result);
   } catch (err) {
     console.error('GET /api/spectra/[id]/analysis error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', { status: 500 });
+    return new NextResponse(err instanceof Error ? err.message : 'error', {
+      status: 500
+    });
   }
 }

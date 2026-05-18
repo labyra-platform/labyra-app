@@ -1,9 +1,9 @@
 'use client';
 
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useRecentExperiments } from '@/lib/firestore/queries/dashboard';
 import { useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useRecentExperiments } from '@/lib/firestore/queries/dashboard';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
   completed: 'default',

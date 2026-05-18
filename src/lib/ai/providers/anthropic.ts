@@ -6,9 +6,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { calculateCost } from './cost-calculator';
 import type {
   LLMProvider,
+  LLMProviderId,
   LLMStreamEvent,
   LLMStreamRequest,
-  LLMProviderId,
   LLMToolDefinition
 } from './types';
 
@@ -17,7 +17,7 @@ let _client: Anthropic | null = null;
 function getClient(): Anthropic {
   if (_client) return _client;
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+  if (!apiKey?.startsWith('sk-ant-')) {
     throw new Error(
       'ANTHROPIC_API_KEY missing or malformed (expected sk-ant-...). Set in .env.local'
     );

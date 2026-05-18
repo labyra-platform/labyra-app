@@ -6,9 +6,10 @@
  *
  * @phase R170-5
  */
+
+import { CAPABILITY_MAP, TIER_CAPABILITY } from '@/lib/ai/config/capabilities';
 import type { AiTier } from '@/types/ai';
 import type { FeatureKind } from '@/types/cost';
-import { CAPABILITY_MAP, TIER_CAPABILITY } from '@/lib/ai/config/capabilities';
 
 interface TokenEstimate {
   inputTokens: number;

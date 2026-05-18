@@ -1,11 +1,11 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useEffect, useTransition } from 'react';
+import { Icons } from '@/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Icons } from '@/components/icons';
-import { useRouter } from 'next/navigation';
-import { useEffect, useTransition } from 'react';
 
 interface StatsErrorProps {
   error: Error;

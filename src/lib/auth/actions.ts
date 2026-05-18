@@ -8,12 +8,12 @@
  */
 
 import {
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
+  GoogleAuthProvider,
   sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
   type UserCredential
 } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase/client';

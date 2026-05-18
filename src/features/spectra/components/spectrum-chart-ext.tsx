@@ -56,10 +56,16 @@ export function TGAChart({ parsed }: { parsed: TGAParsedData }) {
         margin: { l: 60, r: 60, t: 40, b: 50 },
         title: { text: 'TGA / DTG', font: { size: 14 } },
         xaxis: {
-          title: { text: `Temperature (${parsed.temp_unit === 'K' ? 'K' : '°C'})` },
+          title: {
+            text: `Temperature (${parsed.temp_unit === 'K' ? 'K' : '°C'})`
+          },
           gridcolor: 'hsl(var(--border))'
         },
-        yaxis: { title: { text: 'Mass (%)' }, gridcolor: 'hsl(var(--border))', side: 'left' },
+        yaxis: {
+          title: { text: 'Mass (%)' },
+          gridcolor: 'hsl(var(--border))',
+          side: 'left'
+        },
         yaxis2: {
           title: { text: 'DTG' },
           overlaying: 'y',
@@ -106,7 +112,7 @@ export function DSCChart({ parsed }: { parsed: DSCParsedData }) {
       mode: 'markers+text',
       name: 'Endo (Tm)',
       marker: { color: ENDO_COLOR, size: 10, symbol: 'triangle-down' },
-      text: parsed.endothermic_peaks.map((p, i) => `Endo${i + 1}`),
+      text: parsed.endothermic_peaks.map((_p, i) => `Endo${i + 1}`),
       textposition: 'bottom center'
     });
   }
@@ -118,7 +124,7 @@ export function DSCChart({ parsed }: { parsed: DSCParsedData }) {
       mode: 'markers+text',
       name: 'Exo (Tc)',
       marker: { color: EXO_COLOR, size: 10, symbol: 'triangle-up' },
-      text: parsed.exothermic_peaks.map((p, i) => `Exo${i + 1}`),
+      text: parsed.exothermic_peaks.map((_p, i) => `Exo${i + 1}`),
       textposition: 'top center'
     });
   }
@@ -131,8 +137,14 @@ export function DSCChart({ parsed }: { parsed: DSCParsedData }) {
         height: 420,
         margin: { l: 60, r: 30, t: 40, b: 50 },
         title: { text: 'DSC Thermogram', font: { size: 14 } },
-        xaxis: { title: { text: 'Temperature (°C)' }, gridcolor: 'hsl(var(--border))' },
-        yaxis: { title: { text: 'Heat flow (mW or W/g)' }, gridcolor: 'hsl(var(--border))' },
+        xaxis: {
+          title: { text: 'Temperature (°C)' },
+          gridcolor: 'hsl(var(--border))'
+        },
+        yaxis: {
+          title: { text: 'Heat flow (mW or W/g)' },
+          gridcolor: 'hsl(var(--border))'
+        },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
         font: { family: 'inherit', size: 12 },
@@ -182,7 +194,10 @@ export function OCPChart({ parsed }: { parsed: OCPParsedData }) {
         margin: { l: 60, r: 30, t: 40, b: 50 },
         title: { text: 'OCP — Open-Circuit Potential', font: { size: 14 } },
         xaxis: { title: { text: 'Time (s)' }, gridcolor: 'hsl(var(--border))' },
-        yaxis: { title: { text: 'Potential (V vs ref)' }, gridcolor: 'hsl(var(--border))' },
+        yaxis: {
+          title: { text: 'Potential (V vs ref)' },
+          gridcolor: 'hsl(var(--border))'
+        },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
         font: { family: 'inherit', size: 12 },

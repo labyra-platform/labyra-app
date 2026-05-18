@@ -1,6 +1,14 @@
 'use client';
 
 import { useStore } from '@tanstack/react-form';
+import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import {
+  createFormField,
+  FormField,
+  FormFieldError,
+  FormFieldSet,
+  useFieldContext
+} from '@/components/ui/form-context';
 import {
   Select,
   SelectContent,
@@ -8,14 +16,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
-import {
-  useFieldContext,
-  FormFieldSet,
-  FormField,
-  FormFieldError,
-  createFormField
-} from '@/components/ui/form-context';
 
 type Option = { value: string; label: string };
 

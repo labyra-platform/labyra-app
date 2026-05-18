@@ -47,7 +47,11 @@ export function matchScore(
     if (bestIdx !== null) {
       weightedMatched += weight;
     }
-    details.push({ ref2t: ref.twoTheta, userIdx: bestIdx, matched: bestIdx !== null });
+    details.push({
+      ref2t: ref.twoTheta,
+      userIdx: bestIdx,
+      matched: bestIdx !== null
+    });
   }
 
   return {
@@ -87,7 +91,11 @@ export function matchScoreGeneric<U, R extends { intensity: number }>(
   }
 ): MatchScoreGenericResult {
   const { userPosition, refPosition, tolerance } = options;
-  const details: { refPosition: number; userIdx: number | null; matched: boolean }[] = [];
+  const details: {
+    refPosition: number;
+    userIdx: number | null;
+    matched: boolean;
+  }[] = [];
   let weightedMatched = 0;
   let weightedTotal = 0;
 
@@ -107,7 +115,11 @@ export function matchScoreGeneric<U, R extends { intensity: number }>(
       }
     }
     if (bestIdx !== null) weightedMatched += weight;
-    details.push({ refPosition: refPos, userIdx: bestIdx, matched: bestIdx !== null });
+    details.push({
+      refPosition: refPos,
+      userIdx: bestIdx,
+      matched: bestIdx !== null
+    });
   }
 
   return {

@@ -1,12 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-
-import { useTranslations } from 'next-intl';
-
-import type React from 'react';
-import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import type React from 'react';
+import { type FormEvent, useState } from 'react';
 import { signInWithEmail, signInWithGoogle } from '@/lib/auth';
 
 export default function SignInPage(): React.ReactElement {

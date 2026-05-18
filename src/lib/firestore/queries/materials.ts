@@ -1,18 +1,18 @@
 'use client';
+import {
+  collection,
+  type DocumentSnapshot,
+  doc,
+  onSnapshot,
+  orderBy,
+  query
+} from 'firebase/firestore';
 /**
  * Client-side Firestore queries for materials.
  * Realtime via onSnapshot.
  * @phase R160-data-1
  */
 import { useEffect, useState } from 'react';
-import {
-  collection,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  type DocumentSnapshot
-} from 'firebase/firestore';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { getFirebaseFirestore as db } from '@/lib/firebase/client';
 import type { Material } from '@/types/materials';

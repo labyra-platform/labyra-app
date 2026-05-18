@@ -9,9 +9,9 @@ import {
   JetBrains_Mono,
   Merriweather,
   Mulish,
-  Playfair_Display,
   Noto_Sans_Mono,
   Outfit,
+  Playfair_Display,
   Space_Mono
 } from 'next/font/google';
 

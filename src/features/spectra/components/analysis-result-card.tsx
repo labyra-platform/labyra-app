@@ -10,10 +10,9 @@ import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { SciText, formatSciText } from '@/features/spectra/utils/format-units';
+import { DSCBody, OCPBody, TGABody } from '@/features/spectra/components/analysis-bodies-ext';
 import { CitationChip } from '@/features/spectra/components/citation-chip';
-import { TGABody, DSCBody, OCPBody } from '@/features/spectra/components/analysis-bodies-ext';
-import type { TGAAIOutput, DSCAIOutput, OCPAIOutput } from '@/types/spectra-analysis-ext';
+import { formatSciText, SciText } from '@/features/spectra/utils/format-units';
 import type {
   AnalysisResult,
   ConfidenceLevel,
@@ -23,6 +22,7 @@ import type {
   UVVisDRSAIOutput,
   XRDAIOutput
 } from '@/types/spectra-analysis';
+import type { DSCAIOutput, OCPAIOutput, TGAAIOutput } from '@/types/spectra-analysis-ext';
 
 interface AnalysisResultCardProps {
   result: AnalysisResult;

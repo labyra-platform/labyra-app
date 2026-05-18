@@ -1,17 +1,17 @@
 'use client';
 
+import { Globe } from 'lucide-react';
 import { useLocale } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/navigation';
-import { routing } from '@/i18n/routing';
+import { useTransition } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Globe } from 'lucide-react';
-import { useTransition } from 'react';
+import { usePathname, useRouter } from '@/i18n/navigation';
+import { routing } from '@/i18n/routing';
 
 const LOCALE_LABELS: Record<string, string> = {
   en: 'English',

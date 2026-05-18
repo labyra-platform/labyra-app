@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { useInfobar, type InfobarContent } from '@/components/ui/infobar';
+import { type InfobarContent, useInfobar } from '@/components/ui/infobar';
 import { cn } from '@/lib/utils';
 
 interface InfoButtonProps extends Omit<React.ComponentProps<typeof Button>, 'content'> {
@@ -27,7 +27,7 @@ export function InfoButton({
 
   React.useEffect(() => {
     setContent(contentRef.current);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setContent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     setContent(content);

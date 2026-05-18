@@ -22,8 +22,8 @@
 import type {
   FTIRReferenceCardPeak,
   RamanReferenceCardPeak,
-  UVVisReferenceCardPeak,
-  SpectrumTypeRefCard
+  SpectrumTypeRefCard,
+  UVVisReferenceCardPeak
 } from '@/types/spectra';
 
 export interface ParsedMultiReferenceCard {
@@ -67,10 +67,26 @@ function parseIntensity(token: string): number | null {
 }
 
 // ─── Format detection ─────────────────────────────────────────────────
-const HEADER_PATTERNS: Array<{ type: SpectrumTypeRefCard; pattern: RegExp; example: string }> = [
-  { type: 'raman', pattern: /raman\s*shift|shift\s*\(cm/i, example: 'Raman shift (cm⁻¹)' },
-  { type: 'ftir', pattern: /wavenumber|cm[-\u207B]\s*1|cm⁻¹/i, example: 'Wavenumber (cm⁻¹)' },
-  { type: 'uvvis', pattern: /wavelength|absorbance|\bnm\b/i, example: 'Wavelength (nm)' }
+const HEADER_PATTERNS: Array<{
+  type: SpectrumTypeRefCard;
+  pattern: RegExp;
+  example: string;
+}> = [
+  {
+    type: 'raman',
+    pattern: /raman\s*shift|shift\s*\(cm/i,
+    example: 'Raman shift (cm⁻¹)'
+  },
+  {
+    type: 'ftir',
+    pattern: /wavenumber|cm[-\u207B]\s*1|cm⁻¹/i,
+    example: 'Wavenumber (cm⁻¹)'
+  },
+  {
+    type: 'uvvis',
+    pattern: /wavelength|absorbance|\bnm\b/i,
+    example: 'Wavelength (nm)'
+  }
 ];
 
 export function detectSpectrumType(text: string): {

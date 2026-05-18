@@ -6,7 +6,7 @@
  * API docs: https://docs.voyageai.com/reference/reranker-api
  */
 import 'server-only';
-import type { RerankProvider, RerankInput, RerankResponse } from './types';
+import type { RerankInput, RerankProvider, RerankResponse } from './types';
 
 const VOYAGE_RERANK_ENDPOINT = 'https://api.voyageai.com/v1/rerank';
 

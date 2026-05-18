@@ -1,5 +1,5 @@
-import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import type * as React from 'react';
 import { cn } from '@/lib/utils';
 
 // ─── GitHub API helpers (self-contained) ─────────────────────────────────────
@@ -147,4 +147,4 @@ async function GitHubStarsButton({
   );
 }
 
-export { GitHubStarsButton, githubStarsButtonVariants, type GitHubStarsButtonProps };
+export { GitHubStarsButton, type GitHubStarsButtonProps, githubStarsButtonVariants };

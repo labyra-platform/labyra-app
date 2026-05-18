@@ -9,21 +9,22 @@
  * @phase R160-spectra-3c-hotfix3
  */
 
+import {
+  IconAlertCircle,
+  IconCircleCheck,
+  IconFile,
+  IconLoader2,
+  IconUpload,
+  IconX
+} from '@tabler/icons-react';
+import { getAuth } from 'firebase/auth';
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { getAuth } from 'firebase/auth';
-import {
-  IconUpload,
-  IconFile,
-  IconCircleCheck,
-  IconAlertCircle,
-  IconX,
-  IconLoader2
-} from '@tabler/icons-react';
-
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -31,12 +32,10 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { SPECTRA_CONFIG, detectSpectrumType } from '@/lib/spectra/config';
-import { DemoDataButton } from './demo-data-button';
+import { detectSpectrumType, SPECTRA_CONFIG } from '@/lib/spectra/config';
+import { cn } from '@/lib/utils';
 import type { SpectrumType } from '@/types/spectra';
+import { DemoDataButton } from './demo-data-button';
 
 interface SpectrumUploadProps {
   experimentId: string;
@@ -44,7 +43,12 @@ interface SpectrumUploadProps {
   sampleLabel?: string;
   onComplete?: (spectrumIds: string[]) => void;
   /** Demo file preloaded from page-level Demo button. R162-demo-visibility */
-  initialDemo?: { file: File; formula: string; anode: string; monochromator: string };
+  initialDemo?: {
+    file: File;
+    formula: string;
+    anode: string;
+    monochromator: string;
+  };
 }
 
 type ItemStatus =
@@ -109,7 +113,10 @@ async function uploadOneFile(
 
   const sigRes = await fetch('/api/measurements/signed-upload', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
     body: JSON.stringify({
       originalFilename: file.name,
       mimeType: file.type || 'application/octet-stream',
@@ -150,7 +157,10 @@ async function uploadOneFile(
   updateStatus(item.id, { phase: 'notifying' });
   const notifyRes = await fetch('/api/measurements/notify-complete', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
     body: JSON.stringify({
       spectrumId,
       storagePath,
@@ -236,7 +246,7 @@ export function SpectrumUploadDropzone({
     };
     setItems([item]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialDemo?.formula, initialDemo]);
 
   const updateItemStatus = useCallback(
     (id: string, status: ItemStatus) => {
@@ -387,7 +397,11 @@ export function SpectrumUploadDropzone({
         <div className='space-y-2'>
           <div className='flex items-center justify-between text-sm'>
             <span className='text-muted-foreground'>
-              {t('queueStatus', { total: totalCount, done: doneCount, pending: pendingCount })}
+              {t('queueStatus', {
+                total: totalCount,
+                done: doneCount,
+                pending: pendingCount
+              })}
             </span>
             {doneCount > 0 && !isUploading && (
               <Button variant='ghost' size='sm' onClick={clearCompleted}>

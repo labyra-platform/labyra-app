@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 /**
  * MessageList with stick-to-bottom auto-scroll.
  *
@@ -13,7 +14,6 @@
 import type { AiMessage } from '@/types/ai';
 import { MessageBubble } from './message-bubble';
 import { ThinkingIndicator } from './thinking-indicator';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const NEAR_BOTTOM_THRESHOLD_PX = 100;
 
@@ -42,7 +42,7 @@ export function MessageList({
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, isNearBottom]);
+  }, [isNearBottom]);
 
   // Re-anchor to bottom whenever the message COUNT increases (new message starts).
   // This forces scroll even if user had scrolled up — typical UX when sending a
@@ -66,19 +66,17 @@ export function MessageList({
       {messages.length === 0 ? (
         <p className='text-muted-foreground py-8 text-center text-sm'>Start a conversation...</p>
       ) : (
-        <>
-          {messages.map((m) => {
-            const isLastEmpty =
-              isStreaming &&
-              m === messages[messages.length - 1] &&
-              m.role === 'assistant' &&
-              !m.content;
-            if (isLastEmpty) {
-              return <ThinkingIndicator key={m.id} />;
-            }
-            return <MessageBubble key={m.id} message={m} />;
-          })}
-        </>
+        messages.map((m) => {
+          const isLastEmpty =
+            isStreaming &&
+            m === messages[messages.length - 1] &&
+            m.role === 'assistant' &&
+            !m.content;
+          if (isLastEmpty) {
+            return <ThinkingIndicator key={m.id} />;
+          }
+          return <MessageBubble key={m.id} message={m} />;
+        })
       )}
     </div>
   );

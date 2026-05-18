@@ -10,8 +10,8 @@
  * Rollback: flip env var, no code change needed.
  */
 import 'server-only';
-import { InProcessQueue } from './in-process';
 import { PubSubQueue } from '@/lib/pubsub/topics/paper-processing'; // R168-3.1b
+import { InProcessQueue } from './in-process';
 import type { JobQueue } from './types';
 
 let _queue: JobQueue | null = null;
@@ -48,6 +48,6 @@ export async function getJobQueue(): Promise<JobQueue> {
   return _queue;
 }
 
-export { setJobProcessor } from './in-process';
 export { requestPaperCancellation } from '@/lib/pubsub/topics/paper-processing'; // R168-3.1b
+export { setJobProcessor } from './in-process';
 export type { JobQueue, PaperProcessingJob } from './types';

@@ -6,15 +6,15 @@
  *
  * @phase R164-phase-4a
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate } from '@/lib/api/auth-helper';
-import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
-import { UpdateExperimentSchema } from '@/lib/schemas/experiment-schema';
 import {
+  deprecateExperiment,
   getExperiment,
-  updateExperiment,
-  deprecateExperiment
+  updateExperiment
 } from '@/lib/firebase/experiments/service';
+import { UpdateExperimentSchema } from '@/lib/schemas/experiment-schema';
+import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 

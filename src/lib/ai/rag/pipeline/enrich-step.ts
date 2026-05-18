@@ -12,10 +12,10 @@
  */
 // R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
-import { selectProvider } from '@/lib/ai/providers';
-import { incrementPaperCost, throwIfCancelled } from './state';
 import { trackUsage } from '@/lib/ai/governance/quota';
+import { selectProvider } from '@/lib/ai/providers';
 import type { Chunk } from './chunking';
+import { incrementPaperCost, throwIfCancelled } from './state';
 
 interface EnrichStepInput {
   tenantId: string;

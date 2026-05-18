@@ -1,7 +1,6 @@
 'use client';
 
-import { Icons } from '@/components/icons';
-
+import { type Icon, Icons } from '@/components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   SidebarGroup,
@@ -14,7 +13,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem
 } from '@/components/ui/sidebar';
-import { Icon } from '@/components/icons';
 
 export function NavMain({
   items

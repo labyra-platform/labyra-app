@@ -4,8 +4,9 @@
  * @phase R164-phase-7
  */
 'use client';
-import { useTranslations } from 'next-intl';
 import { IconFilter } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -14,7 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 
 export interface LifecycleFilterValue {
   includeDeprecated: boolean;

@@ -1,5 +1,5 @@
+import { type NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
-import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from '@/i18n/routing';
 // R162-security-merge
 import { isAllowedOrigin, MUTATION_METHODS } from '@/lib/security/origin';

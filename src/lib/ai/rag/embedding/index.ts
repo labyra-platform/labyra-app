@@ -5,11 +5,11 @@
  */
 import 'server-only';
 import {
+  VOYAGE_EMBED_DIM,
   voyageEmbed,
-  voyageRerank,
   voyageEmbedCostUsd,
-  voyageRerankCostUsd,
-  VOYAGE_EMBED_DIM
+  voyageRerank,
+  voyageRerankCostUsd
 } from './voyage';
 
 export const EMBEDDING_DIMENSION = VOYAGE_EMBED_DIM;

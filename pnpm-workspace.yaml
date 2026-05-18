@@ -1,6 +1,7 @@
 allowBuilds:
   '@clerk/shared': true
   '@firebase/util': true
+  '@google/genai': set this to true or false
   '@parcel/watcher': true
   '@sentry/cli': true
   '@swc/core': true

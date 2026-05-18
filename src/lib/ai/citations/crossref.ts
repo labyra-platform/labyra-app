@@ -107,7 +107,7 @@ function extractYear(msg: Record<string, unknown>): number | undefined {
   for (const key of sources) {
     const block = msg[key] as { 'date-parts'?: number[][] } | undefined;
     const parts = block?.['date-parts']?.[0];
-    if (parts && parts[0]) return parts[0];
+    if (parts?.[0]) return parts[0];
   }
   return undefined;
 }

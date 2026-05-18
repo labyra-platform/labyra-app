@@ -1,14 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Icons } from '@/components/icons';
-import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
+import { NotificationCard } from '@/components/ui/notification-card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { NotificationCard } from '@/components/ui/notification-card';
+import { Link } from '@/i18n/navigation';
 import { useNotificationStore } from '../utils/store';
-import { useRouter } from 'next/navigation';
 
 const MAX_VISIBLE = 5;
 

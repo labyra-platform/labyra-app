@@ -7,11 +7,12 @@
  *
  * @phase R160-ai-3a base, R169-2 6-tier expansion
  */
+
+import { CAPABILITY_MAP, TIER_CAPABILITY } from '@/lib/ai/config/capabilities';
+import type { AiTier } from '@/types/ai';
 import { AnthropicProvider } from './anthropic';
 import { GeminiProvider } from './gemini';
 import type { LLMProvider, LLMProviderConfig } from './types';
-import type { AiTier } from '@/types/ai';
-import { CAPABILITY_MAP, TIER_CAPABILITY } from '@/lib/ai/config/capabilities';
 
 /** Singleton instances — cheap, no client created until first call */
 const ANTHROPIC = new AnthropicProvider();

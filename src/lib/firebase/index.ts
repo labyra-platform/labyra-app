@@ -9,17 +9,17 @@
 export {
   getFirebaseApp,
   getFirebaseAuth,
-  getFirebaseFirestore,
   getFirebaseDatabase,
+  getFirebaseFirestore,
   getFirebaseStorage
 } from './client';
 
 // Config (both server + client)
 export {
-  firebaseClientConfig,
   firebaseAdminConfig,
-  validateClientConfig,
-  validateAdminConfig
+  firebaseClientConfig,
+  validateAdminConfig,
+  validateClientConfig
 } from './config';
 
 // Note: admin SDK exports KHÔNG re-export ở đây để tránh accidental

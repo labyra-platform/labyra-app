@@ -12,5 +12,5 @@ export function createSparseEncoder(): SparseEncoder {
 }
 
 export { BM25Encoder } from './bm25';
-export { HybridTokenizer, getHybridTokenizer } from './hybrid-tokenizer';
-export type { SparseEncoder, SparseVector, BM25Params, Tokenizer } from './types';
+export { getHybridTokenizer, HybridTokenizer } from './hybrid-tokenizer';
+export type { BM25Params, SparseEncoder, SparseVector, Tokenizer } from './types';

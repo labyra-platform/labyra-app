@@ -1,13 +1,13 @@
 'use client';
-import { use } from 'react';
+import { getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { use } from 'react';
 import { toast } from 'sonner';
-import { getAuth } from 'firebase/auth';
-import { Button } from '@/components/ui/button';
 import PageContainer from '@/components/layout/page-container';
-import { useEquipment } from '@/lib/firestore/queries/equipment';
+import { Button } from '@/components/ui/button';
 import { EquipmentForm } from '@/features/equipment/components/equipment-form';
+import { useEquipment } from '@/lib/firestore/queries/equipment';
 
 export default function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

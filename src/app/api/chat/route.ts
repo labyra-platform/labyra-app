@@ -164,6 +164,15 @@ export async function POST(request: Request) {
 
   const convRef = tenantRef.collection('aiConversations').doc(conversationId);
 
+  // R178-2a: load selectedPaperIds for RAG scoping (NotebookLM pattern).
+  // New convs return [] (no filter). Mid-conversation updates via
+  // /api/conversations/[id]/papers reflect on next message turn.
+  const convSnap = await convRef.get();
+  const convData = convSnap.exists ? (convSnap.data() as { selectedPaperIds?: string[] }) : null;
+  const selectedPaperIds = Array.isArray(convData?.selectedPaperIds)
+    ? convData.selectedPaperIds.slice(0, 10)
+    : [];
+
   // Save user message
   const userMessageRef = convRef.collection('messages').doc();
   await userMessageRef.set({
@@ -557,7 +566,9 @@ export async function POST(request: Request) {
 
           // Execute tools in parallel
           const results = await Promise.all(
-            pendingCalls.map((call) => executeToolCall(call, { tenantId: tenantId!, userId }))
+            pendingCalls.map((call) =>
+              executeToolCall(call, { tenantId: tenantId!, userId, selectedPaperIds })
+            )
           );
 
           // Track + emit results

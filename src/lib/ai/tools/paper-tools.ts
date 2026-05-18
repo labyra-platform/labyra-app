@@ -24,6 +24,11 @@ async function searchPapersHandler(input: Record<string, unknown>, ctx: ToolCont
   if (typeof typed.paperYear === 'number' && typed.paperYear > 0) {
     filter.paperYear = typed.paperYear;
   }
+  // R178-2a: scope retrieval to user-selected papers when present.
+  // Empty array = no filter (search all tenant papers, backward-compat).
+  if (ctx.selectedPaperIds && ctx.selectedPaperIds.length > 0) {
+    filter.paperId = { $in: ctx.selectedPaperIds };
+  }
 
   const result = await searchPapers({
     tenantId: ctx.tenantId,
@@ -43,7 +48,7 @@ async function searchPapersHandler(input: Record<string, unknown>, ctx: ToolCont
       paperDoi: h.paperDoi,
       pages: h.pages,
       section: h.section,
-      excerpt: h.text.length > 500 ? h.text.slice(0, 500) + '…' : h.text,
+      excerpt: h.text.length > 500 ? `${h.text.slice(0, 500)}…` : h.text,
       score: Number(h.score.toFixed(3))
     })),
     totalHits: result.hits.length,

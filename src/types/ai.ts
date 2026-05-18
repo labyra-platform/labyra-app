@@ -121,6 +121,12 @@ export interface AiConversation {
   messageCount: number;
   /** Total cost across all assistant messages in this conversation */
   totalCost: AiCostBreakdown;
+  /**
+   * R178-2a: papers user selected to scope RAG retrieval (NotebookLM
+   * pattern). Empty array = no filter, search all tenant papers.
+   * Max 10 per conversation (server-validated).
+   */
+  selectedPaperIds?: string[];
 }
 
 /** Updated chat request — conversationId optional (auto-create if missing) */
@@ -134,8 +140,19 @@ export type ChatStreamEventV2 =
   | { type: 'conversation_init'; conversationId: string; isNew: boolean }
   | { type: 'message_start'; messageId: string; tier: 1 | 2 | 3 | 4 | 5 }
   | { type: 'text_delta'; delta: string }
-  | { type: 'tool_call'; toolCallId: string; toolName: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; toolCallId: string; toolName: string; result: unknown; isError: boolean }
+  | {
+      type: 'tool_call';
+      toolCallId: string;
+      toolName: string;
+      input: Record<string, unknown>;
+    }
+  | {
+      type: 'tool_result';
+      toolCallId: string;
+      toolName: string;
+      result: unknown;
+      isError: boolean;
+    }
   | { type: 'reflection_start'; round: number }
   | {
       type: 'reflection_round_complete';

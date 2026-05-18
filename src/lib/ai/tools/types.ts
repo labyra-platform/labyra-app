@@ -44,6 +44,13 @@ export interface ToolResult {
 export interface ToolContext {
   tenantId: string;
   userId: string;
+  /**
+   * R178-2a: optional list of paper IDs to scope RAG retrieval.
+   * When empty/undefined → search all tenant papers (default behavior).
+   * When non-empty → searchPapers tool adds Pinecone filter
+   * `{ paperId: { $in: [...] } }` to constrain chunks.
+   */
+  selectedPaperIds?: string[];
 }
 
 /** Tool handler — actual execution */

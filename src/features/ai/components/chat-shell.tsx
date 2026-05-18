@@ -58,45 +58,65 @@ export function ChatShell() {
     dataUpdatedAt
   } = useConversationMessages(urlConvId);
 
+  // R178-3-hotfix5: priority-ordered URL ⇄ conversationId sync.
+  // @r178-3-hotfix5-applied (supersedes hotfix3)
+  // CRITICAL ORDER:
+  //   Case 4 (URL cleared by New-chat click → reset state) MUST come BEFORE
+  //   Case 2 (state has ID → push to URL), otherwise New chat is broken:
+  //   user clicks New chat → URL clears → Case 2 fires first → re-pushes stale
+  //   ?c= back from store → conv jumps back. Re-ordering: 4 → 3 → 1 → 2.
   useEffect(() => {
-    if (!urlConvId) return;
     if (isLoadingMessages) return;
-    if (!loadedMessages) return;
-    if (lastLoadedConvIdRef.current === urlConvId) return;
-    lastLoadedConvIdRef.current = urlConvId;
-    loadConversation(loadedMessages, urlConvId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlConvId, isLoadingMessages, loadedMessages, loadConversation]);
 
-  useEffect(() => {
-    if (!conversationId) return;
-    if (conversationId === urlConvId) return;
-    lastLoadedConvIdRef.current = conversationId;
-    const url = new URL(window.location.href);
-    url.searchParams.set('c', conversationId);
-    router.replace(url.pathname + url.search);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, urlConvId, router.replace]);
+    // Case 4 (HIGHEST PRIORITY): URL cleared externally (user clicked
+    // "New chat" → router.push(pathname)). Reset store. Skip if both empty
+    // (steady state — no need to call reset() repeatedly).
+    // @r178-3-hotfix6-applied: ALSO skip during active stream — chat-stream
+    // sets conversationId before URL gets ?c=, calling reset() here would
+    // abort the in-flight fetch with "BodyStreamBuffer was aborted".
+    if (!urlConvId && conversationId && !isStreaming) {
+      lastLoadedConvIdRef.current = null;
+      reset();
+      return;
+    }
 
-  // R178-2c-fix-2: when conversationId resets to null (CONVERSATION_GONE),
-  // drop stale ?c= param so refresh doesn't bring back orphan ID.
-  useEffect(() => {
-    if (conversationId !== null) return;
-    if (!urlConvId) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete('c');
-    router.replace(url.pathname + (url.search || ''));
-    lastLoadedConvIdRef.current = null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, urlConvId, router.replace]);
+    // Case 1 (MOVED UP @r178-3-hotfix7-applied): URL has conv ID,
+    // state doesn't match → load it. Must come BEFORE Case 3 so that fresh
+    // navigation (URL=newId, state=null, ref=null) loads instead of clearing.
+    if (urlConvId && conversationId !== urlConvId) {
+      if (lastLoadedConvIdRef.current === urlConvId) return;
+      if (!loadedMessages) return;
+      lastLoadedConvIdRef.current = urlConvId;
+      loadConversation(loadedMessages, urlConvId);
+      return;
+    }
 
-  useEffect(() => {
-    if (urlConvId) return;
-    if (!conversationId) return;
-    lastLoadedConvIdRef.current = null;
-    reset();
+    // Case 3: state cleared (CONVERSATION_GONE 410), URL still has stale param.
+    // Fires after 410 from server: useChatStream set conversationId=null while
+    // urlConvId still holds the dead id. ref still holds that id from prior
+    // load → Case 1 above will have skipped (ref matches urlConvId), letting
+    // Case 3 do the URL cleanup.
+    if (conversationId === null && urlConvId) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('c');
+      router.replace(url.pathname + (url.search || ''));
+      lastLoadedConvIdRef.current = null;
+      return;
+    }
+
+    // Case 2 (LOWEST PRIORITY): state has ID, URL doesn't → write URL
+    // This fires after sending a message in a fresh chat (chat-stream creates
+    // conv, sets store, URL is still bare). Must NOT fire after New chat
+    // because Case 4 above will have reset state already.
+    if (conversationId && !urlConvId) {
+      lastLoadedConvIdRef.current = conversationId;
+      const url = new URL(window.location.href);
+      url.searchParams.set('c', conversationId);
+      router.replace(url.pathname + url.search);
+      return;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlConvId, reset, conversationId]);
+  }, [urlConvId, conversationId, isLoadingMessages, loadedMessages, isStreaming, reset]);
 
   const hasMessages = messages.length > 0;
 

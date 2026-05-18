@@ -160,6 +160,26 @@ export async function POST(request: Request) {
         usd: 0
       }
     });
+  } else {
+    // R178-2c-fix-1: enforce referential integrity. Client supplied
+    // conversationId — verify it exists + belongs to user, else 410 Gone
+    // (prevents orphan messages with no parent doc).
+    const probe = await tenantRef.collection('aiConversations').doc(conversationId).get();
+    if (!probe.exists) {
+      return new NextResponse(
+        JSON.stringify({
+          error: {
+            code: 'CONVERSATION_GONE',
+            message: 'Conversation no longer exists. Please start a new chat.'
+          }
+        }),
+        { status: 410, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    const probeData = probe.data() as { userId?: string };
+    if (probeData.userId !== userId) {
+      return new NextResponse('forbidden', { status: 403 });
+    }
   }
 
   const convRef = tenantRef.collection('aiConversations').doc(conversationId);

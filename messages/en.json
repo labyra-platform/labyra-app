@@ -150,7 +150,20 @@
     "thinking": "Thinking...",
     "tierLabManager": "Lab Manager",
     "tierLibrarian": "Librarian",
-    "tierEngineer": "Engineer"
+    "tierEngineer": "Engineer",
+    "paperSelectorTitle": "Scope",
+    "paperSelectorLabel": "Paper selection panel",
+    "expandPanel": "Expand panel",
+    "collapsePanel": "Collapse panel",
+    "paperSelectorSearchPlaceholder": "Search papers...",
+    "paperSelectorEmpty": "No papers yet — upload from Papers",
+    "paperSelectorNoMatch": "No papers match your search",
+    "paperSelectorAllScope": "Searching all library",
+    "paperSelectorScoped": "Scoped to {count} papers",
+    "paperSelectorClear": "Clear",
+    "paperSelectorSaving": "Saving...",
+    "paperSelectorStartConversation": "Send a message to start scoping papers",
+    "unknownAuthors": "Unknown authors"
   },
   "papers": {
     "uploadPageTitle": "Upload paper",

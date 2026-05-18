@@ -5,20 +5,20 @@
  * Tenant-scoped via useTenantId().
  * @phase R160-ai-2a
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   collection,
-  doc,
-  query,
-  orderBy,
-  limit as limitQ,
-  getDocs,
-  getDoc,
+  type DocumentSnapshot,
   deleteDoc,
-  type DocumentSnapshot
+  doc,
+  getDoc,
+  getDocs,
+  limit as limitQ,
+  orderBy,
+  query
 } from 'firebase/firestore';
-import { getFirebaseFirestore } from '@/lib/firebase/client';
 import { useTenantId } from '@/lib/auth/use-claims';
+import { getFirebaseFirestore } from '@/lib/firebase/client';
 import type { AiConversation, AiMessage } from '@/types/ai';
 
 function db() {
@@ -40,7 +40,9 @@ function conversationFromSnapshot(snap: DocumentSnapshot): AiConversation {
       cacheReadTokens: 0,
       cacheWriteTokens: 0,
       usd: 0
-    }
+    },
+    // R178-2b: papers user selected to scope RAG retrieval
+    selectedPaperIds: Array.isArray(d?.selectedPaperIds) ? d.selectedPaperIds : []
   };
 }
 
@@ -131,7 +133,9 @@ export function useDeleteConversation() {
     },
     onMutate: async (conversationId: string) => {
       await qc.cancelQueries({ queryKey: ['aiConversations'] });
-      const snapshot = qc.getQueriesData<unknown[]>({ queryKey: ['aiConversations'] });
+      const snapshot = qc.getQueriesData<unknown[]>({
+        queryKey: ['aiConversations']
+      });
       snapshot.forEach(([key, data]) => {
         if (!Array.isArray(data)) return;
         qc.setQueryData(

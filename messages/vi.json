@@ -150,7 +150,20 @@
     "thinking": "Đang suy nghĩ...",
     "tierLabManager": "Lab Manager",
     "tierLibrarian": "Librarian",
-    "tierEngineer": "Engineer"
+    "tierEngineer": "Engineer",
+    "paperSelectorTitle": "Phạm vi",
+    "paperSelectorLabel": "Bảng chọn paper",
+    "expandPanel": "Mở bảng",
+    "collapsePanel": "Thu bảng",
+    "paperSelectorSearchPlaceholder": "Tìm paper...",
+    "paperSelectorEmpty": "Chưa có paper nào — tải lên ở Papers",
+    "paperSelectorNoMatch": "Không có paper nào khớp",
+    "paperSelectorAllScope": "Đang tìm toàn bộ thư viện",
+    "paperSelectorScoped": "Đã giới hạn {count} paper",
+    "paperSelectorClear": "Xóa",
+    "paperSelectorSaving": "Đang lưu...",
+    "paperSelectorStartConversation": "Gửi tin nhắn để bắt đầu chọn paper",
+    "unknownAuthors": "Tác giả không rõ"
   },
   "papers": {
     "uploadPageTitle": "Tải lên paper",

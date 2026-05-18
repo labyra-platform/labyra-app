@@ -1,5 +1,7 @@
 'use client';
 
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 /**
  * Chat shell v5 — fixed layout (input stays at bottom).
  *
@@ -13,14 +15,14 @@
  * @phase R160-ai-3b-hotfix-layout
  */
 import { useEffect, useRef } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useChatStream } from '@/lib/ai/use-chat-stream';
 import { useConversationMessages } from '@/lib/firestore/queries/ai-conversations';
-import { MessageList } from './message-list';
-import { MessageInput } from './message-input';
-import { ConversationPanel } from './conversation-panel';
-import { useTranslations } from 'next-intl';
 import { useCopyAsLatex } from '../hooks/use-copy-as-latex';
+import { useConversation } from '@/lib/firestore/queries/ai-conversations';
+import { ConversationPanel } from './conversation-panel';
+import { MessageInput } from './message-input';
+import { MessageList } from './message-list';
+import { PaperSelectorPanel } from './paper-selector-panel';
 
 export function ChatShell() {
   // R160-ai-5d-3d: copy math equations as LaTeX source
@@ -30,7 +32,7 @@ export function ChatShell() {
   const t = useTranslations('ai');
   const searchParams = useSearchParams();
   const router = useRouter();
-  const pathname = usePathname();
+  const _pathname = usePathname();
   const urlConvId = searchParams.get('c');
 
   const {
@@ -44,6 +46,9 @@ export function ChatShell() {
     reset,
     loadConversation
   } = useChatStream();
+
+  // R178-2b: load conversation doc to access selectedPaperIds
+  const { data: convDoc } = useConversation(urlConvId);
 
   const lastLoadedConvIdRef = useRef<string | null>(null);
 
@@ -61,7 +66,7 @@ export function ChatShell() {
     lastLoadedConvIdRef.current = urlConvId;
     loadConversation(loadedMessages, urlConvId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlConvId, isLoadingMessages, dataUpdatedAt]);
+  }, [urlConvId, isLoadingMessages, loadedMessages, loadConversation]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -71,7 +76,7 @@ export function ChatShell() {
     url.searchParams.set('c', conversationId);
     router.replace(url.pathname + url.search);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [conversationId, urlConvId, router.replace]);
 
   useEffect(() => {
     if (urlConvId) return;
@@ -79,7 +84,7 @@ export function ChatShell() {
     lastLoadedConvIdRef.current = null;
     reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlConvId]);
+  }, [urlConvId, reset, conversationId]);
 
   const hasMessages = messages.length > 0;
 
@@ -134,6 +139,10 @@ export function ChatShell() {
           </div>
         </div>
       </div>
+      <PaperSelectorPanel
+        conversationId={conversationId ?? urlConvId}
+        initialSelectedIds={convDoc?.selectedPaperIds}
+      />
     </div>
   );
 }

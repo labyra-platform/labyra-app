@@ -50,6 +50,12 @@ export function useSelectedPapers(
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
+        // R178-2c-fix-2: 404 = orphan conversation. Clear local selection,
+        // stop retry loop. UI will reset URL via chat-shell effect.
+        if (res.status === 404) {
+          setSelected(new Set());
+          throw new Error('conversation_gone');
+        }
         throw new Error(body?.error?.message || `HTTP ${res.status}`);
       }
     } catch (e) {

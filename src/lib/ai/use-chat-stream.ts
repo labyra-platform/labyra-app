@@ -1,13 +1,13 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
+import { getAuth } from 'firebase/auth';
 /**
  * Client hook v2 — handles conversationId persistence + title updates.
  * @phase R160-ai-2a
  */
 import { useCallback, useRef, useState } from 'react';
-import { getAuth } from 'firebase/auth';
-import { useQueryClient } from '@tanstack/react-query';
-import type { AiMessage, ChatStreamEventV2, AiCostBreakdown } from '@/types/ai';
+import type { AiCostBreakdown, AiMessage, ChatStreamEventV2 } from '@/types/ai';
 
 export interface UseChatStreamResult {
   messages: AiMessage[];
@@ -110,6 +110,22 @@ export function useChatStream(): UseChatStreamResult {
 
         if (!response.ok || !response.body) {
           const err = await response.text();
+          // R178-2c-fix-2: handle CONVERSATION_GONE (410). Clear state
+          // + surface friendly error so URL reset can happen in chat-shell.
+          if (response.status === 410) {
+            let code = '';
+            try {
+              const parsed = JSON.parse(err) as { error?: { code?: string } };
+              code = parsed?.error?.code ?? '';
+            } catch {
+              /* non-JSON body */
+            }
+            if (code === 'CONVERSATION_GONE') {
+              setConversationId(null);
+              setMessages([]);
+              throw new Error('conversation_gone');
+            }
+          }
           throw new Error(err || `status_${response.status}`);
         }
 
@@ -198,7 +214,11 @@ export function useChatStream(): UseChatStreamResult {
                         ...m,
                         toolCalls: (m.toolCalls ?? []).map((tc) =>
                           tc.id === event.toolCallId
-                            ? { ...tc, result: event.result, isError: event.isError }
+                            ? {
+                                ...tc,
+                                result: event.result,
+                                isError: event.isError
+                              }
                             : tc
                         )
                       }

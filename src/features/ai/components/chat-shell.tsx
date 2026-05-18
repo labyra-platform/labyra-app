@@ -78,6 +78,18 @@ export function ChatShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, urlConvId, router.replace]);
 
+  // R178-2c-fix-2: when conversationId resets to null (CONVERSATION_GONE),
+  // drop stale ?c= param so refresh doesn't bring back orphan ID.
+  useEffect(() => {
+    if (conversationId !== null) return;
+    if (!urlConvId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('c');
+    router.replace(url.pathname + (url.search || ''));
+    lastLoadedConvIdRef.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, urlConvId, router.replace]);
+
   useEffect(() => {
     if (urlConvId) return;
     if (!conversationId) return;

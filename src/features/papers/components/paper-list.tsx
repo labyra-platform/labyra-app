@@ -1,15 +1,20 @@
 'use client';
 
 // R166-ai6a-3b-fix2: + extracting_citations
+// R178-3: + domain filter chips
+// @r178-3-applied
 
 import { IconFileText, IconLoader2, IconUpload } from '@tabler/icons-react';
-/**
- * Realtime paper list with status badges.
- * @phase R160-ai-5b-2
- */
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useMemo, useState } from 'react';
+import {
+  createEmptyDomainFilter,
+  type DomainFilterValue,
+  PaperDomainFilter,
+  paperPassesDomainFilter
+} from '@/features/papers/components/paper-domain-filter';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
 import type { PaperStatus } from '@/types/papers';
@@ -28,8 +33,6 @@ const STATUS_COLORS: Record<PaperStatus, string> = {
   cancelled: 'bg-muted text-muted-foreground'
 };
 
-// Firestore Timestamp may arrive as { _seconds, _nanoseconds } or { seconds, nanoseconds }
-// depending on serialization path. Normalize to epoch ms.
 type FirestoreTimestampLike =
   | number
   | {
@@ -66,6 +69,22 @@ export function PaperList() {
   const params = useParams();
   const locale = params.locale as string;
   const { papers, loading } = usePapers();
+  const [filter, setFilter] = useState<DomainFilterValue>(() => createEmptyDomainFilter());
+
+  const visibleSlugs = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of papers) {
+      if (p.domain) s.add(p.domain);
+      if (p.subtopics) {
+        for (const slug of p.subtopics) s.add(slug);
+      }
+    }
+    return s;
+  }, [papers]);
+
+  const filteredPapers = useMemo(() => {
+    return papers.filter((p) => paperPassesDomainFilter(p, filter));
+  }, [papers, filter]);
 
   if (loading) {
     return (
@@ -94,46 +113,76 @@ export function PaperList() {
     );
   }
 
+  const hasFilter = filter.selected.size > 0;
+  const showFilterUI = visibleSlugs.size > 0;
+
   return (
-    <div className='space-y-2'>
-      {papers.map((paper) => (
-        <Link
-          key={paper.id}
-          href={`/${locale}/dashboard/papers/${paper.id}`}
-          className='block border rounded-lg p-4 hover:bg-muted/50 transition-colors'
-        >
-          <div className='flex items-start justify-between gap-4'>
-            <div className='flex-1 min-w-0'>
-              <h3 className='font-medium truncate'>{paper.title || t('untitled')}</h3>
-              <div className='flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground'>
-                <span>{formatDate(paper.uploadedAt)}</span>
-                <span>·</span>
-                <span>{formatBytes(paper.fileSize)}</span>
-                {paper.pageCount > 0 && (
-                  <>
-                    <span>·</span>
-                    <span>{t('nPages', { count: paper.pageCount })}</span>
-                  </>
-                )}
-                {paper.chunkCount > 0 && (
-                  <>
-                    <span>·</span>
-                    <span>{t('nChunks', { count: paper.chunkCount })}</span>
-                  </>
-                )}
-              </div>
-            </div>
-            <span
-              className={cn(
-                'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
-                STATUS_COLORS[paper.status]
-              )}
+    <div className='space-y-3'>
+      {showFilterUI && (
+        <PaperDomainFilter value={filter} onChange={setFilter} visibleSlugs={visibleSlugs} />
+      )}
+
+      {hasFilter && (
+        <p className='text-xs text-muted-foreground'>
+          {t('domainFilterShowing', {
+            shown: filteredPapers.length,
+            total: papers.length
+          })}
+        </p>
+      )}
+
+      {filteredPapers.length === 0 ? (
+        <p className='text-center py-8 text-sm text-muted-foreground'>
+          {t('domainFilterNoMatches')}
+        </p>
+      ) : (
+        <div className='space-y-2'>
+          {filteredPapers.map((paper) => (
+            <Link
+              key={paper.id}
+              href={`/${locale}/dashboard/papers/${paper.id}`}
+              className='block border rounded-lg p-4 hover:bg-muted/50 transition-colors'
             >
-              {t(`status.${paper.status}`)}
-            </span>
-          </div>
-        </Link>
-      ))}
+              <div className='flex items-start justify-between gap-4'>
+                <div className='flex-1 min-w-0'>
+                  <h3 className='font-medium truncate'>{paper.title || t('untitled')}</h3>
+                  <div className='flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground'>
+                    <span>{formatDate(paper.uploadedAt)}</span>
+                    <span>·</span>
+                    <span>{formatBytes(paper.fileSize)}</span>
+                    {paper.pageCount > 0 && (
+                      <>
+                        <span>·</span>
+                        <span>{t('nPages', { count: paper.pageCount })}</span>
+                      </>
+                    )}
+                    {paper.chunkCount > 0 && (
+                      <>
+                        <span>·</span>
+                        <span>{t('nChunks', { count: paper.chunkCount })}</span>
+                      </>
+                    )}
+                    {paper.domain && paper.domain !== 'unknown' && (
+                      <>
+                        <span>·</span>
+                        <span className='text-foreground/70'>{t(`domain.${paper.domain}`)}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
+                    STATUS_COLORS[paper.status]
+                  )}
+                >
+                  {t(`status.${paper.status}`)}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

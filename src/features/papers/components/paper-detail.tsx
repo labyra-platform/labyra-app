@@ -27,6 +27,7 @@ import { CANCELLABLE_STATUSES, TERMINAL_STATUSES } from '@/types/papers';
 import { CitationsSection } from './citations-section'; // R166-6b-1
 import { ProcessingTimeline } from './processing-timeline';
 
+import { PaperDomainBadge } from '@/features/papers/components/paper-domain-badge';
 async function callApi(path: string, method: 'POST' = 'POST') {
   const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error('not_authenticated');
@@ -129,6 +130,21 @@ export function PaperDetail({ paperId }: { paperId: string }) {
           </div>
         </div>
       </header>
+
+      {/* R178-3: domain classification badge */}
+      {/* @r178-3-applied */}
+      {(paper.domain || (paper.subtopics && paper.subtopics.length > 0)) && (
+        <section className='space-y-2'>
+          <h2 className='text-sm font-medium text-muted-foreground uppercase tracking-wide'>
+            {t('domainPrimaryLabel')}
+          </h2>
+          <PaperDomainBadge
+            primary={paper.domain}
+            subtopics={paper.subtopics}
+            confidence={paper.domainConfidence as 'high' | 'medium' | 'low' | undefined}
+          />
+        </section>
+      )}
 
       <section className='space-y-3'>
         <h2 className='text-sm font-medium text-muted-foreground uppercase tracking-wide'>

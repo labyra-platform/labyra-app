@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { navGroups } from '@/config/nav-config';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
 import RenderResults from './render-result';
+import { usePaperActions } from './use-paper-actions';
 import useThemeSwitching from './use-theme-switching';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
@@ -60,6 +61,8 @@ export default function KBar({ children }: { children: React.ReactNode }) {
 }
 const KBarComponent = ({ children }: { children: React.ReactNode }) => {
   useThemeSwitching();
+  // @r180-applied: R180-2 dynamic paper search
+  usePaperActions();
 
   return (
     <>

@@ -69,10 +69,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     );
   }
 
-  // Mark cancellation request
+  // @r180-applied: R180-1 set status='cancelled' directly (terminal).
+  // No longer wait for worker ack — worker reads status at next step and stops.
+  // Fixes stuck 'cancelling' when worker scales to zero.
   await ref.update({
-    status: 'cancelling',
+    status: 'cancelled',
     cancelRequestedAt: Timestamp.now(),
+    cancelledAt: Timestamp.now(),
     statusUpdatedAt: Timestamp.now()
   });
 
@@ -85,7 +88,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   // Not exposed via JobQueue interface — manual cancel via Firestore flag only.
   // Orchestrator will see updated status on next pollable step.
 
-  return new Response(JSON.stringify({ ok: true, status: 'cancelling' }), {
+  return new Response(JSON.stringify({ ok: true, status: 'cancelled' }), {
     status: 202,
     headers: { 'content-type': 'application/json' }
   });

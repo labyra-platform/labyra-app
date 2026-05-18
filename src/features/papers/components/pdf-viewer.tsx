@@ -438,7 +438,7 @@ export function PdfViewer({ paperId }: { paperId: string }) {
         )}
 
         {!urlError && signed && pdfReady && fileSource && (
-          <div className='mx-auto max-w-[1400px] py-4'>
+          <div className='py-4'>
             <Document
               file={fileSource}
               onLoadSuccess={onDocumentLoadSuccess}

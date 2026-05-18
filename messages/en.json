@@ -293,7 +293,17 @@
       "review_article": "Review article",
       "perspective": "Perspective",
       "unknown": "Unclassified"
-    }
+    },
+    "filterYearLabel": "Year range",
+    "filterYearMin": "From year",
+    "filterYearMax": "To year",
+    "filterJournalLabel": "Journal",
+    "filterJournalSearch": "Search journals…",
+    "filterJournalNoMatch": "No journals match",
+    "filterClear": "Clear",
+    "filterShowing": "Showing {shown} of {total}",
+    "filterNoMatches": "No papers match filters",
+    "journalInfoCount": "{count, plural, =1 {1 paper} other {{count} papers}}"
   },
   "materials": {
     "title": "Materials",

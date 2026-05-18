@@ -3,6 +3,7 @@
 // R166-ai6a-3b-fix2: + extracting_citations
 // R178-3: + domain filter chips
 // @r178-3-applied
+// @r179-2-hotfix1-applied — full filter panel (year + journal + domain)
 
 import { IconFileText, IconLoader2, IconUpload } from '@tabler/icons-react';
 import Link from 'next/link';
@@ -10,11 +11,13 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import {
-  createEmptyDomainFilter,
-  type DomainFilterValue,
-  PaperDomainFilter,
-  paperPassesDomainFilter
-} from '@/features/papers/components/paper-domain-filter';
+  createEmptyPaperFilter,
+  type PaperFilterValue,
+  PaperFilterPanel,
+  paperPassesFilter
+} from '@/features/papers/components/paper-filter-panel';
+import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal-info-card';
+import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
 import type { PaperStatus } from '@/types/papers';
@@ -69,7 +72,7 @@ export function PaperList() {
   const params = useParams();
   const locale = params.locale as string;
   const { papers, loading } = usePapers();
-  const [filter, setFilter] = useState<DomainFilterValue>(() => createEmptyDomainFilter());
+  const [filter, setFilter] = useState<PaperFilterValue>(() => createEmptyPaperFilter());
 
   const visibleSlugs = useMemo(() => {
     const s = new Set<string>();
@@ -83,7 +86,7 @@ export function PaperList() {
   }, [papers]);
 
   const filteredPapers = useMemo(() => {
-    return papers.filter((p) => paperPassesDomainFilter(p, filter));
+    return papers.filter((p) => paperPassesFilter(p, filter));
   }, [papers, filter]);
 
   if (loading) {
@@ -113,18 +116,34 @@ export function PaperList() {
     );
   }
 
-  const hasFilter = filter.selected.size > 0;
-  const showFilterUI = visibleSlugs.size > 0;
+  const hasFilter =
+    filter.domain.selected.size > 0 ||
+    filter.journals.size > 0 ||
+    filter.yearMin !== null ||
+    filter.yearMax !== null;
+  const showFilterUI = papers.length > 0;
 
   return (
     <div className='space-y-3'>
       {showFilterUI && (
-        <PaperDomainFilter value={filter} onChange={setFilter} visibleSlugs={visibleSlugs} />
+        <PaperFilterPanel
+          value={filter}
+          onChange={setFilter}
+          papers={papers}
+          visibleDomainSlugs={visibleSlugs}
+        />
       )}
+      {/* @r179-2-hotfix1-applied: show info card when filter narrowed to 1 journal */}
+      {filter.journals.size === 1 &&
+        (() => {
+          const journalName = Array.from(filter.journals)[0];
+          const stats = aggregateJournalStats(papers).find((s) => s.name === journalName);
+          return stats ? <PaperJournalInfoCard stats={stats} /> : null;
+        })()}
 
       {hasFilter && (
         <p className='text-xs text-muted-foreground'>
-          {t('domainFilterShowing', {
+          {t('filterShowing', {
             shown: filteredPapers.length,
             total: papers.length
           })}
@@ -132,9 +151,7 @@ export function PaperList() {
       )}
 
       {filteredPapers.length === 0 ? (
-        <p className='text-center py-8 text-sm text-muted-foreground'>
-          {t('domainFilterNoMatches')}
-        </p>
+        <p className='text-center py-8 text-sm text-muted-foreground'>{t('filterNoMatches')}</p>
       ) : (
         <div className='space-y-2'>
           {filteredPapers.map((paper) => (

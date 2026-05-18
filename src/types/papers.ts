@@ -99,6 +99,18 @@ export interface Paper extends ProvBase {
   domainPromptVersion?: string;
   /** e.g., v1 — bump when taxonomy slugs change. */
   domainTaxonomyVersion?: string;
+
+  // R179-2: journal metadata via Crossref/OpenAlex — @r179-2-applied
+  /** Full journal name (Crossref container-title). '' if unresolved. */
+  journal?: string;
+  /** Abbreviated journal name (Crossref short-container-title). */
+  journalShort?: string;
+  /** 0-2 ISSN strings (print + electronic). */
+  journalIssn?: string[];
+  /** 'crossref' | 'openalex' | '' if both failed. */
+  journalSourceId?: 'crossref' | 'openalex' | '';
+  /** Epoch ms when Step 1e completed. */
+  journalResolvedAt?: number;
   isbn: string;
   publisher: string;
   bookSubtitle?: string;

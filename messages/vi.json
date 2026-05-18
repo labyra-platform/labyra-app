@@ -293,7 +293,17 @@
       "review_article": "Bài tổng quan",
       "perspective": "Bài quan điểm",
       "unknown": "Chưa phân loại"
-    }
+    },
+    "filterYearLabel": "Khoảng năm",
+    "filterYearMin": "Từ năm",
+    "filterYearMax": "Đến năm",
+    "filterJournalLabel": "Tạp chí",
+    "filterJournalSearch": "Tìm tạp chí…",
+    "filterJournalNoMatch": "Không có tạp chí phù hợp",
+    "filterClear": "Xóa",
+    "filterShowing": "Hiển thị {shown}/{total}",
+    "filterNoMatches": "Không có bài nào khớp bộ lọc",
+    "journalInfoCount": "{count, plural, =1 {1 bài} other {{count} bài}}"
   },
   "materials": {
     "title": "Vật liệu",

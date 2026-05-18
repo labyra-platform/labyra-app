@@ -2,7 +2,7 @@
  * Scheduled function: scan child collections for parent-gone orphans.
  *
  * Schedule: Sunday 04:00 UTC (after backupCostsDaily 02:00, ragasEvalWeekly 03:00).
- * Target: tenants/{tid}/_integrity_reports/{date} + _admin/integrity_reports/{date}.
+ * Target: tenants/{tid}/_integrity_reports/{date} + _admin_integrity_reports/{date}.
  *
  * NO AUTO-DELETE. Detection only.
  *
@@ -209,7 +209,7 @@ export const auditOrphansWeekly = onSchedule(
       });
     }
 
-    await db.doc(`_admin/integrity_reports/${date}`).set({
+    await db.doc(`_admin_integrity_reports/${date}`).set({
       date,
       tenantsScanned: tenantsSnap.size,
       tenantsWithOrphans,

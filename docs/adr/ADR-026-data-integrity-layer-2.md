@@ -25,7 +25,7 @@ Need detection mechanism.
 
 Add scheduled `auditOrphansWeekly` Firebase Function. Scans per-tenant
 collections, writes report to `_integrity_reports/{date}` per-tenant + admin
-summary at `_admin/integrity_reports/{date}`. NO auto-delete.
+summary at `_admin_integrity_reports/{date}`. NO auto-delete.
 
 ### Detectability limitations (current schema)
 
@@ -76,7 +76,7 @@ Per-tenant `tenants/{tid}/_integrity_reports/{date}`:
 }
 ```
 
-Admin summary `_admin/integrity_reports/{date}`:
+Admin summary `_admin_integrity_reports/{date}`:
 ```
 {
   date, tenantsScanned, tenantsWithOrphans: [], grandTotalOrphans, finishedAt
@@ -98,7 +98,7 @@ Admin summary `_admin/integrity_reports/{date}`:
 
 ### Operational triggers
 - Run finds orphans → logger.warn → Cloud Logging alert → ops email
-- Manual: query `_admin/integrity_reports/` ordered by date desc
+- Manual: query `_admin_integrity_reports/` ordered by date desc
 - Same orphan IDs in 2+ runs → consider Layer 3 cleanup
 
 ## Future revisit triggers

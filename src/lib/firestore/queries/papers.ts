@@ -36,7 +36,11 @@ export function usePapers() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setPapers(snap.docs.map((d) => d.data() as Paper));
+        setPapers(
+          snap.docs
+            .map((d) => d.data() as Paper)
+            .filter((p) => !p.lifecycleStatus || p.lifecycleStatus === 'active')
+        );
         setLoading(false);
       },
       (err) => {

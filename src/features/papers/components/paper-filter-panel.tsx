@@ -9,7 +9,7 @@
  * @phase R179-2
  * @r179-2-applied
  */
-import { IconCalendar, IconBook, IconX } from '@tabler/icons-react';
+import { IconCalendar, IconBook, IconSearch, IconX } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import {
@@ -32,6 +32,8 @@ export interface PaperFilterValue {
   /** Inclusive year range. null = no year filter. */
   yearMin: number | null;
   yearMax: number | null;
+  /** R179-7c: fuzzy title/author/DOI query. Empty = no filter. @r179-7-applied */
+  titleQuery: string;
 }
 
 export function createEmptyPaperFilter(): PaperFilterValue {
@@ -39,7 +41,8 @@ export function createEmptyPaperFilter(): PaperFilterValue {
     domain: createEmptyDomainFilter(),
     journals: new Set(),
     yearMin: null,
-    yearMax: null
+    yearMax: null,
+    titleQuery: ''
   };
 }
 
@@ -93,6 +96,20 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
 
   return (
     <div className='space-y-3 border rounded-lg p-3'>
+      {/* R179-7c title search @r179-7-applied */}
+      <div className='space-y-1'>
+        <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+          <IconSearch className='size-3.5' aria-hidden />
+          <span>{t('filterTitleSearchLabel')}</span>
+        </div>
+        <input
+          type='text'
+          placeholder={t('filterTitleSearchPlaceholder')}
+          value={value.titleQuery}
+          onChange={(e) => onChange({ ...value, titleQuery: e.target.value })}
+          className='w-full rounded border px-2 py-1 text-sm'
+        />
+      </div>
       {/* Year range */}
       {yearRange && (
         <div className='space-y-1.5'>

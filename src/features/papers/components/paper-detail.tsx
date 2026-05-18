@@ -3,6 +3,7 @@
 // R165-phase-1-oxlint: oxlint cleanup
 
 import {
+  IconArchive,
   IconArrowLeft,
   IconEye,
   IconFileText,
@@ -51,6 +52,9 @@ export function PaperDetail({ paperId }: { paperId: string }) {
   const { paper, loading } = usePaper(paperId);
   const [cancelling, setCancelling] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
+  // R179-3: archive (soft-delete via existing DELETE endpoint)
+  // @r179-3-applied
+  const [archiving, setArchiving] = useState(false);
 
   if (loading) {
     return (
@@ -100,6 +104,34 @@ export function PaperDetail({ paperId }: { paperId: string }) {
       });
     } finally {
       setReprocessing(false);
+    }
+  };
+
+  // R179-3: archive (sets lifecycleStatus=deprecated, hides from default list)
+  // @r179-3-applied
+  const handleArchive = async () => {
+    if (!confirm(t('archiveConfirm'))) return;
+    setArchiving(true);
+    try {
+      const user = getFirebaseAuth().currentUser;
+      if (!user) throw new Error('not_authenticated');
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/papers/${paperId}?reason=manual_archive`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok && res.status !== 204) {
+        const err = await res.text();
+        throw new Error(err || `HTTP ${res.status}`);
+      }
+      toast.success(t('archiveSuccess'));
+      _router.push(`/${locale}/dashboard/papers`);
+    } catch (e) {
+      toast.error(t('archiveFailed'), {
+        description: e instanceof Error ? e.message : 'unknown'
+      });
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -225,6 +257,20 @@ export function PaperDetail({ paperId }: { paperId: string }) {
             {t('reprocess')}
           </button>
         )}
+        {/* R179-3: archive button — always available except for already-archived/retracted
+            @r179-3-applied */}
+        <button
+          onClick={handleArchive}
+          disabled={archiving}
+          className='inline-flex items-center gap-2 text-sm border rounded-md px-3 py-1.5 hover:bg-muted disabled:opacity-50 text-muted-foreground'
+        >
+          {archiving ? (
+            <IconLoader2 className='size-3.5 animate-spin' />
+          ) : (
+            <IconArchive className='size-3.5' />
+          )}
+          {t('archive')}
+        </button>
       </section>
 
       {/* R166-6b-1: citations */}

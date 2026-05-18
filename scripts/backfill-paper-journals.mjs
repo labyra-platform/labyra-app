@@ -106,7 +106,7 @@ async function backfillTenant(tid) {
   const snap = await db.collection(`tenants/${tid}/papers`).get();
   const candidates = snap.docs.filter((d) => {
     const data = d.data();
-    return data.doi && !data.journal && data.status === 'indexed';
+    return data.doi && !data.journal && data.status === 'indexed' && (!data.lifecycleStatus || data.lifecycleStatus === 'active');
   });
   console.log(`tenant=${tid} total=${snap.size} candidates=${candidates.length}`);
 

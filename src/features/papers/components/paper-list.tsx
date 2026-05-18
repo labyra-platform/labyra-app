@@ -18,6 +18,7 @@ import {
 } from '@/features/papers/components/paper-filter-panel';
 import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal-info-card';
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
+import { searchPapers } from '@/features/papers/lib/title-search';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
 import type { PaperStatus } from '@/types/papers';
@@ -86,7 +87,10 @@ export function PaperList() {
   }, [papers]);
 
   const filteredPapers = useMemo(() => {
-    return papers.filter((p) => paperPassesFilter(p, filter));
+    // R179-7c: fuzzy title search BEFORE field filters (intersection)
+    // @r179-7-applied
+    const titleMatched = filter.titleQuery ? searchPapers(papers, filter.titleQuery) : papers;
+    return titleMatched.filter((p) => paperPassesFilter(p, filter));
   }, [papers, filter]);
 
   if (loading) {
@@ -120,7 +124,8 @@ export function PaperList() {
     filter.domain.selected.size > 0 ||
     filter.journals.size > 0 ||
     filter.yearMin !== null ||
-    filter.yearMax !== null;
+    filter.yearMax !== null ||
+    filter.titleQuery.trim().length > 0;
   const showFilterUI = papers.length > 0;
 
   return (

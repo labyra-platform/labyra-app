@@ -22,9 +22,17 @@ const nextConfig: NextConfig = {
       }
     ]
   },
-  transpilePackages: ['geist'],
+  transpilePackages: ['geist', 'react-pdf'],
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
+  },
+  // R179-7b @r179-7-applied: pdfjs-dist requires canvas alias = false in browser
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false
+    };
+    return config;
   }
 };
 

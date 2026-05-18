@@ -1,14 +1,13 @@
 import { getTranslations } from 'next-intl/server';
-import { PdfViewerIframe } from '@/features/papers/components/pdf-viewer-iframe';
+import { PdfViewer } from '@/features/papers/components/pdf-viewer';
 
 /**
- * PDF viewer page (R178-1b-1 V1: browser-native iframe).
+ * PDF viewer page (R179-7b: react-pdf v10 custom toolbar).
+ * @r179-7-applied
  *
- * Layout uses full viewport minus dashboard chrome — no PageContainer wrapper
- * because PDF reading benefits from maximum vertical space.
- *
- * @phase R178-1b-1
+ * Hides InfoSidebar via dashboard layout's pathname check (URL contains /view).
  */
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const t = await getTranslations('papers');
   const { id } = await params;
@@ -17,5 +16,5 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function PaperViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <PdfViewerIframe paperId={id} />;
+  return <PdfViewer paperId={id} />;
 }

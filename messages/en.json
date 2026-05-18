@@ -303,7 +303,21 @@
     "filterClear": "Clear",
     "filterShowing": "Showing {shown} of {total}",
     "filterNoMatches": "No papers match filters",
-    "journalInfoCount": "{count, plural, =1 {1 paper} other {{count} papers}}"
+    "journalInfoCount": "{count, plural, =1 {1 paper} other {{count} papers}}",
+    "archive": "Archive",
+    "archiveConfirm": "Archive this paper? It will be hidden from the list. You can restore it later.",
+    "archiveSuccess": "Paper archived.",
+    "archiveFailed": "Failed to archive",
+    "filterTitleSearchLabel": "Search papers",
+    "filterTitleSearchPlaceholder": "Search title, author, DOI…",
+    "pageOfTotal": "Page {current} of {total}",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "currentPage": "Current page",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetZoom": "Reset zoom",
+    "fullscreen": "Fullscreen"
   },
   "materials": {
     "title": "Materials",

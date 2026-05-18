@@ -1,92 +1,88 @@
 #!/usr/bin/env node
 /**
- * Backfill paper domain classification (R178-3).
+ * Backfill domain classification for papers missing `domain` field.
  *
- * Lists papers needing classification across tenants. Optionally triggers
- * Pub/Sub republish jobs to make worker re-run pipeline (includes Step 1d).
+ * Calls POST /api/papers/{id}/reprocess for each candidate. Worker pipeline
+ * Step 1d (R178-3) will classify on reprocess.
  *
  * Usage:
- *   node scripts/backfill-paper-domains.mjs --tenant tenant-dev-001 --print-ids
- *   node scripts/backfill-paper-domains.mjs --tenant tenant-dev-001 --dry-run
- *   node scripts/backfill-paper-domains.mjs --all-tenants
+ *   cd ~/LAB-MANAGER/labyra-app
+ *   FIREBASE_ID_TOKEN=<token> node backfill-paper-domains.mjs --tenant tenant-dev-001
+ *   FIREBASE_ID_TOKEN=<token> node backfill-paper-domains.mjs --tenant tenant-dev-001 --dry-run
  *
- * Env required:
- *   GOOGLE_APPLICATION_CREDENTIALS pointing to service account JSON
- *   FIRESTORE_DATABASE_ID="(default)"
+ * Get FIREBASE_ID_TOKEN via browser console:
+ *   (await (await import('firebase/auth')).getAuth().currentUser.getIdToken())
  *
- * @phase R178-3
- * @r178-3-applied
+ * BASE_URL default http://localhost:3000 — set BASE_URL env to use deployed URL.
+ *
+ * @phase R179-2 backfill
  */
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
-const printIds = args.includes('--print-ids');
-const allTenants = args.includes('--all-tenants');
 const tenantArg = args.indexOf('--tenant');
 const tenantId = tenantArg >= 0 ? args[tenantArg + 1] : null;
+const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
+const TOKEN = process.env.FIREBASE_ID_TOKEN;
+const RATE_LIMIT_MS = 1000; // 1s between reprocess (worker concurrency)
 
-if (!allTenants && !tenantId) {
-  console.error('Usage: --tenant <id> OR --all-tenants  [--dry-run] [--print-ids]');
+if (!tenantId) {
+  console.error('Usage: --tenant <id>  [--dry-run]');
+  process.exit(1);
+}
+if (!TOKEN && !dryRun) {
+  console.error('FIREBASE_ID_TOKEN env var required (run dry-run first to skip)');
   process.exit(1);
 }
 
-if (!getApps().length) {
-  initializeApp({ credential: applicationDefault() });
-}
+if (!getApps().length) initializeApp({ credential: applicationDefault() });
 const db = getFirestore();
-db.settings({ databaseId: process.env.FIRESTORE_DATABASE_ID || '(default)' });
+db.settings({ databaseId: '(default)' });
 
-async function getTenants() {
-  if (tenantId) return [tenantId];
-  const snap = await db.collection('tenants').get();
-  return snap.docs.map((d) => d.id);
-}
-
-async function backfillTenant(tid) {
-  const papersSnap = await db.collection(`tenants/${tid}/papers`).get();
-  const candidates = papersSnap.docs.filter((d) => {
-    const data = d.data();
-    return (
-      !data.domain ||
-      data.domain === 'unknown' ||
-      data.domainTaxonomyVersion !== 'v1'
-    );
-  });
-
-  console.log(
-    `tenant=${tid} total=${papersSnap.size} needsClassify=${candidates.length}`
+const snap = await db.collection(`tenants/${tenantId}/papers`).get();
+const candidates = snap.docs.filter((d) => {
+  const data = d.data();
+  // Reprocess when domain missing OR taxonomy version outdated
+  return (
+    data.status === 'indexed' && (!data.lifecycleStatus || data.lifecycleStatus === 'active') &&
+    (!data.domain || data.domain === '' || data.domainTaxonomyVersion !== 'v1')
   );
-
-  if (printIds) {
-    for (const d of candidates) {
-      const data = d.data();
-      console.log(
-        `  paper=${d.id} title="${(data.title || '').slice(0, 60)}" current_domain=${data.domain || '(none)'}`
-      );
-    }
-    return;
-  }
-
-  if (dryRun) {
-    console.log(`  [dry-run] would enqueue ${candidates.length} reclassify jobs`);
-    return;
-  }
-
-  // R178-3b-followup: implement Pub/Sub publish to 'paper-processing' topic
-  // For now, log manual reprocess instructions.
-  console.log(
-    `  TODO: enqueue Pub/Sub jobs (${candidates.length} papers). ` +
-      `Workaround: trigger via /api/papers/{id}/reprocess per paper.`
-  );
-}
-
-(async () => {
-  const tenants = await getTenants();
-  for (const t of tenants) await backfillTenant(t);
-  console.log('done.');
-})().catch((err) => {
-  console.error('backfill failed:', err);
-  process.exit(1);
 });
+
+console.log(`tenant=${tenantId} total=${snap.size} need_classify=${candidates.length}`);
+
+if (dryRun) {
+  for (const d of candidates) {
+    console.log(`  [dry] would reprocess ${d.id} title="${(d.data().title || '').slice(0, 60)}"`);
+  }
+  console.log(`done (dry-run).`);
+  process.exit(0);
+}
+
+let success = 0;
+let failed = 0;
+for (const d of candidates) {
+  try {
+    const res = await fetch(`${BASE_URL}/api/papers/${d.id}/reprocess`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${TOKEN}`, Origin: 'http://localhost:3000' }
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.log(`  ${d.id} ✗ ${res.status} ${err.slice(0, 100)}`);
+      failed++;
+    } else {
+      console.log(`  ${d.id} ✓ enqueued`);
+      success++;
+    }
+  } catch (err) {
+    console.log(`  ${d.id} ✗ ${err.message}`);
+    failed++;
+  }
+  await new Promise((r) => setTimeout(r, RATE_LIMIT_MS));
+}
+
+console.log(`done. success=${success} failed=${failed}`);
+console.log('Worker pipeline runs async — check Firestore after ~30s/paper for domain field.');

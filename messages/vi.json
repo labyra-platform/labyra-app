@@ -303,7 +303,21 @@
     "filterClear": "Xóa",
     "filterShowing": "Hiển thị {shown}/{total}",
     "filterNoMatches": "Không có bài nào khớp bộ lọc",
-    "journalInfoCount": "{count, plural, =1 {1 bài} other {{count} bài}}"
+    "journalInfoCount": "{count, plural, =1 {1 bài} other {{count} bài}}",
+    "archive": "Lưu trữ",
+    "archiveConfirm": "Lưu trữ bài này? Sẽ ẩn khỏi danh sách. Có thể khôi phục sau.",
+    "archiveSuccess": "Đã lưu trữ.",
+    "archiveFailed": "Lưu trữ thất bại",
+    "filterTitleSearchLabel": "Tìm bài báo",
+    "filterTitleSearchPlaceholder": "Tìm theo tiêu đề, tác giả, DOI…",
+    "pageOfTotal": "Trang {current}/{total}",
+    "prevPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "currentPage": "Trang hiện tại",
+    "zoomIn": "Phóng to",
+    "zoomOut": "Thu nhỏ",
+    "resetZoom": "Đặt lại",
+    "fullscreen": "Toàn màn hình"
   },
   "materials": {
     "title": "Vật liệu",

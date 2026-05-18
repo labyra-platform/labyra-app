@@ -83,6 +83,22 @@ export interface Paper extends ProvBase {
   // bookSourceId, bookResolvedAt) populated only when documentType='book'
   // via Google Books API resolution.
   documentType: DocumentType;
+
+  // R178-3: domain classification (taxonomy v1) — @r178-3-hotfix1-applied
+  /** Primary domain slug (one of 25 PRIMARY_DOMAINS). '' if not yet classified. */
+  domain?: string;
+  /** 0-4 subtopic slugs from SUBTOPIC_DOMAINS. */
+  subtopics?: string[];
+  /** Self-assessed Gemini confidence. */
+  domainConfidence?: 'high' | 'medium' | 'low';
+  /** Epoch ms when classification written. */
+  domainClassifiedAt?: number;
+  /** e.g., gemini-3-flash-preview — for audit + targeted reclassify. */
+  domainModelVersion?: string;
+  /** e.g., v1.0 — bump when prompt changes. */
+  domainPromptVersion?: string;
+  /** e.g., v1 — bump when taxonomy slugs change. */
+  domainTaxonomyVersion?: string;
   isbn: string;
   publisher: string;
   bookSubtitle?: string;

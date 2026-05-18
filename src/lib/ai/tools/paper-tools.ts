@@ -29,6 +29,11 @@ async function searchPapersHandler(input: Record<string, unknown>, ctx: ToolCont
   if (ctx.selectedPaperIds && ctx.selectedPaperIds.length > 0) {
     filter.paperId = { $in: ctx.selectedPaperIds };
   }
+  // R178-3: optional domain-axis scope filter (paper-axis OR with paperId).
+  // @r178-3-applied
+  if (ctx.selectedDomains && ctx.selectedDomains.length > 0) {
+    filter.domain = { $in: ctx.selectedDomains };
+  }
 
   const result = await searchPapers({
     tenantId: ctx.tenantId,

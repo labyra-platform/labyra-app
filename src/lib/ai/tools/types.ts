@@ -51,6 +51,14 @@ export interface ToolContext {
    * `{ paperId: { $in: [...] } }` to constrain chunks.
    */
   selectedPaperIds?: string[];
+  /**
+   * R178-3: optional domain slugs to scope retrieval.
+   * When empty/undefined → no domain filter.
+   * When non-empty → searchPapers adds Pinecone filter
+   * `{ domain: { $in: [...] } }` (OR with paperId filter).
+   * @r178-3-applied
+   */
+  selectedDomains?: string[];
 }
 
 /** Tool handler — actual execution */

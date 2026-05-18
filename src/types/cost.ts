@@ -15,7 +15,8 @@ export type FeatureKind =
   | 'paper_writing'
   | 'audit'
   | 'title_generation'
-  | 'intent_classify';
+  | 'intent_classify'
+  | 'classify'; // R178-3 paper domain classification — @r178-3-applied
 
 /** Per-capability stats (R170-3 extended) */
 export interface CapabilityStats {

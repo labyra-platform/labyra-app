@@ -65,6 +65,10 @@ const searchPapersTool: RegisteredTool = {
     'Each hit has a "ref" number — cite them in your response as [1], [2], etc. ' +
     'Use this when the user asks about content in their papers, requests literature review, ' +
     'compares findings across papers, or asks "what does the paper say about X". ' +
+    // R178-2c: when system prompt mentions Scoped Library, ALWAYS call this tool
+    // for any content question (even vague "tóm tắt" / "summarize") using a
+    // broad topic-keyword query derived from the scoped paper titles.
+    'When the system prompt mentions a Scoped Library, ALWAYS call this tool for any content question — even vague ones like "tóm tắt" or "summarize" — using a broad topic-keyword query derived from the scoped paper titles. Do not ask the user to clarify scope first. ' +
     'If results seem irrelevant or empty, mention this to the user instead of inventing answers.',
   parameters: {
     type: 'object',

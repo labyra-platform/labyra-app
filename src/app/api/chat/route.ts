@@ -173,6 +173,49 @@ export async function POST(request: Request) {
     ? convData.selectedPaperIds.slice(0, 10)
     : [];
 
+  // R178-2c: fetch scoped paper metadata for system prompt context.
+  // Builds a list like:
+  //   [1] Tongxin Song et al. (2021) — A review of the role and mechanism...
+  // appended to system prompt as dynamic (non-cached) segment.
+  let scopeSystemBlock: string | null = null;
+  if (selectedPaperIds.length > 0) {
+    try {
+      const paperRefs = selectedPaperIds.map((pid: string) =>
+        db.doc(`tenants/${tenantId}/papers/${pid}`)
+      );
+      const paperSnaps = await db.getAll(...paperRefs);
+      const scopedPapers = paperSnaps
+        .filter((s) => s.exists)
+        .map((s, i) => {
+          const d = s.data() as {
+            title?: string;
+            authors?: string[];
+            year?: number;
+            doi?: string;
+          };
+          const authorsStr =
+            (d.authors ?? []).slice(0, 2).join(', ') +
+            ((d.authors?.length ?? 0) > 2 ? ' et al.' : '');
+          const yearStr = d.year ? ` (${d.year})` : '';
+          return `[${i + 1}] ${authorsStr}${yearStr} — ${d.title ?? 'Untitled'}${d.doi ? ` [DOI: ${d.doi}]` : ''}`;
+        });
+      if (scopedPapers.length > 0) {
+        scopeSystemBlock = [
+          `# Scoped Library (R178-2b)`,
+          `The user has scoped this conversation to the following ${scopedPapers.length} paper${scopedPapers.length === 1 ? '' : 's'}:`,
+          '',
+          ...scopedPapers,
+          '',
+          `When the user asks ANY question about content (summary, comparison, methodology, findings — even vague prompts like "tóm tắt" / "summarize" / "what does it say"), CALL searchPapers immediately with a broad topic-keyword query derived from these paper titles. Do NOT ask "what do you want to summarize?" — the user already indicated scope. Cite hits as [1], [2], etc. mapped to ref numbers from tool results.`,
+          `If the searchPapers result is empty or low-relevance for a scoped query, tell the user explicitly that the scoped papers don't cover that topic, rather than searching outside the scope.`
+        ].join('\n');
+      }
+    } catch (err) {
+      console.error('R178-2c scope context build failed', err);
+      // Non-fatal — chat continues without scope hint
+    }
+  }
+
   // Save user message
   const userMessageRef = convRef.collection('messages').doc();
   await userMessageRef.set({
@@ -532,7 +575,12 @@ export async function POST(request: Request) {
           for await (const event of provider.streamChat({
             model: config.model,
             maxTokens: 2048,
-            system: [{ text: LABYRA_SYSTEM_PROMPT, cache: true, cacheTtl: '1h' }],
+            system: scopeSystemBlock
+              ? [
+                  { text: LABYRA_SYSTEM_PROMPT, cache: true, cacheTtl: '1h' },
+                  { text: scopeSystemBlock, cache: false }
+                ]
+              : [{ text: LABYRA_SYSTEM_PROMPT, cache: true, cacheTtl: '1h' }],
             messages: conversationMessages,
             tools: toolDefinitions,
             toolResults: pendingToolResults

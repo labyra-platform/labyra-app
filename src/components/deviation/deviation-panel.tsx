@@ -1,23 +1,23 @@
 /**
  * DeviationPanel — top-level container, routes to single-phase or multi-phase view.
  *
- * Single-phase: MatchSummary + Crystallinity + Hypotheses
- * Multi-phase: defer to R185-10b component (placeholder for now)
- *
- * @phase R185-10a
+ * @phase R185-10a + R185-10b
  */
 'use client';
 
-import { IconChartBar, IconFlask, IconReportAnalytics } from '@tabler/icons-react';
+import { IconChartBar, IconChartPie, IconFlask, IconReportAnalytics } from '@tabler/icons-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CrystallinityCard } from '@/components/deviation/crystallinity-card';
+import { FractionEstimateCard } from '@/components/deviation/fraction-estimate-card';
 import { HypothesisCard } from '@/components/deviation/hypothesis-card';
 import { MatchSummaryStats } from '@/components/deviation/match-summary-stats';
+import { MultiPhaseTabs } from '@/components/deviation/multi-phase-tabs';
+import { RietveldResultCard } from '@/components/deviation/rietveld-result-card';
 import type { DeviationAnalysis } from '@/types/deviation-analysis';
 
 interface DeviationPanelProps {
   deviation: DeviationAnalysis | null | undefined;
-  unitLabel: string; // "cm⁻¹" | "°" | "eV" | "nm"
+  unitLabel: string;
 }
 
 export function DeviationPanel({ deviation, unitLabel }: DeviationPanelProps) {
@@ -40,37 +40,44 @@ export function DeviationPanel({ deviation, unitLabel }: DeviationPanelProps) {
     );
   }
 
-  // R185-10b will handle multi-phase mode — placeholder banner for now
+  // ── Multi-phase view ────────────────────────────────────────────────────
   if (deviation.mode === 'multi-phase') {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2 text-base'>
-            <IconFlask className='h-4 w-4' aria-hidden='true' />
-            Multi-phase analysis
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-3'>
-          <p className='text-sm text-muted-foreground'>
-            {deviation.multiPhase?.components.length ?? 0} component(s) analyzed. Detailed
-            multi-phase view ships in R185-10b.
-          </p>
-          {deviation.multiPhase?.intended_but_not_observed.length ? (
-            <div className='text-sm bg-amber-500/10 border border-amber-500/30 rounded-md p-3'>
-              <p className='font-medium text-amber-700 dark:text-amber-300'>
-                Declared but not observed
-              </p>
-              <p className='text-amber-700/80 dark:text-amber-300/80 mt-1'>
-                {deviation.multiPhase.intended_but_not_observed.join(', ')}
-              </p>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+      <div className='space-y-4'>
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2 text-base'>
+              <IconFlask className='h-4 w-4' aria-hidden='true' />
+              Multi-phase analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MultiPhaseTabs deviation={deviation} unitLabel={unitLabel} />
+          </CardContent>
+        </Card>
+
+        {deviation.fractionEstimates && deviation.fractionEstimates.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className='flex items-center gap-2 text-base'>
+                <IconChartPie className='h-4 w-4' aria-hidden='true' />
+                Phase fractions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
+              {deviation.fractionEstimates.map((fe) => (
+                <FractionEstimateCard key={fe.formula} estimate={fe} />
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {deviation.rietveld && <RietveldResultCard rietveld={deviation.rietveld} />}
+      </div>
     );
   }
 
-  // Single-phase view
+  // ── Single-phase view ───────────────────────────────────────────────────
   const hypotheses = deviation.hypotheses ?? [];
   const sortedHypotheses = [...hypotheses].sort((a, b) => b.confidence - a.confidence);
 

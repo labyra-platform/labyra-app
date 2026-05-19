@@ -14,6 +14,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { getSample } from '@/lib/firebase/samples/service';
+import type { Sample } from '@/types/samples';
 import { fileExists, getFileMetadata } from '@/lib/firebase/storage';
 // R164-phase-5b-1: switch to measurements collection + publishMeasurementAnalysis
 import { publishMeasurementAnalysis } from '@/lib/pubsub/topics/measurement-analysis'; // R168-3.1b
@@ -82,6 +84,23 @@ export async function POST(req: NextRequest) {
       return new NextResponse('invalid_spectrum_type', { status: 400 });
     }
 
+    // R185-4e: snapshot composition from parent Sample at upload time
+    let compositionSnapshot: Sample['composition'] = undefined;
+    let compositeTypeSnapshot: Sample['compositeType'] = undefined;
+    if (sampleId) {
+      try {
+        const sample = await getSample(sampleId, tenantId);
+        if (sample?.composition && sample.composition.length > 0) {
+          compositionSnapshot = sample.composition;
+        }
+        if (sample?.compositeType) {
+          compositeTypeSnapshot = sample.compositeType;
+        }
+      } catch (err) {
+        console.warn('R185-4e: composition snapshot failed (non-blocking)', err);
+      }
+    }
+
     const now = Date.now();
     const metadata: SpectrumMetadata = {
       schemaVersion: 1,
@@ -91,6 +110,9 @@ export async function POST(req: NextRequest) {
       sampleId,
       sampleLabel: sampleLabel ?? undefined,
       chemicalFormula: chemicalFormula ?? undefined,
+      // R185-4e: multi-phase composition snapshot (intent at measurement time)
+      composition: compositionSnapshot,
+      compositeType: compositeTypeSnapshot,
       anode: anode ?? undefined,
       monochromator: monochromator ?? undefined,
       profileFunction: profileFunction ?? undefined,

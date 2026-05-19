@@ -79,6 +79,26 @@ service cloud.firestore {
       allow read, write: if isSuperAdmin();
     }
 
+
+    // ── Material Profiles (R183-2) ─────────────────────────────────────────
+    // Global scientific reference data (crystal structure, bandgap, spectral
+    // signatures, citations). Public read — anyone signed in can read.
+    // Write restricted to superadmin (platform operator seeds via Admin SDK).
+    match /materialProfiles/{formula} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
+
+      match /verifiedCitations/{citationId} {
+        allow read: if isSignedIn();
+        allow write: if isSuperAdmin();
+      }
+
+      match /recentFindings/{findingId} {
+        allow read: if isSignedIn();
+        allow write: if isSuperAdmin();
+      }
+    }
+
     // ---------- Default deny ----------
     // Anything not explicitly matched above is denied.
     match /{document=**} {

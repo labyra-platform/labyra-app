@@ -95,7 +95,9 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
   }
 
   return (
-    <div className='space-y-3 border rounded-lg p-3'>
+    <div className='space-y-3 border rounded-lg p-3 sticky top-4 bg-background z-10 max-h-[calc(100vh-5rem)] overflow-y-auto'>
+      {' '}
+      {/* @r181-2-applied */}
       {/* R179-7c title search @r179-7-applied */}
       <div className='space-y-1'>
         <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
@@ -157,7 +159,6 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
           </div>
         </div>
       )}
-
       {/* Journal multi-select */}
       {journalStats.length > 0 && (
         <div className='space-y-1.5'>
@@ -218,7 +219,6 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
           </div>
         </div>
       )}
-
       {/* Domain (delegated to existing component) */}
       <PaperDomainFilter
         value={value.domain}

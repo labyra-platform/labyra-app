@@ -29,6 +29,19 @@ import {
 
 const COLLAPSED_LIMIT = 5;
 
+// R181-10 @r181-10-applied: stable sort key for citation confidence
+const CONFIDENCE_ORDER: Record<string, number> = {
+  'doi-exact': 0,
+  manual: 1,
+  'title-fuzzy': 2,
+  unverified: 3
+};
+function byConfidence(a: { confidence: string }, b: { confidence: string }): number {
+  const av = CONFIDENCE_ORDER[a.confidence] ?? 99;
+  const bv = CONFIDENCE_ORDER[b.confidence] ?? 99;
+  return av - bv;
+}
+
 export function CitationsSection({ paperId }: { paperId: string }) {
   const t = useTranslations('papers');
   const { stats } = usePaperCitationStats(paperId);
@@ -43,12 +56,22 @@ export function CitationsSection({ paperId }: { paperId: string }) {
   // R166-6b-2-hotfix2: hooks (useMemo) MUST be called before any conditional
   // return to obey Rules of Hooks. Move filter application above the
   // hasAnyData early return.
+  // R181-10 @r181-10-applied: filter + sort by confidence priority
+  //   doi-exact → manual → title-fuzzy → unverified
   const outFiltered = useMemo(
-    () => outCitations.filter((c) => citationPassesFilter(c, filter)),
+    () =>
+      outCitations
+        .filter((c) => citationPassesFilter(c, filter))
+        .slice()
+        .sort(byConfidence),
     [outCitations, filter]
   );
   const inFiltered = useMemo(
-    () => inCitations.filter((c) => citationPassesFilter(c, filter)),
+    () =>
+      inCitations
+        .filter((c) => citationPassesFilter(c, filter))
+        .slice()
+        .sort(byConfidence),
     [inCitations, filter]
   );
 

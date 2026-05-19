@@ -1,3 +1,4 @@
+// @r181-11-applied: Firestore/Storage path measurements → spectra
 /**
  * GET /api/spectra/[id]/signed-download
  *
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const db = getAdminFirestoreService();
-    const snap = await db.doc(`tenants/${tenantId}/measurements/${id}`).get();
+    const snap = await db.doc(`tenants/${tenantId}/spectra/${id}`).get();
     if (!snap.exists) {
       return new NextResponse('not_found', { status: 404 });
     }

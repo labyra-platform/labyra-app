@@ -1,6 +1,6 @@
 'use client';
 
-// R179-7b-hotfix1: import react-pdf CSS layers for text + annotations
+// R181-6: import react-pdf CSS layers for text + annotations
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 
@@ -10,18 +10,20 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
  * Features:
  *   - Continuous scroll mode (all pages stacked vertically)
  *   - Page navigation (prev/next/jump-to)
- *   - Zoom in/out/fit-width/fit-page (Ctrl+wheel supported)
+ *   - Zoom in/out/reset (no re-render loop on zoom)
  *   - Fullscreen toggle
  *   - Download
  *   - Auto-refresh signed URL before expiry
  *
- * Architecture decisions:
- *   - Dynamic import of react-pdf to avoid SSR (PDF.js needs window)
- *   - PDF.js worker served from /pdf-worker/pdf.worker.min.mjs (public dir)
- *   - Page width derives from container ref + zoom factor
+ * Architecture:
+ *   - Dynamic import of react-pdf (PDF.js needs window)
+ *   - PDF.js worker from /pdf-worker/pdf.worker.min.mjs
+ *   - Page width tracked via window resize only (NOT ResizeObserver on
+ *     scroll container — that causes feedback loop when zoom changes
+ *     scrollbar visibility)
  *
- * @phase R179-7b
- * @r179-7-applied
+ * @phase R181-6
+ * @r181-6-applied
  */
 import {
   IconAlertCircle,
@@ -47,8 +49,9 @@ import { getFirebaseAuth } from '@/lib/firebase/client';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
 
-// Lazy import react-pdf primitives (client only — PDF.js requires window)
-const Document = dynamic(() => import('react-pdf').then((m) => m.Document), { ssr: false });
+const Document = dynamic(() => import('react-pdf').then((m) => m.Document), {
+  ssr: false
+});
 const Page = dynamic(() => import('react-pdf').then((m) => m.Page), { ssr: false });
 
 interface SignedUrlResponse {
@@ -62,7 +65,17 @@ const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 4;
 
 async function fetchSignedUrl(paperId: string): Promise<SignedUrlResponse> {
-  const user = getFirebaseAuth().currentUser;
+  // Wait for auth state to settle before reading currentUser
+  const auth = getFirebaseAuth();
+  let user = auth.currentUser;
+  if (!user) {
+    user = await new Promise((resolve) => {
+      const unsub = auth.onAuthStateChanged((u) => {
+        unsub();
+        resolve(u);
+      });
+    });
+  }
   if (!user) throw new Error('not_authenticated');
   const token = await user.getIdToken();
   const res = await fetch(`/api/papers/${paperId}/signed-download`, {
@@ -75,8 +88,6 @@ async function fetchSignedUrl(paperId: string): Promise<SignedUrlResponse> {
   return (await res.json()) as SignedUrlResponse;
 }
 
-type FitMode = 'width' | 'page' | 'custom';
-
 export function PdfViewer({ paperId }: { paperId: string }) {
   const t = useTranslations('papers');
   const params = useParams();
@@ -88,7 +99,6 @@ export function PdfViewer({ paperId }: { paperId: string }) {
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(1);
-  const [fitMode, setFitMode] = useState<FitMode>('width');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
 
@@ -97,13 +107,12 @@ export function PdfViewer({ paperId }: { paperId: string }) {
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(800);
 
-  // Configure PDF.js worker (client-side only)
+  // Configure PDF.js worker
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const { pdfjs } = await import('react-pdf');
-        // Serve worker from public/ (copied during build)
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs';
         if (!cancelled) setPdfReady(true);
       } catch (e) {
@@ -143,27 +152,35 @@ export function PdfViewer({ paperId }: { paperId: string }) {
     };
   }, [signed, loadSignedUrl]);
 
-  // Track container width for fit-mode calculations
+  // R181-6: Track container width via window resize, NOT ResizeObserver.
+  // ResizeObserver fires on internal page renders → feedback loop on zoom.
+  // Window resize only fires on real layout changes.
+  // R181-8: lock container width to PARENT (not clientWidth which shrinks
+  // when horizontal scrollbar appears during zoom). Parent width = viewport
+  // minus sidebar, stable regardless of internal scroll state.
   useLayoutEffect(() => {
-    const el = pagesContainerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerWidth(entry.contentRect.width);
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [pdfReady]);
+    const measure = () => {
+      const el = pagesContainerRef.current;
+      if (!el || !el.parentElement) return;
+      const w = el.parentElement.clientWidth;
+      setContainerWidth((prev) => (Math.abs(prev - w) > 8 ? w : prev));
+    };
+    // Delay measure to allow DOM to settle after fullscreen toggle
+    const id = setTimeout(measure, 50);
+    measure();
+    window.addEventListener('resize', measure);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener('resize', measure);
+    };
+  }, [pdfReady, isFullscreen]);
 
-  // Effective page width based on fit mode + zoom
+  // Page width = (containerWidth - padding) * zoom
   const pageWidth = useMemo(() => {
-    const padding = 32; // breathing room around page
+    const padding = 32;
     const available = Math.max(320, containerWidth - padding);
-    if (fitMode === 'width') return available * zoom;
-    // page/custom: let user control via zoom, base = available
     return available * zoom;
-  }, [containerWidth, fitMode, zoom]);
+  }, [containerWidth, zoom]);
 
   // Document load callback
   const onDocumentLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
@@ -172,29 +189,31 @@ export function PdfViewer({ paperId }: { paperId: string }) {
   }, []);
 
   // Page intersection observer → update currentPage as user scrolls
+  // Deps only on numPages (functional setState avoids currentPage dep loop)
   useEffect(() => {
     if (!numPages || !pagesContainerRef.current) return;
     const root = pagesContainerRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find page with largest intersection ratio
-        let bestIdx = currentPage;
         let bestRatio = 0;
+        let bestIdx: number | null = null;
         for (const entry of entries) {
           if (entry.isIntersecting && entry.intersectionRatio > bestRatio) {
             bestRatio = entry.intersectionRatio;
-            const idx = Number((entry.target as HTMLElement).dataset.pageIndex ?? currentPage);
-            bestIdx = idx;
+            bestIdx = Number((entry.target as HTMLElement).dataset.pageIndex ?? 1);
           }
         }
-        if (bestIdx !== currentPage) setCurrentPage(bestIdx);
+        if (bestIdx !== null) {
+          const target = bestIdx;
+          setCurrentPage((prev) => (prev !== target ? target : prev));
+        }
       },
       { root, threshold: [0.3, 0.7] }
     );
     const pages = root.querySelectorAll('[data-page-index]');
     pages.forEach((p) => observer.observe(p));
     return () => observer.disconnect();
-  }, [numPages, currentPage]);
+  }, [numPages]);
 
   // Jump-to-page
   const scrollToPage = useCallback((pageNum: number) => {
@@ -204,39 +223,46 @@ export function PdfViewer({ paperId }: { paperId: string }) {
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  const goPrev = () => {
-    if (currentPage > 1) scrollToPage(currentPage - 1);
-  };
-  const goNext = () => {
-    if (currentPage < numPages) scrollToPage(currentPage + 1);
-  };
+  const goPrev = useCallback(() => {
+    setCurrentPage((prev) => {
+      if (prev > 1) {
+        scrollToPage(prev - 1);
+        return prev - 1;
+      }
+      return prev;
+    });
+  }, [scrollToPage]);
 
-  const zoomIn = () => {
-    setFitMode('custom');
+  const goNext = useCallback(() => {
+    setCurrentPage((prev) => {
+      if (prev < numPages) {
+        scrollToPage(prev + 1);
+        return prev + 1;
+      }
+      return prev;
+    });
+  }, [numPages, scrollToPage]);
+
+  const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
-  };
-  const zoomOut = () => {
-    setFitMode('custom');
+  }, []);
+  const zoomOut = useCallback(() => {
     setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)));
-  };
-  const resetZoom = () => {
-    setFitMode('width');
+  }, []);
+  const resetZoom = useCallback(() => {
     setZoom(1);
-  };
+  }, []);
 
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
+    // R181-8: don't set state manually — fullscreenchange listener handles it.
+    // Manual setIsFullscreen(true) before browser fires event causes race.
     if (!document.fullscreenElement) {
-      el.requestFullscreen?.()
-        .then(() => setIsFullscreen(true))
-        .catch(() => {});
+      el.requestFullscreen?.().catch(() => {});
     } else {
-      document
-        .exitFullscreen?.()
-        .then(() => setIsFullscreen(false))
-        .catch(() => {});
+      document.exitFullscreen?.().catch(() => {});
     }
   }, []);
 
@@ -246,14 +272,11 @@ export function PdfViewer({ paperId }: { paperId: string }) {
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — deps stable thanks to useCallback above
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (
-        (e.target as HTMLElement)?.tagName === 'INPUT' ||
-        (e.target as HTMLElement)?.tagName === 'TEXTAREA'
-      )
-        return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'ArrowRight' || e.key === 'PageDown') {
         e.preventDefault();
         goNext();
@@ -273,19 +296,18 @@ export function PdfViewer({ paperId }: { paperId: string }) {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, numPages]);
+  }, [goNext, goPrev, zoomIn, zoomOut, resetZoom]);
 
   const displayTitle = useMemo(() => paper?.title || t('untitled'), [paper?.title, t]);
 
-  // PDF file source — wrapped in useMemo to avoid re-render loop
+  // PDF file source — useMemo to avoid Document re-mount loop
   const fileSource = useMemo(() => (signed?.url ? { url: signed.url } : null), [signed?.url]);
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        'flex flex-col bg-muted/20',
+        'flex flex-col bg-muted/20 w-full min-w-0 max-w-full overflow-hidden',
         isFullscreen ? 'h-screen' : 'h-[calc(100vh-4rem)]'
       )}
     >
@@ -306,8 +328,9 @@ export function PdfViewer({ paperId }: { paperId: string }) {
             <p className='truncate text-xs text-muted-foreground'>
               {numPages > 0
                 ? t('pageOfTotal', { current: currentPage, total: numPages })
-                : t('nPages', { count: paper.pageCount })}{' '}
-              · {(paper.fileSize / 1024 / 1024).toFixed(2)} MB · v{paper.version}
+                : t('nPages', { count: paper.pageCount })}
+              {' · '}
+              {(paper.fileSize / 1024 / 1024).toFixed(2)} MB · v{paper.version}
             </p>
           )}
         </div>
@@ -361,6 +384,7 @@ export function PdfViewer({ paperId }: { paperId: string }) {
             size='icon'
             className='size-7'
             onClick={zoomOut}
+            disabled={zoom <= ZOOM_MIN}
             aria-label={t('zoomOut')}
             title={t('zoomOut')}
           >
@@ -379,6 +403,7 @@ export function PdfViewer({ paperId }: { paperId: string }) {
             size='icon'
             className='size-7'
             onClick={zoomIn}
+            disabled={zoom >= ZOOM_MAX}
             aria-label={t('zoomIn')}
             title={t('zoomIn')}
           >
@@ -414,7 +439,11 @@ export function PdfViewer({ paperId }: { paperId: string }) {
       </header>
 
       {/* Body */}
-      <div ref={pagesContainerRef} className='flex-1 overflow-auto'>
+      <div
+        ref={pagesContainerRef}
+        className='flex-1 overflow-auto'
+        style={{ scrollbarGutter: 'stable' }}
+      >
         {urlError && (
           <div className='mx-auto max-w-2xl p-6'>
             <Alert variant='destructive'>

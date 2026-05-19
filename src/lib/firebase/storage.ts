@@ -1,3 +1,4 @@
+// @r181-11-applied: Firestore/Storage path measurements → spectra
 /**
  * Firebase Storage helpers (server-side).
  * @phase R160-ai-5b-1
@@ -67,7 +68,7 @@ export async function deleteStorageFile(storagePath: string): Promise<void> {
  * @phase R164-phase-5b-1 (was R160-spectra-1) — renamed spectrum* → measurement*
  * @see labyra-experiment-database-report.md Section 2.1, ADR-016
  *
- * Path format: tenants/{tid}/measurements/{id}/raw|processed|thumbnail
+ * Path format: tenants/{tid}/spectra/{id}/raw|processed|thumbnail
  * Deprecated `spectrum*` aliases kept; both produce the SAME new path.
  */
 
@@ -78,7 +79,7 @@ export function measurementRawPath(
   filename: string
 ): string {
   const safe = filename.replace(/[^\w.-]/g, '_');
-  return `tenants/${tenantId}/measurements/${measurementId}/raw/${safe}`;
+  return `tenants/${tenantId}/spectra/${measurementId}/raw/${safe}`;
 }
 
 export function measurementProcessedPath(
@@ -87,11 +88,11 @@ export function measurementProcessedPath(
   filename: string
 ): string {
   const safe = filename.replace(/[^\w.-]/g, '_');
-  return `tenants/${tenantId}/measurements/${measurementId}/processed/${safe}`;
+  return `tenants/${tenantId}/spectra/${measurementId}/processed/${safe}`;
 }
 
 export function measurementThumbnailPath(tenantId: string, measurementId: string): string {
-  return `tenants/${tenantId}/measurements/${measurementId}/thumbnail.jpg`;
+  return `tenants/${tenantId}/spectra/${measurementId}/thumbnail.jpg`;
 }
 
 /** @deprecated Use measurementRawPath. R164 alias for R160-R163 callers. */

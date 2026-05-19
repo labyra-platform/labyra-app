@@ -1,3 +1,4 @@
+// @r181-11-applied: Firestore/Storage path measurements → spectra
 /**
  * POST /api/spectra/notify-complete
  *
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Path must start with tenant prefix (guard)
-    const expectedPrefix = `tenants/${tenantId}/measurements/${spectrumId}/raw/`;
+    const expectedPrefix = `tenants/${tenantId}/spectra/${spectrumId}/raw/`;
     if (!storagePath.startsWith(expectedPrefix)) {
       return new NextResponse('path_tenant_mismatch', { status: 403 });
     }
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     };
 
     const db = getAdminFirestoreService();
-    await db.doc(`tenants/${tenantId}/measurements/${spectrumId}`).set(metadata);
+    await db.doc(`tenants/${tenantId}/spectra/${spectrumId}`).set(metadata);
 
     // R160-spectra-3b: publish analysis task to worker.
     // On failure, spectrum stays 'uploaded' for manual retry.
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
         experimentId,
         collection: 'measurements'
       });
-      await db.doc(`tenants/${tenantId}/measurements/${spectrumId}`).update({
+      await db.doc(`tenants/${tenantId}/spectra/${spectrumId}`).update({
         status: 'queued',
         updatedAt: Date.now(),
         debugMessageId: messageId
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
       console.error('Pub/Sub publish failed:', publishError);
       // Write the error to Firestore so we can see it in the UI
       try {
-        await db.doc(`tenants/${tenantId}/measurements/${spectrumId}`).update({
+        await db.doc(`tenants/${tenantId}/spectra/${spectrumId}`).update({
           status: 'failed',
           errorMessage: `publish: ${publishError.substring(0, 400)}`,
           updatedAt: Date.now()

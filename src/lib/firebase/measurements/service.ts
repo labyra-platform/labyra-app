@@ -1,7 +1,8 @@
+// @r181-11-applied: Firestore/Storage path measurements → spectra
 /**
  * Measurement service: server-side CRUD + lineage queries.
  *
- * Path: tenants/{tenantId}/measurements/{measurementId}
+ * Path: tenants/{tenantId}/spectra/{measurementId}
  *
  * Note: Measurement IDs are UUIDs (high-volume activity). Phase 5 will rename
  * the existing `spectra` collection to `measurements` — for now this service

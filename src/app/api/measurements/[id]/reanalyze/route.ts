@@ -1,3 +1,4 @@
+// @r181-11-applied: Firestore/Storage path measurements → spectra
 /**
  * POST /api/spectra/[id]/reanalyze
  *
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const db = getAdminFirestoreService();
-    const ref = db.doc(`tenants/${tenantId}/measurements/${spectrumId}`);
+    const ref = db.doc(`tenants/${tenantId}/spectra/${spectrumId}`);
     const snap = await ref.get();
 
     if (!snap.exists) {

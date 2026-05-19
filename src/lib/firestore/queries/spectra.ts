@@ -98,7 +98,7 @@ export function useSpectrum(spectrumId: string | null) {
       return;
     }
     setLoading(true);
-    const ref = doc(db(), `tenants/${tenantId}/measurements/${spectrumId}`);
+    const ref = doc(db(), `tenants/${tenantId}/spectra/${spectrumId}`);
     const unsub = onSnapshot(
       ref,
       (snap) => {

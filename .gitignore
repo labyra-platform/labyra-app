@@ -71,3 +71,8 @@ functions/node_modules/
 may-costs.csv
 *.bak178*
 *.bakR178
+
+# R185-readme-fix backups
+*.bak*
+LICENSE.bak-mit
+README.md.bak*

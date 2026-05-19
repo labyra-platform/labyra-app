@@ -5,12 +5,17 @@ Multi-tenant, multi-technique spectroscopy + sample workflow + deviation analysi
 AI-assisted interpretation. Built for nano-materials researchers, but applicable
 across solid-state chemistry, semiconductors, catalysis, and energy materials.
 
+> **PROPRIETARY SOFTWARE — All Rights Reserved.**
+> See [`LICENSE`](./LICENSE) for terms. This repository is not open source.
+> Materials Project, pymatgen, lmfit, and other dependencies retain their
+> respective licenses (see [`docs/algorithm-attributions.md`](./docs/algorithm-attributions.md)).
+
 > **For developers**: start with [`AGENTS.md`](./AGENTS.md), then read
 > [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md),
 > [`docs/WORKFLOW.md`](./docs/WORKFLOW.md), and [`CLAUDE.md`](./CLAUDE.md).
 >
-> First tenant: **Lab Vật liệu BKU** (HCMC University of Technology).
-> Legacy codebase: [labbook-bku](https://github.com/emnam009009/labbook-bku) — superseded.
+> First tenant: **Lab Vat lieu BKU** (HCMC University of Technology).
+> Legacy codebase: labbook-bku (private archive) — superseded.
 
 ## What Labyra does
 
@@ -23,7 +28,7 @@ across solid-state chemistry, semiconductors, catalysis, and energy materials.
   vdW stacking, defects, etc. — each with verified DOI citation
 - **Cross-spectrum inference** — fuse evidence from Raman + XRD + UV-Vis + PL on same sample (R185-8, planned)
 - **Citation-grounded hypotheses** — every claim links to peer-reviewed source
-- **AI interpretation** — 6-tier model stack (Gemini Flash → Claude Sonnet 4.6 → Opus 4)
+- **AI interpretation** — 6-tier model stack (Gemini Flash to Claude Sonnet 4.6 to Opus 4)
 - **Reference library** — 29 FTIR + 25 Raman cards, 20 curated Materials Project structures
 - **Paper RAG (planned)** — OpenAlex sync + Pinecone semantic search
 
@@ -43,8 +48,8 @@ across solid-state chemistry, semiconductors, catalysis, and energy materials.
   - Cloud Run Python worker — heavy spectra analysis, AI orchestration, Rietveld
 - **Charts**: recharts (dashboard) + Plotly.js (scientific) + Three.js (3D) + D3.js (lineage)
 - **AI 6-tier stack** (ADR-019):
-  - T0–T2: Gemini Flash-Lite / Flash (dispatch, classify, summarize, $0.001/req)
-  - T3–T4: Claude Sonnet 4.6 (tool calling, structured analysis)
+  - T0-T2: Gemini Flash-Lite / Flash (dispatch, classify, summarize)
+  - T3-T4: Claude Sonnet 4.6 (tool calling, structured analysis)
   - T5: Claude Opus 4 (audit, deep reasoning)
 - **Embeddings**: Voyage embed-3-large + rerank-2.5
 - **Scientific**: pymatgen + lmfit + scipy (Rietveld, profile fitting); NIST XCOM (MAC tables)
@@ -55,12 +60,12 @@ across solid-state chemistry, semiconductors, catalysis, and energy materials.
 
 ## Repos
 
-| Repo | Role |
-|------|------|
-| [labyra-platform/labyra-app](https://github.com/labyra-platform/labyra-app) | Frontend + API routes (this repo) |
-| [emnam009009/labyra-spectra-worker](https://github.com/emnam009009/labyra-spectra-worker) | Cloud Run Python worker (parsers, deviation, AI orchestration) |
-| labyra-landing | Marketing site, [labyra-landing.web.app](https://labyra-landing.web.app) |
-| [emnam009009/labbook-bku](https://github.com/emnam009009/labbook-bku) | Legacy v1 codebase (superseded) |
+| Repo | Role | Visibility |
+|------|------|------------|
+| labyra-platform/labyra-app | Frontend + API routes (this repo) | private |
+| emnam009009/labyra-spectra-worker | Cloud Run Python worker | private |
+| labyra-landing | Marketing site, [labyra-landing.web.app](https://labyra-landing.web.app) | public |
+| emnam009009/labbook-bku | Legacy v1 codebase (superseded) | archived |
 
 ## Development
 
@@ -81,13 +86,13 @@ See [`docs/WORKFLOW.md`](./docs/WORKFLOW.md) for full setup, patch workflow, and
 
 | Phase | Capability | Status |
 |-------|------------|--------|
-| R185-1 | Hungarian peak matching | ✓ |
-| R185-2 | 10 single-phase physics rules (R1-R10) | ✓ |
-| R185-4 | Multi-phase greedy matcher + composition UI | ✓ |
-| R185-5 | Crystallinity classifier + adaptive tolerance | ✓ |
-| R185-6 | 5 composite physics rules (R11-R15) | ✓ |
-| R185-7/7b | Fraction estimation: RIR + Direct Comparison (Klug-Alexander) | ✓ |
-| R185-7c-1/2 | Rietveld refinement (Caglioti UVW + Pseudo-Voigt + Chebyshev) | ✓ |
+| R185-1 | Hungarian peak matching | done |
+| R185-2 | 10 single-phase physics rules (R1-R10) | done |
+| R185-4 | Multi-phase greedy matcher + composition UI | done |
+| R185-5 | Crystallinity classifier + adaptive tolerance | done |
+| R185-6 | 5 composite physics rules (R11-R15) | done |
+| R185-7/7b | Fraction estimation: RIR + Direct Comparison (Klug-Alexander) | done |
+| R185-7c-1/2 | Rietveld refinement (Caglioti UVW + Pseudo-Voigt + Chebyshev) | done |
 | R185-7c-3 | Full R-factors + difference plots | with R185-10 UI |
 | R185-8 | Cross-Spectrum Inference Engine (CSIE) | next |
 | R185-9 | Ambiguous hypothesis handler | pending |
@@ -102,9 +107,8 @@ See [`docs/WORKFLOW.md`](./docs/WORKFLOW.md) for full setup, patch workflow, and
 - **R178** (May 18) — Auto-classify paper domain taxonomy v1 (36 categories)
 - **R177** (May 17) — Paper processing migration to Gemini 3 Flash + Google Books resolver
 - **R167** (May 15) — Async Pub/Sub end-to-end for paper processing (ADR-018)
-- **R161-R166** (May 14-15) — XRD Tier 1+2 metrics (d-spacing, Scherrer D, FWHM,
-  crystallinity, profile fitting), citation cache, Lineage Explorer D3
-- **R160** (May 12-13) — Foundation: Next.js 16 + Firebase Auth + shadcn + Tremor + Tabler icons
+- **R161-R166** (May 14-15) — XRD Tier 1+2 metrics, profile fitting, Lineage Explorer
+- **R160** (May 12-13) — Foundation: Next.js 16 + Firebase Auth + shadcn + Tabler icons
 
 Detailed log: see commit history.
 
@@ -143,16 +147,20 @@ Key ADRs:
 - **ADR-025** — Auto-classify paper domain taxonomy
 - **ADR-026/027** — Layer 2 orphan audit + soft archive
 
-## License compliance
+## License
 
-Labyra implements all spectroscopy algorithms from scratch under our own license.
-See [`docs/algorithm-attributions.md`](./docs/algorithm-attributions.md) for full audit.
+PROPRIETARY — All Rights Reserved. See [`LICENSE`](./LICENSE).
 
-- ✓ Self-implemented Rietveld, multi-phase matcher, peak matching, profile fitting
-- ✓ Dependencies: pymatgen (MIT), lmfit (BSD), scipy (BSD), mp-api (BSD)
-- ✗ NOT used: Profex (GPL v2 viral), BGMN (proprietary), GSAS-II (DOE restricted)
+Third-party dependencies retain their respective licenses; see
+[`docs/algorithm-attributions.md`](./docs/algorithm-attributions.md) for the
+full audit.
+
+Labyra's own algorithms (Rietveld refinement, multi-phase matcher, peak
+matching, profile fitting, etc.) are self-implemented under proprietary
+license — no GPL/AGPL/BGMN/GSAS-II dependencies. Algorithm inspiration is
+acknowledged in algorithm-attributions.md but code is original.
 
 ## Contributing
 
-This is a single-tenant deployment at present. Contribution model TBD when
-Labyra opens to additional labs (Stage 2 trigger: 20+ tenants, ADR-015).
+Closed contribution model. Pre-launch phase, single-tenant deployment.
+Future contribution policy TBD post-launch.

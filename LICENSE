@@ -1,21 +1,38 @@
-MIT License
+Copyright (c) 2026 Labyra Platform (emnam009009 / Lab Vat lieu BKU). All rights reserved.
 
-Copyright (c) 2023 Kiranism
+This software and associated documentation files (the "Software") are the
+proprietary property of Labyra Platform. The Software is made available solely
+for the purpose of internal evaluation, due diligence by prospective investors,
+and authorized collaborators under written agreement.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+NO LICENSE IS GRANTED to:
+- Copy, modify, merge, publish, distribute, sublicense, or sell copies of the
+  Software, in whole or in part.
+- Use the Software for any commercial purpose without an explicit written
+  license from Labyra Platform.
+- Use the Software to create a competing product or service.
+- Remove or alter any copyright, trademark, or proprietary notices in the
+  Software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Any view, download, or clone of this repository constitutes acknowledgement
+that:
+1. The viewer has no license to use the code beyond reading.
+2. The viewer accepts the obligations of confidentiality regarding any
+   non-public algorithms, business logic, schemas, or designs contained herein.
+3. Materials Project (CC-BY 4.0), pymatgen (MIT), lmfit (BSD), and other
+   third-party dependencies retain their respective licenses. See
+   docs/algorithm-attributions.md for a full audit.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+For licensing inquiries, contact: emnam009009 on GitHub.
+
+----
+
+Note on prior MIT statement: Earlier versions of this repository contained an
+MIT LICENSE file in error. As the original copyright holder, Labyra Platform
+has revoked that licensing as of 2026-05-19. No third party has obtained an
+irrevocable MIT grant; any forks predating this date are subject to the
+proprietary terms above.

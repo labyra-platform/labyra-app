@@ -372,6 +372,8 @@ export interface AnalysisResult {
   spectrumType: string;
   parsed: SpectrumParsedData;
   ai: SpectrumAIOutput;
+  /** R185-10a-2: deviation analysis result from worker rules engine. */
+  deviationAnalysis?: import('./deviation-analysis').DeviationAnalysis | null;
 }
 
 // ============================================================

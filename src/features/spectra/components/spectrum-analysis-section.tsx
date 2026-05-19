@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AddReferenceCardDialog } from '@/features/spectra/components/add-reference-card-dialog';
+import { DeviationPanel } from '@/components/deviation/deviation-panel';
 import { AnalysisResultCard } from '@/features/spectra/components/analysis-result-card';
 import { DRSChart } from '@/features/spectra/components/drs-chart';
 // R163-4c-5c1
@@ -30,6 +31,24 @@ import type { AnalysisResult } from '@/types/spectra-analysis';
 interface SpectrumAnalysisSectionProps {
   spectrumId: string;
   status: string;
+}
+
+// R185-10a-2: unit label for DeviationPanel
+function unitLabelFor(spectrumType: string): string {
+  switch (spectrumType) {
+    case 'raman':
+    case 'ftir':
+      return 'cm\u207B\u00B9'; // cm⁻¹
+    case 'xrd':
+      return '\u00B0'; // °
+    case 'pl':
+      return 'eV';
+    case 'uvvis':
+    case 'uvvis_drs':
+      return 'nm';
+    default:
+      return '';
+  }
 }
 
 export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysisSectionProps) {

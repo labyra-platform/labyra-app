@@ -873,5 +873,129 @@
         "paper": "Paper"
       }
     }
+  },
+  "deviation": {
+    "panel": {
+      "title": "Deviation analysis",
+      "emptyState": "No deviation analysis available. The sample may not have a declared formula or composition, or the analysis has not run yet.",
+      "loading": "Loading deviation analysis…"
+    },
+    "multiPhase": {
+      "title": "Multi-phase analysis",
+      "summary": "Summary",
+      "components": "Components",
+      "overallMatch": "Overall match",
+      "grade": "Grade",
+      "unassignedPeaks": "Unassigned peaks",
+      "intendedNotObserved": "Declared but not observed",
+      "intendedNotObservedHelp": "declared in sample composition but signatures were not detected.",
+      "unexpectedPeaks": "Peaks not explained by declared phases",
+      "andMore": "...and {count} more",
+      "compositeTab": "Composite",
+      "compositeHelp": "Cross-phase phenomena (charge transfer, heterojunction, interface modes, ...)",
+      "hypothesesForPhase": "Hypotheses for this phase ({count})",
+      "peaksObserved": "{observed} / {total} peaks observed ({percent}% coverage)",
+      "declared": "Declared {percent}%"
+    },
+    "match": {
+      "reference": "Reference",
+      "matchRate": "Match rate",
+      "matchedTotal": "Matched / total",
+      "meanAbsDev": "Mean |Δ|",
+      "rmse": "RMSE",
+      "quality": {
+        "excellent": "excellent",
+        "good": "good",
+        "fair": "fair",
+        "poor": "poor"
+      }
+    },
+    "crystallinity": {
+      "title": "Crystallinity",
+      "confidence": "Confidence",
+      "estimatedSize": "Estimated crystallite size",
+      "reasoning": "Reasoning ({count} signals)",
+      "class": {
+        "bulk": "bulk",
+        "nanocrystalline": "nanocrystalline",
+        "amorphous": "amorphous",
+        "mixed": "mixed",
+        "unknown": "unknown"
+      }
+    },
+    "hypothesis": {
+      "confidence": "Confidence",
+      "evidence": "Evidence ({count})",
+      "estimate": "Estimate",
+      "suggestedFollowup": "Suggested followup",
+      "hypothesesTitle": "Hypotheses ({count})"
+    },
+    "fraction": {
+      "phaseFractions": "Phase fractions",
+      "quantitative": "Quantitative",
+      "qualitative": "Qualitative",
+      "notMassFraction": "NOT mass fraction.",
+      "methodAssumptions": "Method assumptions",
+      "method": {
+        "rir": "RIR (Chung 1974)",
+        "directComparison": "Direct Comparison (Klug-Alexander)",
+        "lambertBeer": "Lambert-Beer",
+        "ramanIntensity": "Raman intensity ratio",
+        "peakCount": "Peak count (loose)"
+      }
+    },
+    "rietveld": {
+      "title": "Rietveld refinement",
+      "quality": {
+        "good": "good fit",
+        "acceptable": "acceptable",
+        "poor": "poor fit",
+        "noRFactor": "no R-factor"
+      },
+      "notConverged": "not converged",
+      "iterations": "Iterations",
+      "gofTooltip": "GoF = R_wp / R_exp; ideal < 2, acceptable < 4",
+      "profileTitle": "Caglioti profile (FWHM² = U·tan²θ + V·tanθ + W) + Pseudo-Voigt",
+      "refinedPhases": "Refined phases",
+      "rBraggTooltip": "Per-phase Bragg R-factor",
+      "diffPlotTitle": "Observed vs calculated",
+      "observed": "Observed",
+      "calculated": "Calculated",
+      "difference": "Difference"
+    },
+    "csie": {
+      "title": "Cross-spectrum analysis",
+      "loading": "Loading cross-spectrum analysis…",
+      "insufficientData": "Need ≥2 analyzed spectra with declared composition to run cross-spectrum inference.",
+      "noResult": "No cross-spectrum analysis available yet.",
+      "runNow": "Run now",
+      "computing": "Computing…",
+      "refreshAria": "Refresh cross-spectrum analysis",
+      "spectraAnalyzed": "Spectra analyzed",
+      "techniques": "Techniques",
+      "coherenceScore": "Coherence score",
+      "conflicts": "Conflicts",
+      "unexpectedObservations": "Unexpected observations",
+      "phaseConsistency": "Phase consistency ({count})",
+      "crossSpectrumScore": "Cross-spectrum score",
+      "supportedBy": "Supported by:",
+      "missingFrom": "Missing from {count} spectrum(s)",
+      "verdict": {
+        "confirmed": "Confirmed",
+        "partial": "Partial",
+        "missing": "Missing",
+        "conflict": "Conflict"
+      },
+      "refreshSuccess": "Cross-spectrum analysis refreshed",
+      "refreshFailed": "Refresh failed"
+    },
+    "ambiguous": {
+      "title": "Ambiguous observations ({count})",
+      "severity": "Severity",
+      "causesCount": "{count} causes",
+      "candidateCauses": "Candidate causes (re-scored with multi-spectrum evidence)",
+      "discriminationExperiments": "Discrimination experiments ({count})",
+      "expectedOutcomes": "Expected outcomes"
+    }
   }
 }

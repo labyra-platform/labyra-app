@@ -873,5 +873,129 @@
         "paper": "Bài báo"
       }
     }
+  },
+  "deviation": {
+    "panel": {
+      "title": "Phân tích sai lệch",
+      "emptyState": "Chưa có phân tích sai lệch. Mẫu có thể chưa khai báo công thức/thành phần, hoặc phân tích chưa chạy.",
+      "loading": "Đang tải phân tích sai lệch…"
+    },
+    "multiPhase": {
+      "title": "Phân tích đa pha",
+      "summary": "Tổng quan",
+      "components": "Số thành phần",
+      "overallMatch": "Tỉ lệ khớp tổng",
+      "grade": "Xếp loại",
+      "unassignedPeaks": "Đỉnh không gán được",
+      "intendedNotObserved": "Khai báo nhưng không quan sát thấy",
+      "intendedNotObservedHelp": "khai báo trong composition nhưng không thấy signature.",
+      "unexpectedPeaks": "Đỉnh không giải thích được bởi pha đã khai báo",
+      "andMore": "...và {count} đỉnh nữa",
+      "compositeTab": "Composite",
+      "compositeHelp": "Hiện tượng cross-phase (charge transfer, heterojunction, interface modes, ...)",
+      "hypothesesForPhase": "Giả thuyết cho pha này ({count})",
+      "peaksObserved": "{observed} / {total} đỉnh quan sát được ({percent}% coverage)",
+      "declared": "Khai báo {percent}%"
+    },
+    "match": {
+      "reference": "Tham chiếu",
+      "matchRate": "Tỉ lệ khớp",
+      "matchedTotal": "Khớp / tổng",
+      "meanAbsDev": "Sai lệch TB |Δ|",
+      "rmse": "RMSE",
+      "quality": {
+        "excellent": "xuất sắc",
+        "good": "tốt",
+        "fair": "khá",
+        "poor": "kém"
+      }
+    },
+    "crystallinity": {
+      "title": "Độ tinh thể",
+      "confidence": "Độ tin cậy",
+      "estimatedSize": "Kích thước tinh thể ước lượng",
+      "reasoning": "Lý do ({count} tín hiệu)",
+      "class": {
+        "bulk": "khối",
+        "nanocrystalline": "nano tinh thể",
+        "amorphous": "vô định hình",
+        "mixed": "hỗn hợp",
+        "unknown": "không xác định"
+      }
+    },
+    "hypothesis": {
+      "confidence": "Độ tin cậy",
+      "evidence": "Bằng chứng ({count})",
+      "estimate": "Ước lượng",
+      "suggestedFollowup": "Khuyến nghị tiếp theo",
+      "hypothesesTitle": "Giả thuyết ({count})"
+    },
+    "fraction": {
+      "phaseFractions": "Tỉ lệ pha",
+      "quantitative": "Định lượng",
+      "qualitative": "Định tính",
+      "notMassFraction": "KHÔNG phải mass fraction.",
+      "methodAssumptions": "Giả định phương pháp",
+      "method": {
+        "rir": "RIR (Chung 1974)",
+        "directComparison": "Direct Comparison (Klug-Alexander)",
+        "lambertBeer": "Lambert-Beer",
+        "ramanIntensity": "Tỉ lệ cường độ Raman",
+        "peakCount": "Đếm đỉnh (lỏng)"
+      }
+    },
+    "rietveld": {
+      "title": "Tinh chỉnh Rietveld",
+      "quality": {
+        "good": "khớp tốt",
+        "acceptable": "chấp nhận được",
+        "poor": "khớp kém",
+        "noRFactor": "chưa có R"
+      },
+      "notConverged": "chưa hội tụ",
+      "iterations": "Vòng lặp",
+      "gofTooltip": "GoF = R_wp / R_exp; lý tưởng < 2, chấp nhận được < 4",
+      "profileTitle": "Caglioti profile (FWHM² = U·tan²θ + V·tanθ + W) + Pseudo-Voigt",
+      "refinedPhases": "Pha đã tinh chỉnh",
+      "rBraggTooltip": "R-factor Bragg theo pha",
+      "diffPlotTitle": "Quan sát so với tính toán",
+      "observed": "Quan sát",
+      "calculated": "Tính toán",
+      "difference": "Sai lệch"
+    },
+    "csie": {
+      "title": "Phân tích đa phổ chéo",
+      "loading": "Đang tải phân tích đa phổ…",
+      "insufficientData": "Cần ≥2 phổ đã phân tích kèm composition đã khai báo để chạy cross-spectrum inference.",
+      "noResult": "Chưa có phân tích đa phổ chéo.",
+      "runNow": "Chạy ngay",
+      "computing": "Đang xử lý…",
+      "refreshAria": "Làm mới phân tích đa phổ chéo",
+      "spectraAnalyzed": "Số phổ đã phân tích",
+      "techniques": "Phương pháp",
+      "coherenceScore": "Điểm nhất quán",
+      "conflicts": "Mâu thuẫn",
+      "unexpectedObservations": "Quan sát bất thường",
+      "phaseConsistency": "Nhất quán pha ({count})",
+      "crossSpectrumScore": "Điểm cross-spectrum",
+      "supportedBy": "Hỗ trợ bởi:",
+      "missingFrom": "Thiếu ở {count} phổ",
+      "verdict": {
+        "confirmed": "Xác nhận",
+        "partial": "Một phần",
+        "missing": "Thiếu",
+        "conflict": "Mâu thuẫn"
+      },
+      "refreshSuccess": "Đã làm mới phân tích đa phổ chéo",
+      "refreshFailed": "Làm mới thất bại"
+    },
+    "ambiguous": {
+      "title": "Quan sát đa nghĩa ({count})",
+      "severity": "Mức độ",
+      "causesCount": "{count} nguyên nhân",
+      "candidateCauses": "Nguyên nhân ứng viên (đã re-score với đa phổ)",
+      "discriminationExperiments": "Thí nghiệm phân biệt ({count})",
+      "expectedOutcomes": "Kết quả mong đợi"
+    }
   }
 }

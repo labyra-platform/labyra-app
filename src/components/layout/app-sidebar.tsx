@@ -34,7 +34,8 @@ import { Icons } from '../icons';
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { isOpen } = useMediaQuery();
+  const { isOpen: _isOpen } = useMediaQuery();
+  void _isOpen;
   const filteredGroups = useFilteredNavGroups(navGroups);
   const t = useTranslations();
   const resolveLabel = (key: string | undefined, fallback: string): string =>

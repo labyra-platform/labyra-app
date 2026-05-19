@@ -22,6 +22,8 @@ import { PhaseEvidenceCard } from '@/components/deviation/phase-evidence-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslations } from 'next-intl';
+import { DeviationSkeleton } from '@/components/deviation/deviation-skeleton';
 import { useCSIEResult } from '@/lib/firestore/queries/csie';
 
 interface CrossSpectrumPanelProps {
@@ -29,6 +31,8 @@ interface CrossSpectrumPanelProps {
 }
 
 export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
+  const t = useTranslations('deviation.csie');
+  const tAmb = useTranslations('deviation.ambiguous');
   const { result, loading } = useCSIEResult(sampleId);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -51,22 +55,16 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
         body: JSON.stringify({ tenantId, force: true })
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success('Cross-spectrum analysis refreshed');
+      toast.success(t('refreshSuccess'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Refresh failed');
+      toast.error(err instanceof Error ? err.message : t('refreshFailed'));
     } finally {
       setRefreshing(false);
     }
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardContent className='pt-6 text-sm text-muted-foreground'>
-          Loading cross-spectrum analysis…
-        </CardContent>
-      </Card>
-    );
+    return <DeviationSkeleton />;
   }
 
   if (!result || result.status !== 'ok' || !result.consistency) {
@@ -80,13 +78,11 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
         </CardHeader>
         <CardContent className='space-y-3'>
           <p className='text-sm text-muted-foreground'>
-            {result?.status === 'insufficient_data'
-              ? 'Need ≥2 analyzed spectra with declared composition to run cross-spectrum inference.'
-              : 'No cross-spectrum analysis available yet.'}
+            {result?.status === 'insufficient_data' ? t('insufficientData') : t('noResult')}
           </p>
           <Button onClick={handleRefresh} variant='outline' size='sm' disabled={refreshing}>
             <IconRefresh className='h-4 w-4 mr-1' aria-hidden='true' />
-            {refreshing ? 'Computing…' : 'Run now'}
+            {refreshing ? t('computing') : t('runNow')}
           </Button>
         </CardContent>
       </Card>
@@ -109,7 +105,7 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
               size='sm'
               disabled={refreshing}
               className='ml-auto h-8 px-2'
-              aria-label='Refresh cross-spectrum analysis'
+              aria-label={t('refreshAria')}
             >
               <IconRefresh className='h-3.5 w-3.5' aria-hidden='true' />
             </Button>
@@ -170,7 +166,7 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
         <Card>
           <CardHeader>
             <CardTitle className='text-base'>
-              Phase consistency ({c.declared_phases.length})
+              {t('phaseConsistency', { count: c.declared_phases.length })}
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-3'>
@@ -186,7 +182,7 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
           <CardHeader>
             <CardTitle className='text-base flex items-center gap-2'>
               <IconAlertTriangle className='h-4 w-4 text-amber-500' aria-hidden='true' />
-              Ambiguous observations ({ambiguous.length})
+              {tAmb('title', { count: ambiguous.length })}
             </CardTitle>
           </CardHeader>
           <CardContent className='space-y-3'>

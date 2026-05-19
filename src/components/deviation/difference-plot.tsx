@@ -13,6 +13,7 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { formatFormula } from '@/lib/utils/format-formula';
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
@@ -28,14 +29,15 @@ interface DifferencePlotProps {
 }
 
 export function DifferencePlot({ data, phaseContributions }: DifferencePlotProps) {
+  const t = useTranslations('deviation.rietveld');
   const traces = useMemo(() => {
-    const t: Array<Record<string, unknown>> = [
+    const tr: Array<Record<string, unknown>> = [
       {
         x: data.x,
         y: data.y_obs,
         type: 'scatter',
         mode: 'markers',
-        name: 'Observed',
+        name: t('observed'),
         marker: { size: 3, color: 'rgba(99, 102, 241, 0.6)' }, // indigo
         xaxis: 'x',
         yaxis: 'y'
@@ -45,7 +47,7 @@ export function DifferencePlot({ data, phaseContributions }: DifferencePlotProps
         y: data.y_calc,
         type: 'scatter',
         mode: 'lines',
-        name: 'Calculated',
+        name: t('calculated'),
         line: { width: 1.5, color: 'rgba(239, 68, 68, 0.9)' }, // red
         xaxis: 'x',
         yaxis: 'y'
@@ -55,7 +57,7 @@ export function DifferencePlot({ data, phaseContributions }: DifferencePlotProps
         y: data.diff,
         type: 'scatter',
         mode: 'lines',
-        name: 'Difference',
+        name: t('difference'),
         line: { width: 1, color: 'rgba(107, 114, 128, 0.8)' }, // gray
         xaxis: 'x',
         yaxis: 'y2'
@@ -65,7 +67,7 @@ export function DifferencePlot({ data, phaseContributions }: DifferencePlotProps
     if (phaseContributions) {
       const phaseColors = ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
       Object.entries(phaseContributions).forEach(([formula, y], i) => {
-        t.push({
+        tr.push({
           x: data.x,
           y,
           type: 'scatter',
@@ -79,8 +81,8 @@ export function DifferencePlot({ data, phaseContributions }: DifferencePlotProps
       });
     }
 
-    return t;
-  }, [data, phaseContributions]);
+    return tr;
+  }, [data, phaseContributions, t]);
 
   return (
     <div className='border border-border rounded-md bg-card p-2'>
@@ -88,7 +90,7 @@ export function DifferencePlot({ data, phaseContributions }: DifferencePlotProps
         data={traces}
         layout={{
           autosize: true,
-          height: 380,
+          height: typeof window !== 'undefined' && window.innerWidth < 640 ? 280 : 380,
           margin: { l: 50, r: 20, t: 30, b: 40 },
           showlegend: true,
           legend: { orientation: 'h', y: -0.2 },

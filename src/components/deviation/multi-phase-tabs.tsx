@@ -29,7 +29,7 @@ export function MultiPhaseTabs({ deviation, unitLabel }: MultiPhaseTabsProps) {
 
   return (
     <Tabs defaultValue='_summary' className='w-full'>
-      <TabsList className='flex flex-wrap h-auto justify-start'>
+      <TabsList className='flex flex-wrap h-auto justify-start max-w-full overflow-x-auto sm:overflow-x-visible'>
         <TabsTrigger value='_summary' className='gap-1'>
           <IconFlask className='h-3.5 w-3.5' aria-hidden='true' />
           Summary

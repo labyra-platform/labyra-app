@@ -34,6 +34,7 @@ export async function requireSuperadmin(request: Request): Promise<SuperadminGua
   try {
     decoded = await getAdminAuthService().verifyIdToken(token);
   } catch (_err) {
+    void _err;
     return {
       allowed: false,
       response: NextResponse.json({ error: 'invalid_token' }, { status: 401 })

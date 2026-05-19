@@ -79,7 +79,7 @@ export function DeviationPanel({ deviation, unitLabel }: DeviationPanelProps) {
 
   // ── Single-phase view ───────────────────────────────────────────────────
   const hypotheses = deviation.hypotheses ?? [];
-  const sortedHypotheses = [...hypotheses].sort((a, b) => b.confidence - a.confidence);
+  const sortedHypotheses = [...hypotheses].toSorted((a, b) => b.confidence - a.confidence);
 
   return (
     <div className='space-y-4'>

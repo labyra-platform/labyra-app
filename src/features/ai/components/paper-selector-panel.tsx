@@ -62,7 +62,7 @@ export function PaperSelectorPanel({
           const hay = `${p.title} ${(p.authors ?? []).join(' ')}`.toLowerCase();
           return hay.includes(q);
         });
-    return [...filtered].sort((a, b) => {
+    return [...filtered].toSorted((a, b) => {
       const aSel = selected.has(a.id) ? 0 : 1;
       const bSel = selected.has(b.id) ? 0 : 1;
       if (aSel !== bSel) return aSel - bSel;

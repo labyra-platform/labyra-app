@@ -45,7 +45,7 @@ export function CostTimeseries({ rows }: { rows: CostRow[] }) {
 
   const chartData = Array.from(byDate.entries())
     .map(([date, vals]) => ({ date, ...vals }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .toSorted((a, b) => a.date.localeCompare(b.date));
 
   if (chartData.length === 0) {
     return (

@@ -124,7 +124,8 @@ export async function runAuditor(opts: AuditorOptions): Promise<AuditResult> {
     parsed = JSON.parse(cleaned) as AuditFinding[];
   } catch (err) {
     throw new Error(
-      `T5 Auditor JSON parse failed: ${err instanceof Error ? err.message : 'unknown'}`
+      `T5 Auditor JSON parse failed: ${err instanceof Error ? err.message : 'unknown'}`,
+      { cause: err }
     );
   }
 

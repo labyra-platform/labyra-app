@@ -50,7 +50,7 @@ export function extractDois(text: string): ExtractedDoi[] {
 
   // Sort: high → medium → low
   const order = { high: 0, medium: 1, low: 2 } as const;
-  return [...results.values()].sort((a, b) => order[a.confidence] - order[b.confidence]);
+  return [...results.values()].toSorted((a, b) => order[a.confidence] - order[b.confidence]);
 }
 
 /**

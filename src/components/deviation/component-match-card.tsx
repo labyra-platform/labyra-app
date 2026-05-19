@@ -38,7 +38,7 @@ export function ComponentMatchCard({
   hypotheses = []
 }: ComponentMatchCardProps) {
   const roleStyle = ROLE_STYLES[component.role] ?? 'bg-muted text-muted-foreground';
-  const sortedHyps = [...hypotheses].sort((a, b) => b.confidence - a.confidence);
+  const sortedHyps = [...hypotheses].toSorted((a, b) => b.confidence - a.confidence);
 
   return (
     <div className='space-y-3'>

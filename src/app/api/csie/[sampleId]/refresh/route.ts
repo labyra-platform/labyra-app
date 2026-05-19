@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ sample
   if (auth.error) return auth.error;
 
   const { sampleId } = await context.params;
-  if (!sampleId || !/^[A-Za-z0-9_\-]{1,128}$/.test(sampleId)) {
+  if (!sampleId || !/^[A-Za-z0-9_-]{1,128}$/.test(sampleId)) {
     return new NextResponse('invalid_sample_id', { status: 400 });
   }
 

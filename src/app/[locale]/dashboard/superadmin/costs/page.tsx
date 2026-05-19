@@ -102,7 +102,7 @@ export default function CostsPage() {
               </thead>
               <tbody>
                 {data.rows
-                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .toSorted((a, b) => b.date.localeCompare(a.date))
                   .slice(0, 50)
                   .map((r, i) => {
                     const queries = Object.values(r.byTier).reduce((s, v) => s + v.queries, 0);

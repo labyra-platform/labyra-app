@@ -99,7 +99,7 @@ export default function DriftPage() {
                 </thead>
                 <tbody>
                   {data.reports
-                    .sort((a, b) => b.date.localeCompare(a.date))
+                    .toSorted((a, b) => b.date.localeCompare(a.date))
                     .map((r, i) => (
                       <tr key={i} className='border-t'>
                         <td className='p-2 font-mono'>{r.date}</td>

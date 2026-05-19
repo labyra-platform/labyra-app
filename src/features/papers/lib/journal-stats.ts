@@ -50,7 +50,7 @@ export function aggregateJournalStats(papers: Paper[]): JournalStats[] {
       });
     }
   }
-  return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  return Array.from(map.values()).toSorted((a, b) => b.count - a.count);
 }
 
 export interface YearRange {

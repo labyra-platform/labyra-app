@@ -344,8 +344,8 @@ export async function POST(request: Request) {
   }
 
   // R170-7 [R170-hotfix2]: dry-run returns routing decision without LLM
-  const _dryRunUrl = new URL(request.url);
-  if (_dryRunUrl.searchParams.get('dry_run') === '1') {
+  const dryRunUrl = new URL(request.url);
+  if (dryRunUrl.searchParams.get('dry_run') === '1') {
     return NextResponse.json({
       mode: 'dry_run',
       tier: intentDecision.tier,

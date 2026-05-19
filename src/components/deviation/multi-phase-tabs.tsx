@@ -25,7 +25,7 @@ export function MultiPhaseTabs({ deviation, unitLabel }: MultiPhaseTabsProps) {
   if (!multi) return null;
 
   const compositeHyps = deviation.compositeHypotheses ?? [];
-  const sortedCompositeHyps = [...compositeHyps].sort((a, b) => b.confidence - a.confidence);
+  const sortedCompositeHyps = [...compositeHyps].toSorted((a, b) => b.confidence - a.confidence);
 
   return (
     <Tabs defaultValue='_summary' className='w-full'>

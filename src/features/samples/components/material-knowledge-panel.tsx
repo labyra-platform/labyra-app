@@ -88,7 +88,7 @@ function axisLabel(unit: string): string {
 }
 
 function PeakTable({ sig, unit }: { sig: SpectralSignature; unit: string }) {
-  const sorted = [...sig.peaks].sort((a, b) => (b.intensity ?? 0) - (a.intensity ?? 0));
+  const sorted = [...sig.peaks].toSorted((a, b) => (b.intensity ?? 0) - (a.intensity ?? 0));
   return (
     <div className='space-y-2'>
       {sig.notes && <p className='text-xs text-muted-foreground italic'>{sig.notes}</p>}

@@ -421,6 +421,36 @@
       "consumed": "Đã sử dụng hết",
       "archived": "Lưu trữ",
       "discarded": "Đã hủy"
+    },
+    "composition": {
+      "title": "Thành phần mục tiêu (đa pha)",
+      "description": "Khai báo thành phần dự kiến để phân tích sai lệch. Bỏ trống nếu mẫu đơn pha.",
+      "addComponent": "Thêm thành phần",
+      "emptyHint": "Chưa khai báo. Nhấn \"Thêm thành phần\" nếu mẫu là composite (vd MoS2/rGO).",
+      "formula": "Công thức",
+      "role": "Vai trò",
+      "fraction": "Tỉ lệ",
+      "compositeType": "Loại composite",
+      "compositeTypePlaceholder": "Chọn loại (tuỳ chọn)",
+      "removeAria": "Xoá thành phần {index}",
+      "roles": {
+        "matrix": "Nền (chính)",
+        "core": "Lõi",
+        "active": "Lớp hoạt tính",
+        "shell": "Vỏ",
+        "support": "Hỗ trợ (vd rGO)",
+        "filler": "Phụ gia",
+        "dopant": "Pha tạp",
+        "substrate": "Đế"
+      },
+      "compositeTypes": {
+        "single-phase": "Đơn pha",
+        "heterostructure": "Dị cấu trúc",
+        "doped": "Pha tạp",
+        "mixed-phase": "Pha trộn",
+        "core-shell": "Lõi-vỏ",
+        "composite": "Composite"
+      }
     }
   },
   "experiments": {

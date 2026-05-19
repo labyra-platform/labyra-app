@@ -54,7 +54,10 @@ export async function createSample(
     concentration: input.concentration,
     concentrationUnit: input.concentrationUnit,
     workflowStatus: input.workflowStatus,
-    location: input.location
+    location: input.location,
+    // R185-4b: multi-phase composition
+    composition: input.composition,
+    compositeType: input.compositeType
   };
 
   await db.collection('tenants').doc(ctx.tenantId).collection(COLLECTION).doc(id).set(sample);

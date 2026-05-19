@@ -50,4 +50,26 @@ export interface Sample extends ProvBase {
   // Workflow state (renamed from `status` to disambiguate from lifecycleStatus)
   workflowStatus: SampleWorkflowStatus;
   location?: string;
+
+  // R185-4b: Multi-phase composition declaration
+  composition?: SampleCompositionEntry[];
+  compositeType?:
+    | 'single-phase'
+    | 'heterostructure'
+    | 'doped'
+    | 'mixed-phase'
+    | 'core-shell'
+    | 'composite';
+}
+
+/**
+ * One component of a multi-phase sample.
+ *
+ * @phase R185-4b
+ */
+export interface SampleCompositionEntry {
+  formula: string;
+  role: 'matrix' | 'core' | 'active' | 'shell' | 'support' | 'filler' | 'dopant' | 'substrate';
+  nominalFraction?: number; // 0-1
+  formationMethod?: string;
 }

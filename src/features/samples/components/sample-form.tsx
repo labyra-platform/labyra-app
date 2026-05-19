@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { Sample } from '@/types/samples';
+import { CompositionField } from './composition-field';
 import { MaterialKnowledgePanel } from './material-knowledge-panel';
 import { type SampleFormValues, sampleFormSchema } from '../schema';
 
@@ -56,7 +57,9 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       concentrationUnit: defaultValues?.concentrationUnit ?? '',
       workflowStatus: defaultValues?.workflowStatus ?? 'prepared',
       location: defaultValues?.location ?? '',
-      protocol: defaultValues?.protocol ?? ''
+      protocol: defaultValues?.protocol ?? '',
+      composition: defaultValues?.composition ?? [],
+      compositeType: defaultValues?.compositeType ?? undefined
     }
   });
 

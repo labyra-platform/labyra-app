@@ -421,6 +421,36 @@
       "consumed": "Consumed",
       "archived": "Archived",
       "discarded": "Discarded"
+    },
+    "composition": {
+      "title": "Target composition (multi-phase)",
+      "description": "Declare the intended composition for deviation analysis. Leave empty for single-phase samples.",
+      "addComponent": "Add component",
+      "emptyHint": "No components declared. Click \"Add component\" if this sample is a composite (e.g. MoS2/rGO).",
+      "formula": "Formula",
+      "role": "Role",
+      "fraction": "Fraction",
+      "compositeType": "Composite type",
+      "compositeTypePlaceholder": "Select type (optional)",
+      "removeAria": "Remove component {index}",
+      "roles": {
+        "matrix": "Matrix (primary)",
+        "core": "Core",
+        "active": "Active layer",
+        "shell": "Shell",
+        "support": "Support (e.g. rGO)",
+        "filler": "Filler",
+        "dopant": "Dopant",
+        "substrate": "Substrate"
+      },
+      "compositeTypes": {
+        "single-phase": "Single phase",
+        "heterostructure": "Heterostructure",
+        "doped": "Doped",
+        "mixed-phase": "Mixed phase",
+        "core-shell": "Core-shell",
+        "composite": "Composite"
+      }
     }
   },
   "experiments": {

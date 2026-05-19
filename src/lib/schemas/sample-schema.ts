@@ -15,6 +15,27 @@ export const SampleWorkflowStatusSchema = z.enum([
   'discarded'
 ]);
 
+// R185-4b: composition entry — must mirror src/features/samples/schema.ts
+const CompositionEntryFields = z.object({
+  formula: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[A-Z]/, 'Formula must start with capital letter'),
+  role: z.enum(['matrix', 'core', 'active', 'shell', 'support', 'filler', 'dopant', 'substrate']),
+  nominalFraction: z.number().min(0).max(1).optional(),
+  formationMethod: z.string().max(50).optional()
+});
+
+export const CompositeTypeSchema = z.enum([
+  'single-phase',
+  'heterostructure',
+  'doped',
+  'mixed-phase',
+  'core-shell',
+  'composite'
+]);
+
 const SampleCoreFields = {
   sampleCode: z.string().min(1).max(50),
   name: z.string().min(1).max(200),
@@ -29,7 +50,10 @@ const SampleCoreFields = {
   concentration: z.number().nonnegative().optional(),
   concentrationUnit: z.string().max(20).optional(),
   workflowStatus: SampleWorkflowStatusSchema.default('prepared'),
-  location: z.string().max(100).optional()
+  location: z.string().max(100).optional(),
+  // R185-4b: multi-phase composition declaration
+  composition: z.array(CompositionEntryFields).max(20).optional(),
+  compositeType: CompositeTypeSchema.optional()
 };
 
 export const CreateSampleSchema = ProvBaseCreateInputSchema.extend(SampleCoreFields);

@@ -1,0 +1,16 @@
+# Lock files — vendored, not part of language stats
+bun.lock linguist-generated=true
+package-lock.json linguist-generated=true
+pnpm-lock.yaml linguist-generated=true
+
+# Binary assets — exclude from stats
+*.png binary
+*.jpg binary
+*.pdf binary
+public/pdf-worker/** linguist-vendored=true
+
+# Backup files
+*.bak* linguist-vendored=true
+
+# Compiled output
+functions/lib/** linguist-generated=true

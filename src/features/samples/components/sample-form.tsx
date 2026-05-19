@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { Sample } from '@/types/samples';
+import { MaterialKnowledgePanel } from './material-knowledge-panel';
 import { type SampleFormValues, sampleFormSchema } from '../schema';
 
 interface SampleFormProps {
@@ -58,6 +59,8 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       protocol: defaultValues?.protocol ?? ''
     }
   });
+
+  const watchedName = form.watch('name');
 
   const onSubmit = async (values: SampleFormValues) => {
     setSubmitting(true);
@@ -116,6 +119,9 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
             )}
           />
         </div>
+
+        {/* R183-3: Material Knowledge Panel */}
+        {watchedName && watchedName.length >= 2 && <MaterialKnowledgePanel formula={watchedName} />}
 
         <FormField
           control={form.control}

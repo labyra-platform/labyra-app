@@ -71,7 +71,7 @@ Outputs:
 
 **Fallback** (parse fail OR confidence < 0.7): `tier=2, feature='theory'` (Sonnet RAG default).
 
-**R174-6 keyword override**: regex pre-check bypasses classifier when message matches strong drafting keywords + section types → forces `tier=4`. Reason: Gemini 2.5-flash few-shot prompt unreliable for tier=4 emission.
+**R174-6 keyword override**: regex pre-check bypasses classifier when message matches strong drafting keywords + section types → forces `tier=4`. Reason: Gemini 3 Flash few-shot prompt unreliable for tier=4 emission.
 
 ### T1 — Lab Manager (tools)
 

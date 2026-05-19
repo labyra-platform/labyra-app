@@ -3,8 +3,9 @@
 > System architecture for Labyra Platform. For AI-specific design, see `AI_ARCHITECTURE.md`.
 > For dev workflow, see `WORKFLOW.md`. For coding rules, see `CLAUDE.md`.
 
-**Status**: Active (R160 in progress)
-**Last updated**: 2026-05-12
+**Status**: Active (R182 shipped, R183+ planning)
+**Last updated**: 2026-05-19
+<!-- @r182-arch-refresh -->
 
 ---
 
@@ -255,17 +256,19 @@ export async function createMaterial(data: NewMaterial) {
 
 ## 5. AI layer (summary — see AI_ARCHITECTURE.md for detail)
 
-### 5.1 Three-tier routing
+### 5.1 Six-tier routing (locked per ADR-019, R182)
 
-| Tier | Model | Use case | Cost/query |
-|---|---|---|---|
-| 1 | Gemini 2.5 Flash | Lab queries via tools (chemicals, bookings, compliance) | ~$0.003 |
-| 2 | Claude Sonnet 4.6 | Spectrum analysis with Python service | ~$0.06 |
-| 3 | Claude Opus 4.7 | Multi-step research synthesis with RAG | ~$0.30 |
-| Bonus | Claude Haiku 4.5 | Intent routing, classification, summarization | ~$0.001 |
+| Tier | Model | Use case | Cost/query | Status |
+|---|---|---|---|---|
+| T0 | Gemini Flash-Lite | Intent classifier + security shield (input scan) | ~$0.0001 | Live |
+| T1 | Gemini Flash-Lite | Lab ops queries via tools (chemicals, bookings) | ~$0.003 | Live |
+| T2 | Gemini 3 Flash | Spectrum analysis, paper classify (R178/R181-9), journal resolve | ~$0.001-0.06 | Live |
+| T3 | Claude Sonnet 4.6 | Theory chat, RAG synthesis, paper writing | ~$0.06 | Live |
+| T4 | Claude Sonnet 4.6 | Multi-step lab ops with tool chains | ~$0.10 | Live |
+| T5 | Claude Opus 4 | Complex reasoning, full-paper review | ~$0.30 | Live |
 
-Intent classification with Haiku 4.5 (dispatcher), expected mix: 60% T1, 30% T2, 10% T3.
-Average ~$0.04/query.
+Intent classification at T0 (Gemini Flash-Lite). Expected mix: 70% T1-T2, 25% T3-T4, 5% T5.
+Average ~$0.02/query. See ADR-019 (tier architecture), ADR-020 (cost controls), ADR-021 (inter-tier protocols).
 
 ### 5.2 RAG pipeline (port from labbook-bku R130-R142)
 
@@ -292,7 +295,7 @@ Every AI response writes to `/tenants/{tenantId}/aiProvenance/{messageId}`:
 ```typescript
 interface AIProvenance {
   conversationId: string;
-  tier: 1 | 2 | 3;
+  tier: 0 | 1 | 2 | 3 | 4 | 5;  // 6-tier per ADR-019
   model: string;
   tools_called: ToolCall[];
   rag_chunks_used: { paperId, chunkId, rerankScore }[];
@@ -483,6 +486,16 @@ firebase deploy --only functions                # when functions exist
 | 2026-05-11 | `_debug-auth` → `debug-auth` (no underscore) | Next.js ignores `_`-prefixed routes |
 | 2026-05-12 | Manual `pnpm snapshot` for agent context | Avoid committing 200+ snapshot files to repo |
 | 2026-05-12 | Storage region asia-southeast1 (Blaze) | Match Firestore + Cloud Functions region |
+| 2026-05-14 | XRD Tier 1+2 metrics + profile fitting | International-standard scientific output (R161) |
+| 2026-05-15 | Async Pub/Sub for paper processing | Vercel 60s timeout blocker (R167, ADR-018) |
+| 2026-05-17 | 6-tier AI architecture locked | ADR-019 — capability abstraction stable |
+| 2026-05-18 | Layer 2 orphan audit cron | ADR-026 — informational only, no auto-delete |
+| 2026-05-18 | Crossref + OpenAlex journal resolver | ADR-027 — normalize journal names from DOI/ISSN |
+| 2026-05-19 | OCR cache via GCS + SHA256 | ~$0.001/page saved on reprocess (R181) |
+| 2026-05-19 | Classify prompt v1.1 anti-passing-reference | 5 new rules prevent false positive material assignments (R181-9) |
+| 2026-05-19 | URL /api/measurements stays, Firestore stays /spectra | R181-11 — partial rename revealed during R182 debugging; full migration R190+ |
+| 2026-05-19 | FTIR reference library 29 cards seeded | R182 — NIST + Coates IR Table, schema via POST /api/references |
+| 2026-05-19 | ADR-028/029 proposed (security + testing) | R183+ batch: Mozilla 100/100, idempotency, 5-level security testing |
 
 ---
 
@@ -655,3 +668,66 @@ Continued from Section 8 above.
 - **Settings page:** tenant config
 
 See `ROADMAP.md` for the full ordered plan and `docs/handoff-r160-spectra.md` for session continuity.
+
+---
+
+## 12. R161-R182 Phase Additions (May 14 - May 19, 2026)
+
+This section captures structural additions since R160. ADRs for each are in `docs/adr/`.
+
+### 12.1 XRD analysis pipeline (R161, May 14)
+
+Tier 1+2 metrics: d-spacing, Scherrer crystallite size D, β width, micro-strain ε, dislocation density δ, crystallinity %, quality_metrics. Profile fitting: Gaussian / Lorentzian / Pseudo-Voigt with R² gating. Per-phase lattice + space group summary. Citation cache Protocol on Firestore (30-day TTL).
+
+Doc: `docs/scientific-methods/xrd-analysis.md`.
+
+### 12.2 Async paper processing pipeline (R167, May 15)
+
+Vercel `/api/papers/upload` and `/reprocess` publish to Pub/Sub topic `paper-processing`. Cloud Run worker `spectra-worker` subscribes via `spectra-worker-papers-push`. Processing 16-page paper in 16s, 3-page in 8s. Env `PAPER_QUEUE_BACKEND=pubsub` (rollback flip to `in-process`). REST API for Pub/Sub (gRPC fails on Vercel serverless). ADR-018.
+
+### 12.3 Auto-classify paper domain (R178-3, May 18)
+
+Taxonomy v1: 36 categories across 4 axes (13 APP + 9 MAT + 6 SYN + 5 CHAR + 3 META). Primary candidates = 25 slugs, subtopics = 20. Worker Step 1d via Gemini 3 Flash, ~$0.001/paper. Audit log `_audit_classify/{paperId}_{ts}`. UI: PaperDomainBadge + filter. ADR-025.
+
+R181-9 prompt v1.1: added rules 7-11 preventing passing-reference false positives. Input window 3000 → 5000 chars.
+
+Doc: `docs/scientific-methods/paper-domain-classification.md`.
+
+### 12.4 Layer 2 data integrity (R179, May 18)
+
+Cloud Function `auditOrphansWeekly` Sun 04:00 UTC. Scans all tenants, computes orphan set per collection. Writes to `_orphan_audit/{date}`. Informational only, no auto-delete. ADR-026.
+
+### 12.5 Journal extraction (R179-2, May 18)
+
+Worker Step 1e. Crossref lookup by DOI → OpenAlex fallback by ISSN → canonical journal name. Cache 90-day in `_journal_resolve_cache/{key}`. UI: PaperFilterPanel exposes journal filter. ADR-027.
+
+Doc: `docs/scientific-methods/journal-extraction.md`.
+
+### 12.6 PDF viewer R179-7 (May 18)
+
+react-pdf v10 + custom toolbar + fuse.js fuzzy title search + InfoSidebarConditional (hides right sidebar on /view pages). Rejected commercial viewers (react-pdf-viewer.dev, @react-pdf-kit/viewer).
+
+R181-2 to R181-8 hotfix series: decoupled ResizeObserver, fixed infinite re-render loop, fullscreen race fix, container width lock to parentElement.
+
+### 12.7 OCR cache (R181, May 19)
+
+GCS-backed OCR cache by SHA256 content hash. Path: `gs://{bucket}/ocr-cache/{sha256}.json`. Lifecycle: 365-day delete. Savings ~$0.001/page on reprocess (~$0.80 per 16-page paper reprocess).
+
+### 12.8 FTIR reference library (R182, May 19)
+
+29 functional group reference cards seeded into `tenants/{tid}/references` via `POST /api/references`. Sources: NIST WebBook + Coates IR Table. Categories: hydroxyl/water, carbonate, sulfate/nitrate/phosphate, silicate/aluminate, metal oxides, organic functional groups, specific materials (PFSA, GO, cellulose, MOF). Matching: ±15 cm⁻¹ tolerance, score ≥ 0.3 threshold. Surfaces via MultiCitationsPanel.
+
+Doc: `docs/scientific-methods/ftir-reference-library.md`.
+
+### 12.9 Proposed for R183+ (ADR-028/029)
+
+- **ADR-028**: Mozilla Observatory 100/100 security headers (8 HTTP headers + CSP nonce). Idempotency Key SHA-256. Feature Flag system. Backup/DR Cloud Function. MCP server MVP (3 tools: listChemicals, searchPapers, recentExperiments) — strategic pitch differentiator.
+- **ADR-029**: 5-level security testing. L1 static audit per PR. L2 weekly OWASP ZAP + Trivy. L3 manual auth testing. L4 AI red team (50+ prompt injection payloads). L5 deferred to pre-Series A.
+
+### 12.10 Removed / superseded from earlier sections
+
+- Section 5.1 three-tier table (R160 era) → six-tier R182 (above)
+- Section 5.3 provenance `tier: 1|2|3` → `0|1|2|3|4|5`
+- "Bonus tier Haiku 4.5" deprecated; Haiku 4.5 retained for migration cases only, default routing uses Gemini Flash family for T0-T2
+
+---

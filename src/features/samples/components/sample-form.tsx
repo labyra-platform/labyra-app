@@ -78,13 +78,17 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       const token = await user.getIdToken();
       const url = sampleId ? `/api/samples/${sampleId}` : '/api/samples';
       const method = sampleId ? 'PATCH' : 'POST';
+      // R185-hotfix3: inject required PROV-O fields for create
+      const payload = sampleId
+        ? values
+        : { ...values, preparedAt: Date.now(), preparedBy: user.uid };
       const res = await fetch(url, {
         method,
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(values)
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success(sampleId ? t('update') : t('create'));

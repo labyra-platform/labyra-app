@@ -451,7 +451,8 @@
         "core-shell": "Lõi-vỏ",
         "composite": "Composite"
       }
-    }
+    },
+    "lineageGraphTitle": "Sơ đồ lineage (PROV-O)"
   },
   "experiments": {
     "title": "Thí nghiệm",

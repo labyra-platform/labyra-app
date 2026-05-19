@@ -1,4 +1,7 @@
 'use client';
+
+import { IconChartDots3 } from '@tabler/icons-react';
+import { CrossSpectrumPanel } from '@/components/deviation/cross-spectrum-panel';
 import { useLocale, useTranslations } from 'next-intl';
 // R165-phase-1-oxlint: oxlint cleanup
 import { use } from 'react';
@@ -53,14 +56,18 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
         {/* R164-phase-8-9b: PROV-O lineage graph */}
         <section className='space-y-2'>
           <details>
-            <summary className='cursor-pointer text-sm font-medium hover:text-foreground text-muted-foreground'>
-              {`📊 Sơ đồ lineage (PROV-O)`}
+            <summary className='cursor-pointer text-sm font-medium hover:text-foreground text-muted-foreground flex items-center gap-2'>
+              <IconChartDots3 className='h-4 w-4' aria-hidden='true' />
+              {t('lineageGraphTitle')}
             </summary>
             <div className='mt-3'>
               <LineageGraph rootType='sample' rootId={id} maxDepth={3} />
             </div>
           </details>
         </section>
+
+        {/* R185-10c: Cross-spectrum inference */}
+        <CrossSpectrumPanel sampleId={id} />
       </div>
     </PageContainer>
   );

@@ -172,3 +172,80 @@ export interface DeviationAnalysis {
   fractionEstimates?: FractionEstimate[];
   rietveld?: RietveldResult | null;
 }
+
+/* ============================================================
+ * R185-10c: Cross-Spectrum Inference Engine (CSIE) result types
+ * mirrors worker src/csie/types.py
+ * ============================================================ */
+
+export interface EvidenceItem {
+  spectrum_id: string;
+  spectrum_type: string;
+  technique_strength: number;
+  match_quality: string;
+  intent_coverage: number;
+  hypotheses_count: number;
+  notable_findings: string[];
+}
+
+export type ConsistencyVerdict = 'confirmed' | 'partial' | 'missing' | 'conflict';
+
+export interface PhaseEvidence {
+  formula: string;
+  role: string;
+  declared_in_sample: boolean;
+  spectra_supporting: EvidenceItem[];
+  spectra_missing: string[];
+  spectra_conflicting: string[];
+  consistency_score: number;
+  verdict: ConsistencyVerdict;
+  reasoning: string[];
+}
+
+export interface CandidateCause {
+  rule_id: string;
+  name: string;
+  confidence: number;
+  score: number;
+  evidence: string[];
+  citation_doi?: string | null;
+}
+
+export interface DiscriminationExperiment {
+  technique: string;
+  measurement: string;
+  discriminates_between: string[];
+  expected_outcomes: Record<string, string>;
+  citation_doi?: string | null;
+}
+
+export interface AmbiguousObservation {
+  observation_id: string;
+  description: string;
+  severity: 'info' | 'warning' | 'error';
+  candidates: CandidateCause[];
+  discrimination_experiments: DiscriminationExperiment[];
+  notes: string[];
+}
+
+export interface ConsistencyCheck {
+  sample_id_hash: string;
+  tenant_id_hash: string;
+  measurements_analyzed: number;
+  spectrum_types_present: string[];
+  declared_phases: PhaseEvidence[];
+  unexpected_observations: string[];
+  overall_coherence_score: number;
+  conflicts_count: number;
+  /** R185-9: injected by pipeline if ambiguous observations detected */
+  ambiguous_observations?: AmbiguousObservation[];
+}
+
+export interface CSIEResult {
+  schema_version: number;
+  status: 'ok' | 'insufficient_data' | 'rate_limited' | 'failed';
+  consistency: ConsistencyCheck | null;
+  notes: string[];
+  computed_at: string;
+  idempotency_key: string;
+}

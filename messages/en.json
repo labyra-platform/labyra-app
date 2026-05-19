@@ -451,7 +451,8 @@
         "core-shell": "Core-shell",
         "composite": "Composite"
       }
-    }
+    },
+    "lineageGraphTitle": "Lineage graph (PROV-O)"
   },
   "experiments": {
     "title": "Experiments",

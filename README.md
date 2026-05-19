@@ -1,36 +1,72 @@
-# Labyra App
+# Labyra
 
-AI-native lab management platform for materials science research. Multi-tenant SaaS rebuild
-of [labbook-bku](https://github.com/emnam009009/labbook-bku) on Next.js 16 + Firebase.
+**AI-native international SaaS platform for materials science lab management.**
+Multi-tenant, multi-technique spectroscopy + sample workflow + deviation analysis +
+AI-assisted interpretation. Built for nano-materials researchers, but applicable
+across solid-state chemistry, semiconductors, catalysis, and energy materials.
 
-> **For developers**: start with [`AGENTS.md`](./AGENTS.md) to bootstrap your understanding.
-> Then read [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md), [`docs/WORKFLOW.md`](./docs/WORKFLOW.md), and
-> [`CLAUDE.md`](./CLAUDE.md).
+> **For developers**: start with [`AGENTS.md`](./AGENTS.md), then read
+> [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md),
+> [`docs/WORKFLOW.md`](./docs/WORKFLOW.md), and [`CLAUDE.md`](./CLAUDE.md).
+>
+> First tenant: **Lab Vật liệu BKU** (HCMC University of Technology).
+> Legacy codebase: [labbook-bku](https://github.com/emnam009009/labbook-bku) — superseded.
+
+## What Labyra does
+
+- **Multi-technique spectroscopy** — XRD, Raman, FTIR, UV-Vis, PL, TGA, with vendor-aware parsers
+- **Sample lineage (PROV-O)** — Material → Sample → Experiment → DataAsset, end-to-end traceable
+- **Multi-phase deviation analysis** — declare composite composition, get per-phase match + intent reconciliation
+- **Quantitative phase analysis** — RIR (Chung), Direct Comparison (Klug-Alexander), Rietveld refinement
+- **Crystallinity auto-classification** — bulk / nanocrystalline / amorphous, with adaptive tolerance
+- **Physics rules engine** — 15 rules (R1-R15) detecting strain, phonon confinement, charge transfer,
+  vdW stacking, defects, etc. — each with verified DOI citation
+- **Cross-spectrum inference** — fuse evidence from Raman + XRD + UV-Vis + PL on same sample (R185-8, planned)
+- **Citation-grounded hypotheses** — every claim links to peer-reviewed source
+- **AI interpretation** — 6-tier model stack (Gemini Flash → Claude Sonnet 4.6 → Opus 4)
+- **Reference library** — 29 FTIR + 25 Raman cards, 20 curated Materials Project structures
+- **Paper RAG (planned)** — OpenAlex sync + Pinecone semantic search
 
 ## Stack
 
 - **Framework**: Next.js 16 (App Router) + TypeScript strict
-- **UI**: shadcn/ui (Radix + Tailwind v4 + CSS Variables)
+- **UI**: shadcn/ui (Radix + Tailwind v4 + CSS Variables), Tabler icons
 - **State**: Zustand (UI) + TanStack Query v5 (server state)
+- **Forms**: React Hook Form + Zod (mandatory shadcn Form pattern)
 - **Auth**: Firebase Auth (Google + Email/Password) + custom claims (tenantId, role)
 - **Backend**:
-  - Firestore (multi-tenant `/tenants/{tenantId}/...` model)
+  - Firestore (multi-tenant `/tenants/{tenantId}/...`, global `/materialProfiles/{formula}`)
   - Realtime Database (chat streaming, presence)
-  - Storage (papers, spectra files)
-  - Cloud Functions (asia-southeast1) — async pipelines
-  - Next.js Route Handlers — synchronous AI proxies
-- **Charts**: recharts (dashboard) + Plotly.js (scientific) + Three.js (3D, Phase D) + D3.js (lineage)
-- **AI**: Anthropic Claude (Tier 2-3 + Haiku dispatcher) + Gemini (Tier 1) + Voyage embed/rerank
+  - Cloud Storage (papers, spectra files)
+  - Pub/Sub (`paper-processing`, `spectra-analysis` queues)
+  - Firebase Functions (Node 24, asia-southeast1) — cron jobs, lightweight async
+  - Cloud Run Python worker — heavy spectra analysis, AI orchestration, Rietveld
+- **Charts**: recharts (dashboard) + Plotly.js (scientific) + Three.js (3D) + D3.js (lineage)
+- **AI 6-tier stack** (ADR-019):
+  - T0–T2: Gemini Flash-Lite / Flash (dispatch, classify, summarize, $0.001/req)
+  - T3–T4: Claude Sonnet 4.6 (tool calling, structured analysis)
+  - T5: Claude Opus 4 (audit, deep reasoning)
+- **Embeddings**: Voyage embed-3-large + rerank-2.5
+- **Scientific**: pymatgen + lmfit + scipy (Rietveld, profile fitting); NIST XCOM (MAC tables)
 - **i18n**: next-intl (path-based `/en`, `/vi`)
 - **Lint**: oxlint + oxfmt + Husky + lint-staged
-- **Tests**: Vitest (unit) + Playwright (E2E, Phase 6)
-- **Deploy**: Vercel (frontend) + Firebase (backend) + Cloud Run (Python, future)
+- **Tests**: Vitest (unit) + Playwright (E2E, planned)
+- **Deploy**: Vercel (frontend) + Firebase (functions, hosting) + Cloud Run (Python worker)
+
+## Repos
+
+| Repo | Role |
+|------|------|
+| [labyra-platform/labyra-app](https://github.com/labyra-platform/labyra-app) | Frontend + API routes (this repo) |
+| [emnam009009/labyra-spectra-worker](https://github.com/emnam009009/labyra-spectra-worker) | Cloud Run Python worker (parsers, deviation, AI orchestration) |
+| labyra-landing | Marketing site, [labyra-landing.web.app](https://labyra-landing.web.app) |
+| [emnam009009/labbook-bku](https://github.com/emnam009009/labbook-bku) | Legacy v1 codebase (superseded) |
 
 ## Development
 
 ```bash
 pnpm install
-cp env.example.txt .env.local             # then fill Firebase creds
+cp env.example.txt .env.local             # fill Firebase creds + NEXT_PUBLIC_WORKER_URL
 pnpm snapshot                             # generate agent context
 pnpm dev                                  # localhost:3000
 ```
@@ -39,5 +75,84 @@ See [`docs/WORKFLOW.md`](./docs/WORKFLOW.md) for full setup, patch workflow, and
 
 ## Status
 
-R160 frontend rebuild in progress. Track phase progress in [`ROADMAP.md`](./ROADMAP.md)
-or run `pnpm snapshot && cat .claude/snapshot.md`.
+**Current**: R185 deviation analysis suite complete (May 2026)
+
+### R185 — Multi-phase deviation analysis engine
+
+| Phase | Capability | Status |
+|-------|------------|--------|
+| R185-1 | Hungarian peak matching | ✓ |
+| R185-2 | 10 single-phase physics rules (R1-R10) | ✓ |
+| R185-4 | Multi-phase greedy matcher + composition UI | ✓ |
+| R185-5 | Crystallinity classifier + adaptive tolerance | ✓ |
+| R185-6 | 5 composite physics rules (R11-R15) | ✓ |
+| R185-7/7b | Fraction estimation: RIR + Direct Comparison (Klug-Alexander) | ✓ |
+| R185-7c-1/2 | Rietveld refinement (Caglioti UVW + Pseudo-Voigt + Chebyshev) | ✓ |
+| R185-7c-3 | Full R-factors + difference plots | with R185-10 UI |
+| R185-8 | Cross-Spectrum Inference Engine (CSIE) | next |
+| R185-9 | Ambiguous hypothesis handler | pending |
+| R185-10 | DeviationPanel UI | pending |
+
+### Earlier milestones
+
+- **R184** (May 18) — Materials Project structure sync (20 curated polymorphs)
+- **R183** (May 18-19) — Raman + FTIR reference libraries (54 ref cards total)
+- **R179-R182** (May 18-19) — Orphan audit cron, journal extract, soft archive,
+  Gemini 3 Flash thinking adapter, react-pdf v10 viewer with fuzzy search
+- **R178** (May 18) — Auto-classify paper domain taxonomy v1 (36 categories)
+- **R177** (May 17) — Paper processing migration to Gemini 3 Flash + Google Books resolver
+- **R167** (May 15) — Async Pub/Sub end-to-end for paper processing (ADR-018)
+- **R161-R166** (May 14-15) — XRD Tier 1+2 metrics (d-spacing, Scherrer D, FWHM,
+  crystallinity, profile fitting), citation cache, Lineage Explorer D3
+- **R160** (May 12-13) — Foundation: Next.js 16 + Firebase Auth + shadcn + Tremor + Tabler icons
+
+Detailed log: see commit history.
+
+## Scientific documentation
+
+Every algorithm in Labyra is documented at
+[`docs/scientific-methods/`](./docs/scientific-methods/) with formula,
+physical meaning, DOI citations, parameters, edge cases, and implementation path.
+
+Coverage:
+- [Peak matching](docs/scientific-methods/deviation-peak-matching.md) (Hungarian algorithm)
+- [Single-phase rules R1-R10](docs/scientific-methods/physics-rules-single-phase.md)
+- [Composite rules R11-R15](docs/scientific-methods/physics-rules-composite.md)
+- [Multi-phase matching](docs/scientific-methods/multi-phase-matching.md)
+- [Crystallinity classification](docs/scientific-methods/crystallinity-classification.md)
+- [Phase fraction estimation](docs/scientific-methods/phase-fraction-estimation.md)
+- [Rietveld refinement](docs/scientific-methods/rietveld-refinement.md)
+- [XRD analysis](docs/scientific-methods/xrd-analysis.md)
+- [Raman reference library](docs/scientific-methods/raman-reference-library.md)
+- [FTIR reference library](docs/scientific-methods/ftir-reference-library.md)
+- [Citation matching](docs/scientific-methods/citation-matching.md)
+- [Journal extraction](docs/scientific-methods/journal-extraction.md)
+- [Paper domain classification](docs/scientific-methods/paper-domain-classification.md)
+
+## Architecture decisions
+
+ADRs at [`docs/adr/`](./docs/adr/) — read 015 through 027 before architectural decisions.
+
+Key ADRs:
+- **ADR-015** — Stage 1 security model (Firestore rate limiting, CSRF in proxy.ts, no Redis)
+- **ADR-016** — PROV-O entity model for materials/samples/experiments
+- **ADR-018** — Pub/Sub cutover for paper processing
+- **ADR-019** — 6-tier capability abstraction for AI models
+- **ADR-020** — Cost controls + Cost Guard v2
+- **ADR-021** — Inter-tier protocols
+- **ADR-025** — Auto-classify paper domain taxonomy
+- **ADR-026/027** — Layer 2 orphan audit + soft archive
+
+## License compliance
+
+Labyra implements all spectroscopy algorithms from scratch under our own license.
+See [`docs/algorithm-attributions.md`](./docs/algorithm-attributions.md) for full audit.
+
+- ✓ Self-implemented Rietveld, multi-phase matcher, peak matching, profile fitting
+- ✓ Dependencies: pymatgen (MIT), lmfit (BSD), scipy (BSD), mp-api (BSD)
+- ✗ NOT used: Profex (GPL v2 viral), BGMN (proprietary), GSAS-II (DOE restricted)
+
+## Contributing
+
+This is a single-tenant deployment at present. Contribution model TBD when
+Labyra opens to additional labs (Stage 2 trigger: 20+ tenants, ADR-015).

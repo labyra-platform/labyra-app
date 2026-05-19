@@ -78,6 +78,20 @@ export interface SpectrumMetadata {
   sampleId: string;
   sampleLabel?: string; // denormalized
   chemicalFormula?: string;
+  // R185-4e: multi-phase composition snapshot
+  composition?: Array<{
+    formula: string;
+    role: 'matrix' | 'core' | 'active' | 'shell' | 'support' | 'filler' | 'dopant' | 'substrate';
+    nominalFraction?: number;
+    formationMethod?: string;
+  }>;
+  compositeType?:
+    | 'single-phase'
+    | 'heterostructure'
+    | 'doped'
+    | 'mixed-phase'
+    | 'core-shell'
+    | 'composite';
   profileFunction?: string; // R161-phase-E: gaussian/lorentzian/pseudo_voigt
   zeroShift?: number; // R161-phase-E: 2θ offset correction (°) // user-provided for citation lookup (e.g. 'WO3')
   anode?: string; // X-ray anode for XRD: Cu/Mo/Co/Cr/Fe/Ag (default Cu)

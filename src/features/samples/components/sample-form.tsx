@@ -244,41 +244,7 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
         />
 
         {/* R185-4b: composition section */}
-        <div className='space-y-4 rounded-md border border-border bg-muted/20 p-4'>
-          <FormField
-            control={form.control}
-            name='compositeType'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('compositeType') ?? 'Composite type'}</FormLabel>
-                <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder='Single-phase / Heterostructure / Doped …' />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {[
-                      'single-phase',
-                      'heterostructure',
-                      'doped',
-                      'mixed-phase',
-                      'core-shell',
-                      'composite'
-                    ].map((v) => (
-                      <SelectItem key={v} value={v}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <CompositionField form={form} />
-        </div>
+        <CompositionField form={form} />
 
         <div className='flex justify-end gap-2'>
           <Button type='button' variant='outline' onClick={() => router.back()}>

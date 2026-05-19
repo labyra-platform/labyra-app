@@ -12,10 +12,14 @@
 - `docs/strategy/market-research.md` — TAM/SAM/SOM, LIMS competitive analysis
 - `docs/strategy/consumer-psychology.md` — UTAUT/TAM/Fogg model application
 - `docs/scientific-methods/xrd-analysis.md` — XRD algorithms & formulas reference
+- `docs/scientific-methods/ftir-reference-library.md` — FTIR reference card library (R182)
+- `docs/scientific-methods/citation-matching.md` — Citation resolver strategy
+- `docs/scientific-methods/journal-extraction.md` — Crossref/OpenAlex journal resolver (R179)
+- `docs/scientific-methods/paper-domain-classification.md` — Taxonomy v1 classify (R178)
 - `docs/labyra-experiment-database-report.md` — Database architecture for experiment data (storage tier per data type)
 - `docs/database-stage-2-plan.md` — Stage 2 migration roadmap (GCS + BigQuery + spectra pipeline)
 - `docs/accessibility-audit.md` — WCAG 2.2 AA checklist
-- `docs/handoff-r160-spectra.md` — Latest session handoff (Phase 1 spectra shipped)
+- `docs/round-r182-handoff.md` — Latest session handoff (R179-R182 shipped)
 
 > This file is read by AI agents (Claude, Copilot, Cursor) before making any changes.
 > Follow ALL rules below strictly. No exceptions unless explicitly noted.

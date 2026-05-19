@@ -1,13 +1,40 @@
-# Labyra AI Architecture v3.1
+# Labyra AI Architecture v3.2
 
 > 6-tier production AI system for materials science lab management.
 > See ADR-019 (Tier Architecture), ADR-020 (Cost Controls), ADR-021 (Inter-tier).
 
-<!-- R175-docs-update-2026-05-16 -->
+<!-- R182-docs-update-2026-05-19 -->
 
-**Version**: 3.1 (R175)
-**Last updated**: 2026-05-16
+**Version**: 3.2 (R182)
+**Last updated**: 2026-05-19
 **State**: Production (all 6 tiers live)
+
+
+## Changelog (recent rounds)
+
+### R182 (2026-05-19) — FTIR reference library
+- 29 functional group cards seeded into `tenants/{tid}/references` (NIST + Coates IR Table)
+- MultiCitationsPanel now surfaces library matches for FTIR analyses
+- Doc: `docs/scientific-methods/ftir-reference-library.md`
+
+### R181 (2026-05-19) — OCR cache + classify v1.1 + path fix
+- OCR results cached in GCS by SHA256 content hash (~$0.001/page saved)
+- Classify prompt v1.1: anti-passing-reference rules, input 3000→5000 chars
+- Citation sort by confidence priority (doi-exact → manual → title-fuzzy → unverified)
+- Critical fix: Firestore path measurements→spectra (URL rename was partial)
+
+### R180 (2026-05-18) — Cancel + Cmd+K
+- Cancel endpoint sets status=cancelled directly (skip transient cancelling)
+- kbar Cmd+K paper search with top 30 recent papers
+
+### R179 (2026-05-18) — Orphan audit + journal extract + react-pdf
+- Layer 2 data integrity: weekly orphan audit cron (ADR-026)
+- Worker Step 1e: journal resolve via Crossref + OpenAlex (ADR-027)
+- react-pdf v10 viewer + fuzzy title search (fuse.js)
+- Gemini 3 Flash thinking_level adapter (replaces deprecated thinking_budget)
+
+---
+
 
 ---
 

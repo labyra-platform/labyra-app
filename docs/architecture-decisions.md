@@ -377,3 +377,76 @@ remain deferred.
 - Upstash Redis (rejected: Stage 2, forbidden Stage 1 per `labyra-strategy.md`)
 - In-memory LRU (rejected: not shared across Vercel instances, less reliable)
 - Double-submit CSRF token (deferred to Stage 3 SOC2/SAML)
+---
+
+## ADR-026: Layer 2 Data Integrity — Orphan Audit Cron
+
+**Date**: 2026-05-18 (R179)
+**Status**: Accepted
+**Context**: Multi-tenant Firestore has many parent-child relationships (paper → spectra, experiment → samples). When a parent is deleted (soft or hard), child docs can become orphaned and silently consume storage / leak across queries.
+
+**Decision**: Weekly Cloud Function `auditOrphansWeekly` (Sunday 04:00 UTC) scans all tenants, computes orphan set per collection, writes report to `_orphan_audit/{date}`.
+
+**Consequences**:
+- ~$0.10/week Firestore reads per tenant (full collection scan)
+- Audit is informational — does NOT auto-delete. Operator reviews + cleans manually.
+- Surfaces tenant-level data drift before customer complaints.
+
+**Alternatives**: Real-time delete cascade (rejected: complex, fail-prone); Firestore triggers (rejected: doesn't catch existing orphans).
+
+---
+
+## ADR-027: Worker Journal Extraction Strategy
+
+**Date**: 2026-05-18 (R179-2)
+**Status**: Accepted
+**Context**: Paper metadata extraction (R177) had `journal` field optional. PaperFilterPanel UI needs reliable journal filter — but Gemini-extracted journal name is inconsistent ("J. Phys. Chem." vs "Journal of Physical Chemistry").
+
+**Decision**: Worker Step 1e — Crossref lookup by DOI (preferred) → OpenAlex fallback by ISSN → canonical journal name. Cache results in Firestore `_journal_resolve_cache/{doi_or_issn}` 90-day TTL.
+
+**Consequences**:
+- +1–2s latency per paper (Crossref free API, no rate limit issues at our scale)
+- Free APIs may go down — fail open (return Gemini extracted name if both fail)
+- Cache hit ratio ~70% expected (papers from same journals are common)
+
+**Alternatives**: Manual journal normalization table (rejected: stale fast); paid Scopus API (rejected: expensive Stage 1).
+
+---
+
+## ADR-028: Architecture Upgrade & Security Hardening (Proposed)
+
+**Date**: 2026-05-19 (R182 planning)
+**Status**: Proposed
+**Context**: Pre-launch review of 5 architecture upgrade strategies (Event-Driven Agentic, CQRS, mTLS, MCP, Idempotency) + 7 supplemental concerns (Feature Flag, Tenant Isolation Test, Backup/DR, Observability, Trust Layer Merkle, Audit Log, AI Safety Net). Mozilla Observatory current grade C/C+ (45–55/100), target 100/100.
+
+**Decision summary**:
+- **Ship R183**: Idempotency Key, Feature Flag, Mozilla 100/100 security headers
+- **Ship R184**: Tenant Isolation test suite, Backup/DR Cloud Function
+- **Ship R185–R187**: MCP server MVP, Observability v1, Event-Driven Agentic extension
+- **Defer R200+**: CQRS toàn hệ thống, mTLS, Trust Layer Merkle
+- **Reject**: Redis rate limiter Stage 2 (chưa hit ngưỡng)
+
+**Full text**: `docs/adr/ADR-028-architecture-upgrade-and-security.md`
+
+**Consequences**: ~2 weeks engineering for R183 batch. Mozilla 100/100 is investor-facing artifact + protection vs OWASP Top 10. MCP server is strategic pitch differentiator.
+
+---
+
+## ADR-029: Graduated Security Testing & Attack Drill (Proposed)
+
+**Date**: 2026-05-19 (R182 planning)
+**Status**: Proposed
+**Context**: Need pre-launch security validation. 5-level test framework with clear legal boundaries (Vietnamese Cybersecurity Law 2018 Art. 8 — only test owned systems).
+
+**Decision**:
+- **L1 Static Audit**: every PR (pnpm audit, OSV scanner, Snyk)
+- **L2 Automated Vuln Scan**: weekly (OWASP ZAP, Trivy container scan)
+- **L3 Authenticated App Test**: pre-release (Burp Suite Community, manual session/auth testing)
+- **L4 AI Red Team Drill**: pre-release + monthly (50+ prompt injection payloads, role escalation, data exfiltration via tool calls)
+- **L5 Professional Pen-test**: pre-Series A only ($3K–$50K external firm)
+
+**Full text**: `docs/adr/ADR-029-graduated-security-testing.md`
+
+**Consequences**: L1+L2 zero-cost; L4 is differentiator artifact for investor due diligence (most AI SaaS don't test prompt injection seriously). L5 deferred until funding or enterprise customer require.
+
+---

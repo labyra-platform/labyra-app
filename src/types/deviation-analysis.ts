@@ -134,12 +134,17 @@ export interface RietveldPhase {
   formula_units_per_cell?: number | null;
   crystallite_size_nm?: number | null;
   crystallite_size_uncertainty_nm?: number | null;
+  /** R185-7c-3: per-phase Bragg R-factor (%) */
+  r_bragg?: number | null;
 }
 
 export interface RietveldResult {
   converged: boolean;
   n_iterations: number;
   r_wp?: number | null;
+  r_p?: number | null;
+  r_exp?: number | null;
+  gof?: number | null;
   chi_squared?: number | null;
   phases: RietveldPhase[];
   profile?: {
@@ -153,6 +158,15 @@ export interface RietveldResult {
     coefficients: number[];
   } | null;
   notes: string[];
+  /** R185-7c-3: difference plot data (downsampled ~200 pts) */
+  difference_plot?: {
+    x: number[];
+    y_obs: number[];
+    y_calc: number[];
+    diff: number[];
+  } | null;
+  /** R185-7c-3: per-phase contribution arrays (downsampled) */
+  phase_contributions?: Record<string, number[]> | null;
 }
 
 export interface DeviationAnalysis {

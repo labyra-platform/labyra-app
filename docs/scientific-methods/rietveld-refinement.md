@@ -93,19 +93,62 @@ neutron powder diffraction data using the Rietveld method. *Journal of Applied
 Crystallography* **20**(6): 467-474.
 DOI: [10.1107/S0021889887087090](https://doi.org/10.1107/S0021889887087090)
 
-## Reliability Factors
+## Reliability Factors (R185-7c-2 / R185-7c-3)
 
 ### Weighted profile R-factor
 $$
 R_{\text{wp}} = \sqrt{\frac{\sum_n w_n (y_{\text{obs},n} - y_{\text{calc},n})^2}{\sum_n w_n y_{\text{obs},n}^2}} \cdot 100\%
 $$
 
-Quality interpretation:
-- $R_{\text{wp}} < 10\%$: good fit
-- $R_{\text{wp}}$ 10-20%: acceptable for non-publication
-- $R_{\text{wp}} > 20\%$: poor, recheck phases or instrument params
+### Unweighted profile R-factor
+$$
+R_p = \frac{\sum_n |y_{\text{obs},n} - y_{\text{calc},n}|}{\sum_n y_{\text{obs},n}} \cdot 100\%
+$$
 
-R_p, R_exp, GoF, R_Bragg per-phase, and difference plots scheduled for R185-7c-3.
+Useful as cross-check on $R_{\text{wp}}$: large divergence indicates weighting bias.
+
+### Expected R-factor (statistical floor)
+$$
+R_{\text{exp}} = \sqrt{\frac{N - P}{\sum_n w_n y_{\text{obs},n}^2}} \cdot 100\%
+$$
+
+Where $N$ = number of data points, $P$ = number of refined parameters.
+This is the statistical lower bound for $R_{\text{wp}}$.
+
+### Goodness of Fit (Reduced chi-squared)
+$$
+\text{GoF} = \chi^2_\nu = \frac{R_{\text{wp}}}{R_{\text{exp}}}
+$$
+
+Quality interpretation (Toby 2006):
+- $\text{GoF} < 2$: excellent fit
+- $\text{GoF}$ 2-4: acceptable
+- $\text{GoF} > 4$: poor — model is missing something
+
+### Per-phase Bragg R-factor
+$$
+R_{B,i} = \frac{\sum_{k \in i} |I_{\text{obs},k} - I_{\text{calc},k}|}{\sum_{k \in i} I_{\text{obs},k}} \cdot 100\%
+$$
+
+Where the sum runs over Bragg peaks belonging to phase $i$. Diagnoses whether
+a particular phase is poorly fit even if global $R_{\text{wp}}$ is acceptable.
+
+### Difference plot
+
+Labyra outputs a downsampled (~200 points) difference array:
+$$
+\Delta(2\theta_n) = y_{\text{obs},n} - y_{\text{calc},n}
+$$
+
+UI renders this below the observed/calculated overlay, on a separate y-axis.
+Systematic residuals (e.g., consistent positive deviation around a 2θ region)
+indicate missing phases or unmodeled features.
+
+### Per-phase contribution arrays
+
+For multi-phase samples, each phase's scaled calculated pattern $s_i \cdot \text{pattern}_i$
+is exposed separately, allowing UI to overlay individual phase contributions
+on the chart for visual decomposition verification.
 
 ## Crystallite Size from Refined Profile
 

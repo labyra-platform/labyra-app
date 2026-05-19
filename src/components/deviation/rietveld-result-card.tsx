@@ -14,6 +14,7 @@
 import { IconChartHistogram } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DifferencePlot } from '@/components/deviation/difference-plot';
 import { formatFormula } from '@/lib/utils/format-formula';
 import { cn } from '@/lib/utils';
 import type { RietveldResult } from '@/types/deviation-analysis';
@@ -55,6 +56,14 @@ export function RietveldResultCard({ rietveld }: RietveldResultCardProps) {
           <Badge variant='outline' className={cn('ml-2 text-xs', quality.className)}>
             {quality.label}
           </Badge>
+          {!rietveld.converged && (
+            <Badge
+              variant='outline'
+              className='text-xs bg-destructive/10 text-destructive border-destructive/30'
+            >
+              not converged
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className='space-y-4'>
@@ -126,6 +135,12 @@ export function RietveldResultCard({ rietveld }: RietveldResultCardProps) {
                     <th className='py-2 pr-2 font-medium'>Formula</th>
                     <th className='py-2 px-2 font-medium text-right'>Mass %</th>
                     <th className='py-2 px-2 font-medium text-right'>Size (nm)</th>
+                    <th
+                      className='py-2 px-2 font-medium text-right'
+                      title='Per-phase Bragg R-factor'
+                    >
+                      R<sub>B</sub>
+                    </th>
                     <th className='py-2 px-2 font-medium text-right'>V (Å³)</th>
                     <th className='py-2 pl-2 font-medium text-right'>Z</th>
                   </tr>
@@ -168,6 +183,14 @@ export function RietveldResultCard({ rietveld }: RietveldResultCardProps) {
               </table>
             </div>
           </div>
+        )}
+
+        {/* R185-10d-1: Difference plot */}
+        {rietveld.difference_plot && (
+          <DifferencePlot
+            data={rietveld.difference_plot}
+            phaseContributions={rietveld.phase_contributions ?? null}
+          />
         )}
 
         {/* Notes */}

@@ -132,6 +132,13 @@ export async function POST(request: Request) {
       headers: { 'content-type': 'application/json' }
     });
   }
+  // H2: length cap — prevent prompt injection via oversized input
+  if (body.message.length > 4000) {
+    return new Response(JSON.stringify({ error: 'message_too_long', maxLength: 4000 }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' }
+    });
+  }
 
   const userText = body.message;
   const db = getAdminFirestoreService();
@@ -213,11 +220,18 @@ export async function POST(request: Request) {
             year?: number;
             doi?: string;
           };
+          // H2: strip control chars + truncate to prevent prompt injection
+          const sanitize = (s: string, max: number) =>
+            s.replace(/[\x00-\x1f<>]/g, '').slice(0, max);
           const authorsStr =
-            (d.authors ?? []).slice(0, 2).join(', ') +
-            ((d.authors?.length ?? 0) > 2 ? ' et al.' : '');
+            (d.authors ?? [])
+              .slice(0, 2)
+              .map((a) => sanitize(a, 100))
+              .join(', ') + ((d.authors?.length ?? 0) > 2 ? ' et al.' : '');
           const yearStr = d.year ? ` (${d.year})` : '';
-          return `[${i + 1}] ${authorsStr}${yearStr} — ${d.title ?? 'Untitled'}${d.doi ? ` [DOI: ${d.doi}]` : ''}`;
+          const title = sanitize(d.title ?? 'Untitled', 256);
+          const doi = d.doi ? sanitize(d.doi, 100) : null;
+          return `[${i + 1}] ${authorsStr}${yearStr} — ${title}${doi ? ` [DOI: ${doi}]` : ''}`;
         });
       if (scopedPapers.length > 0) {
         scopeSystemBlock = [

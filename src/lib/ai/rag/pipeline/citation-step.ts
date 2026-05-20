@@ -36,6 +36,8 @@ export interface CitationStepResult {
   citationsCreated: number;
   resolutionsLinked: number;
   apiFailures: number;
+  /** R186-1: DOIs skipped because they resolved to nothing (likely junk). */
+  unresolvableSkipped?: number;
 }
 
 function log(event: string, fields: Record<string, unknown>): void {
@@ -92,7 +94,8 @@ export async function runCitationStep(input: CitationStepInput): Promise<Citatio
     doisFound: 0,
     citationsCreated: 0,
     resolutionsLinked: 0,
-    apiFailures: 0
+    apiFailures: 0,
+    unresolvableSkipped: 0
   };
 
   log('extract_start', { paperId: paper.id });

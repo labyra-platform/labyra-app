@@ -97,3 +97,57 @@ export function extractDoisFromText(
 
   return results;
 }
+
+/**
+ * Extract the paper's OWN DOI (not its cited references).
+ *
+ * Scans only the front matter — text BEFORE the references section — where a
+ * paper's own DOI normally appears (header, title block, "Article DOI:",
+ * journal stamp, "https://doi.org/..."). Returns the first high-confidence DOI
+ * found there, or null.
+ *
+ * Heuristics (in priority order):
+ *   1. Explicit "doi.org/" or "dx.doi.org/" URL in front matter
+ *   2. "doi:" / "DOI:" / "Article DOI" / "https://doi.org" labelled line
+ *   3. First bare 10.xxxx/ DOI in the first ~3000 chars (title/abstract zone)
+ *
+ * This is intentionally conservative — a wrong own-DOI is worse than none.
+ *
+ * @phase R186-1
+ */
+export function extractPaperOwnDoi(fullText: string): string | null {
+  if (!fullText || typeof fullText !== 'string') return null;
+
+  const refStart = findReferencesSectionStart(fullText);
+  // Front matter = everything before references; if no refs section, use first 5000 chars
+  const frontMatter = refStart >= 0 ? fullText.slice(0, refStart) : fullText.slice(0, 5000);
+
+  // 1. doi.org URL (highest confidence)
+  const urlRe =
+    /https?:\/\/(?:dx\.)?doi\.org\/(10\.\d{4,9}\/[-_;()/:a-zA-Z0-9.]+?)(?=[\s"'<>\])}]|$)/i;
+  const urlMatch = frontMatter.match(urlRe);
+  if (urlMatch?.[1]) {
+    const doi = urlMatch[1].replace(/[.,;)\]\s]+$/, '');
+    if (DOI_REGEX.test(doi)) return doi;
+  }
+
+  // 2. Labelled "doi:" / "Article DOI:" (medium confidence)
+  const labelRe =
+    /(?:article\s+)?doi[:\s]+\s*(10\.\d{4,9}\/[-_;()/:a-zA-Z0-9.]+?)(?=[\s"'<>\])}]|$)/i;
+  const labelMatch = frontMatter.match(labelRe);
+  if (labelMatch?.[1]) {
+    const doi = labelMatch[1].replace(/[.,;)\]\s]+$/, '');
+    if (DOI_REGEX.test(doi)) return doi;
+  }
+
+  // 3. First bare DOI in title/abstract zone (first 3000 chars) — lower confidence
+  const titleZone = frontMatter.slice(0, 3000);
+  DOI_SCAN_REGEX.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = DOI_SCAN_REGEX.exec(titleZone)) !== null) {
+    let doi = m[0].replace(/[.,;)\]\s]+$/, '');
+    if (DOI_REGEX.test(doi)) return doi;
+  }
+
+  return null;
+}

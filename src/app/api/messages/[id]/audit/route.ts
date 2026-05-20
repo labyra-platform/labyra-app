@@ -37,9 +37,13 @@ export async function POST(
   }
   const token = authHeader.slice(7);
   let tenantId: string | null;
+  let callerUid: string;
+  let callerRole: string | undefined;
   try {
     const decoded = await getAdminAuthService().verifyIdToken(token);
     tenantId = getTenantIdFromToken(decoded);
+    callerUid = decoded.uid;
+    callerRole = (decoded as { role?: string }).role;
   } catch {
     return NextResponse.json({ error: 'invalid_token' }, { status: 401 });
   }
@@ -61,6 +65,21 @@ export async function POST(
   }
 
   const db = getAdminFirestoreService();
+
+  // C6: enforce conversation ownership. tenantId match is NOT sufficient — a
+  // member could otherwise audit another member's private conversation in the
+  // same tenant. Caller must own the conversation, or be admin/superadmin.
+  const convRef = db.doc(`tenants/${tenantId}/aiConversations/${conversationId}`);
+  const convSnap = await convRef.get();
+  if (!convSnap.exists) {
+    return NextResponse.json({ error: 'conversation_not_found' }, { status: 404 });
+  }
+  const convOwnerId = (convSnap.data() as { userId?: string }).userId;
+  const isOwner = convOwnerId === callerUid;
+  const isPrivileged = callerRole === 'admin' || callerRole === 'superadmin';
+  if (!isOwner && !isPrivileged) {
+    return NextResponse.json({ error: 'forbidden_not_owner' }, { status: 403 });
+  }
 
   // Load message
   const msgRef = db.doc(

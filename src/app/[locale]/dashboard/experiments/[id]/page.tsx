@@ -1,8 +1,7 @@
 'use client';
-import { IconPlus } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { use, useState } from 'react';
+import { use } from 'react';
 import PageContainer from '@/components/layout/page-container';
 // R164-phase-7-integration: lifecycle actions integration
 import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
@@ -12,9 +11,7 @@ import { NavBack } from '@/components/nav/nav-back';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExperimentForm } from '@/features/experiments/components/experiment-form';
-import { DemoDataButton } from '@/features/spectra/components/demo-data-button';
 import { SpectraList } from '@/features/spectra/components/spectra-list';
-import { SpectrumUploadDialog } from '@/features/spectra/components/spectrum-upload-dialog';
 import { useExperiment } from '@/lib/firestore/queries/experiments';
 
 export default function ExperimentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,11 +21,6 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
   const t = useTranslations('experiments');
   const tSpectra = useTranslations('spectra');
   const { experiment, loading } = useExperiment(id);
-  const [uploadOpen, setUploadOpen] = useState(false);
-  // R162-demo-visibility — page-level demo preload
-  const [pendingDemo, setPendingDemo] = useState<
-    { file: File; formula: string; anode: string; monochromator: string } | undefined
-  >(undefined);
 
   if (loading) {
     return (
@@ -44,10 +36,6 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
       </PageContainer>
     );
   }
-
-  // R186-2b: sample linkage inverted. Measurement upload moved to Sample detail.
-  // experimentId passed to upload via sample.experimentId now.
-  const firstSampleId = '';
 
   return (
     <PageContainer
@@ -73,31 +61,9 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
         </TabsContent>
 
         <TabsContent value='spectra' className='mt-6 space-y-4'>
-          <div className='flex justify-end gap-2'>
-            {/* R162-demo-visibility — page-level demo entry point */}
-            <DemoDataButton
-              disabled={!firstSampleId}
-              onLoad={(file, prefilled) => {
-                setPendingDemo({ file, ...prefilled });
-                setUploadOpen(true);
-              }}
-            />
-            <Button onClick={() => setUploadOpen(true)} disabled={!firstSampleId}>
-              <IconPlus className='size-4' />
-              {tSpectra('upload')}
-            </Button>
-          </div>
+          {/* R186-2b: upload moved to Sample detail. Read-only list here. */}
+          <p className='text-xs text-muted-foreground'>{tSpectra('uploadFromSampleHint')}</p>
           <SpectraList experimentId={id} />
-          <SpectrumUploadDialog
-            open={uploadOpen}
-            onOpenChange={(open) => {
-              setUploadOpen(open);
-              if (!open) setPendingDemo(undefined);
-            }}
-            experimentId={id}
-            sampleId={firstSampleId}
-            initialDemo={pendingDemo}
-          />
         </TabsContent>
       </Tabs>
 

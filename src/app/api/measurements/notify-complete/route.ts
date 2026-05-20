@@ -84,9 +84,11 @@ export async function POST(req: NextRequest) {
       return new NextResponse('invalid_spectrum_type', { status: 400 });
     }
 
-    // R185-4e: snapshot composition from parent Sample at upload time
+    // R185-4e: snapshot composition from parent Sample at upload time.
+    // R186-2b: also resolve experimentId from the sample (link inverted).
     let compositionSnapshot: Sample['composition'] = undefined;
     let compositeTypeSnapshot: Sample['compositeType'] = undefined;
+    let resolvedExperimentId: string | undefined = experimentId;
     if (sampleId) {
       try {
         const sample = await getSample(sampleId, tenantId);
@@ -96,9 +98,19 @@ export async function POST(req: NextRequest) {
         if (sample?.compositeType) {
           compositeTypeSnapshot = sample.compositeType;
         }
+        if (sample?.experimentId) {
+          resolvedExperimentId = sample.experimentId;
+        }
       } catch (err) {
-        console.warn('R185-4e: composition snapshot failed (non-blocking)', err);
+        console.warn('R185-4e: composition/experiment snapshot failed (non-blocking)', err);
       }
+    }
+
+    // R186-2b: experimentId is required on a measurement. It comes from the
+    // sample (sample.experimentId, always set) or from the client. If neither
+    // resolved, reject — a measurement must belong to an experiment.
+    if (!resolvedExperimentId) {
+      return new NextResponse('experiment_unresolved', { status: 400 });
     }
 
     const now = Date.now();
@@ -106,7 +118,7 @@ export async function POST(req: NextRequest) {
       schemaVersion: 1,
       id: spectrumId,
       tenantId,
-      experimentId,
+      experimentId: resolvedExperimentId,
       sampleId,
       sampleLabel: sampleLabel ?? undefined,
       chemicalFormula: chemicalFormula ?? undefined,

@@ -1,6 +1,7 @@
 'use client';
 
-import { IconChartDots3 } from '@tabler/icons-react';
+import { IconChartDots3, IconPlus } from '@tabler/icons-react';
+import { useState } from 'react';
 import { CrossSpectrumPanel } from '@/components/deviation/cross-spectrum-panel';
 import { useLocale, useTranslations } from 'next-intl';
 // R165-phase-1-oxlint: oxlint cleanup
@@ -11,13 +12,19 @@ import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 import { LifecycleStatusBadge } from '@/components/lifecycle/lifecycle-status-badge';
 // R164-phase-8-9b: lineage graph
 import { LineageGraph } from '@/components/lineage/lineage-graph';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SampleForm } from '@/features/samples/components/sample-form';
+import { SpectraList } from '@/features/spectra/components/spectra-list';
+import { SpectrumUploadDialog } from '@/features/spectra/components/spectrum-upload-dialog';
 import { useSample } from '@/lib/firestore/queries/samples';
 
 export default function SampleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const _locale = useLocale();
   const t = useTranslations('samples');
+  const tSpectra = useTranslations('spectra');
+  const [uploadOpen, setUploadOpen] = useState(false);
   const { sample, loading } = useSample(id);
 
   if (loading) {
@@ -51,7 +58,34 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
             i18nNamespace='samples'
           />
         </header>
-        <SampleForm defaultValues={sample} sampleId={id} />
+        <Tabs defaultValue='edit' className='w-full'>
+          <TabsList>
+            <TabsTrigger value='edit'>{t('tabEdit')}</TabsTrigger>
+            <TabsTrigger value='measurements'>{tSpectra('title')}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value='edit' className='mt-6'>
+            <SampleForm defaultValues={sample} sampleId={id} />
+          </TabsContent>
+
+          <TabsContent value='measurements' className='mt-6 space-y-4'>
+            {/* R186-2b: measurement upload lives on the sample */}
+            <div className='flex justify-end'>
+              <Button onClick={() => setUploadOpen(true)}>
+                <IconPlus className='size-4' />
+                {tSpectra('upload')}
+              </Button>
+            </div>
+            <SpectraList sampleId={id} />
+            <SpectrumUploadDialog
+              open={uploadOpen}
+              onOpenChange={setUploadOpen}
+              experimentId={sample.experimentId}
+              sampleId={id}
+              sampleLabel={sample.sampleCode}
+            />
+          </TabsContent>
+        </Tabs>
 
         {/* R164-phase-8-9b: PROV-O lineage graph */}
         <section className='space-y-2'>

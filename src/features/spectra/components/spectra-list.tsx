@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
-import { useSpectraByExperiment } from '@/lib/firestore/queries/spectra';
+import { useSpectraByExperiment, useSpectraBySample } from '@/lib/firestore/queries/spectra';
 import type { SpectrumMetadata, SpectrumStatus } from '@/types/spectra';
 
 const statusColor: Record<SpectrumStatus, string> = {
@@ -27,11 +27,14 @@ function formatSize(bytes: number): string {
 }
 
 interface SpectraListProps {
-  experimentId: string;
+  experimentId?: string;
+  sampleId?: string;
 }
 
-export function SpectraList({ experimentId }: SpectraListProps) {
-  const { spectra, loading } = useSpectraByExperiment(experimentId);
+export function SpectraList({ experimentId, sampleId }: SpectraListProps) {
+  const byExp = useSpectraByExperiment(sampleId ? null : (experimentId ?? null));
+  const bySample = useSpectraBySample(sampleId ?? null);
+  const { spectra, loading } = sampleId ? bySample : byExp;
   const locale = useLocale();
   const t = useTranslations('spectra');
   const tType = useTranslations('spectra.type');
@@ -95,7 +98,7 @@ export function SpectraList({ experimentId }: SpectraListProps) {
       columns={columns}
       rowKey={(s) => s.id}
       defaultSort={{ key: 'measuredAt', direction: 'desc' }}
-      exportFilename={`spectra-${experimentId}`}
+      exportFilename={`spectra-${sampleId ?? experimentId}`}
       exportValue={(s, key) => {
         if (key === 'originalFilename') return s.originalFilename;
         if (key === 'spectrumType') return tType(s.spectrumType);

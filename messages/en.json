@@ -455,7 +455,8 @@
         "composite": "Composite"
       }
     },
-    "lineageGraphTitle": "Lineage graph (PROV-O)"
+    "lineageGraphTitle": "Lineage graph (PROV-O)",
+    "tabEdit": "Edit"
   },
   "experiments": {
     "title": "Experiments",
@@ -761,7 +762,8 @@
       "loadFailed": "Failed to load sample: {reason}",
       "hint": "No data yet? Try a prepared XRD sample.",
       "syntheticBadge": "Simulated"
-    }
+    },
+    "uploadFromSampleHint": "Measurements are uploaded from each sample. This list shows all measurements linked to this experiment."
   },
   "referenceCards": {
     "title": "Reference card library",

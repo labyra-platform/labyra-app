@@ -86,6 +86,39 @@ export function useSpectraByExperiment(experimentId: string | null) {
   return { spectra, loading };
 }
 
+export function useSpectraBySample(sampleId: string | null) {
+  const tenantId = useTenantId();
+  const [spectra, setSpectra] = useState<SpectrumMetadata[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!tenantId || !sampleId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const q = query(
+      collection(db(), `tenants/${tenantId}/measurements`),
+      where('sampleId', '==', sampleId),
+      orderBy('measuredAt', 'desc')
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setSpectra(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata));
+        setLoading(false);
+      },
+      (err) => {
+        console.error('useSpectraBySample error', err);
+        setLoading(false);
+      }
+    );
+    return () => unsub();
+  }, [tenantId, sampleId]);
+
+  return { spectra, loading };
+}
+
 /** Single spectrum */
 export function useSpectrum(spectrumId: string | null) {
   const tenantId = useTenantId();

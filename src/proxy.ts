@@ -70,7 +70,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
     pathnameWithoutLocale.startsWith('/sign-in') || pathnameWithoutLocale.startsWith('/sign-up');
   const isProtectedRoute = pathnameWithoutLocale.startsWith('/dashboard');
 
-  const sessionCookie = request.cookies.get('__session');
+  const sessionCookie = request.cookies.get('__Host-session');
 
   // Authenticated user hitting an auth page → bounce to dashboard.
   if (sessionCookie && isAuthRoute) {

@@ -62,12 +62,17 @@ export function AuthProvider({ children }: { children: ReactNode }): React.React
         const tokenResult = await firebaseUser.getIdTokenResult();
         setClaims(tokenResult.claims as AuthClaims);
 
-        // Sync token to cookie for server-side middleware
+        // Sync token to HttpOnly cookie via server route (C2)
         const token = tokenResult.token;
-        document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax`;
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: token })
+        });
       } else {
         // Clear cookie on sign-out
-        document.cookie = '__session=; path=/; max-age=0; SameSite=Lax';
+        // Clear HttpOnly cookie via server route (C2)
+        await fetch('/api/auth/session', { method: 'DELETE' });
       }
     });
 

@@ -18,7 +18,7 @@ import { verifyIdToken } from '@/lib/firebase/admin';
  */
 export async function getCurrentUser(): Promise<DecodedIdToken | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get('__session')?.value;
+  const token = cookieStore.get('__Host-session')?.value;
 
   if (!token) return null;
 

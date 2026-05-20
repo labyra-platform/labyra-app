@@ -413,7 +413,10 @@
       "cancel": "Hủy",
       "create": "Tạo mới",
       "update": "Cập nhật",
-      "saving": "Đang lưu..."
+      "saving": "Đang lưu...",
+      "experiment": "Thí nghiệm",
+      "experimentPlaceholder": "Chọn thí nghiệm đã tạo ra mẫu này",
+      "noExperiments": "Chưa có thí nghiệm. Tạo một cái trước."
     },
     "status": {
       "prepared": "Đã chuẩn bị",

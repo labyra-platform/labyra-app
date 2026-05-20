@@ -45,10 +45,9 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
     );
   }
 
-  // For sample linkage in spectrum upload
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data = experiment as any;
-  const firstSampleId = data.sampleIds?.[0] ?? '';
+  // R186-2b: sample linkage inverted. Measurement upload moved to Sample detail.
+  // experimentId passed to upload via sample.experimentId now.
+  const firstSampleId = '';
 
   return (
     <PageContainer

@@ -46,7 +46,9 @@ export interface Experiment extends ProvBase {
   workflowStatus: ExperimentWorkflowStatus;
 
   // Lineage
-  sampleIds: string[];
+  // R186-2b: sampleIds removed. Inverse relation now lives on Sample.experimentId
+  // (PROV-O: Sample wasGeneratedBy Experiment). Query samples-of-experiment via
+  //   where('experimentId', '==', expId).
   equipmentUsed?: string[];
 
   // Timing

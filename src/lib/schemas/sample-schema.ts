@@ -38,6 +38,7 @@ export const CompositeTypeSchema = z.enum([
 
 const SampleCoreFields = {
   sampleCode: z.string().min(1).max(50),
+  experimentId: z.string().min(1),
   name: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
   parentMaterialIds: z.array(z.string()).max(50),

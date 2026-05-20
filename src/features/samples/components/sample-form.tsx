@@ -26,6 +26,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { Sample } from '@/types/samples';
 import { CompositionField } from './composition-field';
+import { useExperiments } from '@/lib/firestore/queries/experiments';
 import { type SampleFormValues, sampleFormSchema } from '../schema';
 
 interface SampleFormProps {
@@ -41,6 +42,7 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
   const t = useTranslations('samples.form');
   const tStatus = useTranslations('samples.status');
   const [submitting, setSubmitting] = useState(false);
+  const { experiments } = useExperiments();
 
   const form = useForm<SampleFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,6 +51,7 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       sampleCode: defaultValues?.sampleCode ?? '',
       name: defaultValues?.name ?? '',
       description: defaultValues?.description ?? '',
+      experimentId: defaultValues?.experimentId ?? '',
       parentMaterialIds: defaultValues?.parentMaterialIds ?? [],
       mass: defaultValues?.mass,
       volume: defaultValues?.volume,
@@ -73,7 +76,13 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       // R185-hotfix3: inject required PROV-O fields for create
       const payload = sampleId
         ? values
-        : { ...values, preparedAt: Date.now(), preparedBy: user.uid };
+        : {
+            ...values,
+            preparedAt: Date.now(),
+            preparedBy: user.uid,
+            // R186-2b: PROV-O wasGeneratedBy mirror
+            generatedBy: values.experimentId
+          };
       const res = await fetch(url, {
         method,
         headers: {
@@ -125,6 +134,44 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
         </div>
 
         {/* R183-3: Material Knowledge Panel */}
+
+        {/* R186-2b: parent Experiment (PROV-O wasGeneratedBy) — required */}
+        <FormField
+          control={form.control}
+          name='experimentId'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('experiment') ?? 'Experiment'} *</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        t('experimentPlaceholder') ??
+                        'Select the experiment that produced this sample'
+                      }
+                    />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {experiments.length === 0 ? (
+                    <div className='px-2 py-1.5 text-xs text-muted-foreground'>
+                      {t('noExperiments') ?? 'No experiments yet. Create one first.'}
+                    </div>
+                  ) : (
+                    experiments.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        <span className='font-mono text-xs'>{e.experimentCode}</span>
+                        <span className='ml-2 text-muted-foreground'>{e.title}</span>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

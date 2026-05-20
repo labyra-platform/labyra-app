@@ -6,7 +6,6 @@ export const experimentFormSchema = z.object({
   description: z.string().max(2000).optional(),
   experimentType: z.enum(['synthesis', 'characterization', 'measurement', 'analysis', 'other']),
   workflowStatus: z.enum(['planned', 'running', 'completed', 'failed', 'cancelled']),
-  sampleIds: z.array(z.string()).default([]),
   equipmentUsed: z.array(z.string()).default([]),
   temperature: z.coerce.number().optional(),
   pressure: z.coerce.number().optional(),

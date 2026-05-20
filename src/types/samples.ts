@@ -35,6 +35,10 @@ export interface Sample extends ProvBase {
   parentMaterialIds: string[];
   derivedFromSampleId?: string;
 
+  // R186-2b: PROV-O wasGeneratedBy. The experiment (Activity) that produced this
+  // sample. Required. Also mirrored into ProvBase.generatedBy at write time.
+  experimentId: string;
+
   // Preparation (preparedAt + preparedBy provide finer-grained activity
   // metadata than the generic ProvBase.createdAt/By)
   preparedAt: number;

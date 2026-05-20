@@ -413,7 +413,10 @@
       "cancel": "Cancel",
       "create": "Create",
       "update": "Update",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "experiment": "Experiment",
+      "experimentPlaceholder": "Select the experiment that produced this sample",
+      "noExperiments": "No experiments yet. Create one first."
     },
     "status": {
       "prepared": "Prepared",

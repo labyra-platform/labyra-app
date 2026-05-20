@@ -76,3 +76,6 @@ may-costs.csv
 *.bak*
 LICENSE.bak-mit
 README.md.bak*
+*-applied
+*.bak18*
+*.bak186*

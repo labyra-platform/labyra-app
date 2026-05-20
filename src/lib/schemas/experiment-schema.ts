@@ -30,7 +30,6 @@ const ExperimentCoreFields = {
   hypothesis: z.string().max(2000).optional(),
   experimentType: ExperimentTypeSchema,
   workflowStatus: ExperimentWorkflowStatusSchema.default('planned'),
-  sampleIds: z.array(z.string()).max(100),
   equipmentUsed: z.array(z.string()).max(50).optional(),
   scheduledAt: z.number().int().positive().optional(),
   startedAt: z.number().int().positive().optional(),

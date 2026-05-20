@@ -26,7 +26,6 @@ interface ExperimentDoc {
   status: 'planned' | 'running' | 'completed';
   startedAt?: { seconds: number; nanoseconds: number };
   completedAt?: { seconds: number; nanoseconds: number } | null;
-  sampleIds?: string[];
   temperature_C?: number;
 }
 

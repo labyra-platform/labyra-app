@@ -38,7 +38,7 @@ export async function createSample(
     // Cross-entity lineage (canonical = parentMaterialIds; derivedFrom is generic
     // PROV-O alias filled with material IDs for unified lineage queries)
     derivedFrom: input.derivedFrom ?? input.parentMaterialIds,
-    generatedBy: input.generatedBy,
+    generatedBy: input.generatedBy ?? input.experimentId,
     lifecycleStatus: 'active',
     // Core
     sampleCode: input.sampleCode,
@@ -46,6 +46,8 @@ export async function createSample(
     description: input.description,
     parentMaterialIds: input.parentMaterialIds,
     derivedFromSampleId: input.derivedFromSampleId,
+    // R186-2b: PROV-O wasGeneratedBy (required)
+    experimentId: input.experimentId,
     preparedAt: input.preparedAt,
     preparedBy: input.preparedBy,
     protocol: input.protocol,

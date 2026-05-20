@@ -41,7 +41,7 @@ export async function createExperiment(
     createdBy: ctx.createdBy,
     createdAt: now,
     // PROV-O derivedFrom: experiments derive from samples used
-    derivedFrom: input.derivedFrom ?? input.sampleIds,
+    derivedFrom: input.derivedFrom,
     generatedBy: input.generatedBy,
     lifecycleStatus: 'active',
     // Core
@@ -51,7 +51,6 @@ export async function createExperiment(
     hypothesis: input.hypothesis,
     experimentType: input.experimentType,
     workflowStatus: input.workflowStatus,
-    sampleIds: input.sampleIds,
     equipmentUsed: input.equipmentUsed,
     scheduledAt: input.scheduledAt,
     startedAt: input.startedAt,
@@ -187,19 +186,6 @@ export async function reactivateExperiment(
 
 // ─── Lineage queries ─────────────────────────────────────────────────
 
-/**
- * Find experiments that use a given sample.
- */
-export async function findExperimentsByContainsSample(
-  tenantId: string,
-  sampleId: string
-): Promise<Experiment[]> {
-  const snap = await getAdminFirestoreService()
-    .collection('tenants')
-    .doc(tenantId)
-    .collection(COLLECTION)
-    .where('sampleIds', 'array-contains', sampleId)
-    .where('lifecycleStatus', '==', 'active')
-    .get();
-  return snap.docs.map((d) => d.data() as Experiment);
-}
+// R186-2b: findExperimentsByContainsSample removed. Link inverted — a sample now
+// references exactly one experiment via sample.experimentId. To find samples of
+// an experiment, query the samples collection: where('experimentId','==',expId).

@@ -9,6 +9,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate, authenticateAdmin } from '@/lib/api/auth-helper';
 import { createInvite, listInvites } from '@/lib/firebase/invites/service';
+import { sendInviteEmail } from '@/lib/email/send-invite';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { CreateInviteSchema } from '@/lib/schemas/invite-schema';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
@@ -40,6 +42,20 @@ export async function POST(req: NextRequest) {
 
   try {
     const invite = await createInvite(auth.tenantId, parsed, auth.uid);
+
+    // Best-effort invite email — MUST NOT block or fail invite creation.
+    // Notification is decoupled from authorization (email-match still governs join).
+    void (async () => {
+      try {
+        const tenantSnap = await getAdminFirestoreService().doc(`tenants/${auth.tenantId}`).get();
+        const tenantName =
+          (tenantSnap.data() as { name?: string } | undefined)?.name ?? auth.tenantId;
+        await sendInviteEmail({ to: invite.email, tenantName, role: invite.role });
+      } catch (e) {
+        console.warn('invite email dispatch failed (non-fatal):', e);
+      }
+    })();
+
     return NextResponse.json(invite, { status: 201 });
   } catch (err) {
     console.error('POST /api/invites', err);

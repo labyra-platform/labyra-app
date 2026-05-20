@@ -9,6 +9,7 @@
 
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   sendPasswordResetEmail,
@@ -32,10 +33,26 @@ export async function signInWithGoogle(): Promise<UserCredential> {
   return signInWithPopup(auth, googleProvider);
 }
 
-/** Sign up email + password */
+/** Sign up email + password — sends a verification email immediately. */
 export async function signUpWithEmail(email: string, password: string): Promise<UserCredential> {
   const auth = getFirebaseAuth();
-  return createUserWithEmailAndPassword(auth, email, password);
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  // Email/password accounts start unverified. Verification is required before
+  // accepting an invite (ownership proof for email-match onboarding).
+  try {
+    await sendEmailVerification(cred.user);
+  } catch {
+    // Non-fatal — user can resend from /onboarding.
+  }
+  return cred;
+}
+
+/** Resend the verification email to the current user. */
+export async function resendVerificationEmail(): Promise<void> {
+  const auth = getFirebaseAuth();
+  const user = auth.currentUser;
+  if (!user) throw new Error('not_authenticated');
+  await sendEmailVerification(user);
 }
 
 /** Sign out current user */

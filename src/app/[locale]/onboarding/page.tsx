@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { signOut } from '@/lib/auth/actions';
+import { resendVerificationEmail, signOut } from '@/lib/auth/actions';
 import { refreshAuthClaims } from '@/lib/auth/refresh-claims';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useTenantId } from '@/lib/auth/use-claims';
@@ -47,6 +47,9 @@ export default function OnboardingPage() {
   const [invites, setInvites] = useState<PendingInvite[] | null>(null);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  // Firebase user.emailVerified — Google = true; email/password = false until verified.
+  const emailVerified = user?.emailVerified ?? false;
 
   // Already has a tenant → go to dashboard.
   useEffect(() => {
@@ -71,8 +74,8 @@ export default function OnboardingPage() {
   }, []);
 
   useEffect(() => {
-    if (!loading && user && !tenantId) void loadInvites();
-  }, [loading, user, tenantId, loadInvites]);
+    if (!loading && user && !tenantId && emailVerified) void loadInvites();
+  }, [loading, user, tenantId, emailVerified, loadInvites]);
 
   async function handleAccept(invite: PendingInvite) {
     setAccepting(invite.id);
@@ -94,6 +97,29 @@ export default function OnboardingPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'accept_failed');
       setAccepting(null);
+    }
+  }
+
+  async function handleResendVerification() {
+    setResending(true);
+    try {
+      await resendVerificationEmail();
+      toast.success('Verification email sent. Check your inbox.');
+    } catch {
+      toast.error('Failed to send verification email.');
+    } finally {
+      setResending(false);
+    }
+  }
+
+  async function handleReloadUser() {
+    // Pull fresh emailVerified after the user clicks the link in their inbox.
+    const u = getFirebaseAuth().currentUser;
+    if (u) {
+      await u.reload();
+      // Force token refresh so AuthProvider re-reads; then reload page state.
+      await u.getIdToken(true);
+      window.location.reload();
     }
   }
 
@@ -130,7 +156,27 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {invites === null ? (
+        {!emailVerified ? (
+          <div className='space-y-4 rounded-lg border border-input p-6 text-center'>
+            <p className='text-sm'>
+              Please verify your email address before joining a lab. We sent a link to{' '}
+              <span className='font-medium'>{user?.email}</span>.
+            </p>
+            <div className='flex flex-col gap-2 sm:flex-row sm:justify-center'>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => void handleResendVerification()}
+                disabled={resending}
+              >
+                {resending ? 'Sending…' : 'Resend email'}
+              </Button>
+              <Button size='sm' onClick={() => void handleReloadUser()}>
+                I've verified
+              </Button>
+            </div>
+          </div>
+        ) : invites === null ? (
           <div className='text-muted-foreground text-center text-sm'>Checking invitations…</div>
         ) : invites.length === 0 ? (
           <div className='rounded-lg border border-input p-6 text-center'>

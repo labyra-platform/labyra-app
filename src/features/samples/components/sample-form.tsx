@@ -26,7 +26,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type { Sample } from '@/types/samples';
 import { CompositionField } from './composition-field';
-import { MaterialKnowledgePanel } from './material-knowledge-panel';
 import { type SampleFormValues, sampleFormSchema } from '../schema';
 
 interface SampleFormProps {
@@ -62,13 +61,6 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       compositeType: defaultValues?.compositeType ?? undefined
     }
   });
-
-  const watchedName = form.watch('name');
-  const watchedComposition = form.watch('composition');
-
-  // R185-validation-hotfix: prefer composition[0].formula (validated by FormulaSchema)
-  // over raw name (which may contain slashes, spaces — breaks Firestore doc path).
-  const knowledgeFormula = watchedComposition?.[0]?.formula?.trim() || null;
 
   const onSubmit = async (values: SampleFormValues) => {
     setSubmitting(true);
@@ -133,9 +125,6 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
         </div>
 
         {/* R183-3: Material Knowledge Panel */}
-        {knowledgeFormula && knowledgeFormula.length >= 2 && (
-          <MaterialKnowledgePanel formula={knowledgeFormula} />
-        )}
 
         <FormField
           control={form.control}

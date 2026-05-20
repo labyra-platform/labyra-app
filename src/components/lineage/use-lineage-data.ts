@@ -149,7 +149,9 @@ export function useLineageData(
             }
           }
 
-          // Follow generatedBy
+          // Follow generatedBy (R186-2b: sample.generatedBy = experimentId).
+          // Must enqueue the target so its node is fetched + added to `nodes`,
+          // otherwise D3 forceLink throws "node not found".
           const generatedBy = entity.generatedBy as string | undefined;
           if (generatedBy && current.depth < maxDepth) {
             edges.push({
@@ -157,11 +159,22 @@ export function useLineageData(
               target: generatedBy,
               relation: 'generatedBy'
             });
+            queue.push({
+              type: inferTypeFromId(generatedBy, current.type),
+              id: generatedBy,
+              depth: current.depth + 1
+            });
           }
         }
 
         if (!cancelled) {
-          setData({ nodes: Array.from(nodes.values()), edges });
+          // R186-2b: drop orphan edges (endpoint not resolved) so D3 forceLink
+          // never receives a target/source id missing from nodes.
+          const nodeIds = new Set(Array.from(nodes.values()).map((n) => n.id));
+          const safeEdges = edges.filter(
+            (e) => nodeIds.has(e.source as string) && nodeIds.has(e.target as string)
+          );
+          setData({ nodes: Array.from(nodes.values()), edges: safeEdges });
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'fetch_failed');

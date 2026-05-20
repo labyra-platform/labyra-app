@@ -31,6 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     const decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
     const tenantId = getTenantIdFromToken(decoded);
+    const uid = decoded.uid;
     const role = getRoleFromToken(decoded);
     if (role === 'viewer' || role === null) {
       return new NextResponse('forbidden_viewer', { status: 403 });
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     // R162-security — per-tenant rate limit
-    const rl = await checkRateLimit(rateLimitKey('reanalyze', tenantId), 5, 60);
+    const rl = await checkRateLimit(rateLimitKey('reanalyze', `${tenantId}:${uid}`), 5, 60);
     if (!rl.allowed) {
       return new NextResponse('rate_limited', {
         status: 429,

@@ -73,6 +73,14 @@ function addUsage(a: AiCostBreakdown, b: AiCostBreakdown): AiCostBreakdown {
   };
 }
 
+// M7: per-tool timeout to prevent runaway tool calls
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error('tool_timeout')), ms))
+  ]);
+}
+
 // H2: sanitize string — strip control chars + truncate (outer scope per unicorn rule)
 function sanitizeStr(s: string, max: number): string {
   // H2: remove control chars (<0x20) and angle brackets — no regex to avoid oxlint no-control-regex
@@ -116,7 +124,7 @@ export async function POST(request: Request) {
   }
 
   // R162-tier-rate-limit — per-tenant rate limit
-  const rl = await checkRateLimit(rateLimitKey('chat', tenantId), 5, 60);
+  const rl = await checkRateLimit(rateLimitKey('chat', `${tenantId}:${decoded.uid}`), 5, 60);
   if (!rl.allowed) {
     return new Response(JSON.stringify({ error: 'rate_limited' }), {
       status: 429,
@@ -658,7 +666,10 @@ export async function POST(request: Request) {
           // Execute tools in parallel
           const results = await Promise.all(
             pendingCalls.map((call) =>
-              executeToolCall(call, { tenantId: tenantId!, userId, selectedPaperIds })
+              withTimeout(
+                executeToolCall(call, { tenantId: tenantId!, userId, selectedPaperIds }),
+                20_000
+              )
             )
           );
 

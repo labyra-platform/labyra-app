@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import { OrphanGuard } from '@/components/auth/orphan-guard';
 import KBar from '@/components/kbar';
 import AppSidebar from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
@@ -27,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <SidebarInset>
           <Header />
           <InfobarProvider defaultOpen={false}>
-            {children}
+            <OrphanGuard>{children}</OrphanGuard>
             {/* @r179-7-applied: InfoSidebar hidden on /view pages via client check */}
             <InfoSidebarConditional />
           </InfobarProvider>

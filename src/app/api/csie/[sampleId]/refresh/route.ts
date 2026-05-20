@@ -1,15 +1,21 @@
 /**
  * POST /api/csie/[sampleId]/refresh
  *
- * Proxies to worker /csie/{sampleId}/refresh. Validates auth + rate limit.
+ * R186-4: publishes to the 'csie-trigger' Pub/Sub topic instead of calling the
+ * worker over HTTP. The worker (/csie/process push subscriber) computes CSIE and
+ * writes samples/{sampleId}/crossSpectrum/latest; the UI's useCSIEResult
+ * onSnapshot listener updates live. Returns 202 Accepted (async).
  *
- * Body: { tenantId: string, force?: boolean }
+ * Body: { force?: boolean }
  *
- * @phase R185-10c
+ * @phase R185-10c (HTTP) → R186-4 (Pub/Sub)
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate } from '@/lib/api/auth-helper';
+import { publishCsieTrigger } from '@/lib/pubsub/topics/csie-trigger';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest, context: { params: Promise<{ sampleId: string }> }) {
   const auth = await authenticate(req);
@@ -31,26 +37,15 @@ export async function POST(req: NextRequest, context: { params: Promise<{ sample
   const body = await req.json().catch(() => ({}));
   const force = Boolean(body.force);
 
-  const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL || process.env.SPECTRA_WORKER_URL;
-  if (!workerUrl) {
-    return new NextResponse('worker_url_not_configured', { status: 500 });
-  }
-
   try {
-    // OIDC token via service account for Cloud Run (worker-side validation)
-    // Worker accepts both Firebase tokens (for user actions) and SA tokens (Pub/Sub push).
-    const res = await fetch(`${workerUrl}/csie/${encodeURIComponent(sampleId)}/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId: auth.tenantId, force })
+    const messageId = await publishCsieTrigger({
+      tenantId: auth.tenantId,
+      sampleId,
+      force
     });
-    const text = await res.text();
-    return new NextResponse(text, {
-      status: res.status,
-      headers: { 'Content-Type': res.headers.get('content-type') ?? 'application/json' }
-    });
+    return NextResponse.json({ status: 'queued', messageId }, { status: 202 });
   } catch (err) {
-    console.error('CSIE refresh proxy failed', err);
-    return new NextResponse('worker_unreachable', { status: 502 });
+    console.error('CSIE trigger publish failed', err);
+    return new NextResponse('csie_enqueue_failed', { status: 502 });
   }
 }

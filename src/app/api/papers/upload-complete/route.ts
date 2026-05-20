@@ -14,6 +14,7 @@
  * @phase R168-3.2
  */
 import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
 import { Timestamp } from 'firebase-admin/firestore';
 import { trackUsage } from '@/lib/ai/governance/quota';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
@@ -42,6 +43,8 @@ function jsonError(status: number, error: string, extra: Record<string, unknown>
 interface UploadCompleteRequest {
   sessionId: string;
 }
+// H4: runtime Zod validation
+const UploadCompleteRequestSchema = z.object({ sessionId: z.string().min(1).max(128) });
 
 interface QuotaReservation {
   sessionId: string;
@@ -74,7 +77,7 @@ export async function POST(request: Request) {
   // ─── Parse body ───────────────────────────────────────────────
   let body: UploadCompleteRequest;
   try {
-    body = (await request.json()) as UploadCompleteRequest;
+    body = UploadCompleteRequestSchema.parse(await request.json());
   } catch {
     return jsonError(400, 'invalid_json');
   }

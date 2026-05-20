@@ -11,6 +11,7 @@
  * @phase R173-5
  */
 import 'server-only';
+import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { getCapabilityForTier } from '@/lib/ai/config/capabilities';
 import { estimateCost } from '@/lib/ai/cost/estimator';
@@ -25,6 +26,8 @@ export const runtime = 'nodejs';
 interface RequestBody {
   conversationId: string;
 }
+// H4: runtime Zod validation
+const RequestBodySchema = z.object({ conversationId: z.string().min(1).max(128) });
 
 export async function POST(
   request: Request,
@@ -55,7 +58,7 @@ export async function POST(
   const { id: messageId } = await params;
   let body: RequestBody;
   try {
-    body = (await request.json()) as RequestBody;
+    body = RequestBodySchema.parse(await request.json());
   } catch {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }

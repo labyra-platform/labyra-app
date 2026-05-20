@@ -58,6 +58,15 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
+          // COOP: allow-popups required for Firebase signInWithPopup callback
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
+          },
           // HSTS — 1 year, includeSubDomains (preload ready for custom domain)
           // vercel.app: score boost even without preload
           ...(!isDev

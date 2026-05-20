@@ -9,7 +9,7 @@ const COOKIE_NAME = 'active_theme';
 function setThemeCookie(theme: string) {
   if (typeof window === 'undefined') return;
 
-  document.cookie = `${COOKIE_NAME}=${theme}; path=/; max-age=31536000; SameSite=Lax; ${window.location.protocol === 'https:' ? 'Secure;' : ''}`;
+  document.cookie = `${COOKIE_NAME}=${theme}; path=/; max-age=31536000; SameSite=Lax; Secure;`;
 }
 
 type ThemeContextType = {

@@ -235,7 +235,7 @@ export async function POST(request: Request) {
           const authorsStr =
             (d.authors ?? [])
               .slice(0, 2)
-              .map((a) => sanitize(a, 100))
+              .map((a) => sanitizeStr(a, 100))
               .join(', ') + ((d.authors?.length ?? 0) > 2 ? ' et al.' : '');
           const yearStr = d.year ? ` (${d.year})` : '';
           const title = sanitizeStr(d.title ?? 'Untitled', 256);

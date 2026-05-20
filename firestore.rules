@@ -10,6 +10,12 @@ rules_version = '2';
 //
 // Super-admin = platform operator, can read across tenants.
 // Otherwise, users only access their own tenant's subtree.
+//
+// IMPORTANT — Firestore rules are ADDITIVE (OR-logic). If any match
+// grants access, access is granted. There is therefore NO catch-all
+// `match /{document=**}` inside `/tenants/{tenantId}` — every
+// subcollection is listed explicitly so that admin-SDK-only or
+// server-only collections cannot be reached via a broad allow.
 // =============================================================
 
 service cloud.firestore {
@@ -44,26 +50,132 @@ service cloud.firestore {
       return belongsToTenant(tenantId) && userRole() in ['admin', 'superadmin', 'member'];
     }
 
-    // ---------- Tenant document ----------
-    // /tenants/{tenantId} — metadata (name, plan, createdAt, etc.)
+    // =====================================================
+    // Tenant subtree — every subcollection listed explicitly
+    // =====================================================
     match /tenants/{tenantId} {
+
+      // Tenant root doc — metadata (name, plan, createdAt)
       allow read: if belongsToTenant(tenantId) || isSuperAdmin();
       allow write: if isAdmin(tenantId) || isSuperAdmin();
 
-      // ---------- All tenant data ----------
-      // Catch-all for any sub-collection under a tenant.
-      // Specific sub-collections may override below for tighter rules.
-      match /{document=**} {
+      // ---------- Writable from client (role member+) ----------
+      match /materials/{materialId} {
         allow read: if belongsToTenant(tenantId) || isSuperAdmin();
         allow write: if isWriter(tenantId) || isSuperAdmin();
       }
 
-      // ---------- Audit logs (write-only for non-admin) ----------
-      // Members may append, only admins read.
+      match /samples/{sampleId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+      }
+
+      match /experiments/{experimentId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+      }
+
+      // Spectra is the canonical name (worker is source of truth).
+      // Not "measurements" — that name is wrong.
+      match /spectra/{spectrumId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+      }
+
+      match /equipment/{equipmentId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+      }
+
+      match /bookings/{bookingId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+      }
+
+      match /aiConversations/{conversationId} {
+        allow read, write: if isWriter(tenantId) || isSuperAdmin();
+
+        match /messages/{messageId} {
+          allow read, write: if isWriter(tenantId) || isSuperAdmin();
+        }
+      }
+
+      // ---------- Client-readable, Admin-SDK-write-only ----------
+      // Lifecycle managed by server pipelines (ingestion, analysis,
+      // citation resolver, RAG processor). Any client write would
+      // corrupt downstream state — denied.
+
+      match /analyses/{analysisId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
+
+      match /citations/{citationId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
+
+      match /references/{referenceId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
+
+      match /papers/{paperId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if false;
+
+        match /chunks/{chunkId} {
+          allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+          allow write: if false;
+        }
+
+        match /_stats/{statsId} {
+          allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+          allow write: if false;
+        }
+      }
+
+      // AI provenance — audit trail of every model call. Read by
+      // writers (so the UI can show citations + chain-of-tools), but
+      // never client-writable. Admin SDK writes only.
+      match /aiProvenance/{messageId} {
+        allow read: if isWriter(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
+
+      // Monthly usage / quota counters. Client reads its own quota;
+      // writes only via Admin SDK (cost-guard + telemetry). Allowing
+      // client write here would be a free-AI bypass.
+      match /usage/{yearMonth} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
+
+      // ---------- Admin-read, server-write-only ----------
+      match /_costs/{costId} {
+        allow read: if isAdmin(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
+
+      match /_evals/{evalId} {
+        allow read: if isAdmin(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
+
+      // ---------- Server-only (no client access at all) ----------
+      match /_rate_limits/{key} {
+        allow read, write: if false;
+      }
+
+      match /_idempotency/{key} {
+        allow read, write: if false;
+      }
+
+      // ---------- Audit logs (append-only by writer, immutable) ----------
       match /auditLogs/{logId} {
         allow create: if isWriter(tenantId);
         allow read: if isAdmin(tenantId) || isSuperAdmin();
-        allow update, delete: if false;  // immutable
+        allow update, delete: if false;
       }
 
       // ---------- Members sub-collection (admin-managed) ----------
@@ -73,17 +185,12 @@ service cloud.firestore {
       }
     }
 
-    // ---------- Platform-level collections (super-admin only) ----------
-    // Cross-tenant analytics, billing, etc.
-    match /platform/{document=**} {
-      allow read, write: if isSuperAdmin();
-    }
-
-
-    // ── Material Profiles (R183-2) ─────────────────────────────────────────
-    // Global scientific reference data (crystal structure, bandgap, spectral
-    // signatures, citations). Public read — anyone signed in can read.
-    // Write restricted to superadmin (platform operator seeds via Admin SDK).
+    // =====================================================
+    // Material profiles — global, signed-in read
+    // =====================================================
+    // Scientific reference data (crystal structure, bandgap, spectral
+    // signatures, citations). Public read for any signed-in user.
+    // Writes restricted to superadmin (platform seeds via Admin SDK).
     match /materialProfiles/{formula} {
       allow read: if isSignedIn();
       allow write: if isSuperAdmin();
@@ -99,59 +206,20 @@ service cloud.firestore {
       }
     }
 
-    // ---------- Default deny ----------
-    // Anything not explicitly matched above is denied.
+    // =====================================================
+    // Platform-level collections (super-admin only)
+    // Cross-tenant analytics, billing, etc.
+    // =====================================================
+    match /platform/{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // =====================================================
+    // Default deny — MUST be last, at root scope. Anything not
+    // explicitly matched above is denied.
+    // =====================================================
     match /{document=**} {
       allow read, write: if false;
-    }
-    // AI conversations and messages (R160-ai-2a)
-    match /tenants/{tenantId}/aiConversations/{conversationId} {
-      allow read, write: if isWriter(tenantId);
-      allow read, write: if isSuperAdmin();
-
-      match /messages/{messageId} {
-        allow read, write: if isWriter(tenantId);
-        allow read, write: if isSuperAdmin();
-      }
-    }
-
-    // AI provenance (audit trail — immutable from client)
-    match /tenants/{tenantId}/aiProvenance/{messageId} {
-      allow read: if isWriter(tenantId) || isSuperAdmin();
-      allow write: if false; // server only via Admin SDK
-    }
-
-
-    // ── Papers (R160-ai-5b-1, R168-3.12: isAuthenticated → isSignedIn) ──
-    match /tenants/{tenantId}/papers/{paperId} {
-      allow read: if isSignedIn() && belongsToTenant(tenantId);
-      // Writes through API + Admin SDK only
-      allow create, update, delete: if false;
-
-      match /chunks/{chunkId} {
-        allow read: if isSignedIn() && belongsToTenant(tenantId);
-        allow create, update, delete: if false;
-      }
-
-      // Citations stats subcollection (R166-6b)
-      match /_stats/{statsId} {
-        allow read: if isSignedIn() && belongsToTenant(tenantId);
-        allow create, update, delete: if false;
-      }
-    }
-
-    // ── Citations (R166-6a, explicit R168-3.12) ───────────────────
-    // Tenant-isolated citation graph. Read-only from client; writes via
-    // Admin SDK in paper-processing pipeline.
-    match /tenants/{tenantId}/citations/{citationId} {
-      allow read: if isSignedIn() && belongsToTenant(tenantId);
-      allow create, update, delete: if false;
-    }
-
-    // ── Monthly usage (R160-ai-5b-1) ──────────────────────────────
-    match /tenants/{tenantId}/usage/{yearMonth} {
-      allow read: if isSignedIn() && belongsToTenant(tenantId);
-      allow create, update, delete: if false;
     }
   }
 }

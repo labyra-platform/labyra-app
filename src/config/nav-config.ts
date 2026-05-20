@@ -74,19 +74,19 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Samples',
-        titleKey: 'nav.samples',
-        url: '/dashboard/samples',
-        icon: 'samples',
-        shortcut: ['s', 'a'],
-        items: []
-      },
-      {
         title: 'Experiments',
         titleKey: 'nav.experiments',
         url: '/dashboard/experiments',
         icon: 'experiments',
         shortcut: ['e', 'x'],
+        items: []
+      },
+      {
+        title: 'Samples',
+        titleKey: 'nav.samples',
+        url: '/dashboard/samples',
+        icon: 'samples',
+        shortcut: ['s', 'a'],
         items: []
       },
       {

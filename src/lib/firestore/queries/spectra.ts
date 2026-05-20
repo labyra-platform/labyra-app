@@ -10,7 +10,8 @@ import {
 } from 'firebase/firestore';
 /**
  * Firestore queries for spectra.
- * @phase R164-phase-5b-1 (was R160-spectra-1) — collection renamed spectra→measurements
+ * @phase R186-3 — canonical collection is `spectra` (worker source of truth).
+ * R164 measurements rename was reverted: worker + notify-complete write/read spectra.
  */
 import { useEffect, useState } from 'react';
 import { useTenantId } from '@/lib/auth/use-claims';
@@ -31,10 +32,7 @@ export function useAllSpectra() {
   useEffect(() => {
     if (!tenantId) return;
     setLoading(true);
-    const q = query(
-      collection(db(), `tenants/${tenantId}/measurements`),
-      orderBy('createdAt', 'desc')
-    );
+    const q = query(collection(db(), `tenants/${tenantId}/spectra`), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(
       q,
       (snap) => {
@@ -65,7 +63,7 @@ export function useSpectraByExperiment(experimentId: string | null) {
     }
     setLoading(true);
     const q = query(
-      collection(db(), `tenants/${tenantId}/measurements`),
+      collection(db(), `tenants/${tenantId}/spectra`),
       where('experimentId', '==', experimentId),
       orderBy('measuredAt', 'desc')
     );
@@ -98,7 +96,7 @@ export function useSpectraBySample(sampleId: string | null) {
     }
     setLoading(true);
     const q = query(
-      collection(db(), `tenants/${tenantId}/measurements`),
+      collection(db(), `tenants/${tenantId}/spectra`),
       where('sampleId', '==', sampleId),
       orderBy('measuredAt', 'desc')
     );

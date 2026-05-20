@@ -1,4 +1,5 @@
 // @r181-11-applied: Firestore/Storage path measurements → spectra
+// R186-3: COLLECTION corrected to 'spectra' to match worker + notify-complete.
 /**
  * Measurement service: server-side CRUD + lineage queries.
  *
@@ -22,7 +23,7 @@ import type {
 import type { Measurement, MeasurementProcessingStatus } from '@/types/measurements';
 import type { LifecycleStatus } from '@/types/prov-base';
 
-const COLLECTION = 'measurements';
+const COLLECTION = 'spectra'; // R186-3: canonical (worker source of truth)
 
 interface CreateMeasurementContext {
   tenantId: string;

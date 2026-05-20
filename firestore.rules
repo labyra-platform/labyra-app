@@ -142,6 +142,12 @@ service cloud.firestore {
         allow read: if isWriter(tenantId) || isSuperAdmin();
         allow write: if false;
       }
+      // Invites — onboarding ADR-031. Admin reads to manage in Members UI.
+      // All writes via Admin SDK (create/revoke/accept routes). Client-deny.
+      match /invites/{inviteId} {
+        allow read: if isAdmin(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
 
       // Monthly usage / quota counters. Client reads its own quota;
       // writes only via Admin SDK (cost-guard + telemetry). Allowing

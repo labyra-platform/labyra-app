@@ -72,7 +72,7 @@ const nextConfig: NextConfig = {
           // connect-src: Firestore/Auth/Storage (client-side SDK)
           // Anthropic/Voyage/Pinecone = server-only → không cần ở đây
           {
-            key: 'Content-Security-Policy',
+            key: 'Content-Security-Policy-Report-Only',
             value: [
               "default-src 'self'",
               // Scripts: self + Next.js inline eval (dev HMR) + Firebase compat
@@ -111,6 +111,7 @@ const nextConfig: NextConfig = {
               "form-action 'self'",
               // Upgrade insecure requests in prod
               ...(!isDev ? ['upgrade-insecure-requests'] : []),
+              'report-uri /api/csp-report',
             ].join('; '),
           },
         ],

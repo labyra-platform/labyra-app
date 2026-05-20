@@ -26,11 +26,16 @@ const DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://1
 
 const VERCEL_PREVIEW_RE = /^https:\/\/labyra-app-[a-z0-9-]+\.vercel\.app$/;
 
+// H1: gate preview origins to non-production environments only
+const isProduction = process.env.VERCEL_ENV === 'production';
+
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   if (PRODUCTION_ORIGINS.includes(origin)) return true;
-  if (DEV_ORIGINS.includes(origin)) return true;
-  if (VERCEL_PREVIEW_RE.test(origin)) return true;
+  if (!isProduction) {
+    if (DEV_ORIGINS.includes(origin)) return true;
+    if (VERCEL_PREVIEW_RE.test(origin)) return true;
+  }
   return false;
 }
 

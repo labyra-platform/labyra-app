@@ -9,20 +9,25 @@
  */
 // R165-phase-1-oxlint: oxlint cleanup
 
+import { timingSafeEqual } from 'node:crypto';
 import { refitTenant } from '@/lib/ai/rag/sparse/bm25-manager';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 min — should fit < 10K docs total
 
-export async function POST(request: Request) {
-  // Auth check
-  const auth = request.headers.get('authorization');
-  const expected = `Bearer ${process.env.CRON_SECRET ?? ''}`;
-  if (!process.env.CRON_SECRET || auth !== expected) {
-    return new Response(JSON.stringify({ error: 'unauthorized' }), {
-      status: 401
-    });
+async function handler(request: Request) {
+  // Auth check — H5: timingSafeEqual to prevent timing attacks
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+  }
+  const auth = request.headers.get('authorization') ?? '';
+  const expected = `Bearer ${secret}`;
+  const a = Buffer.from(auth);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
   }
 
   const startedAt = Date.now();
@@ -66,6 +71,6 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  // Vercel Cron uses GET — accept both
-  return POST(request);
+  // H5: Vercel Cron uses GET — single handler, no POST export
+  return handler(request);
 }

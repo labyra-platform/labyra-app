@@ -86,7 +86,7 @@ const nextConfig: NextConfig = {
               // Fonts: self
               "font-src 'self'",
               // Frames: none
-              "frame-src 'none'",
+              "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com",
               // Connect: Firebase Auth/Firestore/Storage + self API
               [
                 "connect-src 'self'",

@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { requireSuperadmin as sharedRequireSuperadmin } from '@/lib/auth/superadmin-guard';
 
 // ── Schema ────────────────────────────────────────────────────────────────────
 
@@ -84,13 +85,11 @@ const MaterialProfileSchema = z.object({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// M1: delegate to shared requireSuperadmin (src/lib/auth/superadmin-guard.ts)
 async function requireSuperadmin(request: NextRequest) {
-  const auth = getAdminAuthService();
-  const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  if (!token) throw new Error('missing_token');
-  const decoded = await auth.verifyIdToken(token);
-  if (decoded.role !== 'superadmin') throw new Error('forbidden');
-  return decoded;
+  const guard = await sharedRequireSuperadmin(request);
+  if (!guard.allowed) throw new Error('forbidden');
+  return guard.decoded!;
 }
 
 async function requireSignedIn(request: NextRequest) {

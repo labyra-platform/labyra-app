@@ -28,6 +28,19 @@ export interface AuthContextValue {
   loading: boolean;
 }
 
+// L4: type guard thay vì `as AuthClaims` cast
+function parseAuthClaims(claims: unknown): AuthClaims {
+  if (typeof claims !== 'object' || claims === null) return {};
+  const c = claims as Record<string, unknown>;
+  return {
+    role: ['admin', 'superadmin', 'member', 'viewer'].includes(c.role as string)
+      ? (c.role as AuthClaims['role'])
+      : undefined,
+    tenantId: typeof c.tenantId === 'string' ? c.tenantId : undefined,
+    ...c
+  };
+}
+
 export const AuthContext = createContext<AuthContextValue>({
   user: null,
   claims: {},
@@ -48,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }): React.React
       if (firebaseUser) {
         // Fetch fresh ID token result để lấy custom claims
         const tokenResult = await firebaseUser.getIdTokenResult();
-        setClaims(tokenResult.claims as AuthClaims);
+        setClaims(parseAuthClaims(tokenResult.claims));
       } else {
         setClaims({});
       }
@@ -60,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }): React.React
     const unsubToken = onIdTokenChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const tokenResult = await firebaseUser.getIdTokenResult();
-        setClaims(tokenResult.claims as AuthClaims);
+        setClaims(parseAuthClaims(tokenResult.claims));
 
         // Sync token to HttpOnly cookie via server route (C2)
         const token = tokenResult.token;

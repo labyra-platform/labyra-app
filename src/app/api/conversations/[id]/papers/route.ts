@@ -48,9 +48,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
     }
 
-    const body = (await req.json().catch(() => ({}))) as {
-      paperIds?: unknown;
-    };
+    let body: { paperIds?: unknown };
+    try {
+      body = (await req.json()) as { paperIds?: unknown };
+    } catch {
+      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+    }
     const rawPaperIds = body.paperIds;
     if (!Array.isArray(rawPaperIds)) {
       return NextResponse.json(

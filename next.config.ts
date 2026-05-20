@@ -4,20 +4,16 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const nextConfig: NextConfig = {
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   images: {
+    // L2: trimmed to actually-used origins only (removed slingacademy, clerk template leftovers)
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'api.slingacademy.com',
+        hostname: 'storage.googleapis.com',
         port: ''
       },
       {
         protocol: 'https',
-        hostname: 'img.clerk.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'clerk.com',
+        hostname: '*.googleusercontent.com',
         port: ''
       }
     ]

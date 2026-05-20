@@ -34,67 +34,27 @@ Reference: `securityaudit20260520.md` (current — supersedes LABYRA-SECURITY-FI
 
 ### Security criticals
 - [x] **C1 — Firestore rules catch-all** — FIXED + tested (33/33) + DEPLOYED (R183-1)
-- [ ] **H3 — audit endpoint IDOR** — R183-5 partial; verify
-      `msg.conversationId === body.conversationId` then load conv via msg, not body
-- [ ] **C2 — `__Host-session` cookie** — raw ID token in `__session` client-set, no
-      HttpOnly/Secure (XSS). New `/api/auth/session` (createSessionCookie); server.ts
-      + proxy.ts read `__Host-session` + verifySessionCookie(checkRevoked). +Mozilla.
-- [ ] **C3 — signed-download tenant-prefix** — assert gsPath startsWith
-      `tenants/{tid}/spectra/{id}/` on measurements + papers + Cache-Control no-store.
+- [x] **H3 — audit endpoint IDOR** — verified already correct (loads via Firestore path with conversationId, not collection-group)
+- [x] **C2 — `__Host-session` cookie** — DONE. `/api/auth/session` POST/DELETE, HttpOnly/Secure, proxy.ts + server.ts read `__Host-session`, auth-provider fetch instead of document.cookie.
+- [x] **C3 — signed-download tenant-prefix** — DONE. Prefix guard on measurements + papers + Cache-Control: no-store.
 
 ### Security highs + mediums
-- [ ] H1 preview origin; H2 chat prompt-injection + length cap; H4 Zod all POST/PATCH;
-      H5 cron timingSafeEqual; M1-M9. Mozilla headers next.config.ts (CSP burn-in →
-      enforce; COOP same-origin-allow-popups). A on *.vercel.app; 100/A+ needs apex domain.
+- [x] H1 preview origin; H2 chat length cap + metadata sanitize; H4 Zod (upload-complete+audit);
+      H5 cron timingSafeEqual; M1/M2/M3/M5/M6/M7/M8/M9 done (M4 N/A — Pub/Sub). Headers shipped
+      (CSP Report-Only burn-in → flip to enforce after 7d; COOP same-origin-allow-popups; CORP).
+      Mozilla ~70 (report-only). L1-L4, F1 done; F2 no-action, F3 deferred.
 
 ### RBAC API enforcement (ADR-030 — BLOCKING)
-- [ ] API only checks tenantId+uid, NOT role. Admin SDK bypasses rules → API is real gate.
-- [ ] token.getRoleFromToken; auth-helper returns role; requireWriter/requireAdmin;
-      sweep 63 routes (writer: materials/samples/experiments/spectra/equipment/bookings/
-      references/analyses/papers/chat/csie; admin: members/settings/billing); anti-escalation.
+- [x] API role enforcement DONE. getRoleFromToken + authenticateWriter/authenticateAdmin.
+      ~45 routes swept (writer-gated mutations; viewer read-only). Anti-escalation in invite create.
 
-### Onboarding backend (ADR-030 — BLOCKING self-serve)
-- [ ] VERIFY: Members page real or mockup? Cloud Function assigns claims?
-- [ ] Signup → create tenant + admin; invite → accept → assign {tenantId,role}. Two
-      flows (create-tenant vs join-invite). Invite-only phase 1.
-
-### Then (post-security)
-- [ ] Chemicals/Equipment/Bookings (port LabBook; Experiment=Activity hub)
-- [ ] Billing/Stripe + trial/paywall + email + Legal (Privacy/ToS, GDPR export/delete)
-- [ ] Dashboard KPI + Spectra Comparison view
-
----
-
-## 🔐 Commercial launch track (ACTIVE — priority #1)
-
-Goal: full paid commercial launch. Gated on security + RBAC + onboarding + billing.
-Reference: `securityaudit20260520.md` (current — supersedes LABYRA-SECURITY-FINAL-REPORT.md).
-
-### Security criticals
-- [x] **C1 — Firestore rules catch-all** — FIXED + tested (33/33) + DEPLOYED (R183-1)
-- [ ] **H3 — audit endpoint IDOR** — R183-5 partial; verify
-      `msg.conversationId === body.conversationId` then load conv via msg, not body
-- [ ] **C2 — `__Host-session` cookie** — raw ID token in `__session` client-set, no
-      HttpOnly/Secure (XSS). New `/api/auth/session` (createSessionCookie); server.ts
-      + proxy.ts read `__Host-session` + verifySessionCookie(checkRevoked). +Mozilla.
-- [ ] **C3 — signed-download tenant-prefix** — assert gsPath startsWith
-      `tenants/{tid}/spectra/{id}/` on measurements + papers + Cache-Control no-store.
-
-### Security highs + mediums
-- [ ] H1 preview origin; H2 chat prompt-injection + length cap; H4 Zod all POST/PATCH;
-      H5 cron timingSafeEqual; M1-M9. Mozilla headers next.config.ts (CSP burn-in →
-      enforce; COOP same-origin-allow-popups). A on *.vercel.app; 100/A+ needs apex domain.
-
-### RBAC API enforcement (ADR-030 — BLOCKING)
-- [ ] API only checks tenantId+uid, NOT role. Admin SDK bypasses rules → API is real gate.
-- [ ] token.getRoleFromToken; auth-helper returns role; requireWriter/requireAdmin;
-      sweep 63 routes (writer: materials/samples/experiments/spectra/equipment/bookings/
-      references/analyses/papers/chat/csie; admin: members/settings/billing); anti-escalation.
-
-### Onboarding backend (ADR-030 — BLOCKING self-serve)
-- [ ] VERIFY: Members page real or mockup? Cloud Function assigns claims?
-- [ ] Signup → create tenant + admin; invite → accept → assign {tenantId,role}. Two
-      flows (create-tenant vs join-invite). Invite-only phase 1.
+### Onboarding backend (ADR-031 — invite-only phase 1)
+- [x] VERIFIED: Members page = mockup. No Cloud Function — claims via API routes + Admin SDK.
+- [x] BACKEND DONE (ONBOARD-1): invite data layer + API routes (/api/invites,
+      /api/onboarding/pending+accept), email-match, anti-escalation, rules client-deny + index.
+- [ ] FRONTEND (ONBOARD-2): orphan guard in dashboard layout → /onboarding page;
+      Members UI (list + create-invite form) replacing mockup.
+- [ ] Tenant-create flow + self-serve: deferred to billing phase.
 
 ### Then (post-security)
 - [ ] Chemicals/Equipment/Bookings (port LabBook; Experiment=Activity hub)

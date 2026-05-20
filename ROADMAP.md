@@ -52,9 +52,26 @@ Reference: `securityaudit20260520.md` (current — supersedes LABYRA-SECURITY-FI
 - [x] VERIFIED: Members page = mockup. No Cloud Function — claims via API routes + Admin SDK.
 - [x] BACKEND DONE (ONBOARD-1): invite data layer + API routes (/api/invites,
       /api/onboarding/pending+accept), email-match, anti-escalation, rules client-deny + index.
-- [ ] FRONTEND (ONBOARD-2): orphan guard in dashboard layout → /onboarding page;
-      Members UI (list + create-invite form) replacing mockup.
+- [x] FRONTEND DONE (ONBOARD-2): orphan guard → /onboarding accept page;
+      Members UI (list + create-invite form, shadcn). Tenant type/schema formalized.
+- [x] EMAIL DONE (ONBOARD-EMAIL): Resend provider abstraction + feature flag +
+      invite template. Best-effort send in /api/invites. EMAIL_ENABLED=false until domain.
+- [ ] E2E TEST: incognito signup (invited email) → /onboarding → accept → dashboard.
 - [ ] Tenant-create flow + self-serve: deferred to billing phase.
+
+### 🌐 Domain activation checklist (when labyra.io purchased — DO ALL AT ONCE)
+Buy at Cloudflare/Porkbun (at-cost renew, NOT Hostinger/GoDaddy). Then:
+- [ ] DNS: point app.labyra.io → Vercel; add SPF + DKIM + DMARC for Resend.
+- [ ] Resend: verify domain; set EMAIL_FROM='Labyra <noreply@labyra.io>'.
+- [ ] Vercel env: RESEND_API_KEY, EMAIL_FROM, EMAIL_ENABLED=true,
+      NEXT_PUBLIC_APP_URL=https://app.labyra.io.
+- [ ] origin.ts: add 'https://app.labyra.io' to PRODUCTION_ORIGINS (H1).
+- [ ] next.config.ts CSP connect-src: add app.labyra.io if needed; flip
+      Content-Security-Policy-Report-Only → Content-Security-Policy (enforce) after
+      7-day burn-in review of /api/csp-report logs.
+- [ ] HSTS: add 'preload' to Strict-Transport-Security; submit apex to hstspreload.org.
+- [ ] Firebase Auth: add app.labyra.io to authorized domains (Google sign-in).
+- [ ] Expected: Mozilla Observatory → A+/100 (apex preload unlocks full marks).
 
 ### Then (post-security)
 - [ ] Chemicals/Equipment/Bookings (port LabBook; Experiment=Activity hub)

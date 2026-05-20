@@ -56,8 +56,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // storagePath is direct GCS path (no gs:// prefix per R167 pattern)
+    // C3: tenant-prefix guard — prevent cross-tenant path traversal
+    const expectedPrefix = `tenants/${tenantId}/papers/`;
+    if (!data.storagePath.startsWith(expectedPrefix)) {
+      console.error('C3 paper signed-download prefix mismatch', {
+        tenantId,
+        storagePath: data.storagePath
+      });
+      return new NextResponse('forbidden_path', { status: 403 });
+    }
+
     const url = await getSignedDownloadUrl(data.storagePath);
-    return NextResponse.json({ url, expiresAt: Date.now() + 15 * 60 * 1000 });
+    return NextResponse.json(
+      { url, expiresAt: Date.now() + 15 * 60 * 1000 },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (err) {
     console.error('GET paper signed-download error', err);
     return new NextResponse(err instanceof Error ? err.message : 'error', {

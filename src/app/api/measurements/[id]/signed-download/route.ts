@@ -50,8 +50,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     // Extract path from gs:// URI
     const gsPath = data.storage.raw.replace(/^gs:\/\/[^/]+\//, '');
 
+    // C3: tenant-prefix guard — prevent cross-tenant path traversal
+    const expectedPrefix = `tenants/${tenantId}/spectra/`;
+    if (!gsPath.startsWith(expectedPrefix)) {
+      console.error('C3 signed-download prefix mismatch', { tenantId, gsPath });
+      return new NextResponse('forbidden_path', { status: 403 });
+    }
+
     const url = await getSignedDownloadUrl(gsPath);
-    return NextResponse.json({ url, expiresAt: Date.now() + 15 * 60 * 1000 });
+    return NextResponse.json(
+      { url, expiresAt: Date.now() + 15 * 60 * 1000 },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (err) {
     console.error('GET signed-download error', err);
     return new NextResponse(err instanceof Error ? err.message : 'error', {

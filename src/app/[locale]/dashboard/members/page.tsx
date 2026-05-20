@@ -7,19 +7,30 @@
  * provides a create-invite form. Member management (role change, removal) is
  * a later phase; this ships the invite half required for onboarding.
  *
- * @phase ONBOARD-2
+ * @phase ONBOARD-2 / TD-ONBOARD-2 (shadcn UI)
  */
 import { IconCheck, IconClock, IconX } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import PageContainer from '@/components/layout/page-container';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useIsAdmin, useIsSuperAdmin } from '@/lib/auth/use-claims';
 import { getFirebaseAuth } from '@/lib/firebase/client';
+
+type InviteRole = 'admin' | 'member' | 'viewer';
 
 interface Invite {
   id: string;
   email: string;
-  role: 'admin' | 'member' | 'viewer';
+  role: InviteRole;
   status: 'pending' | 'accepted' | 'revoked';
   createdAt: number;
   expiresAt: number;
@@ -51,7 +62,7 @@ export default function MembersPage() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'admin' | 'member' | 'viewer'>('member');
+  const [role, setRole] = useState<InviteRole>('member');
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -126,32 +137,28 @@ export default function MembersPage() {
         {/* Create invite */}
         <div className='rounded-lg border border-input p-4'>
           <h2 className='mb-3 text-sm font-medium'>Invite a member</h2>
-          <div className='flex flex-col gap-3 sm:flex-row'>
-            <input
+          <div className='flex flex-col gap-3 sm:flex-row sm:items-center'>
+            <Input
               type='email'
               aria-label='Invitee email'
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder='email@example.com'
-              className='flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm'
+              className='flex-1'
             />
-            <select
-              aria-label='Invitee role'
-              value={role}
-              onChange={(e) => setRole(e.target.value as 'admin' | 'member' | 'viewer')}
-              className='rounded-md border border-input bg-background px-3 py-2 text-sm'
-            >
-              <option value='viewer'>Viewer</option>
-              <option value='member'>Member</option>
-              {isSuperAdmin && <option value='admin'>Admin</option>}
-            </select>
-            <button
-              onClick={() => void handleCreate()}
-              disabled={submitting || !email.trim()}
-              className='rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50'
-            >
+            <Select value={role} onValueChange={(v) => setRole(v as InviteRole)}>
+              <SelectTrigger className='w-full sm:w-40' aria-label='Invitee role'>
+                <SelectValue placeholder='Role' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='viewer'>Viewer</SelectItem>
+                <SelectItem value='member'>Member</SelectItem>
+                {isSuperAdmin && <SelectItem value='admin'>Admin</SelectItem>}
+              </SelectContent>
+            </Select>
+            <Button onClick={() => void handleCreate()} disabled={submitting || !email.trim()}>
               {submitting ? 'Inviting…' : 'Send invite'}
-            </button>
+            </Button>
           </div>
           <p className='text-muted-foreground mt-2 text-xs'>
             The invitee must sign up with this exact email to join. Invites expire in 7 days.
@@ -168,13 +175,13 @@ export default function MembersPage() {
               No invitations yet.
             </div>
           ) : (
-            <ul className='divide-y divide-border rounded-lg border border-input'>
+            <ul className='divide-border divide-y rounded-lg border border-input'>
               {invites.map((inv) => {
                 const Icon = STATUS_ICON[inv.status];
                 return (
                   <li key={inv.id} className='flex items-center justify-between px-4 py-3'>
                     <div className='flex items-center gap-3'>
-                      <Icon className='size-4 text-muted-foreground' />
+                      <Icon className='text-muted-foreground size-4' />
                       <div>
                         <div className='text-sm font-medium'>{inv.email}</div>
                         <div className='text-muted-foreground text-xs capitalize'>
@@ -183,12 +190,14 @@ export default function MembersPage() {
                       </div>
                     </div>
                     {inv.status === 'pending' && (
-                      <button
+                      <Button
+                        variant='ghost'
+                        size='sm'
                         onClick={() => void handleRevoke(inv.id)}
-                        className='text-xs text-destructive hover:underline'
+                        className='text-destructive hover:text-destructive'
                       >
                         Revoke
-                      </button>
+                      </Button>
                     )}
                   </li>
                 );

@@ -12,6 +12,8 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { signOut } from '@/lib/auth/actions';
 import { refreshAuthClaims } from '@/lib/auth/refresh-claims';
 import { useAuth } from '@/lib/auth/use-auth';
 import { useTenantId } from '@/lib/auth/use-claims';
@@ -95,6 +97,11 @@ export default function OnboardingPage() {
     }
   }
 
+  async function handleSignOut() {
+    await signOut();
+    router.replace('/sign-in');
+  }
+
   if (loading || tenantId) {
     return (
       <div className='flex min-h-screen items-center justify-center'>
@@ -143,17 +150,28 @@ export default function OnboardingPage() {
                   <div className='text-sm font-medium'>{inv.tenantId}</div>
                   <div className='text-muted-foreground text-xs capitalize'>Role: {inv.role}</div>
                 </div>
-                <button
+                <Button
+                  size='sm'
                   onClick={() => void handleAccept(inv)}
                   disabled={accepting !== null}
-                  className='rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50'
                 >
                   {accepting === inv.id ? 'Joining…' : 'Accept'}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
         )}
+
+        <div className='text-center'>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={() => void handleSignOut()}
+            className='text-muted-foreground text-xs'
+          >
+            Sign out
+          </Button>
+        </div>
       </div>
     </div>
   );

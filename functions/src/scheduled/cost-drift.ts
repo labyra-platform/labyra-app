@@ -212,7 +212,8 @@ export const reconcileCostDrift = onSchedule(
   async (_event) => {
     const date = utcYmd(2); // D-2
     const db = getFirestore();
-    const project = process.env.GCLOUD_PROJECT ?? 'labyra-app-dev';
+    const project = process.env.GCLOUD_PROJECT;
+    if (!project) throw new Error('GCLOUD_PROJECT not set — refusing to run cost-drift');
 
     logger.info('[cost-drift] starting', { date });
 

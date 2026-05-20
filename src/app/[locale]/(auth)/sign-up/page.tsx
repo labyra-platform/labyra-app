@@ -75,6 +75,7 @@ export default function SignUpPage(): React.ReactElement {
           onChange={(e) => setEmail(e.target.value)}
           placeholder='email@example.com'
           required
+          aria-label='Email'
           className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
         />
         <input
@@ -84,6 +85,7 @@ export default function SignUpPage(): React.ReactElement {
           placeholder='Password (min 8 chars)'
           minLength={8}
           required
+          aria-label='Password'
           className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
         />
         {error && (

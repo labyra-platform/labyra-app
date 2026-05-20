@@ -163,6 +163,7 @@ export function PaperList() {
             <Link
               key={paper.id}
               href={`/${locale}/dashboard/papers/${paper.id}`}
+              aria-label={paper.title || t('untitled')}
               className='block border rounded-lg p-4 hover:bg-muted/50 transition-colors'
             >
               <div className='flex items-start justify-between gap-4'>

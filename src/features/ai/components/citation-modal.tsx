@@ -40,6 +40,7 @@ export function CitationModal({ source, onClose }: CitationModalProps) {
       : null;
 
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- modal overlay: click/Esc closes; element has role=dialog + aria-modal
     <div
       className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm'
       onClick={(e) => {

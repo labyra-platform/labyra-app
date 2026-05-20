@@ -74,6 +74,7 @@ export default function SignInPage(): React.ReactElement {
           onChange={(e) => setEmail(e.target.value)}
           placeholder='email@example.com'
           required
+          aria-label='Email'
           className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
         />
         <input
@@ -82,6 +83,7 @@ export default function SignInPage(): React.ReactElement {
           onChange={(e) => setPassword(e.target.value)}
           placeholder='Password'
           required
+          aria-label='Password'
           className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
         />
         {error && (

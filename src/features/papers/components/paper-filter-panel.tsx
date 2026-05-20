@@ -109,6 +109,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
           placeholder={t('filterTitleSearchPlaceholder')}
           value={value.titleQuery}
           onChange={(e) => onChange({ ...value, titleQuery: e.target.value })}
+          aria-label={t('filterTitleSearchLabel')}
           className='w-full rounded border px-2 py-1 text-sm'
         />
       </div>
@@ -187,6 +188,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
               placeholder={t('filterJournalSearch')}
               value={journalSearch}
               onChange={(e) => setJournalSearch(e.target.value)}
+              aria-label={t('filterJournalSearch')}
               className='w-full rounded border px-2 py-1 text-xs'
             />
           )}

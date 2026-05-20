@@ -60,6 +60,7 @@ function InputGroupAddon({
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- addon focuses sibling input; convenience only, the input remains the control
     <div
       role='group'
       data-slot='input-group-addon'

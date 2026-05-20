@@ -742,6 +742,7 @@ export default function DemoForm() {
                             type='color'
                             value={field.state.value}
                             onChange={(e) => field.handleChange(e.target.value)}
+                            aria-label='Favorite Color'
                             className='h-9 w-12 cursor-pointer rounded-md border p-1'
                           />
                           <Input

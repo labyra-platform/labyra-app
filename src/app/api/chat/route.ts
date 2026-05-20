@@ -31,7 +31,7 @@ import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
 import { generateConversationTitle } from '@/lib/ai/title-generator';
 import { executeToolCall } from '@/lib/ai/tools/dispatch';
 import { getToolDefinitions } from '@/lib/ai/tools/registry';
-import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiCostBreakdown, AiTier, ChatRequestBodyV2, ChatStreamEventV2 } from '@/types/ai';
@@ -71,6 +71,17 @@ function addUsage(a: AiCostBreakdown, b: AiCostBreakdown): AiCostBreakdown {
     cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
     usd: Number((a.usd + b.usd).toFixed(6))
   };
+}
+
+// H2: sanitize string — strip control chars + truncate (outer scope per unicorn rule)
+function sanitizeStr(s: string, max: number): string {
+  // H2: remove control chars (<0x20) and angle brackets — no regex to avoid oxlint no-control-regex
+  let out = '';
+  for (let i = 0; i < s.length && out.length < max; i++) {
+    const c = s.charCodeAt(i);
+    if (c >= 0x20 && s[i] !== '<' && s[i] !== '>') out += s[i];
+  }
+  return out;
 }
 
 export async function POST(request: Request) {
@@ -221,16 +232,14 @@ export async function POST(request: Request) {
             doi?: string;
           };
           // H2: strip control chars + truncate to prevent prompt injection
-          const sanitize = (s: string, max: number) =>
-            s.replace(/[\x00-\x1f<>]/g, '').slice(0, max);
           const authorsStr =
             (d.authors ?? [])
               .slice(0, 2)
               .map((a) => sanitize(a, 100))
               .join(', ') + ((d.authors?.length ?? 0) > 2 ? ' et al.' : '');
           const yearStr = d.year ? ` (${d.year})` : '';
-          const title = sanitize(d.title ?? 'Untitled', 256);
-          const doi = d.doi ? sanitize(d.doi, 100) : null;
+          const title = sanitizeStr(d.title ?? 'Untitled', 256);
+          const doi = d.doi ? sanitizeStr(d.doi, 100) : null;
           return `[${i + 1}] ${authorsStr}${yearStr} — ${title}${doi ? ` [DOI: ${doi}]` : ''}`;
         });
       if (scopedPapers.length > 0) {

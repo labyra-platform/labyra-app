@@ -47,7 +47,7 @@
     "upload": "Upload",
     "new": "New",
     "edit": "Edit",
-    "spectra": "Spectra",
+    "spectra": "Measurements",
     "referenceCards": "Reference cards",
     "measurements": "Measurements",
     "references": "References",
@@ -505,7 +505,7 @@
       "cancelled": "Cancelled"
     },
     "tabEdit": "Edit",
-    "tabSpectra": "Spectra"
+    "tabSpectra": "Measurements"
   },
   "equipment": {
     "title": "Equipment",
@@ -609,10 +609,10 @@
     "subtitle": "Ask about your lab, papers, or anything"
   },
   "spectra": {
-    "title": "Spectra",
-    "subtitle": "Manage measurement spectra for experiments",
+    "title": "Measurements",
+    "subtitle": "Manage measurements for experiments",
     "loading": "Loading...",
-    "empty": "No spectra yet. Upload one to start.",
+    "empty": "No measurements yet. Upload one to start.",
     "upload": "Upload",
     "uploading": "Uploading...",
     "uploadSuccess": "Upload complete",
@@ -778,7 +778,7 @@
       "intensity": "Intensity (%)",
       "hkl": "hkl"
     },
-    "backToSpectra": "Back to spectra",
+    "backToSpectra": "Back to measurements",
     "formula": "Formula",
     "spaceGroup": "Space group",
     "anode": "Anode",

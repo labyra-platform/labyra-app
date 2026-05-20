@@ -24,6 +24,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useSamples } from '@/lib/firestore/queries/samples';
 import type { Experiment } from '@/types/experiments';
 import { type ExperimentFormValues, experimentFormSchema } from '../schema';
 
@@ -43,6 +44,7 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
   const tStatus = useTranslations('experiments.status');
   const [submitting, setSubmitting] = useState(false);
 
+  const { samples } = useSamples();
   const form = useForm<ExperimentFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(experimentFormSchema) as any,
@@ -199,6 +201,51 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
             )}
           />
         </div>
+
+        {/* R185-hotfix4: sample linkage (required for spectrum upload) */}
+        <FormField
+          control={form.control}
+          name='sampleIds'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Samples (link at least one to enable measurement upload)</FormLabel>
+              <div className='space-y-2 rounded-md border border-border p-3 max-h-48 overflow-y-auto'>
+                {samples.length === 0 ? (
+                  <p className='text-xs text-muted-foreground'>
+                    No samples available. Create a sample first.
+                  </p>
+                ) : (
+                  samples.map((s) => {
+                    const checked = (field.value ?? []).includes(s.id);
+                    return (
+                      <label
+                        key={s.id}
+                        className='flex items-center gap-2 text-sm cursor-pointer min-h-[32px]'
+                      >
+                        <input
+                          type='checkbox'
+                          checked={checked}
+                          onChange={(e) => {
+                            const current = field.value ?? [];
+                            if (e.target.checked) {
+                              field.onChange([...current, s.id]);
+                            } else {
+                              field.onChange(current.filter((id: string) => id !== s.id));
+                            }
+                          }}
+                          className='size-4'
+                        />
+                        <span className='font-mono text-xs'>{s.sampleCode}</span>
+                        <span className='text-muted-foreground'>{s.name}</span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

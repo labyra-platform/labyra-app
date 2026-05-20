@@ -6,7 +6,7 @@
  * @phase R164-phase-4a
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate } from '@/lib/api/auth-helper';
+import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
 import { reactivateSample } from '@/lib/firebase/samples/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
@@ -17,7 +17,7 @@ interface RouteContext {
 }
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
-  const auth = await authenticate(req);
+  const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
 
   const rl = await checkRateLimit(rateLimitKey('samples-reactivate', auth.tenantId), 10, 60);

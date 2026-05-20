@@ -4,7 +4,7 @@
  * @phase R164-phase-4b
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate } from '@/lib/api/auth-helper';
+import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
 import { listPapers } from '@/lib/firebase/papers/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 

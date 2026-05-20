@@ -11,14 +11,14 @@
  * @phase R185-10c (HTTP) → R186-4 (Pub/Sub)
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate } from '@/lib/api/auth-helper';
+import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
 import { publishCsieTrigger } from '@/lib/pubsub/topics/csie-trigger';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest, context: { params: Promise<{ sampleId: string }> }) {
-  const auth = await authenticate(req);
+  const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
 
   const { sampleId } = await context.params;

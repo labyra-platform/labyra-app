@@ -31,7 +31,7 @@ import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
 import { generateConversationTitle } from '@/lib/ai/title-generator';
 import { executeToolCall } from '@/lib/ai/tools/dispatch';
 import { getToolDefinitions } from '@/lib/ai/tools/registry';
-import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiCostBreakdown, AiTier, ChatRequestBodyV2, ChatStreamEventV2 } from '@/types/ai';

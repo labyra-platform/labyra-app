@@ -20,3 +20,19 @@ export function getTenantIdFromToken(decoded: DecodedIdToken): string | null {
   const claim = (decoded as { tenantId?: unknown }).tenantId;
   return typeof claim === 'string' ? claim : null;
 }
+
+/**
+ * Type-safe extraction of role from Firebase DecodedIdToken.
+ * role is a custom claim set by our Cloud Functions.
+ *
+ * @phase RBAC-1 ADR-030
+ */
+export function getRoleFromToken(
+  decoded: DecodedIdToken
+): 'superadmin' | 'admin' | 'member' | 'viewer' | null {
+  const claim = (decoded as { role?: unknown }).role;
+  if (claim === 'superadmin' || claim === 'admin' || claim === 'member' || claim === 'viewer') {
+    return claim;
+  }
+  return null;
+}

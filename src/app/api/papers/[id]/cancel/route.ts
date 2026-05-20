@@ -3,7 +3,7 @@
  * @phase R160-ai-5b-2
  */
 import { Timestamp } from 'firebase-admin/firestore';
-import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import { CANCELLABLE_STATUSES, type Paper } from '@/types/papers';
@@ -29,6 +29,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const tenantId = getTenantIdFromToken(decoded);
+  const role = getRoleFromToken(decoded);
+  if (role === 'viewer' || role === null) {
+    return new Response(JSON.stringify({ error: 'forbidden_viewer' }), { status: 403 });
+  }
   if (!tenantId) {
     return new Response(JSON.stringify({ error: 'missing_tenant_claim' }), {
       status: 403

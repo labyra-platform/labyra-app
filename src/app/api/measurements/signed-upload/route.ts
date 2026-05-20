@@ -13,7 +13,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
-import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 // R164-phase-5b-1: route URL stays /api/spectra/* until Phase 5b-2; collection switched to measurements
 import { getSignedUploadUrl, measurementRawPath } from '@/lib/firebase/storage';
@@ -31,6 +31,10 @@ export async function POST(req: NextRequest) {
     }
     const decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
     const tenantId = getTenantIdFromToken(decoded);
+    const role = getRoleFromToken(decoded);
+    if (role === 'viewer' || role === null) {
+      return new NextResponse('forbidden_viewer', { status: 403 });
+    }
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
     }

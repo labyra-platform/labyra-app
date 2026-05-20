@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
 import { getVectorStore } from '@/lib/ai/rag/vector-store';
-import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import { type Paper, TERMINAL_STATUSES } from '@/types/papers';
@@ -32,6 +32,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const tenantId = getTenantIdFromToken(decoded);
+  const role = getRoleFromToken(decoded);
+  if (role === 'viewer' || role === null) {
+    return new Response(JSON.stringify({ error: 'forbidden_viewer' }), { status: 403 });
+  }
   if (!tenantId) {
     return new Response(JSON.stringify({ error: 'missing_tenant_claim' }), {
       status: 403

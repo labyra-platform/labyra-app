@@ -4,7 +4,7 @@
  * @phase R164-phase-4b
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate } from '@/lib/api/auth-helper';
+import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
 import { createMeasurement, listMeasurements } from '@/lib/firebase/measurements/service';
 import { CreateMeasurementSchema } from '@/lib/schemas/measurement-schema';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await authenticate(req);
+  const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
 
   const rl = await checkRateLimit(rateLimitKey('measurements-write', auth.tenantId), 30, 60);

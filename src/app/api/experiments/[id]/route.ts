@@ -7,7 +7,7 @@
  * @phase R164-phase-4a
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate } from '@/lib/api/auth-helper';
+import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
 import {
   deprecateExperiment,
   getExperiment,
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
 }
 
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
-  const auth = await authenticate(req);
+  const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
 
   const rl = await checkRateLimit(rateLimitKey('experiments-write', auth.tenantId), 30, 60);
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 }
 
 export async function DELETE(req: NextRequest, ctx: RouteContext) {
-  const auth = await authenticate(req);
+  const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
 
   const rl = await checkRateLimit(rateLimitKey('experiments-write', auth.tenantId), 30, 60);

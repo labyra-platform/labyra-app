@@ -8,7 +8,7 @@
  * R164 R164-phase-5b-1: backend now reads from measurements collection (URL unchanged).
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { deleteFile } from '@/lib/firebase/storage';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -25,6 +25,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
     const decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
     const tenantId = getTenantIdFromToken(decoded);
+    const role = getRoleFromToken(decoded);
+    if (role === 'viewer' || role === null) {
+      return new NextResponse('forbidden_viewer', { status: 403 });
+    }
     if (!tenantId) {
       return new NextResponse('no_tenant', { status: 403 });
     }

@@ -4,7 +4,7 @@
  * @phase R164-phase-4a
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate } from '@/lib/api/auth-helper';
+import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
 import { createMaterial, listMaterials } from '@/lib/firebase/materials/service';
 import { CreateMaterialSchema } from '@/lib/schemas/material-schema';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await authenticate(req);
+  const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
 
   const rl = await checkRateLimit(rateLimitKey('materials-write', auth.tenantId), 30, 60);

@@ -21,6 +21,7 @@ interface StoredMessage {
 }
 
 const HISTORY_MAX_MESSAGES = 20; // last 20 messages = ~10 turns
+const HISTORY_MAX_CHARS = 240_000; // ~60K tokens — M8 budget cap
 
 /**
  * Load past messages and rebuild as proper Anthropic message array.
@@ -48,12 +49,21 @@ export async function loadConversationHistory(
     stored.push(data);
   }
 
-  // Take last N
+  // Take last N — M8: also enforce char budget
   const recent = stored.slice(-HISTORY_MAX_MESSAGES);
+  let charCount = 0;
+  const budgeted: StoredMessage[] = [];
+  for (let i = recent.length - 1; i >= 0; i--) {
+    const msgChars = (recent[i].content ?? '').length;
+    if (charCount + msgChars > HISTORY_MAX_CHARS) break;
+    budgeted.unshift(recent[i]);
+    charCount += msgChars;
+  }
+  const capped = budgeted;
 
   // Rebuild as LLMMessage array
   const messages: LLMMessage[] = [];
-  for (const m of recent) {
+  for (const m of capped) {
     if (m.role === 'user') {
       messages.push({ role: 'user', content: m.content });
     } else if (m.role === 'assistant') {

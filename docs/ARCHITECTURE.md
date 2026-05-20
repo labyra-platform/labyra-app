@@ -3,8 +3,8 @@
 > System architecture for Labyra Platform. For AI-specific design, see `AI_ARCHITECTURE.md`.
 > For dev workflow, see `WORKFLOW.md`. For coding rules, see `CLAUDE.md`.
 
-**Status**: Active (R182 shipped, R183+ planning)
-**Last updated**: 2026-05-19
+**Status**: Active (R186 shipped; C1 security fix DEPLOYED; RBAC enforcement in progress)
+**Last updated**: 2026-05-20
 <!-- @r182-arch-refresh -->
 
 ---
@@ -141,24 +141,91 @@ Client reads claims via `useAuth().claims` or convenience hooks:
 - `useIsAdmin()` → boolean
 - `useIsSuperAdmin()` → boolean
 
-### 3.3 Security rules
+### 3.3 Security rules (R183-1 / C1 — fixed + deployed)
 
-See `firestore.rules`. Pattern:
+See `firestore.rules` + ADR-030. **Firestore rules are ADDITIVE (OR-logic)** — a
+broad allow cannot be "overridden" by a later deny. The earlier catch-all
+`match /tenants/{tenantId}/{document=**} { allow write: isWriter }` was a CRITICAL
+hole (C1): it granted write to every subcollection, defeating `write:false` on
+aiProvenance/usage/papers/citations/auditLogs (member could zero-out quota →
+free AI; tamper audit trail; poison RAG). Fixed by listing every collection
+EXPLICITLY (no catch-all inside /tenants), with a single root default-deny last:
 
 ```
-match /tenants/{tenantId}/{document=**} {
-  allow read:  if belongsToTenant(tenantId) || isSuperAdmin();
-  allow write: if isWriter(tenantId)        || isSuperAdmin();
+match /tenants/{tenantId} {
+  // writable (isWriter): materials, samples, experiments, spectra,
+  //   equipment, bookings, aiConversations(+messages)
+  // admin-SDK-only (write:false): analyses, citations, references,
+  //   papers(+chunks/_stats), aiProvenance, usage
+  // admin-read server-write: _costs, _evals
+  // server-only (no client): _rate_limits, _idempotency
+  // auditLogs: create by writer, immutable (update,delete:false)
+  // members: admin-write
 }
+match /{document=**} { allow read, write: if false; }  // default-deny LAST
 ```
+
+Verified by `tests/firestore-rules.test.ts` (33 cases). Deployed to production.
+
+**IMPORTANT**: Firestore rules only protect DIRECT client-SDK access. The app
+writes via Admin SDK (which bypasses rules), so the real authorization boundary
+for app traffic is the API layer — see 3.4.
 
 Roles:
 - **viewer**: read-only within tenant
 - **member**: read + write data (no admin actions)
-- **admin**: full tenant access (manage members, settings)
+- **admin**: full tenant access (manage members, settings, billing)
 - **superadmin**: cross-tenant, platform analytics
 
 ---
+
+### 3.4 RBAC enforcement layers + onboarding (ADR-030)
+
+Authorization is enforced at THREE layers; the API layer is the source of truth:
+
+| Layer | Role | Status |
+|---|---|---|
+| Firestore rules (data) | Block direct client-SDK writes | Fixed (C1), deployed |
+| **API routes (action)** | **Source of truth** — Admin SDK bypasses rules, so per-route role checks are the real gate | **In progress (R183+)** |
+| UI (cosmetic) | Hide controls by role | Mirror backend only |
+
+RBAC model (phase 1 = pure RBAC): member = full CRUD within tenant, viewer =
+read-only. Per-route helpers `requireWriter` / `requireAdmin` / `requireSuperadmin`
+on top of `authenticate()`. ABAC ownership (member edits only own records) +
+request-to-join deferred to phase 2.
+
+Onboarding (B2B, invite-only phase 1):
+- Buyer signs up → a new tenant is created → they become the tenant **admin**
+  (owner). Billing is per-tenant.
+- Members join by invite only: admin invites email + role (member/viewer) → a
+  Cloud Function assigns `{tenantId, role}` claims on accept. Two distinct signup
+  flows: create-new-tenant vs join-existing-via-invite.
+- Anti privilege-escalation: a user may only assign roles BELOW their own (admin
+  cannot grant admin/superadmin; only superadmin creates admins).
+
+### 3.4 RBAC enforcement layers + onboarding (ADR-030)
+
+Authorization is enforced at THREE layers; the API layer is the source of truth:
+
+| Layer | Role | Status |
+|---|---|---|
+| Firestore rules (data) | Block direct client-SDK writes | Fixed (C1), deployed |
+| **API routes (action)** | **Source of truth** — Admin SDK bypasses rules, so per-route role checks are the real gate | **In progress (R183+)** |
+| UI (cosmetic) | Hide controls by role | Mirror backend only |
+
+RBAC model (phase 1 = pure RBAC): member = full CRUD within tenant, viewer =
+read-only. Per-route helpers `requireWriter` / `requireAdmin` / `requireSuperadmin`
+on top of `authenticate()`. ABAC ownership (member edits only own records) +
+request-to-join deferred to phase 2.
+
+Onboarding (B2B, invite-only phase 1):
+- Buyer signs up → a new tenant is created → they become the tenant **admin**
+  (owner). Billing is per-tenant.
+- Members join by invite only: admin invites email + role (member/viewer) → a
+  Cloud Function assigns `{tenantId, role}` claims on accept. Two distinct signup
+  flows: create-new-tenant vs join-existing-via-invite.
+- Anti privilege-escalation: a user may only assign roles BELOW their own (admin
+  cannot grant admin/superadmin; only superadmin creates admins).
 
 ## 4. Frontend structure
 

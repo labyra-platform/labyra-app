@@ -5,12 +5,21 @@
 
 <!-- R182-docs-update-2026-05-19 -->
 
-**Version**: 3.2 (R182)
-**Last updated**: 2026-05-19
-**State**: Production (all 6 tiers live)
+**Version**: 3.3 (R186)
+**Last updated**: 2026-05-20
+**State**: Production (all 6 tiers live). AI pipeline unchanged R183-R186; those rounds were security/launch + data-model work — see ROADMAP.md commercial-launch track.
 
 
 ## Changelog (recent rounds)
+
+### R183-R186 (2026-05-20) — Security / data-model (AI pipeline unchanged)
+- C1 Firestore rules catch-all fix deployed (aiProvenance/usage/papers/citations
+  now correctly server-write-only; member can no longer zero-out usage → no free
+  AI). Tier behaviour unchanged.
+- R186-3 collection mismatch fix: app readers now use canonical `spectra`.
+- R186-4 CSIE via Pub/Sub (csie-trigger topic).
+- R183-5 audit endpoint ownership (C6) — partial, H3 follow-up pending.
+- See ROADMAP.md for the security + RBAC + onboarding launch track.
 
 ### R182 (2026-05-19) — FTIR reference library
 - 29 functional group cards seeded into `tenants/{tid}/references` (NIST + Coates IR Table)
@@ -638,6 +647,18 @@ tenants/{tid}/aiAudits/{auditId}
   - evaluatedAt
 ```
 
+> **Access (C1 rules)**: `aiAudits`, `aiProvenance`, `usage`, `_costs`, `_evals`
+> are server-write via Admin SDK and have NO client write (write:false) — and
+> aiAudits/aiProvenance are not read by the client SDK directly. Any future
+> audit-viewer UI must read through an API route (Admin SDK), or a read rule must
+> be added explicitly. Direct client reads currently hit default-deny by design.
+
+> **Access (C1 rules)**: `aiAudits`, `aiProvenance`, `usage`, `_costs`, `_evals`
+> are server-write via Admin SDK and have NO client write (write:false) — and
+> aiAudits/aiProvenance are not read by the client SDK directly. Any future
+> audit-viewer UI must read through an API route (Admin SDK), or a read rule must
+> be added explicitly. Direct client reads currently hit default-deny by design.
+
 Costs:
 ```
 tenants/{tid}/_costs/{yyyy-MM-dd}
@@ -660,6 +681,10 @@ tenants/{tid}/_evals/{yyyy-Www}/conversations/{cid}
 ---
 
 ## 14. Roadmap
+
+> **Note (2026-05-20)**: Active priority pivoted to the commercial-launch security
+> track (C1 done; H3/C2/C3, RBAC API enforcement, onboarding backend pending) —
+> see ROADMAP.md. The AI-pipeline roadmap below resumes after launch hardening.
 
 ### R176 (Active)
 

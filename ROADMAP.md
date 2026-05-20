@@ -27,6 +27,82 @@ Cron infra: Firebase Functions Gen 2 asia-southeast1 (R171).
 
 ---
 
+## 🔐 Commercial launch track (ACTIVE — priority #1)
+
+Goal: full paid commercial launch. Gated on security + RBAC + onboarding + billing.
+Reference: `securityaudit20260520.md` (current — supersedes LABYRA-SECURITY-FINAL-REPORT.md).
+
+### Security criticals
+- [x] **C1 — Firestore rules catch-all** — FIXED + tested (33/33) + DEPLOYED (R183-1)
+- [ ] **H3 — audit endpoint IDOR** — R183-5 partial; verify
+      `msg.conversationId === body.conversationId` then load conv via msg, not body
+- [ ] **C2 — `__Host-session` cookie** — raw ID token in `__session` client-set, no
+      HttpOnly/Secure (XSS). New `/api/auth/session` (createSessionCookie); server.ts
+      + proxy.ts read `__Host-session` + verifySessionCookie(checkRevoked). +Mozilla.
+- [ ] **C3 — signed-download tenant-prefix** — assert gsPath startsWith
+      `tenants/{tid}/spectra/{id}/` on measurements + papers + Cache-Control no-store.
+
+### Security highs + mediums
+- [ ] H1 preview origin; H2 chat prompt-injection + length cap; H4 Zod all POST/PATCH;
+      H5 cron timingSafeEqual; M1-M9. Mozilla headers next.config.ts (CSP burn-in →
+      enforce; COOP same-origin-allow-popups). A on *.vercel.app; 100/A+ needs apex domain.
+
+### RBAC API enforcement (ADR-030 — BLOCKING)
+- [ ] API only checks tenantId+uid, NOT role. Admin SDK bypasses rules → API is real gate.
+- [ ] token.getRoleFromToken; auth-helper returns role; requireWriter/requireAdmin;
+      sweep 63 routes (writer: materials/samples/experiments/spectra/equipment/bookings/
+      references/analyses/papers/chat/csie; admin: members/settings/billing); anti-escalation.
+
+### Onboarding backend (ADR-030 — BLOCKING self-serve)
+- [ ] VERIFY: Members page real or mockup? Cloud Function assigns claims?
+- [ ] Signup → create tenant + admin; invite → accept → assign {tenantId,role}. Two
+      flows (create-tenant vs join-invite). Invite-only phase 1.
+
+### Then (post-security)
+- [ ] Chemicals/Equipment/Bookings (port LabBook; Experiment=Activity hub)
+- [ ] Billing/Stripe + trial/paywall + email + Legal (Privacy/ToS, GDPR export/delete)
+- [ ] Dashboard KPI + Spectra Comparison view
+
+---
+
+## 🔐 Commercial launch track (ACTIVE — priority #1)
+
+Goal: full paid commercial launch. Gated on security + RBAC + onboarding + billing.
+Reference: `securityaudit20260520.md` (current — supersedes LABYRA-SECURITY-FINAL-REPORT.md).
+
+### Security criticals
+- [x] **C1 — Firestore rules catch-all** — FIXED + tested (33/33) + DEPLOYED (R183-1)
+- [ ] **H3 — audit endpoint IDOR** — R183-5 partial; verify
+      `msg.conversationId === body.conversationId` then load conv via msg, not body
+- [ ] **C2 — `__Host-session` cookie** — raw ID token in `__session` client-set, no
+      HttpOnly/Secure (XSS). New `/api/auth/session` (createSessionCookie); server.ts
+      + proxy.ts read `__Host-session` + verifySessionCookie(checkRevoked). +Mozilla.
+- [ ] **C3 — signed-download tenant-prefix** — assert gsPath startsWith
+      `tenants/{tid}/spectra/{id}/` on measurements + papers + Cache-Control no-store.
+
+### Security highs + mediums
+- [ ] H1 preview origin; H2 chat prompt-injection + length cap; H4 Zod all POST/PATCH;
+      H5 cron timingSafeEqual; M1-M9. Mozilla headers next.config.ts (CSP burn-in →
+      enforce; COOP same-origin-allow-popups). A on *.vercel.app; 100/A+ needs apex domain.
+
+### RBAC API enforcement (ADR-030 — BLOCKING)
+- [ ] API only checks tenantId+uid, NOT role. Admin SDK bypasses rules → API is real gate.
+- [ ] token.getRoleFromToken; auth-helper returns role; requireWriter/requireAdmin;
+      sweep 63 routes (writer: materials/samples/experiments/spectra/equipment/bookings/
+      references/analyses/papers/chat/csie; admin: members/settings/billing); anti-escalation.
+
+### Onboarding backend (ADR-030 — BLOCKING self-serve)
+- [ ] VERIFY: Members page real or mockup? Cloud Function assigns claims?
+- [ ] Signup → create tenant + admin; invite → accept → assign {tenantId,role}. Two
+      flows (create-tenant vs join-invite). Invite-only phase 1.
+
+### Then (post-security)
+- [ ] Chemicals/Equipment/Bookings (port LabBook; Experiment=Activity hub)
+- [ ] Billing/Stripe + trial/paywall + email + Legal (Privacy/ToS, GDPR export/delete)
+- [ ] Dashboard KPI + Spectra Comparison view
+
+---
+
 ## ✅ Completed Rounds
 
 ### R160 — Foundation + AI (April–May 2026)

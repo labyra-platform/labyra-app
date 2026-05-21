@@ -1,72 +1,83 @@
 /**
- * API: PATCH/DELETE /api/bookings/[id] — update / delete Booking
- * @phase R160-data-2
+ * GET    /api/bookings/[id] — detail (authed).
+ * PATCH  /api/bookings/[id] — update time/purpose (owner or admin), overlap-checked.
+ * DELETE /api/bookings/[id] — cancel (owner or admin).
+ * @phase BOOK-1
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
-import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
-import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
+import { z } from 'zod';
+import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
+import {
+  BookingConflictError,
+  cancelBooking,
+  getBooking,
+  updateBooking
+} from '@/lib/firebase/bookings/service';
 
-async function authorize(
-  req: NextRequest
-): Promise<{ uid: string; tenantId: string } | NextResponse> {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
-  const token = authHeader.slice('Bearer '.length);
-  const decoded = await getAdminAuthService().verifyIdToken(token);
-  const tenantId = getTenantIdFromToken(decoded);
-  const role = getRoleFromToken(decoded);
-  if (role === 'viewer' || role === null) {
-    return new NextResponse('forbidden_viewer', { status: 403 });
-  }
-  if (!tenantId) {
-    return new NextResponse('no_tenant', { status: 403 });
-  }
+export const runtime = 'nodejs';
 
-  // R162-tier-rate-limit — per-tenant rate limit
-  const rl = await checkRateLimit(rateLimitKey('bookings-edit', tenantId), 30, 60);
-  if (!rl.allowed) {
-    return new NextResponse('rate_limited', {
-      status: 429,
-      headers: { 'Retry-After': String(rl.resetSec) }
-    });
-  }
-  return { uid: decoded.uid, tenantId };
+const PatchSchema = z.object({
+  startAt: z.number().int().optional(),
+  endAt: z.number().int().optional(),
+  purpose: z.string().min(1).max(500).optional(),
+  notes: z.string().max(2000).optional(),
+  status: z.enum(['pending', 'approved', 'in_progress', 'completed', 'cancelled']).optional()
+});
+
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = await authenticate(req);
+  if (auth.error) return auth.error;
+  const { id } = await ctx.params;
+  const b = await getBooking(auth.tenantId, id);
+  if (!b) return new NextResponse('not_found', { status: 404 });
+  return NextResponse.json(b);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const auth = await authorize(req);
-  if (auth instanceof NextResponse) return auth;
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = await authenticateWriter(req);
+  if (auth.error) return auth.error;
+  const { id } = await ctx.params;
+  let patch;
   try {
-    const data = await req.json();
-    const db = getAdminFirestoreService();
-    const ref = db.doc(`tenants/${auth.tenantId}/bookings/${id}`);
-    await ref.update({ ...data, updatedAt: Date.now() });
-    return NextResponse.json({ ok: true });
+    patch = PatchSchema.parse(await req.json());
+  } catch {
+    return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+  }
+  try {
+    const isAdmin = auth.role === 'admin' || auth.role === 'superadmin';
+    await updateBooking(auth.tenantId, id, patch, auth.uid, isAdmin);
+    return new NextResponse(null, { status: 204 });
   } catch (err) {
-    console.error('PATCH /bookings/[id] error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', {
-      status: 500
-    });
+    if (err instanceof BookingConflictError) {
+      return NextResponse.json(
+        { error: 'booking_conflict', conflicts: err.conflicts },
+        { status: 409 }
+      );
+    }
+    const msg = err instanceof Error ? err.message : 'update_failed';
+    const status =
+      msg === 'forbidden'
+        ? 403
+        : msg === 'booking_not_found'
+          ? 404
+          : msg === 'invalid_interval'
+            ? 400
+            : 500;
+    return NextResponse.json({ error: msg }, { status });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const auth = await authorize(req);
-  if (auth instanceof NextResponse) return auth;
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = await authenticateWriter(req);
+  if (auth.error) return auth.error;
+  const { id } = await ctx.params;
   try {
-    const db = getAdminFirestoreService();
-    const ref = db.doc(`tenants/${auth.tenantId}/bookings/${id}`);
-    await ref.delete();
-    return NextResponse.json({ ok: true });
+    const isAdmin = auth.role === 'admin' || auth.role === 'superadmin';
+    await cancelBooking(auth.tenantId, id, auth.uid, isAdmin);
+    return new NextResponse(null, { status: 204 });
   } catch (err) {
-    console.error('DELETE /bookings/[id] error', err);
-    return new NextResponse(err instanceof Error ? err.message : 'error', {
-      status: 500
-    });
+    const msg = err instanceof Error ? err.message : 'cancel_failed';
+    const status = msg === 'forbidden' ? 403 : msg === 'booking_not_found' ? 404 : 500;
+    return NextResponse.json({ error: msg }, { status });
   }
 }

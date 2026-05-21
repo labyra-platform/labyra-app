@@ -69,7 +69,8 @@
     "haveAccount": "Already have an account?",
     "signingIn": "Signing in...",
     "creatingAccount": "Creating account...",
-    "signInToManage": "Sign in to manage your account"
+    "signInToManage": "Sign in to manage your account",
+    "logout": "Log out"
   },
   "dashboard": {
     "totalRevenue": "Total Revenue",

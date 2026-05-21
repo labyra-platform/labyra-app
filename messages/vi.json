@@ -69,7 +69,8 @@
     "haveAccount": "Đã có tài khoản?",
     "signingIn": "Đang đăng nhập...",
     "creatingAccount": "Đang tạo tài khoản...",
-    "signInToManage": "Đăng nhập để quản lý tài khoản"
+    "signInToManage": "Đăng nhập để quản lý tài khoản",
+    "logout": "Đăng xuất"
   },
   "dashboard": {
     "totalRevenue": "Tổng doanh thu",

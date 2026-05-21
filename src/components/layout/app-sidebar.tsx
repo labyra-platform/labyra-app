@@ -1,5 +1,5 @@
 'use client';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -31,9 +31,33 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
 import { Link } from '@/i18n/navigation';
 import { Icons } from '../icons';
+import { useAuth } from '@/lib/auth/use-auth';
+import { signOut } from '@/lib/auth/actions';
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useAuth();
+  const email = user?.email ?? '';
+  const displayName = user?.displayName ?? email.split('@')[0] ?? 'User';
+  const initials =
+    displayName
+      .split(/[\s@.]+/)
+      .map((p) => p[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() || 'U';
+
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' });
+    } catch {
+      /* non-fatal */
+    }
+    await signOut();
+    router.replace('/sign-in');
+  }
   const { isOpen: _isOpen } = useMediaQuery();
   void _isOpen;
   const filteredGroups = useFilteredNavGroups(navGroups);
@@ -118,7 +142,13 @@ export default function AppSidebar() {
                   size='lg'
                   className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                 >
-                  <span className='truncate'>{t('nav.groups.account')}</span>
+                  <div className='bg-primary/10 text-primary flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold'>
+                    {initials}
+                  </div>
+                  <div className='grid flex-1 text-left text-sm leading-tight'>
+                    <span className='truncate font-medium'>{displayName}</span>
+                    <span className='text-muted-foreground truncate text-xs'>{email}</span>
+                  </div>
                   <Icons.chevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -129,14 +159,20 @@ export default function AppSidebar() {
                 sideOffset={4}
               >
                 <DropdownMenuLabel className='p-0 font-normal'>
-                  <div className='text-muted-foreground px-1 py-1.5 text-sm'>
-                    {t('auth.signInToManage')}
+                  <div className='px-2 py-1.5 text-sm'>
+                    <div className='font-medium'>{displayName}</div>
+                    <div className='text-muted-foreground text-xs'>{email}</div>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/dashboard/notifications')}>
                   <Icons.notification className='mr-2 h-4 w-4' />
                   {t('nav.notifications')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void handleLogout()}>
+                  <Icons.logout className='mr-2 h-4 w-4' />
+                  {t('auth.logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -1,730 +1,439 @@
-# Labyra Platform — Coding Rules & Conventions
+# CLAUDE.md — Labyra App Coding Rules
 
+> Read FIRST before any architectural decision or code change.
+> Update sau mỗi round có lesson mới.
 
-## Required reading
+<!-- R175-docs-update-2026-05-16 -->
 
-**Before making architectural decisions**, read:
-- `docs/labyra-strategy.md` — Strategic guidance (positioning, stages, risks)
-- `docs/architecture-decisions.md` — ADR log (past decisions with rationale)
-- `docs/ai/ai-5b-pipeline.md` — Paper pipeline design (if working on RAG)
-- `docs/uiux-international-standards.md` — UI/UX standards (WCAG 2.2 AA, ISO 9241, Nielsen, Gestalt, Tufte data viz)
-- `docs/strategy/INSIGHTS.md` — strategic actionable (pricing, trust, onboarding, VN context)
-- `docs/strategy/market-research.md` — TAM/SAM/SOM, LIMS competitive analysis
-- `docs/strategy/consumer-psychology.md` — UTAUT/TAM/Fogg model application
-- `docs/scientific-methods/xrd-analysis.md` — XRD algorithms & formulas reference
-- `docs/scientific-methods/ftir-reference-library.md` — FTIR reference card library (R182)
-- `docs/scientific-methods/citation-matching.md` — Citation resolver strategy
-- `docs/scientific-methods/journal-extraction.md` — Crossref/OpenAlex journal resolver (R179)
-- `docs/scientific-methods/paper-domain-classification.md` — Taxonomy v1 classify (R178)
-- `docs/labyra-experiment-database-report.md` — Database architecture for experiment data (storage tier per data type)
-- `docs/database-stage-2-plan.md` — Stage 2 migration roadmap (GCS + BigQuery + spectra pipeline)
-- `docs/accessibility-audit.md` — WCAG 2.2 AA checklist
-- `docs/round-r182-handoff.md` — Latest session handoff (R179-R182 shipped)
-
-> This file is read by AI agents (Claude, Copilot, Cursor) before making any changes.
-> Follow ALL rules below strictly. No exceptions unless explicitly noted.
+**Repo**: `github.com/labyra-platform/labyra-app` (Next.js 16 main app)
+**Worker repo**: `github.com/emnam009009/labyra-spectra-worker` (Python Cloud Run)
+**User GitHub**: `emnam009009` (NOT `emnam009`)
 
 ---
 
-## Stack
+## 1. Core stack rules
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 15 App Router |
-| Language | TypeScript strict (no `any`, no `@ts-nocheck`) |
-| Styling | Tailwind 4 + CSS Variables |
-| UI Kit | shadcn/ui |
-| State | Zustand |
-| Data fetching | TanStack Query v5 |
-| Auth | Firebase Auth (Google + email/password) |
-| Backend | Firebase Admin SDK (server) + Client SDK (browser) |
-| Database | Firestore + RTDB |
-| Storage | Firebase Storage |
-| Cloud Functions | 11 functions, asia-southeast1, giữ nguyên |
-| Charts | recharts (dashboard) + Plotly (scientific) + D3 (graph) |
-| Icons | @tabler/icons-react via `src/components/icons.tsx` — NO emoji in UI |
-| Deploy | Vercel + Firebase backend |
-| Monorepo | pnpm workspaces |
+### Language
 
----
+- TypeScript strict mode, no `any`, no `@ts-nocheck`
+- Use `unknown` + type guards
+- `satisfies` operator for type-safe object literals
+- ESM only (`"type": "module"`)
 
-## TypeScript Rules
+### File naming
 
-```typescript
-// ❌ NEVER
-const data: any = response;
-// @ts-nocheck
-const user = data as User;
+- **kebab-case** for files: `cost-guard.ts`, `tier-badge.tsx`
+- **PascalCase** for components: `TierBadge`, `MessageList`
+- **camelCase** for functions/vars: `getTenantId`, `recordCost`
+- **UPPER_SNAKE** for constants: `MAX_TOOL_ROUNDS`, `FALLBACK_TIER`
 
-// ✅ ALWAYS
-const data: unknown = response;
-if (isUser(data)) { ... }  // type guard
-const user = data satisfies User;
-```
+### Size limits
 
-- Strict mode ON — `tsconfig.json` phải có `"strict": true`
-- Explicit return types cho tất cả public functions và API handlers
-- Dùng `unknown` thay `any`, narrow type trước khi dùng
-- Dùng `satisfies` operator thay type assertion khi có thể
-- Interface cho object shapes, type cho unions/primitives
-- Không dùng `namespace`, không dùng `enum` — dùng `const` object thay
+- Max 200 LOC per component file
+- Max 150 LOC per hook
+- Max 100 LOC per utility function
+- Split larger files into focused modules
 
----
+### React patterns
 
-## Naming Conventions
+- Server Components default; `'use client'` only when needed (state, effects, refs)
+- React Hook Form + Zod for ALL forms
+- TanStack Query for server state, Zustand for client state
+- No `window`/`document` in Server Components
+- Hooks (`useMemo`/`useState`/`useEffect`) MUST be called before any conditional early return. Violations = runtime crash on prod ("Rendered more hooks than during the previous render"). Audit hook order before every patch touching components with hooks.
 
-```
-Components:     PascalCase        ExperimentTable, ChemicalCard
-Hooks:          use prefix        useExperiments, useLabStore, useAuth
-Stores:         use prefix        useLabStore, useUIStore
-Constants:      UPPER_SNAKE       MAX_RETRY_COUNT, DEFAULT_PAGE_SIZE
-Files:          kebab-case        experiment-table.tsx, use-experiments.ts
-Types:          PascalCase        ExperimentRow, ChemicalStatus
-Enums (const):  UPPER_SNAKE keys  STATUS.ACTIVE, STATUS.PENDING
-```
-
-**Không abbreviate:**
-- `exp` → `experiment`
-- `chem` → `chemical`
-- `eq` → `equipment`
-- `cb` → `callback`
-- `btn` → `button`
-- `idx` → `index`
-
----
-
-## File Structure Rules
-
-### Component file order:
-```tsx
-// 1. React imports
-// 2. Next.js imports
-// 3. Third-party imports (alphabetical)
-// 4. Internal imports — absolute (@/components/...)
-// 5. Internal imports — relative (./utils)
-// 6. Type imports (import type)
-// 7. Constants
-// 8. Types/interfaces local to file
-// 9. Component (default export last)
-// 10. Subcomponents
-// 11. Helper functions
-```
-
-### File size limits:
-- Component file: tối đa **200 lines** — split nếu lớn hơn
-- Hook file: tối đa **150 lines**
-- Utility file: tối đa **100 lines**
-- KHÔNG có file `utils.ts` chứa mọi thứ — split theo domain
-
-### Folder structure:
-```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── (auth)/             # Auth group
-│   ├── (dashboard)/        # Dashboard group
-│   └── api/                # API routes
-├── components/
-│   ├── ui/                 # shadcn/ui primitives (auto-generated)
-│   ├── shared/             # Shared components across domains
-│   └── [domain]/           # Domain-specific components
-│       ├── experiments/
-│       ├── chemicals/
-│       ├── equipment/
-│       ├── ai/
-│       └── members/
-├── hooks/                  # Custom React hooks
-├── lib/                    # Utilities, configs
-│   ├── firebase.ts         # Firebase client init
-│   ├── firebase-admin.ts   # Firebase Admin (server only)
-│   └── utils.ts            # cn() và shadcn utilities ONLY
-├── stores/                 # Zustand stores
-├── types/                  # Global TypeScript types
-└── constants/              # App-wide constants
-```
-
----
-
-## React / Next.js Rules
-
-### Components:
-```tsx
-// ❌ Inline object/array trong JSX
-<Component style={{ color: "red" }} items={[1, 2, 3]} />
-
-// ✅ Extract ra ngoài
-const style = { color: "red" } as const;
-const items = [1, 2, 3] as const;
-<Component style={style} items={items} />
-```
-
-- Không dùng `React.FC` — dùng function declaration
-- Props interface đặt tên `[ComponentName]Props`
-- Không dùng `index` làm `key` prop — dùng unique ID
-- `useMemo`/`useCallback` chỉ khi profiling confirm cần — không premature optimize
-- Server Components by default, chỉ thêm `"use client"` khi cần
-
-### Server vs Client:
-```tsx
-// Server Component (default) — data fetching, no interactivity
-export default async function ExperimentPage() {
-  const data = await getExperiments();
-  return <ExperimentTable data={data} />;
-}
-
-// Client Component — interactivity, hooks, browser APIs
-"use client";
-export function ExperimentTable({ data }: ExperimentTableProps) {
-  const [selected, setSelected] = useState<string[]>([]);
-  ...
-}
-```
-
----
-
-## Styling Rules
+### Forms (mandatory shadcn pattern)
 
 ```tsx
-// ❌ Inline styles — NEVER
-<div style={{ backgroundColor: "#06B6D4" }}>
-
-// ❌ Hardcode color — NEVER
-<div className="bg-[#06B6D4]">
-
-// ✅ CSS variables + Tailwind
-<div className="bg-accent">
-
-// ✅ cn() cho conditional classes
-import { cn } from "@/lib/utils";
-<div className={cn("base-class", isActive && "active-class")}>
+<Form {...form}>
+  <form onSubmit={form.handleSubmit(onSubmit)}>
+    <FormField
+      control={form.control}
+      name="fieldName"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Label</FormLabel>
+          <FormControl><Input {...field} /></FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  </form>
+</Form>
 ```
 
-### CSS Variables (dark mode default):
-```css
-/* Dùng đúng token, không tự đặt màu mới */
---background, --foreground
---accent, --accent-foreground
---muted, --muted-foreground
---border, --input, --ring
---destructive, --warning, --success
+No custom HTML `<label>`/`<input>` — always shadcn Form/FormField/FormItem/FormLabel/FormControl/FormMessage.
+
+### Tables (shadcn Table)
+
+Use `<Table>`, `<TableHeader>`, `<TableRow>`, `<TableCell>` from `@/components/ui/table`. Do NOT recreate Carbon design system styles from labbook-bku.
+
+---
+
+## 2. Styling
+
+### Tailwind tokens ONLY
+
+Use CSS variables, no hardcoded colors:
+- `bg-background`, `text-foreground`, `border-border`
+- `bg-muted`, `text-muted-foreground`
+- `bg-accent`, `bg-primary`, `bg-destructive`
+- `bg-card`, `border-input`
+
+No hex colors (`#3b82f6`) or named colors (`bg-blue-500`) except in tier-specific palettes (e.g., TIER_COLORS in message-bubble.tsx where each tier has assigned semantic color).
+
+### Icons
+
+- **`@tabler/icons-react`** ONLY (NOT Lucide — historical decision R162)
+- Centralized in `src/components/icons.tsx`:
+  ```tsx
+  import { IconChemistry, IconBeaker } from '@tabler/icons-react';
+  export const Icons = { chemicals: IconChemistry, samples: IconBeaker, ... };
+  ```
+- Pattern: `<Icons.chemicals className="h-4 w-4" />`
+
+### No emoji in code
+
+Emojis OK in user-facing messages (i18n) but NOT in code comments, commit messages, or function names.
+
+---
+
+## 3. Multi-tenant rules
+
+Every Firestore query MUST have `tenantId` filter:
+
+```ts
+// ✅ Correct
+const samples = await db
+  .collection(`tenants/${tenantId}/samples`)
+  .get();
+
+// ❌ Wrong — cross-tenant leak
+const samples = await db
+  .collection('samples')
+  .get();
+```
+
+Server-side: extract tenantId via `getTenantIdFromToken(decoded)` from `@/lib/auth/token` (22+ routes use this).
+
+Client-side: `useTenantId()` from `@/lib/auth/use-claims`.
+
+Custom claims pattern: each user has SINGLE `tenantId`. No cross-tenant superadmin in runtime — those operations use service account via admin SDK scripts.
+
+**Superadmin role (R172)**: separate from tenant. Stored in custom claims `role: 'superadmin'`. Cross-tenant access via `requireSuperadmin()` guard. Cron jobs use service account `cron-runner@labyra-app-dev.iam.gserviceaccount.com`.
+
+---
+
+## 4. Next.js 16 middleware convention
+
+File is `src/proxy.ts` (default export `proxy`), NOT `middleware.ts`. If both exist → build fails:
+> Both middleware file and proxy file are detected
+
+Labyra-app `proxy.ts` handles:
+- i18n routing (next-intl)
+- Auth check + session refresh
+- CSRF check + Origin allowlist (R162 Stage 1 Security)
+- Rate limit (Firestore-based, R162)
+
+Matcher pattern: `/((?!_next|_vercel|.*\\..*).*)` includes /api routes.
+
+When adding middleware logic (rate limit, CSRF, headers), MERGE into proxy.ts, do NOT create new middleware file.
+
+---
+
+## 5. Firebase + Admin SDK
+
+### Client SDK (`firebase/auth`, `firebase/firestore`)
+
+Use in client components only. Wrap in custom hooks like `useTenantId`, `useUser`.
+
+### Admin SDK (server-only)
+
+Files with `firebase-admin` imports → MUST have `'server-only'` directive at top:
+
+```ts
+import 'server-only';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
+```
+
+**`'server-only'` package rules** (R165 lesson):
+- USE only for modules with firebase-admin / fs / Node-only API
+- Do NOT use for modules shared with edge runtime (proxy.ts / middleware) or client components
+- Pure business logic (e.g., `match-score.ts`, scoring algorithms) MUST be separated from admin SDK imports — extract pure file so client components can import
+
+### Admin SDK initialization (R172 lesson)
+
+Do NOT use raw `getAuth()` from `firebase-admin/auth` — default app may not be initialized in dev/test:
+
+```ts
+// ❌ Wrong — may throw "default Firebase app does not exist"
+import { getAuth } from 'firebase-admin/auth';
+const decoded = await getAuth().verifyIdToken(token);
+
+// ✅ Correct — use Labyra wrapper
+import { getAdminAuthService } from '@/lib/firebase/admin';
+const decoded = await getAdminAuthService().verifyIdToken(token);
+```
+
+Same pattern for Firestore: `getAdminFirestoreService()` instead of `getFirestore()`.
+
+### Firestore Database
+
+Project: `labyra-app-dev`
+Database: `(default)`
+Region: `asia-southeast1` for nested resources
+
+For migration scripts, set env:
+```bash
+FIRESTORE_DATABASE_ID="(default)"
 ```
 
 ---
 
-## Icons Rules
+## 6. AI tier rules (R168→R175)
 
-Codebase uses **`@tabler/icons-react`** as the canonical icon library
-(decided R160). Centralized in `src/components/icons.tsx`.
+### 6-tier production stack
 
-```tsx
-// ✅ Tabler icons cho tất cả UI icons
-import { IconFlask, IconTestTube, IconAtom, IconSparkles } from "@tabler/icons-react";
-<IconFlask className="size-4" />
+| Tier | Model | Capability | Trigger |
+|---|---|---|---|
+| T0 | gemini-2.5-flash | security-router | Mọi chat (intent classifier) |
+| T1 | gemini-2.5-flash | tool-calling-cheap | `feature: 'lab_ops'` |
+| T2 | gemini-2.5-flash | rag-balanced | `feature: 'theory'` (default) |
+| T3 | claude-sonnet-4-6 | reasoning-balanced | `feature: 'spectrum_analysis'` |
+| T4 | claude-sonnet-4-6 | reasoning-balanced | `feature: 'paper_writing'` (keyword override) |
+| T5 | claude-opus-4-7 | reasoning-frontier | `POST /api/messages/[id]/audit` (explicit) |
 
-// ✅ Or use the centralized Icons object (preferred for shared icons)
-import { Icons } from '@/components/icons';
-<Icons.papers className="size-4" />
+### Capability abstraction (single source of truth)
 
-// ✅ Inline SVG CHỈ cho logo và brand icons
-export function LabyraLogo({ className }: { className?: string }) {
-  return <svg className={className}>...</svg>;
-}
+Edit `src/lib/ai/config/capabilities.ts` to swap models. Tier→Capability→Model mapping via `TIER_CAPABILITY[tier]` and `CAPABILITY_MAP[capability]`. Do NOT hardcode model strings in tier handlers.
 
-// ❌ NEVER dùng emoji trong UI
-<span>🔬 Experiments</span>  // NO
-<span>⚠️ Warning</span>      // NO
+### Gemini provider lessons
 
-// ❌ NEVER import other icon libraries (Lucide, Heroicons, FontAwesome, etc.)
-```
+1. **`thought_signature` requirement (R174-1)**: Gemini 3 series requires `thought_signature` field in multi-turn function calls. SDK 2026-05 release doesn't expose pass-through. Use gemini-2.5-flash until SDK stable.
 
-### Icon sizes (dùng đúng, không tự đặt):
-```
-h-3 w-3   — inline với text-xs
-h-4 w-4   — default UI (nav, buttons)
-h-5 w-5   — primary actions
-h-6 w-6   — page headers
-h-8 w-8   — feature highlights
-```
+2. **`functionResponse` role split (R174-5)**: Gemini 2.5+ rejects `functionResponse` parts on role='user'. Must split message history:
+   - text + functionCall → role='model'
+   - functionResponse → role='function'
 
----
+3. **Tool descriptions need imperative triggers** (R162 lesson): Gemini Flash needs "CALL THIS whenever..." + Vietnamese phrases + synonyms. Sonnet 4.6 matches semantically without this.
 
-## State Management Rules
+### Cost telemetry (mandatory for all LLM calls)
 
-### Zustand stores:
-```typescript
-// ❌ NEVER dùng window.* globals
-window.cache = data;
-window.currentAuth = user;
-
-// ✅ Zustand store
-import { useLabStore } from "@/stores/lab.store";
-const { chemicals, setChemicals } = useLabStore();
-```
-
-### Store structure:
-```typescript
-// stores/lab.store.ts
-interface LabStore {
-  // State
-  chemicals: Record<string, Chemical>;
-  experiments: Record<string, Experiment>;
-
-  // Actions — luôn đặt tên set/update/clear
-  setChemicals: (data: Record<string, Chemical>) => void;
-  updateExperiment: (id: string, data: Partial<Experiment>) => void;
-  clearAll: () => void;
-}
-```
-
-### TanStack Query cho server state:
-```typescript
-// Firebase data fetching qua TanStack Query
-const { data: experiments, isLoading } = useQuery({
-  queryKey: ["experiments", tenantId],
-  queryFn: () => fetchExperiments(tenantId),
-  staleTime: 30_000,  // 30s
+```ts
+await recordCost({
+  tenantId,
+  tier,
+  capability: getCapabilityForTier(tier),
+  feature: intentDecision.feature,
+  costUsd: totalUsage.usd,
+  inputTokens: totalUsage.inputTokens,
+  outputTokens: totalUsage.outputTokens,
+  latencyMs: Date.now() - startedAt
 });
 ```
 
----
+Aggregated in `tenants/{tid}/_costs/{date}` with breakdowns by tier+feature.
 
-## Error Handling Rules
+### Cost Guard 4-gate pre-check (mandatory for non-T0 calls)
 
-```typescript
-// ❌ Silent catch
-try { ... } catch (e) { console.log(e); }
-
-// ❌ Catch everything
-try { ... } catch (error) { /* ignore */ }
-
-// ✅ Typed error handling
-try {
-  await updateChemical(id, data);
-} catch (error) {
-  if (error instanceof FirebaseError) {
-    if (error.code === "permission-denied") {
-      toast.error("Bạn không có quyền thực hiện thao tác này");
-      return;
-    }
-  }
-  logger.error("updateChemical failed", { error, id });
-  toast.error("Có lỗi xảy ra, vui lòng thử lại");
+```ts
+const estimated = estimateCost(tier, feature);
+const costCheck = await checkCostGuard(tenantId, tier, feature, estimated);
+if (!costCheck.allowed) {
+  return new Response(JSON.stringify({ error: 'quota_exceeded', reason: costCheck.reason }), { status: 429 });
 }
 ```
 
-- Không để empty catch blocks
-- Log error với context (function name, relevant IDs)
-- Show user-friendly message, không expose technical details
-- Sử dụng Error Boundary cho React component errors
+### Citation strategy (R166 + R175-1)
+
+- Citations are GROUND TRUTH (Trust > Coverage principle)
+- DOI ground truth via Crossref/OpenAlex (R166)
+- T4 Writer uses `[authorYear]` format via `citation-loader.ts` (R175-1)
+- NEVER let LLM hallucinate citations — always verify against RAG hits + paper metadata
+- Defer until paper metadata complete (R176 backfill)
 
 ---
 
-## Comments Rules
+## 7. Patch + commit conventions
 
-```typescript
-// ❌ Comment giải thích WHAT (code đã nói rõ rồi)
-const activeChemicals = chemicals.filter(c => c.active); // filter active chemicals
+### Patch script naming
 
-// ✅ Comment giải thích WHY
-// Firebase RTDB limitToLast 500 — tránh load toàn bộ collection
-// Xem listeners.ts discussion R128 để hiểu trade-off
-const recentExperiments = experiments.slice(-500);
+`round-NNNx-{slug}.py` or `.sh` — filename MUST include round number.
 
-// ✅ TODO với context
-// TODO(R155): Remove after B.5 schema migration complete
-const legacyData = transformLegacySchema(raw);
+Example:
+- `round-175-1-writer-citation-format.py`
+- `round-174-hotfix7-t4-keyword-override.py`
+- `round-173-deploy.sh`
+
+### Patch execution
+
+User runs:
+```bash
+python /mnt/d/labbook-patches/round-NNNx-{slug}.py
+# or
+bash /mnt/d/labbook-patches/round-NNNx-{slug}.sh
 ```
 
-- Comment bằng tiếng Việt hoặc tiếng Anh đều OK — nhất quán trong cùng file
-- JSDoc cho public API functions và hooks
-- Không commit commented-out code
+Do NOT include `cp` commands or manual file moves — user downloads patch script directly to `/mnt/d/labbook-patches/` from outputs.
+
+### Patch script rules
+
+- Idempotent (skip marker check at start)
+- Backup `.bakNNN` per file modified (e.g., `.bak175-1`)
+- Verify TS/Python compile xanh trước commit
+- Output `/mnt/user-data/outputs/`
+
+### Commits
+
+- Conventional Commits format: `feat(scope): description`
+- Max 400 LOC per commit (split if larger)
+- Phase markers: `@phase R{NUM}{-suffix}` in code comments
+- Each architectural change → ADR in `docs/adr/ADR-{NUM}-{slug}.md`
+
+### Husky pre-push
+
+Runs full `pnpm build`. May block push when:
+- Untracked files have TS errors (e.g., hand-tracking stash)
+- Workspace package errors
+
+Use `--no-verify` cautiously when needed (only when sure push is safe).
 
 ---
 
-## Git / PR Rules
+## 8. Session workflow
 
-- Conventional Commits bắt buộc (đã có commitlint)
-- Mỗi PR tối đa **400 lines diff** — split nếu lớn hơn
-- Mỗi commit một việc — không gom unrelated changes
-- Không commit: `.env`, `service-account.json`, `node_modules`, `dist`
-- Branch naming: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`
+### Session-start MANDATORY sync check
 
----
+```bash
+# In BOTH repos
+cd ~/LAB-MANAGER/labyra-app
+git status -sb && git log --oneline origin/main..HEAD
 
-## Performance Rules
-
-- Images: dùng `next/image` — không dùng `<img>` tag
-- Fonts: dùng `next/font` — không load từ Google Fonts URL
-- Dynamic import cho heavy components (Plotly, D3, Three.js):
-```typescript
-const PlotlyChart = dynamic(() => import("@/components/charts/plotly-chart"), {
-  ssr: false,
-  loading: () => <ChartSkeleton />,
-});
-```
-- Không fetch data trong Client Components nếu có thể làm ở Server Component
-- Bundle size: không install library nếu có thể implement < 20 lines
-
----
-
-## Security Rules
-
-- KHÔNG hardcode API keys, secrets, Firebase config trong code
-- Tất cả secrets qua environment variables
-- Server-side: verify Firebase ID token trước mọi API route
-- Client-side: không expose Admin SDK credentials
-- Firestore data PHẢI nằm dưới path `/tenants/{tenantId}/...` (sub-collection model)
-- Cross-tenant queries (super-admin) dùng `collectionGroup()` — không phải code path thông thường
-- Firebase Auth custom claims: `tenantId` (required), `role` (admin/superadmin/member/viewer)
-
-```typescript
-// ❌ NEVER — top-level collection
-db.collection("experiments").get()
-
-// ❌ NEVER — top-level với tenantId filter (security rules đơn giản hơn nhiều với sub-collection)
-db.collection("experiments")
-  .where("tenantId", "==", currentTenantId)
-  .get()
-
-// ✅ ALWAYS — sub-collection scoped
-db.collection(`tenants/${currentTenantId}/experiments`).get()
-
-// ✅ Cross-tenant (super-admin only)
-db.collectionGroup("experiments").get()
+cd ~/LAB-MANAGER/labyra-spectra-worker
+git status -sb && git log --oneline origin/main..HEAD
 ```
 
----
+Uncommitted code OR unpushed commits → sync (commit + push) BEFORE new work. No drift across sessions.
 
-## Domain Rules (Labyra specific)
+### Working dirs
 
-- Chemical formulas: subscript đúng cách — `WO₃` không phải `WO3` trong display
-- Đơn vị luôn đi kèm giá trị: `180 °C`, `2.8 eV`, `50 mV/s`
-- Tenant isolation: mọi Firestore query phải có `tenantId` filter
+- `~/LAB-MANAGER/labyra-app/` — Next.js Vercel
+- `~/LAB-MANAGER/labyra-spectra-worker/` — Python Cloud Run
+- `/mnt/d/labbook-patches/` — patch scripts
+- `/mnt/d/labyra-newchat-context/` — context pack
+- `/mnt/d/labyra-hand-tracking-stash/` — paused experimental feature (Vercel build blocker)
 
----
+### Tech debt strategy
 
-## Current Phase Status (R160)
-
-**Latest shipped:** R160-spectra-2 (May 13, 2026)
-
-### Completed phases
-- **AI Foundation:** ai-3 (provider abstraction), ai-4 (tool calling), ai-5a (RAG foundation), ai-5b (paper pipeline)
-- **Anti-hallucination:** ai-5e-1/1b/1c (grounding L2+L3+L4), ai-5e-2 (L6 OOD + L7 empty guard)
-- **Lab data CRUD:** data-1 (Materials/Samples/Experiments), data-2 (Equipment/Bookings) + composite indexes
-- **UI polish:** data-1b (i18n + layout), data-1c (shadcn Form/Table refactor), ui-1 (PageContainer + reduced-motion)
-- **Stage 2 Phase 1:** spectra-1 (24 spectrum types, signed URL upload, SHA-256), spectra-2 (experiment Tabs + standalone /spectra page)
-
-### Database state
-- **Firestore:** materials, samples, experiments, equipment, bookings, papers, spectra (all tenant-scoped, multi-tenant rules in place)
-- **Storage (Firebase Storage / GCS):** `papers/{tenantId}/...` and `tenants/{tenantId}/spectra/{spectrumId}/raw/...`
-- **Pinecone:** namespace-per-tenant for paper RAG (index `labyra-papers`, 1024-dim cosine)
-- **Composite indexes deployed:** materials (category+updatedAt), experiments (status+updatedAt), samples (status+preparedAt), equipment (status+updatedAt, category+updatedAt), bookings (equipmentId+startAt, userId+startAt, status+startAt), spectra (experimentId+measuredAt, sampleId+spectrumType, spectrumType+createdAt, status+createdAt)
-
-### Next phases (planned)
-- **Stage 2 Phase 2:** Python worker (Cloud Run + Pub/Sub) for spectrum parsing + AI analysis
-  - See `docs/database-stage-2-plan.md` for full roadmap
-- **Stage 2 Phase 3:** BigQuery time-series for GCD/CA traces
-- **Dashboard widgets:** KPI cards + recent activity (deferred per session decision)
-- **Lineage graph:** Material → Sample → Experiment D3 visualization
-- **Members + RBAC:** invite flow + role assignment
-- **Settings page:** tenant config + AI preferences
-
-### Critical patterns learned this round
-1. **shadcn UI mandatory:** All forms use Form/FormField/FormItem/FormLabel/FormControl/FormMessage. Tables use shadcn Table/TableHeader/TableBody. Buttons use `Button asChild` when wrapping Link.
-2. **Backward-compat tables:** Legacy data (pre-data-1 schema) handled with `data.experimentCode ?? doc.id`, `data.experimentType ?? data.type`. Use `t.has(key) ? t(key) : key` for missing i18n entries.
-3. **Doc ID injection:** Always `{ ...d.data(), id: d.id }` when mapping Firestore snapshots — legacy docs missing `id` field break React keys.
-4. **Breadcrumbs t.has() guard:** Dynamic route segments (e.g. `/experiments/exp-001`) try `t('nav.exp-001')` which throws MISSING_MESSAGE. Use `t.has()` not try/catch (next-intl emits error events on missing keys regardless of try/catch).
-5. **Vietnamese-$ stripping:** `$word$` in AI responses triggers KaTeX math render. System prompt + `stripVietnameseDollar` post-process in chat route.
-6. **Gemini multi-turn:** Convert Anthropic-style content blocks (text/tool_use/tool_result) to Gemini parts (text/functionCall/functionResponse) in `toGeminiHistory` AND `sendMessageStream` payload conversion.
-7. **shadcn install pattern:** `pnpm dlx shadcn@latest add <component>` — choose N when prompted to overwrite `button.tsx` (custom with Spinner integration). Form, Table, Tabs, Card, Dialog, Sheet, Separator all installed.
+Surface tech debt items inline as they appear; integrate into next relevant patch instead of separate cleanup phase.
 
 ---
 
-## Anti-patterns — NEVER DO
+## 9. Scientific documentation rule
 
+Every feature using algorithms, mathematical/physical/chemical methods MUST document at:
 ```
-❌ window.* globals
-❌ any type
-❌ @ts-nocheck
-❌ Inline styles
-❌ Hardcode colors
-❌ Emoji trong UI
-❌ index làm key prop
-❌ Empty catch blocks
-❌ Commit secrets/credentials
-❌ fetch data trong useEffect khi có thể dùng Server Component
-❌ Firestore query không có tenantId filter
-❌ Import icon library ngoài @tabler/icons-react (centralized in src/components/icons.tsx)
-❌ Console.log trong production code (dùng logger)
+docs/scientific-methods/{topic}.md
 ```
 
----
+Sections:
+- Method name + brief description
+- Formula (LaTeX)
+- Physics/chemistry meaning
+- References (DOI if available)
+- Parameters / edge cases
+- Implementation file path
 
-## Accessibility — WCAG 2.1 AA (International Standard)
+Existing:
+- `xrd-analysis.md` (R161)
+- `citation-matching.md` (R166)
 
-- Tất cả interactive elements phải keyboard accessible (Tab, Enter, Space, Escape)
-- Focus ring visible — không `outline: none` mà không có replacement
-- Color contrast tối thiểu 4.5:1 cho text, 3:1 cho UI components
-- Icon-only buttons phải có `aria-label`
-- Images phải có `alt` text — decorative images dùng `alt=""`
-- Form fields phải có `<label>` associated
-- Error messages phải được announce qua `aria-live`
-- Không dùng color làm phương tiện duy nhất truyền thông tin
-
-```tsx
-// ❌
-<button onClick={handleDelete}>
-  <Trash2 className="h-4 w-4" />
-</button>
-
-// ✅
-<button onClick={handleDelete} aria-label="Xóa thí nghiệm">
-  <Trash2 className="h-4 w-4" />
-</button>
-```
+R176+ to add: `uv-vis-tauc-bandgap.md`, `ftir-sample-prep.md`, `raman-laser-selection.md`, `tga-atmosphere-effects.md`.
 
 ---
 
-## Web Vitals — Core Web Vitals Targets
+## 10. ADR conventions
 
-| Metric | Target | Đo bằng |
+Architecture Decision Records in `docs/adr/ADR-{NUM}-{slug}.md`.
+
+Read in order before architectural decisions:
+1. **ADR-015** Stage 1 Security (R162) — rate limit, CSRF, origin allowlist
+2. **ADR-016** PROV-O ELN (R164) — entity model, lifecycle, versioning
+3. **ADR-017** Citation Network (R166) — DOI ground truth strategy
+4. **ADR-018** Async Worker Architecture (R167) — Pub/Sub paper pipeline
+5. **ADR-019** AI Tier Architecture (R169) — capability abstraction, 6-tier
+6. **ADR-020** Cost Controls (R170) — 4-gate Cost Guard, dry-run
+7. **ADR-021** Inter-tier Protocols (R169-R170, partially deferred)
+
+---
+
+## 11. Anti-patterns to avoid
+
+| Anti-pattern | Why avoid | Correct pattern |
 |---|---|---|
-| LCP (Largest Contentful Paint) | < 2.5s | Vercel Analytics |
-| CLS (Cumulative Layout Shift) | < 0.1 | Vercel Analytics |
-| INP (Interaction to Next Paint) | < 200ms | Chrome DevTools |
-| TTFB (Time to First Byte) | < 800ms | Vercel Analytics |
-
-**Rules để đạt target:**
-- Không layout shift — luôn set width và height cho images
-- Preload critical fonts với `next/font`
-- Không blocking scripts trong `<head>`
-- Dynamic import cho components không critical (Plotly, D3, Three.js)
-- Server Components cho above-the-fold content
-
----
-
-## Next.js Official Conventions
-
-### Data fetching:
-```tsx
-// ✅ Server Component
-async function ExperimentPage({ params }: { params: { id: string } }) {
-  const experiment = await getExperiment(params.id);
-  return <ExperimentDetail experiment={experiment} />;
-}
-
-// ✅ Client Component — TanStack Query
-"use client";
-function ChemicalList() {
-  const { data } = useQuery({ queryKey: ["chemicals"], queryFn: fetchChemicals });
-}
-
-// ❌ NEVER — fetch trong useEffect
-useEffect(() => { fetch("/api/chemicals").then(...) }, []);
-```
-
-### Loading & Error UI — bắt buộc:
-```
-app/(dashboard)/experiments/
-├── page.tsx
-├── loading.tsx    ← Skeleton UI
-└── error.tsx      ← Error boundary
-```
-
-### Metadata — mỗi page bắt buộc:
-```typescript
-export const metadata: Metadata = {
-  title: "Experiments | Labyra",
-  description: "Manage lab experiments",
-};
-```
+| Carbon design system styles | Legacy from labbook-bku | shadcn/ui only |
+| Lucide icons | Inconsistent with codebase | `@tabler/icons-react` |
+| Custom HTML `<label>`/`<input>` | Loses accessibility, validation | shadcn Form/FormField |
+| `any` type | Bypasses TS safety | `unknown` + type guards |
+| `getAuth()` raw | May fail in dev | `getAdminAuthService()` |
+| Hardcoded model strings | Painful vendor swap | `CAPABILITY_MAP` + `TIER_CAPABILITY` |
+| LLM-generated DOIs | Hallucination risk | Crossref/OpenAlex ground truth |
+| Hooks after conditional return | Runtime crash | Hoist hooks to top |
+| `console.log` debug in prod | Pollution | Remove before commit |
+| Inline styles | Bypasses design system | Tailwind tokens only |
+| Cross-tenant Firestore queries | Data leak | Always `tenantId` filter |
+| `middleware.ts` in Next.js 16 | Conflicts with `proxy.ts` | Merge into `src/proxy.ts` |
 
 ---
 
-## React Best Practices
+## 12. Tech-stack-specific gotchas
 
-### Hooks:
-- Chỉ gọi ở top level — không trong conditions, loops
-- Custom hook bắt đầu bằng `use`
-- Cleanup side effects trong useEffect return
+### Vite 8 + Tailwind 3 (legacy labbook-bku)
 
-```typescript
-// ✅ Cleanup Firebase listener
-useEffect(() => {
-  const unsubscribe = onSnapshot(query, callback);
-  return () => unsubscribe();
-}, []);
-```
+- `type="module"` scripts: functions for inline handlers MUST be assigned to `window` explicitly
+- Tailwind 3 not auto-purging dev → manual content config
 
-### Forms — React Hook Form + Zod:
-```tsx
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+### Next.js 16 + Turbopack (labyra-app)
 
-const schema = z.object({
-  temperature: z.number().min(0).max(1000),
-  material: z.string().min(1),
-});
-```
+- App Router server/client component boundary critical
+- Use `'use client'` minimally
+- Server actions experimental — prefer route handlers
 
----
+### Firebase Functions Gen 2 (R171)
 
-## TypeScript Strict Standards
+- `setGlobalOptions({ region: 'asia-southeast1', memory: '512MiB', timeout: 540 })` at top of `index.ts`
+- Secrets via Secret Manager + `defineSecret()` (not env vars)
+- Service account = `cron-runner@labyra-app-dev.iam.gserviceaccount.com`
+- Cron via `onSchedule()` with cron expression (UTC)
 
-```json
-// tsconfig.json bắt buộc
-{
-  "compilerOptions": {
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
+### BigQuery export (R173-3)
 
-```typescript
-// ✅ Exhaustive switch
-function getStatusLabel(status: ExperimentStatus): string {
-  switch (status) {
-    case "running": return "Đang thực hiện";
-    case "completed": return "Hoàn thành";
-    default:
-      const _exhaustive: never = status;
-      throw new Error(`Unknown: ${_exhaustive}`);
-  }
-}
-```
+- Billing export needs `bq mk` dataset first, then enable via Cloud Console
+- Initial sync ~24h before data appears in table
+- Table name: `gcp_billing_export_v1_<BILLING_ACCOUNT_ID_with_underscores>`
+
+### Mistral SDK (worker)
+
+- Pinned `mistralai==2.4.5`
+- Internal import path: `from mistralai.client.sdk import Mistral`
+- Top-level `from mistralai import Mistral` not exposed in 2.4.5
+- Upgrade carefully — may break import
 
 ---
 
-## REST API Design Standards
+## 13. User communication preferences
 
-```
-GET    /api/experiments        → List
-GET    /api/experiments/:id    → Get one
-POST   /api/experiments        → Create (201)
-PATCH  /api/experiments/:id    → Update
-DELETE /api/experiments/:id    → Delete (204)
-```
-
-### Response format:
-```typescript
-// Success list
-{ "data": [...], "meta": { "total": 100, "page": 1 } }
-
-// Error
-{ "error": { "code": "NOT_FOUND", "message": "Experiment not found" } }
-```
-
-### HTTP Status codes:
-```
-200 OK          — GET, PATCH
-201 Created     — POST
-204 No Content  — DELETE
-400 Bad Request — Validation error
-401 Unauthorized
-403 Forbidden
-404 Not Found
-500 Internal Error
-```
+- **Vietnamese** language
+- **Concise** responses, no preamble or extensive trade-off analysis
+- **Verify codebase** trước khi assert (no hallucinated state)
+- Direct, no excessive politeness
+- Numeric questions get numeric answers + brief context
+- Don't ask "would you like me to..." — just do it or ask short specific question
 
 ---
 
-## Testing Standards
+## 14. End of rules
 
-### Coverage targets:
-```
-Unit tests:   > 80% business logic (hooks, utils, stores)
-Integration:  > 60% API routes
-E2E:          Critical paths (login, create experiment, AI query)
-```
+Code wins over documentation if conflicts. This file is a living snapshot, evolves with project.
 
-### Naming — AAA pattern:
-```typescript
-describe("useExperiments", () => {
-  it("returns empty array when no experiments exist", () => {
-    // Arrange
-    const store = createEmptyStore();
-    // Act
-    const result = store.getExperiments();
-    // Assert
-    expect(result).toHaveLength(0);
-  });
-});
-```
-
-### Vitest coverage config:
-```typescript
-export default defineConfig({
-  test: {
-    coverage: {
-      provider: "v8",
-      thresholds: { lines: 80, functions: 80, branches: 70 },
-    },
-  },
-});
-```
-
----
-
-## Current Phase Status (R160)
-
-**Latest shipped:** R160-spectra-2 (May 13, 2026)
-
-### Completed phases
-- **AI Foundation:** ai-3 (provider abstraction), ai-4 (tool calling), ai-5a (RAG foundation), ai-5b (paper pipeline)
-- **Anti-hallucination:** ai-5e-1/1b/1c (grounding L2+L3+L4), ai-5e-2 (L6 OOD + L7 empty guard)
-- **Lab data CRUD:** data-1 (Materials/Samples/Experiments), data-2 (Equipment/Bookings) + composite indexes
-- **UI polish:** data-1b (i18n + layout), data-1c (shadcn Form/Table refactor), ui-1 (PageContainer + reduced-motion)
-- **Stage 2 Phase 1:** spectra-1 (24 spectrum types, signed URL upload, SHA-256), spectra-2 (experiment Tabs + standalone /spectra page)
-
-### Database state
-- **Firestore:** materials, samples, experiments, equipment, bookings, papers, spectra (all tenant-scoped, multi-tenant rules in place)
-- **Storage (Firebase Storage / GCS):** `papers/{tenantId}/...` and `tenants/{tenantId}/spectra/{spectrumId}/raw/...`
-- **Pinecone:** namespace-per-tenant for paper RAG (index `labyra-papers`, 1024-dim cosine)
-- **Composite indexes deployed:** materials (category+updatedAt), experiments (status+updatedAt), samples (status+preparedAt), equipment (status+updatedAt, category+updatedAt), bookings (equipmentId+startAt, userId+startAt, status+startAt), spectra (experimentId+measuredAt, sampleId+spectrumType, spectrumType+createdAt, status+createdAt)
-
-### Next phases (planned)
-- **Stage 2 Phase 2:** Python worker (Cloud Run + Pub/Sub) for spectrum parsing + AI analysis
-  - See `docs/database-stage-2-plan.md` for full roadmap
-- **Stage 2 Phase 3:** BigQuery time-series for GCD/CA traces
-- **Dashboard widgets:** KPI cards + recent activity (deferred per session decision)
-- **Lineage graph:** Material → Sample → Experiment D3 visualization
-- **Members + RBAC:** invite flow + role assignment
-- **Settings page:** tenant config + AI preferences
-
-### Critical patterns learned this round
-1. **shadcn UI mandatory:** All forms use Form/FormField/FormItem/FormLabel/FormControl/FormMessage. Tables use shadcn Table/TableHeader/TableBody. Buttons use `Button asChild` when wrapping Link.
-2. **Backward-compat tables:** Legacy data (pre-data-1 schema) handled with `data.experimentCode ?? doc.id`, `data.experimentType ?? data.type`. Use `t.has(key) ? t(key) : key` for missing i18n entries.
-3. **Doc ID injection:** Always `{ ...d.data(), id: d.id }` when mapping Firestore snapshots — legacy docs missing `id` field break React keys.
-4. **Breadcrumbs t.has() guard:** Dynamic route segments (e.g. `/experiments/exp-001`) try `t('nav.exp-001')` which throws MISSING_MESSAGE. Use `t.has()` not try/catch (next-intl emits error events on missing keys regardless of try/catch).
-5. **Vietnamese-$ stripping:** `$word$` in AI responses triggers KaTeX math render. System prompt + `stripVietnameseDollar` post-process in chat route.
-6. **Gemini multi-turn:** Convert Anthropic-style content blocks (text/tool_use/tool_result) to Gemini parts (text/functionCall/functionResponse) in `toGeminiHistory` AND `sendMessageStream` payload conversion.
-7. **shadcn install pattern:** `pnpm dlx shadcn@latest add <component>` — choose N when prompted to overwrite `button.tsx` (custom with Spinner integration). Form, Table, Tabs, Card, Dialog, Sheet, Separator all installed.
-
----
-
-## Anti-patterns — NEVER DO
-
-```
-❌ window.* globals
-❌ any type / @ts-nocheck
-❌ Inline styles / hardcode colors
-❌ Emoji trong UI
-❌ index làm key prop
-❌ Empty catch blocks
-❌ Commit secrets/credentials
-❌ fetch data trong useEffect
-❌ Firestore query không có tenantId filter
-❌ Import icon library ngoài @tabler/icons-react (centralized in src/components/icons.tsx)
-❌ console.log trong production (dùng logger)
-❌ outline: none mà không có focus replacement
-❌ <img> tag — dùng next/image
-❌ Mutate state/props trực tiếp
-❌ Props drilling > 2 levels
-❌ HTTP verb sai trong API routes
-❌ Missing loading.tsx hoặc error.tsx
-❌ Missing metadata export trong page
-```
+Last major update: R175 (2026-05-16). Next update trigger: R180 forms hardening OR R195 Gemini 3 re-adoption.

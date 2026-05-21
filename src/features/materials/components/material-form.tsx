@@ -1,6 +1,6 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -73,7 +73,7 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
   const onSubmit = async (values: MaterialFormValues) => {
     setSubmitting(true);
     try {
-      const user = getAuth().currentUser;
+      const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const token = await user.getIdToken();
       const url = materialId ? `/api/materials/${materialId}` : '/api/materials';

@@ -1,6 +1,6 @@
 'use client';
 
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import type { ChemicalTransaction } from '@/types/chemical';
 
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
-  const user = getAuth().currentUser;
+  const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error('not_authenticated');
   const token = await user.getIdToken();
   return fetch(path, {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 /**
  * Client hook v2 — handles conversationId persistence + title updates.
  * @phase R160-ai-2a
@@ -91,7 +91,7 @@ export function useChatStream(): UseChatStreamResult {
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
       try {
-        const user = getAuth().currentUser;
+        const user = getFirebaseAuth().currentUser;
         if (!user) throw new Error('not_authenticated');
         const token = await user.getIdToken();
 

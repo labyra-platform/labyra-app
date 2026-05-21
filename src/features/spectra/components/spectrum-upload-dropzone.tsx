@@ -17,7 +17,7 @@ import {
   IconUpload,
   IconX
 } from '@tabler/icons-react';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -107,7 +107,7 @@ async function uploadOneFile(
 
   // 2. Request signed URL
   updateStatus(item.id, { phase: 'requesting' });
-  const user = getAuth().currentUser;
+  const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error('not_authenticated');
   const token = await user.getIdToken();
 

@@ -1,6 +1,6 @@
 'use client';
 import { IconAlertCircle, IconDownload, IconRefresh } from '@tabler/icons-react';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -34,7 +34,7 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
     if (reanalyzing) return;
     setReanalyzing(true);
     try {
-      const user = getAuth().currentUser;
+      const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('Not authenticated');
       const token = await user.getIdToken();
       const res = await fetch(`/api/measurements/${spectrum.id}/reanalyze`, {
@@ -62,7 +62,7 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const user = getAuth().currentUser;
+      const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const token = await user.getIdToken();
       const res = await fetch(`/api/measurements/${spectrum.id}/signed-download`, {

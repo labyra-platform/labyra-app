@@ -1,6 +1,6 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -68,7 +68,7 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
   const onSubmit = async (values: SampleFormValues) => {
     setSubmitting(true);
     try {
-      const user = getAuth().currentUser;
+      const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const token = await user.getIdToken();
       const url = sampleId ? `/api/samples/${sampleId}` : '/api/samples';

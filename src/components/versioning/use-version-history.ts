@@ -4,7 +4,7 @@
  * @phase R164-phase-8-9a
  */
 'use client';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useEffect, useState } from 'react';
 
 export interface VersionRecord {
@@ -30,7 +30,7 @@ export function useVersionHistory(
     setLoading(true);
     (async () => {
       try {
-        const user = getAuth().currentUser;
+        const user = getFirebaseAuth().currentUser;
         if (!user) throw new Error('not_authenticated');
         const token = await user.getIdToken();
         const res = await fetch(`/api/${entity}/${id}/versions`, {

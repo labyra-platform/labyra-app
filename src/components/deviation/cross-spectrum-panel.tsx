@@ -12,7 +12,7 @@
  */
 'use client';
 
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { IconAlertTriangle, IconNetwork, IconRefresh } from '@tabler/icons-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -39,7 +39,7 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const user = getAuth().currentUser;
+      const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const tokenResult = await user.getIdTokenResult();
       const tenantId = tokenResult.claims.tenantId as string | undefined;

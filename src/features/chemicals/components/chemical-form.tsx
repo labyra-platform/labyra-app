@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconSearch } from '@tabler/icons-react';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -50,7 +50,7 @@ interface ChemicalFormProps {
 }
 
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
-  const user = getAuth().currentUser;
+  const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error('not_authenticated');
   const token = await user.getIdToken();
   return fetch(path, {

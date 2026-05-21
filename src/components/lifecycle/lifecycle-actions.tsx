@@ -11,7 +11,7 @@
 // R165-phase-1-oxlint: oxlint cleanup
 'use client';
 import { IconAlertOctagon, IconArchive, IconRotateClockwise } from '@tabler/icons-react';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -58,7 +58,7 @@ export function LifecycleActions({ entity, id, status, i18nNamespace }: Lifecycl
   const [busy, setBusy] = useState(false);
 
   async function callApi(method: string, path: string, body?: unknown): Promise<Response> {
-    const user = getAuth().currentUser;
+    const user = getFirebaseAuth().currentUser;
     if (!user) throw new Error('not_authenticated');
     const token = await user.getIdToken();
     return fetch(path, {

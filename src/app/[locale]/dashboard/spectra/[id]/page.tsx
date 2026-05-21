@@ -1,5 +1,5 @@
 'use client';
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { use } from 'react';
@@ -20,7 +20,7 @@ export default function SpectrumDetailPage({ params }: { params: Promise<{ id: s
   const handleDelete = async () => {
     if (!confirm(t('deleteConfirm'))) return;
     try {
-      const user = getAuth().currentUser;
+      const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const token = await user.getIdToken();
       const res = await fetch(`/api/measurements/${id}`, {

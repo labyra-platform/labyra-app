@@ -88,3 +88,31 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* AI-POLISH-1: Gemini-style shimmer for the thinking indicator.
+   A light band sweeps across the text. Neutralized by the global
+   prefers-reduced-motion block above. */
+@keyframes shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--muted-foreground) 0%,
+    var(--muted-foreground) 35%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 65%,
+    var(--muted-foreground) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s linear infinite;
+}

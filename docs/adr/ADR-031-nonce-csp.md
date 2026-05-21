@@ -39,3 +39,32 @@ carry a per-request nonce.
 - Report-Only during burn-in: a nonce mismatch only logs, never blanks a
   page. Verify on preview (view-source nonce == header nonce; clean
   console) before flipping enforce.
+
+---
+
+## Addendum R191-2 (2026-05-22) — Plotly inline style is expected, not a blocker
+
+During R191-1 burn-in, the spectra route logs a CSP violation:
+
+> Executing inline script violates ... 'script-src' ... at spectra:8
+> hash sha256-n46vPwSWuMC0W703pBofImv82Z26xo4LXymv0E9caPk=
+
+Investigation (Plotly issues #2355, #4585; PR #7109): this is Plotly.js's
+internal `addStyleRule` injecting **inline CSS**, not an executing script. It is
+covered by our `style-src 'unsafe-inline'` and is harmless — Plotly's
+maintainers confirm the same styles are already shipped in `plotly.css`, so
+charts render even if the inline style were blocked. The DevTools Console shows
+**No errors** (no real script-src / unsafe-eval violation); zod jitless removed
+the only genuine eval source.
+
+**Decision:** accept as-is. No fix needed. When flipping CSP Report-Only ->
+enforce (domain batch), this Plotly inline-style report is expected and does NOT
+block charts because `style-src` keeps `'unsafe-inline'`. Do not mistake it for a
+regression.
+
+Plotly + strict script-src caveat (for the future): the basic react-plotly.js
+charts we use do not require 'unsafe-eval'. Avoid eval-dependent Plotly methods
+(e.g. `Plotly.d3.csv`) so script-src can stay nonce-only. If full style-src
+tightening is ever pursued, import `plotly.css` explicitly and drop the runtime
+addStyleRule path (see PR #7109) — out of scope now.
+

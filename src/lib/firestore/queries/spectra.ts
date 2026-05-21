@@ -36,7 +36,11 @@ export function useAllSpectra() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setSpectra(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata));
+        setSpectra(
+          snap.docs
+            .map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata)
+            .filter((s) => s.lifecycleStatus !== 'deprecated' && s.lifecycleStatus !== 'retracted')
+        );
         setLoading(false);
       },
       (err) => {
@@ -70,7 +74,11 @@ export function useSpectraByExperiment(experimentId: string | null) {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setSpectra(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata));
+        setSpectra(
+          snap.docs
+            .map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata)
+            .filter((s) => s.lifecycleStatus !== 'deprecated' && s.lifecycleStatus !== 'retracted')
+        );
         setLoading(false);
       },
       (err) => {
@@ -103,7 +111,11 @@ export function useSpectraBySample(sampleId: string | null) {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setSpectra(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata));
+        setSpectra(
+          snap.docs
+            .map((d) => ({ ...d.data(), id: d.id }) as SpectrumMetadata)
+            .filter((s) => s.lifecycleStatus !== 'deprecated' && s.lifecycleStatus !== 'retracted')
+        );
         setLoading(false);
       },
       (err) => {

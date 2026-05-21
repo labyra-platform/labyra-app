@@ -4,6 +4,8 @@
  * @see labyra-experiment-database-report.md Section 1 (Taxonomy: 6 groups × 24 types)
  */
 
+import type { LifecycleStatus } from '@/types/prov-base';
+
 export type SpectrumType =
   // Structural (3)
   | 'xrd'
@@ -72,6 +74,7 @@ export interface SpectrumMetadata {
   schemaVersion: 1;
   id: string;
   tenantId: string;
+  lifecycleStatus?: LifecycleStatus;
 
   // Lineage
   experimentId: string;

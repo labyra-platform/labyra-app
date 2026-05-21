@@ -25,7 +25,6 @@ interface ExperimentDoc {
   title: string;
   workflowStatus: 'planned' | 'running' | 'completed' | 'failed' | 'cancelled';
   createdAt?: number;
-  createdAt?: number;
   startedAt?: { seconds: number; nanoseconds: number };
   completedAt?: { seconds: number; nanoseconds: number } | null;
   temperature_C?: number;

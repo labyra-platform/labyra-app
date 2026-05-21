@@ -12,10 +12,13 @@
  * @phase R176-2a → R176-2bc-hotfix
  */
 // R176-3d-functionresponse-name
+// R189-1-gemini-safety-settings
 import {
   type Content,
   type FunctionDeclaration,
   GoogleGenAI,
+  HarmBlockThreshold,
+  HarmCategory,
   type Part,
   type Schema,
   Type
@@ -40,6 +43,29 @@ function getClient(): GoogleGenAI {
   _client = new GoogleGenAI({ apiKey });
   return _client;
 }
+
+// R189-1 (G-5): materials science chứa nhiều keyword "dangerous" hợp pháp
+// (thermal runaway, explosive precursor, carcinogen pathway). Default
+// BLOCK_MEDIUM_AND_ABOVE block oan câu hỏi nghiên cứu -> nới dangerous_content
+// về BLOCK_ONLY_HIGH. Harassment/hate giữ ONLY_HIGH, sexual giữ MEDIUM_AND_ABOVE.
+const SAFETY_SETTINGS = [
+  {
+    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
+  }
+];
 
 function toSystemInstruction(blocks: LLMStreamRequest['system']): string {
   return blocks.map((b) => b.text).join('\n\n');
@@ -264,6 +290,7 @@ export class GeminiProvider implements LLMProvider {
         config: {
           systemInstruction: toSystemInstruction(request.system),
           maxOutputTokens: request.maxTokens ?? 2048,
+          safetySettings: SAFETY_SETTINGS, // R189-1 (G-5)
           ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           ...(tools ? { tools } : {})
         }
@@ -360,6 +387,7 @@ export class GeminiProvider implements LLMProvider {
       config: {
         systemInstruction: toSystemInstruction(request.system),
         maxOutputTokens: request.maxTokens ?? 1024,
+        safetySettings: SAFETY_SETTINGS, // R189-1 (G-5)
         ...(request.temperature !== undefined ? { temperature: request.temperature } : {})
       }
     });

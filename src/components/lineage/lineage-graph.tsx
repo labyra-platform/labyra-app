@@ -5,7 +5,7 @@
  */
 'use client';
 import { select } from 'd3-selection';
-import { forceCenter, forceCollide, forceManyBody, forceSimulation } from 'd3-force';
+import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation } from 'd3-force';
 import { type D3DragEvent, drag } from 'd3-drag';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -92,12 +92,10 @@ export function LineageGraph({
       relation: e.relation
     }));
 
-    const simulation = d3
-      .forceSimulation<D3Node, D3Edge>(nodes)
+    const simulation = forceSimulation<D3Node, D3Edge>(nodes)
       .force(
         'link',
-        d3
-          .forceLink<D3Node, D3Edge>(edges)
+        forceLink<D3Node, D3Edge>(edges)
           .id((d: D3Node) => d.id)
           .distance(80)
       )
@@ -131,8 +129,7 @@ export function LineageGraph({
         router.push(`/${locale}/dashboard/${COLLECTION_BY_TYPE[d.type]}/${d.id}`);
       })
       .call(
-        d3
-          .drag<SVGCircleElement, D3Node>()
+        drag<SVGCircleElement, D3Node>()
           .on('start', (event: D3DragEvent<SVGCircleElement, D3Node, D3Node>, d: D3Node) => {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;

@@ -16,7 +16,8 @@
     "seed": "node --env-file=.env.local scripts/seed-dev-tenant.mjs",
     "seed:claims": "node --env-file=.env.local scripts/seed-dev-tenant.mjs --claims-only",
     "snapshot": "node scripts/generate-context-snapshot.mjs",
-    "test:rules": "firebase emulators:exec --only firestore --project labyra-rules-test \"vitest run tests/firestore-rules.test.ts\"",
+    "test:unit": "vitest run",
+    "test:rules": "firebase emulators:exec --only firestore --project labyra-rules-test \"vitest run --config vitest.rules.config.ts tests/firestore-rules.test.ts\"",
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {

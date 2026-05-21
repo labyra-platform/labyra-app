@@ -1,6 +1,6 @@
 'use client';
 
-import { getAuth } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useTranslations } from 'next-intl';
 /**
  * LineageExplorer — pick entity → render LineageGraph.
@@ -86,7 +86,7 @@ export function LineageExplorer() {
     setSelectedId(null);
     (async () => {
       try {
-        const user = getAuth().currentUser;
+        const user = getFirebaseAuth().currentUser;
         if (!user) throw new Error('not_authenticated');
         const token = await user.getIdToken();
         const res = await fetch(`/api/${COLLECTION_BY_TYPE[entityType]}`, {

@@ -4,7 +4,9 @@
  * @phase R164-phase-8-9a-fix-ts (was R164-phase-8-9a)
  */
 'use client';
-import * as d3 from 'd3';
+import { select } from 'd3-selection';
+import { forceCenter, forceCollide, forceManyBody, forceSimulation } from 'd3-force';
+import { type D3DragEvent, drag } from 'd3-drag';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
@@ -80,7 +82,7 @@ export function LineageGraph({
   useEffect(() => {
     if (!svgRef.current || data.nodes.length === 0) return;
 
-    const svg = d3.select<SVGSVGElement, unknown>(svgRef.current);
+    const svg = select<SVGSVGElement, unknown>(svgRef.current);
     svg.selectAll('*').remove();
 
     const nodes: D3Node[] = data.nodes.map((n) => ({ ...n }));
@@ -99,9 +101,9 @@ export function LineageGraph({
           .id((d: D3Node) => d.id)
           .distance(80)
       )
-      .force('charge', d3.forceManyBody<D3Node>().strength(-200))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide<D3Node>().radius(35));
+      .force('charge', forceManyBody<D3Node>().strength(-200))
+      .force('center', forceCenter(width / 2, height / 2))
+      .force('collision', forceCollide<D3Node>().radius(35));
 
     // Edges
     const link = svg
@@ -131,16 +133,16 @@ export function LineageGraph({
       .call(
         d3
           .drag<SVGCircleElement, D3Node>()
-          .on('start', (event: d3.D3DragEvent<SVGCircleElement, D3Node, D3Node>, d: D3Node) => {
+          .on('start', (event: D3DragEvent<SVGCircleElement, D3Node, D3Node>, d: D3Node) => {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
           })
-          .on('drag', (event: d3.D3DragEvent<SVGCircleElement, D3Node, D3Node>, d: D3Node) => {
+          .on('drag', (event: D3DragEvent<SVGCircleElement, D3Node, D3Node>, d: D3Node) => {
             d.fx = event.x;
             d.fy = event.y;
           })
-          .on('end', (event: d3.D3DragEvent<SVGCircleElement, D3Node, D3Node>, d: D3Node) => {
+          .on('end', (event: D3DragEvent<SVGCircleElement, D3Node, D3Node>, d: D3Node) => {
             if (!event.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;

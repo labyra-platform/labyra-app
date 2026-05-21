@@ -39,7 +39,7 @@
       "labResources": "Tài nguyên Lab",
       "ai": "AI",
       "admin": "Quản trị",
-      "superadmin": "Quan tri cao cap"
+      "superadmin": "Quản trị cao cấp"
     },
     "employee": "Nhân viên",
     "debugAuth": "Debug Auth",
@@ -51,10 +51,10 @@
     "referenceCards": "Thư viện reference",
     "measurements": "Đo phổ",
     "references": "Tham chiếu",
-    "superadmin": "Quan tri cao cap",
-    "superadminCosts": "Tong quan chi phi",
-    "superadminEvals": "Danh gia chat luong",
-    "superadminDrift": "Sai lech chi phi"
+    "superadmin": "Quản trị cao cấp",
+    "superadminCosts": "Tổng quan chi phí",
+    "superadminEvals": "Đánh giá chất lượng",
+    "superadminDrift": "Sai lệch chi phí"
   },
   "auth": {
     "signInTitle": "Đăng nhập vào Labyra",

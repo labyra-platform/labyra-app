@@ -146,6 +146,15 @@ importers:
       d3:
         specifier: ^7.9.0
         version: 7.9.0
+      d3-drag:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-force:
+        specifier: ^3.0.0
+        version: 3.0.0
+      d3-selection:
+        specifier: ^3.0.0
+        version: 3.0.0
       date-fns:
         specifier: ^4.1.0
         version: 4.2.1

@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const nextConfig: NextConfig = {
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
@@ -20,7 +21,8 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ['geist', 'react-pdf'],
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production'
+    removeConsole:
+      process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false
   },
   // R179-7b @r179-7-applied: pdfjs-dist requires canvas alias = false in browser
   webpack: (config) => {
@@ -35,6 +37,16 @@ const nextConfig: NextConfig = {
   async headers() {
     const isDev = process.env.NODE_ENV === 'development';
     return [
+      {
+        // PERF-12: global immutable read — long cache + SWR.
+        source: '/api/material-profiles/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400'
+          }
+        ]
+      },
       {
         source: '/(.*)',
         headers: [
@@ -130,5 +142,6 @@ const nextConfig: NextConfig = {
 };
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+const analyzeBundle = withBundleAnalyzer({ enabled: process.env.ANALYZE === 'true' });
 
-export default withNextIntl(nextConfig);
+export default analyzeBundle(withNextIntl(nextConfig));

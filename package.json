@@ -16,7 +16,8 @@
     "seed": "node --env-file=.env.local scripts/seed-dev-tenant.mjs",
     "seed:claims": "node --env-file=.env.local scripts/seed-dev-tenant.mjs --claims-only",
     "snapshot": "node scripts/generate-context-snapshot.mjs",
-    "test:rules": "firebase emulators:exec --only firestore --project labyra-rules-test \"vitest run tests/firestore-rules.test.ts\""
+    "test:rules": "firebase emulators:exec --only firestore --project labyra-rules-test \"vitest run tests/firestore-rules.test.ts\"",
+    "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
@@ -123,6 +124,7 @@
     "@biomejs/biome": "^2.4.15",
     "@faker-js/faker": "^9.9.0",
     "@firebase/rules-unit-testing": "^5.0.1",
+    "@next/bundle-analyzer": "^16.2.6",
     "@types/d3": "^7.4.3",
     "@types/d3-drag": "^3.0.7",
     "@types/d3-force": "^3.0.10",
@@ -151,7 +153,7 @@
       "oxfmt --write"
     ]
   },
-  "description": "Labyra Platform — AI-native lab management for materials science",
+  "description": "Labyra Platform \u2014 AI-native lab management for materials science",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/labyra-platform/labyra-app.git"

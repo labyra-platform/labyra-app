@@ -44,7 +44,9 @@ export const maxDuration = 60;
 
 const MAX_TOOL_ROUNDS = 3;
 
+// R176-3c-thoughtsignature-persistence
 interface ToolCallRecord {
+  thoughtSignature?: string; // R176-3c: Gemini 3 multi-turn signature
   id: string;
   name: string;
   input: Record<string, unknown>;
@@ -686,7 +688,11 @@ export async function POST(request: Request) {
               name: call.name,
               input: call.input,
               result: result.result,
-              isError: result.isError
+              isError: result.isError,
+              // R176-3c: persist Gemini 3 thoughtSignature so reloaded conversations
+              // can resend matching thought_signature (else 400 INVALID_ARGUMENT).
+              // Conditional spread: never write `undefined` to Firestore.
+              ...(call.thoughtSignature ? { thoughtSignature: call.thoughtSignature } : {})
             });
             send({
               type: 'tool_result',

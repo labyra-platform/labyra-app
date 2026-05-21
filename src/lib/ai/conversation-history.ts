@@ -5,6 +5,7 @@
  */
 import 'server-only';
 import type { LLMMessage } from '@/lib/ai/providers/types';
+// R176-3c-thoughtsignature-persistence
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 
 interface StoredMessage {
@@ -16,6 +17,7 @@ interface StoredMessage {
     input: Record<string, unknown>;
     result?: unknown;
     isError?: boolean;
+    thoughtSignature?: string; // R176-3c: Gemini 3 multi-turn signature
   }>;
   createdAt: { toMillis: () => number } | number;
 }
@@ -77,6 +79,7 @@ export async function loadConversationHistory(
               id: string;
               name: string;
               input: Record<string, unknown>;
+              thoughtSignature?: string; // R176-3c
             };
         const assistantBlocks: AssistantBlock[] = [];
         if (m.content && m.content.trim().length > 0) {
@@ -87,7 +90,10 @@ export async function loadConversationHistory(
             type: 'tool_use',
             id: tc.id,
             name: tc.name,
-            input: tc.input
+            input: tc.input,
+            // R176-3c: restore signature on reload so Gemini 3 accepts the
+            // following functionResponse (conditional spread — no undefined).
+            ...(tc.thoughtSignature ? { thoughtSignature: tc.thoughtSignature } : {})
           });
         }
         const toolResultBlocks = m.toolCalls.map((tc) => ({

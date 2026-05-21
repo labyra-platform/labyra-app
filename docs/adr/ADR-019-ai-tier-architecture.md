@@ -150,9 +150,9 @@ Current `CAPABILITY_MAP`:
 
 | Capability | Provider | Model | Reasoning |
 |---|---|---|---|
-| security-router | google | gemini-2.5-flash | Fastest cheap classifier; 4× cheaper than Haiku |
-| tool-calling-cheap | google | gemini-2.5-flash | Same model as router, share singleton |
-| rag-balanced | google | gemini-2.5-flash | Sufficient for RAG + grounding; saves Sonnet quota |
+| security-router | google | gemini-3.1-flash-lite | Fast cheap classifier; lite variant for T0 routing |
+| tool-calling-cheap | google | gemini-3-flash-preview | Tool calls + Firestore lookups |
+| rag-balanced | google | gemini-3-flash-preview | RAG + grounding; saves Sonnet quota |
 | reasoning-balanced | anthropic | claude-sonnet-4-6 | Best price/quality for complex reasoning |
 | reasoning-frontier | anthropic | claude-opus-4-7 | Best quality for audit/peer review (+35% tokenizer inflation acceptable for low-frequency T5) |
 | embedding | voyage | voyage-3-large | 1024-dim, best matryoshka representation |
@@ -162,6 +162,16 @@ Current `CAPABILITY_MAP`:
 **R174-1 rollback**: T0+T1+T2 from `gemini-3.1-flash-lite-preview` / `gemini-3-flash-preview` → `gemini-2.5-flash`.
 
 Reason: Gemini 3 series requires `thought_signature` field in multi-turn function calls. SDK `@google/generative-ai` 2026-05 release doesn't yet expose signature pass-through. Restore to Gemini 3 when SDK signature handling lands (planned R195+).
+
+<!-- R188-1-sync-gemini3-models -->
+**Re-adoption (pre-R187)**: T0+T1+T2 are back on Gemini 3 — current `CAPABILITY_MAP`:
+T0 `gemini-3.1-flash-lite`, T1+T2 `gemini-3-flash-preview`. The R174-1 rollback above
+is preserved as historical record (the decision was correct at R174). The exact reason
+re-adoption became safe (SDK fix vs. `functionResponse` role-split per R174-5 vs. Flash
+not needing `thought_signature`) is NOT yet confirmed in writing — recover it from the
+commit that edited `CAPABILITY_MAP` before treating "resolved" as fact. Open risk: R176-3
+(T2 empty `...` response ~10-15% of multi-turn) may share root cause with the original
+signature issue; do not close that link without verification.
 
 ---
 

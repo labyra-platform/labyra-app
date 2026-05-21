@@ -5,7 +5,7 @@
  * is allowed (data ownership).
  *
  * @phase R160-spectra-1
- * R164 R164-phase-5b-1: backend now reads from measurements collection (URL unchanged).
+ * R164-phase-5b-1: backend reads from spectra collection (URL /api/spectra unchanged).
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
@@ -43,7 +43,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     const db = getAdminFirestoreService();
-    const ref = db.doc(`tenants/${tenantId}/measurements/${id}`);
+    const ref = db.doc(`tenants/${tenantId}/spectra/${id}`);
     const snap = await ref.get();
     if (!snap.exists) {
       return new NextResponse('not_found', { status: 404 });

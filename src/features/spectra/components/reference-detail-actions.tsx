@@ -33,18 +33,3 @@ export function ReferenceDetailActions({ id, status }: ReferenceDetailActionsPro
 interface ReferenceLineageSectionProps {
   id: string;
 }
-
-export function ReferenceLineageSection({ id }: ReferenceLineageSectionProps) {
-  return (
-    <section className='space-y-2'>
-      <details>
-        <summary className='cursor-pointer text-sm font-medium hover:text-foreground text-muted-foreground'>
-          {`📊 Sơ đồ lineage (PROV-O)`}
-        </summary>
-        <div className='mt-3'>
-          <LineageGraph rootType='reference' rootId={id} maxDepth={3} />
-        </div>
-      </details>
-    </section>
-  );
-}

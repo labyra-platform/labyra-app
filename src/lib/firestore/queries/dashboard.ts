@@ -128,6 +128,18 @@ export interface ChemicalHazardBucket {
   count: number;
 }
 
+const GHS_SHORT: Record<string, string> = {
+  GHS01: 'Explosive',
+  GHS02: 'Flammable',
+  GHS03: 'Oxidizing',
+  GHS04: 'Gas',
+  GHS05: 'Corrosive',
+  GHS06: 'Toxic',
+  GHS07: 'Irritant',
+  GHS08: 'Health',
+  GHS09: 'Environ.'
+};
+
 export function useChemicalsByHazard(): {
   data: ChemicalHazardBucket[];
   isLoading: boolean;
@@ -138,16 +150,15 @@ export function useChemicalsByHazard(): {
 
   const buckets = useMemo<ChemicalHazardBucket[]>(() => {
     if (!data) return [];
-    const counts: Record<string, number> = { low: 0, medium: 0, high: 0 };
+    const counts: Record<string, number> = {};
     for (const doc of data) {
-      const hazard = doc.data.hazard;
-      if (hazard in counts) counts[hazard]++;
+      for (const code of doc.data.ghsHazards ?? []) {
+        counts[code] = (counts[code] ?? 0) + 1;
+      }
     }
-    return [
-      { hazard: 'Low', count: counts.low },
-      { hazard: 'Medium', count: counts.medium },
-      { hazard: 'High', count: counts.high }
-    ];
+    return Object.entries(counts)
+      .map(([code, count]) => ({ hazard: GHS_SHORT[code] ?? code, count }))
+      .sort((a, b) => b.count - a.count);
   }, [data]);
 
   return { data: buckets, isLoading };

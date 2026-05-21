@@ -65,9 +65,11 @@ export default function SpectrumDetailPage({ params }: { params: Promise<{ id: s
         fallback={`/${locale}/dashboard/experiments/${spectrum.experimentId}`}
         label={`Back to ${spectrum.experimentId}`}
       />
-      <SpectrumDetailCard spectrum={spectrum} />
-      {/* R160-spectra-3b-analysis-render */}
-      <SpectrumAnalysisSection spectrumId={spectrum.id} status={spectrum.status} />
+      <div className='space-y-6'>
+        <SpectrumDetailCard spectrum={spectrum} />
+        {/* R160-spectra-3b-analysis-render */}
+        <SpectrumAnalysisSection spectrumId={spectrum.id} status={spectrum.status} />
+      </div>
     </PageContainer>
   );
 }

@@ -3,6 +3,10 @@ import createMiddleware from 'next-intl/middleware';
 import { routing } from '@/i18n/routing';
 // R162-security-merge
 import { isAllowedOrigin, MUTATION_METHODS } from '@/lib/security/origin';
+// R191-1: nonce-based CSP
+import { buildCsp } from '@/lib/security/csp';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 const handleI18nRouting = createMiddleware(routing);
 
@@ -25,6 +29,21 @@ const handleI18nRouting = createMiddleware(routing);
  */
 // R160-i18n-3e: trust next-intl redirects
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
+  // R191-1: per-request nonce for CSP. Set on request.headers BEFORE
+  // handleI18nRouting so next-intl forwards it (NextResponse.next({request:
+  // {headers}})) — Next SSR then reads the nonce. Edge: btoa, not Buffer.
+  const nonce = btoa(crypto.randomUUID()).replace(/=+$/, '');
+  const csp = buildCsp(nonce, IS_DEV);
+  request.headers.set('x-nonce', nonce);
+
+  // Attach nonce + CSP (Report-Only) to any response we return, so no page
+  // ships without the policy.
+  const withCsp = (response: NextResponse): NextResponse => {
+    response.headers.set('x-nonce', nonce);
+    response.headers.set('Content-Security-Policy-Report-Only', csp);
+    return response;
+  };
+
   // R162-security-merge — API path: Origin check on mutations, then bypass i18n/auth logic
   if (request.nextUrl.pathname.startsWith('/api/')) {
     if (MUTATION_METHODS.has(request.method)) {
@@ -36,7 +55,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
         }
       }
     }
-    return NextResponse.next();
+    return withCsp(NextResponse.next());
   }
 
   // Step 1: locale routing
@@ -45,7 +64,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   // Step 2: if next-intl is redirecting (adding locale prefix, etc.), let it.
   // Status 3xx means a Location header is already set — don't second-guess.
   if (response.status >= 300 && response.status < 400) {
-    return response;
+    return withCsp(response);
   }
 
   const pathname = request.nextUrl.pathname;
@@ -60,7 +79,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   // No recognised locale → next-intl's response already handles the redirect
   // (or it's a static asset matcher fall-through). Return as-is.
   if (!locale) {
-    return response;
+    return withCsp(response);
   }
 
   // Strip the leading `/${locale}` segment for path matching.
@@ -74,7 +93,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
 
   // Authenticated user hitting an auth page → bounce to dashboard.
   if (sessionCookie && isAuthRoute) {
-    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    return withCsp(NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url)));
   }
 
   // Unauthenticated user hitting a protected page → bounce to sign-in,
@@ -82,10 +101,10 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   if (!sessionCookie && isProtectedRoute) {
     const signInUrl = new URL(`/${locale}/sign-in`, request.url);
     signInUrl.searchParams.set('redirect', pathnameWithoutLocale);
-    return NextResponse.redirect(signInUrl);
+    return withCsp(NextResponse.redirect(signInUrl));
   }
 
-  return response;
+  return withCsp(response);
 }
 
 export const config = {

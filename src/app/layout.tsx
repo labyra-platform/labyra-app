@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import NextTopLoader from 'nextjs-toploader';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
@@ -27,6 +27,8 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
+  // R191-1: nonce set by proxy.ts on the request headers.
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isValidTheme = THEMES.some((t) => t.value === activeThemeValue);
   const themeToApply = isValidTheme ? activeThemeValue! : DEFAULT_THEME;
@@ -34,7 +36,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
       <head>
+        {/* R191-1: zod v4 JIT uses new Function() -> CSP eval violation.
+            Set jitless before any bundle loads so zod skips the eval probe. */}
         <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `globalThis.__zod_globalConfig = globalThis.__zod_globalConfig || {}; globalThis.__zod_globalConfig.jitless = true;`
+          }}
+        />
+        <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               try {

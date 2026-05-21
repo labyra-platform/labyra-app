@@ -1,108 +1,25 @@
-import {
-  Architects_Daughter,
-  DM_Sans,
-  Fira_Code,
-  Geist,
-  Geist_Mono,
-  Instrument_Sans,
-  Inter,
-  JetBrains_Mono,
-  Merriweather,
-  Mulish,
-  Noto_Sans_Mono,
-  Outfit,
-  Playfair_Display,
-  Space_Mono
-} from 'next/font/google';
-
+import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import { cn } from '@/lib/utils';
 
-const fontSans = Geist({
-  subsets: ['latin'],
-  variable: '--font-sans'
+// Primary / body — Inter. Strong Vietnamese diacritics, high x-height, UI-optimized.
+const fontSans = Inter({
+  subsets: ['latin', 'latin-ext', 'vietnamese'],
+  variable: '--font-sans',
+  display: 'swap'
 });
 
-const fontMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono'
+// Secondary / display — Plus Jakarta Sans. Geometric character for headings.
+const fontDisplay = Plus_Jakarta_Sans({
+  subsets: ['latin', 'latin-ext', 'vietnamese'],
+  variable: '--font-display',
+  display: 'swap'
 });
 
-const fontInstrument = Instrument_Sans({
-  subsets: ['latin'],
-  variable: '--font-instrument'
+// Mono — JetBrains Mono. Clear glyph distinction for formulas, CAS numbers, code.
+const fontMono = JetBrains_Mono({
+  subsets: ['latin', 'latin-ext', 'vietnamese'],
+  variable: '--font-mono',
+  display: 'swap'
 });
 
-const fontNotoMono = Noto_Sans_Mono({
-  subsets: ['latin'],
-  variable: '--font-noto-mono'
-});
-
-const fontMullish = Mulish({
-  subsets: ['latin'],
-  variable: '--font-mullish'
-});
-
-const fontInter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter'
-});
-
-const fontArchitectsDaughter = Architects_Daughter({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-architects-daughter'
-});
-
-const fontDMSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-dm-sans'
-});
-
-const fontFiraCode = Fira_Code({
-  subsets: ['latin'],
-  variable: '--font-fira-code'
-});
-
-const fontOutfit = Outfit({
-  subsets: ['latin'],
-  variable: '--font-outfit'
-});
-
-const fontSpaceMono = Space_Mono({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-space-mono'
-});
-
-const fontJetBrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-jetbrains-mono'
-});
-
-const fontMerriweather = Merriweather({
-  subsets: ['latin'],
-  weight: ['300', '400', '700'],
-  variable: '--font-merriweather'
-});
-
-const fontPlayfairDisplay = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-playfair-display'
-});
-
-export const fontVariables = cn(
-  fontSans.variable,
-  fontMono.variable,
-  fontInstrument.variable,
-  fontNotoMono.variable,
-  fontMullish.variable,
-  fontInter.variable,
-  fontArchitectsDaughter.variable,
-  fontDMSans.variable,
-  fontFiraCode.variable,
-  fontOutfit.variable,
-  fontSpaceMono.variable,
-  fontJetBrainsMono.variable,
-  fontMerriweather.variable,
-  fontPlayfairDisplay.variable
-);
+export const fontVariables = cn(fontSans.variable, fontDisplay.variable, fontMono.variable);

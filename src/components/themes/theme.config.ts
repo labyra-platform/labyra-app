@@ -1,48 +1,12 @@
 /**
- * Default theme that loads when no user preference is set
- * Change this value to set a different default theme
+ * Default theme that loads when no user preference is set.
+ * Labyra ships a single brand theme (light + dark variants).
  */
 export const DEFAULT_THEME = 'vercel';
 
 export const THEMES = [
   {
-    name: 'Claude',
-    value: 'claude'
-  },
-  {
-    name: 'Neobrutualism',
-    value: 'neobrutualism'
-  },
-  {
-    name: 'Supabase',
-    value: 'supabase'
-  },
-  {
-    name: 'Vercel',
+    name: 'Labyra',
     value: 'vercel'
-  },
-  {
-    name: 'Mono',
-    value: 'mono'
-  },
-  {
-    name: 'Notebook',
-    value: 'notebook'
-  },
-  {
-    name: 'Light Green',
-    value: 'light-green'
-  },
-  {
-    name: 'Zen',
-    value: 'zen'
-  },
-  {
-    name: 'Astro Vista',
-    value: 'astro-vista'
-  },
-  {
-    name: 'WhatsApp',
-    value: 'whatsapp'
   }
 ];

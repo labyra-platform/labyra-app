@@ -335,3 +335,25 @@ Phase 3 (R190+):
 ---
 
 @phase R170-architecture-decision
+
+---
+
+## Addendum R190-1 (2026-05-22) — T0 GA pricing correction
+
+Gemini 3.1 Flash-Lite reached GA on 2026-05-07. `CAPABILITY_MAP` emits the GA
+string `gemini-3.1-flash-lite` (no `-preview`), but the authoritative PRICING
+table still keyed the entry as `gemini-3.1-flash-lite-preview`. Result: every
+Tier-0 (Shield + Router) request fell through to the `unknown model -> $0`
+branch for ~2 weeks, under-counting per-feature cost telemetry **and** the
+Cost Guard per-tenant caps that gate commercial launch.
+
+Fix: renamed the PRICING key to the GA string and updated GA caching rates
+($0.20/M read, $0.50/M write; previously preview $0.025/$0.25). Input rate
+$0.25/M is the cache-miss rate, which matches the `nonCachedInput` passed by
+the Gemini provider after subtracting `cachedContentTokenCount`.
+
+Follow-up (R190-2, tracked): add a guardrail test asserting every model in
+`isTierModel()` exists in `PRICING`. The `unknown -> return 0` branch silently
+swallowed this defect; a tier model with no price is a launch-blocking error
+and must fail in CI, not log a warning at runtime.
+

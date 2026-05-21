@@ -76,13 +76,16 @@ const PRICING: Record<string, ModelPricing> = {
     cacheWritePerM: 0.1,
     notes: 'GA stable. Backup option if 3.1-flash-lite-preview pricing changes at GA.'
   },
-  // R168-3.13b: ADD — current Tier 0+1 model
-  'gemini-3.1-flash-lite-preview': {
+  // R190-1: GA rename. 3.1 Flash-Lite went GA 2026-05-07; CAPABILITY_MAP
+  // emits 'gemini-3.1-flash-lite' (no -preview) but this key lagged ->
+  // PRICING miss -> T0 billed $0 for ~2 weeks. Key + GA cache rates fixed.
+  // GA caching: $0.20/M read, $0.50/M write (was preview 0.025/0.25).
+  'gemini-3.1-flash-lite': {
     inputPerM: 0.25,
     outputPerM: 1.5,
-    cacheReadPerM: 0.025,
-    cacheWritePerM: 0.25,
-    notes: 'Tier 0 (Shield+Router) + Tier 1 (Lab Manager). Preview pricing.'
+    cacheReadPerM: 0.2,
+    cacheWritePerM: 0.5,
+    notes: 'Tier 0 (Shield+Router). GA 2026-05-07. Input is cache-miss rate.'
   },
   // R168-3.13b: VERIFIED — Tier 2 model
   'gemini-3-flash-preview': {
@@ -169,7 +172,7 @@ export function getPricingNotes(model: string): string | null {
  */
 export function isTierModel(model: string): boolean {
   const tierModels = new Set([
-    'gemini-3.1-flash-lite-preview', // T0, T1
+    'gemini-3.1-flash-lite', // T0
     'gemini-3-flash-preview', // T2
     'claude-sonnet-4-6', // T3, T4
     'claude-opus-4-7' // T5

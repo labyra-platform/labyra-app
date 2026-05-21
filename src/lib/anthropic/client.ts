@@ -24,13 +24,3 @@ export function getAnthropicClient(): Anthropic {
   _client = new Anthropic({ apiKey });
   return _client;
 }
-
-/**
- * @deprecated Use getModelForTier(tier) from '@/lib/ai/config/capabilities'.
- * R169-2: Kept temporarily for legacy callers. Will be removed R170.
- */
-export const MODELS = {
-  tier1Dispatcher: 'gemini-3.1-flash-lite-preview',
-  tier2: 'claude-sonnet-4-6',
-  tier3: 'claude-opus-4-7'
-} as const;

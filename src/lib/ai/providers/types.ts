@@ -48,8 +48,12 @@ export interface LLMToolCall {
 }
 
 /** Tool result passed back in followup messages */
+// R176-3d-functionresponse-name
 export interface LLMToolResult {
   toolCallId: string;
+  // R176-3d: function name (e.g. "searchPapers") for Gemini functionResponse.name.
+  // Anthropic uses toolCallId back-ref; Gemini needs the function name per spec.
+  toolName?: string;
   result: unknown;
   isError?: boolean;
 }
@@ -83,11 +87,8 @@ export interface LLMStreamRequest {
   /** Tools available for the LLM to call */
   tools?: LLMToolDefinition[];
   /** Tool results from previous turn (for multi-turn tool conversations) */
-  toolResults?: Array<{
-    toolCallId: string;
-    result: unknown;
-    isError?: boolean;
-  }>;
+  // R176-3d-fix2: use LLMToolResult (was inline dup) so toolName is available
+  toolResults?: LLMToolResult[];
 }
 
 /** Provider interface — every LLM backend implements this */

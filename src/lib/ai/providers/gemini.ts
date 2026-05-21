@@ -11,6 +11,7 @@
  *
  * @phase R176-2a → R176-2bc-hotfix
  */
+// R176-3d-functionresponse-name
 import {
   type Content,
   type FunctionDeclaration,
@@ -63,6 +64,20 @@ function buildHistory(messages: LLMStreamRequest['messages']): Content[] {
   const historicalMessages = messages.slice(0, -1);
   const out: Content[] = [];
 
+  // R176-3d: map tool_use id -> function name across ALL messages, so a
+  // tool_result (which carries only tool_use_id) can resolve the function name
+  // that Gemini's functionResponse.name requires. tool_use and tool_result live
+  // in separate messages (assistant vs user), so this map must be global.
+  const toolNameById = new Map<string, string>();
+  for (const m of historicalMessages) {
+    if (typeof m.content === 'string') continue;
+    for (const b of (m.content ?? []) as LabyraBlock[]) {
+      if (b.type === 'tool_use' && b.id && b.name) {
+        toolNameById.set(b.id, b.name);
+      }
+    }
+  }
+
   for (const m of historicalMessages) {
     const role: 'user' | 'model' = m.role === 'assistant' ? 'model' : 'user';
 
@@ -92,7 +107,9 @@ function buildHistory(messages: LLMStreamRequest['messages']): Content[] {
       } else if (b.type === 'tool_result') {
         parts.push({
           functionResponse: {
-            name: b.tool_use_id ?? '',
+            // R176-3d: function name (not id) per Gemini spec; fallback to id for old data
+            name:
+              (b.tool_use_id ? toolNameById.get(b.tool_use_id) : undefined) ?? b.tool_use_id ?? '',
             response:
               typeof b.content === 'string'
                 ? { result: b.content }
@@ -217,7 +234,8 @@ export class GeminiProvider implements LLMProvider {
       if (request.toolResults && request.toolResults.length > 0) {
         currentParts = request.toolResults.map<Part>((tr) => ({
           functionResponse: {
-            name: tr.toolCallId,
+            // R176-3d: prefer function name; fallback to id for back-compat
+            name: tr.toolName ?? tr.toolCallId,
             response: {
               result: tr.result,
               ...(tr.isError ? { error: true } : {})

@@ -62,6 +62,7 @@
     "@tanstack/react-query-devtools": "^5.95.2",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.24",
+    "@vercel/speed-insights": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -153,7 +154,7 @@
       "oxfmt --write"
     ]
   },
-  "description": "Labyra Platform \u2014 AI-native lab management for materials science",
+  "description": "Labyra Platform — AI-native lab management for materials science",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/labyra-platform/labyra-app.git"

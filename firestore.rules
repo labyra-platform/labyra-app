@@ -86,6 +86,17 @@ service cloud.firestore {
         allow read: if belongsToTenant(tenantId) || isSuperAdmin();
         allow write: if isWriter(tenantId) || isSuperAdmin();
       }
+      // Chemicals — inventory. Writes go through API (Admin SDK) for
+      // transaction integrity, but allow writer client writes too for parity
+      // with other domains. Transactions sub-collection is append-only via API.
+      match /chemicals/{chemicalId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+        match /transactions/{txId} {
+          allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+          allow write: if false; // Admin SDK only — preserves audit integrity
+        }
+      }
 
       match /bookings/{bookingId} {
         allow read: if belongsToTenant(tenantId) || isSuperAdmin();
@@ -218,6 +229,10 @@ service cloud.firestore {
     // =====================================================
     match /platform/{document=**} {
       allow read, write: if isSuperAdmin();
+    }
+    // PubChem lookup cache — server-side (Admin SDK) only. CHEM-2.
+    match /_pubchem_cache/{cas} {
+      allow read, write: if false;
     }
 
     // =====================================================

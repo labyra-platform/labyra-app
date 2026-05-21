@@ -43,7 +43,7 @@ interface EquipmentDoc {
 
 interface ChemicalDoc {
   name: string;
-  hazard: 'low' | 'medium' | 'high';
+  ghsHazards?: string[]; // GHS pictogram codes
 }
 
 // ─── KPI hook — single query per collection, in-memory aggregation ──

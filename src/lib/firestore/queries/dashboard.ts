@@ -23,7 +23,9 @@ export interface KpiSummary {
 // ─── Domain types (rough — refined in Phase 4 per-domain) ───────────
 interface ExperimentDoc {
   title: string;
-  status: 'planned' | 'running' | 'completed';
+  workflowStatus: 'planned' | 'running' | 'completed' | 'failed' | 'cancelled';
+  createdAt?: number;
+  createdAt?: number;
   startedAt?: { seconds: number; nanoseconds: number };
   completedAt?: { seconds: number; nanoseconds: number } | null;
   temperature_C?: number;
@@ -101,16 +103,20 @@ export function useExperimentsByStatus(): {
     const counts: Record<string, number> = {
       planned: 0,
       running: 0,
-      completed: 0
+      completed: 0,
+      failed: 0,
+      cancelled: 0
     };
     for (const doc of data) {
-      const status = doc.data.status;
-      if (status in counts) counts[status]++;
+      const status = doc.data.workflowStatus;
+      if (status && status in counts) counts[status]++;
     }
     return [
       { status: 'Planned', count: counts.planned },
       { status: 'Running', count: counts.running },
-      { status: 'Completed', count: counts.completed }
+      { status: 'Completed', count: counts.completed },
+      { status: 'Failed', count: counts.failed },
+      { status: 'Cancelled', count: counts.cancelled }
     ];
   }, [data]);
 
@@ -210,7 +216,7 @@ export function useRecentExperiments(count = 5): {
 } {
   const { data, isLoading } = useTenantCollection<ExperimentDoc>({
     collection: 'experiments',
-    constraints: [orderBy('startedAt', 'desc'), fsLimit(count)],
+    constraints: [orderBy('createdAt', 'desc'), fsLimit(count)],
     cacheKey: ['recent', count]
   });
 
@@ -219,7 +225,7 @@ export function useRecentExperiments(count = 5): {
     return data.map((doc) => ({
       id: doc.id,
       title: doc.data.title,
-      status: doc.data.status,
+      status: doc.data.workflowStatus,
       temperature_C: doc.data.temperature_C
     }));
   }, [data]);

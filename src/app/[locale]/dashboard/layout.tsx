@@ -34,7 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <AppSidebar />
         <SidebarInset>
           <Header />
-          <main id='main-content' className='flex-1'>
+          <main id='main-content' className='flex min-w-0 flex-1 flex-col'>
             <InfobarProvider defaultOpen={false}>
               <OrphanGuard>{children}</OrphanGuard>
               {/* @r179-7-applied: InfoSidebar hidden on /view pages via client check */}

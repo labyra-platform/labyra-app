@@ -1,9 +1,14 @@
-import { IconLoader2 } from '@tabler/icons-react';
+import PageContainer from '@/components/layout/page-container';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return (
-    <div className='flex h-[calc(100vh-4rem)] items-center justify-center'>
-      <IconLoader2 className='text-muted-foreground size-8 animate-spin' />
-    </div>
+    <PageContainer>
+      <div className='flex flex-1 flex-col space-y-4'>
+        <Skeleton className='h-8 w-56' />
+        <Skeleton className='h-4 w-80' />
+        <Skeleton className='mt-4 h-[400px] w-full' />
+      </div>
+    </PageContainer>
   );
 }

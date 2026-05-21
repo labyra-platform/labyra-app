@@ -1,5 +1,6 @@
 'use client';
 import { useTranslations } from 'next-intl';
+import { IconCheck, IconCopy } from '@tabler/icons-react';
 import { type ReactNode, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
@@ -31,6 +32,29 @@ const TIER_COLORS: Record<1 | 2 | 3 | 4 | 5, string> = {
   4: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
   5: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
 };
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard unavailable — silently ignore
+    }
+  };
+  return (
+    <button
+      type='button'
+      onClick={onCopy}
+      aria-label='Copy message'
+      className='text-muted-foreground hover:text-foreground hover:bg-background/60 absolute -bottom-3 right-2 rounded-md border bg-background p-1.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus-visible:opacity-100'
+    >
+      {copied ? <IconCheck className='size-3.5' /> : <IconCopy className='size-3.5' />}
+    </button>
+  );
+}
 
 function TierBadge({ tier }: { tier: 1 | 2 | 3 | 4 | 5 }) {
   const t = useTranslations('ai');
@@ -115,7 +139,7 @@ export function MessageBubble({ message }: { message: AiMessage }) {
     <div className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
-          'max-w-[85%] rounded-2xl px-4 py-2 text-sm',
+          'group relative max-w-[85%] rounded-2xl px-4 py-2 text-sm',
           isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
         )}
       >
@@ -136,6 +160,7 @@ export function MessageBubble({ message }: { message: AiMessage }) {
             </div>
             <CitationModal source={activeSource} onClose={() => setActiveRef(null)} />
             {message.grounding && <GroundingWarning grounding={message.grounding} />}
+            {message.content && <CopyButton text={message.content} />}
           </>
         )}
       </div>

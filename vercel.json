@@ -4,5 +4,8 @@
       "path": "/api/cron/bm25-refit",
       "schedule": "0 3 * * *"
     }
+  ],
+  "regions": [
+    "sin1"
   ]
 }

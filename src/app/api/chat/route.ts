@@ -80,6 +80,7 @@ function addUsage(a: AiCostBreakdown, b: AiCostBreakdown): AiCostBreakdown {
 }
 
 // M7: per-tool timeout to prevent runaway tool calls
+// R188-4-phase1-tool-timeout
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     p,
@@ -672,10 +673,29 @@ export async function POST(request: Request) {
           // Execute tools in parallel
           const results = await Promise.all(
             pendingCalls.map((call) =>
+              // R188-4 phase1 (T-1): hybrid RAG search legitimately takes 5-15s
+              // (cold start up to ~25s) -> 20s was too aggressive. Raise to 45s.
+              // A per-tool timeout must NOT reject the whole batch (Promise.all) and
+              // kill the chat turn -> convert to error ToolResult with a graceful,
+              // user-facing message so the turn survives (no empty "..." bubble).
               withTimeout(
                 executeToolCall(call, { tenantId: tenantId!, userId, selectedPaperIds }),
-                20_000
-              )
+                45_000
+              ).catch((e) => ({
+                toolCallId: call.id,
+                toolName: call.name,
+                result: {
+                  error:
+                    e instanceof Error && e.message === 'tool_timeout'
+                      ? 'search_timeout'
+                      : e instanceof Error
+                        ? e.message
+                        : 'tool_error',
+                  message:
+                    'Tìm kiếm tài liệu mất nhiều thời gian hơn dự kiến. Hệ thống đang được tối ưu — vui lòng thử lại sau giây lát.'
+                },
+                isError: true
+              }))
             )
           );
 

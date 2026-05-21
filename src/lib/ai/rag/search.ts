@@ -3,6 +3,7 @@
  * @phase R160-ai-5d-2 (upgraded from ai-5d-1 vector+rerank only)
  */
 import 'server-only';
+// R188-4-phase1-tool-timeout
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { PaperChunkDoc } from '@/types/papers';
 import { getEmbeddingProvider } from './embedding';
@@ -45,6 +46,11 @@ interface HitCandidate {
  */
 export async function searchPapers(req: SearchRequest): Promise<SearchResponse> {
   const startedAt = Date.now();
+  // R188-4 phase1 (T-7): per-step timing to identify the real bottleneck.
+  const _marks: Record<string, number> = {};
+  const _mark = (k: string) => {
+    _marks[k] = Date.now() - startedAt;
+  };
   const vectorTopK = req.vectorTopK ?? DEFAULT_VECTOR_TOP_K;
   const topN = req.topN ?? DEFAULT_TOP_N;
 
@@ -54,6 +60,7 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   const embedPromise = embedder.embed([req.query], 'query');
 
   const [embedResult, bm25Encoder] = await Promise.all([embedPromise, bm25Promise]);
+  _mark('parallel_embed_and_bm25_load');
   const queryVector = embedResult.embeddings[0];
   const embedTokens = embedResult.totalTokens;
   const embedCost = embedResult.costUsd;
@@ -72,11 +79,13 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
     vectorTopK,
     mergedFilter
   );
+  _mark('vector_query');
 
   // BM25 retrieval (only if encoder available — may be null for new tenants)
   let bm25Hits: { chunkId: string; score: number; chunk: PaperChunkDoc }[] = [];
   if (bm25Encoder) {
     bm25Hits = await retrieveBM25(req.tenantId, req.query, bm25Encoder, DEFAULT_BM25_TOP_K);
+    _mark('bm25_retrieve');
   }
 
   // ─── STEP 2: Build candidate map ────────────────────────────────
@@ -152,6 +161,7 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
     documents: fusedCandidates.map((c) => c.text),
     topN
   });
+  _mark('rerank');
 
   // ─── STEP 5: Build hits with full metadata ──────────────────────
   const hits: SearchHit[] = await Promise.all(
@@ -177,6 +187,19 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
         score: r.relevanceScore,
         vectorScore: cand.vectorScore ?? 0
       };
+    })
+  );
+
+  // R188-4 phase1 (T-7): emit per-step timing for Phase 2 bottleneck analysis.
+  // Filter Vercel logs by event=search_timing. Remove after root cause fixed.
+  // eslint-disable-next-line no-console
+  console.log(
+    JSON.stringify({
+      event: 'search_timing',
+      tenantId: req.tenantId,
+      candidateCount: candidates.size,
+      totalMs: Date.now() - startedAt,
+      marks: _marks
     })
   );
 

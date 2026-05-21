@@ -13,6 +13,7 @@
  */
 // R176-3d-functionresponse-name
 // R189-1-gemini-safety-settings
+// R189-2-gemini-cost-telemetry
 import {
   type Content,
   type FunctionDeclaration,
@@ -326,12 +327,16 @@ export class GeminiProvider implements LLMProvider {
       usageMetadata?: {
         promptTokenCount?: number;
         candidatesTokenCount?: number;
+        cachedContentTokenCount?: number; // R189-2 (G-3): implicit cache
+        thoughtsTokenCount?: number; // R189-2 (G-4): Gemini 3 thinking @ output rate
       };
     }>,
     model: string
   ): AsyncIterable<LLMStreamEvent> {
     let inputTokens = 0;
     let outputTokens = 0;
+    let cachedTokens = 0; // R189-2 (G-3)
+    let thoughtsTokens = 0; // R189-2 (G-4)
     let toolCallsEmitted = 0;
 
     for await (const chunk of stream) {
@@ -359,10 +364,15 @@ export class GeminiProvider implements LLMProvider {
       if (meta) {
         inputTokens = meta.promptTokenCount ?? inputTokens;
         outputTokens = meta.candidatesTokenCount ?? outputTokens;
+        cachedTokens = meta.cachedContentTokenCount ?? cachedTokens;
+        thoughtsTokens = meta.thoughtsTokenCount ?? thoughtsTokens;
       }
     }
 
-    const usage = calculateCost(model, inputTokens, outputTokens);
+    // R189-2: Gemini promptTokenCount INCLUDES cached -> subtract to avoid
+    // double-count (calculateCost ADDS cacheRead). Thoughts charged at output rate.
+    const nonCachedInput = Math.max(0, inputTokens - cachedTokens);
+    const usage = calculateCost(model, nonCachedInput, outputTokens + thoughtsTokens, cachedTokens);
     yield {
       type: 'message_complete',
       usage,
@@ -394,10 +404,16 @@ export class GeminiProvider implements LLMProvider {
 
     const text = response.text ?? '';
     const meta = response.usageMetadata;
+    // R189-2 (G-3+G-4): subtract cached from input (Gemini prompt INCLUDES cached),
+    // add thoughts to output (charged at output rate).
+    const _cached = (meta as { cachedContentTokenCount?: number })?.cachedContentTokenCount ?? 0;
+    const _thoughts = (meta as { thoughtsTokenCount?: number })?.thoughtsTokenCount ?? 0;
+    const _nonCachedInput = Math.max(0, (meta?.promptTokenCount ?? 0) - _cached);
     const usage = calculateCost(
       request.model,
-      meta?.promptTokenCount ?? 0,
-      meta?.candidatesTokenCount ?? 0
+      _nonCachedInput,
+      (meta?.candidatesTokenCount ?? 0) + _thoughts,
+      _cached
     );
     return { text, usage };
   }

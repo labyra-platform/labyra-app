@@ -3,7 +3,7 @@
 > Read FIRST before any architectural decision or code change.
 > Update sau mỗi round có lesson mới.
 
-<!-- R175-docs-update-2026-05-16 -->
+<!-- R187-docs-update-2026-05-21 -->
 
 **Repo**: `github.com/labyra-platform/labyra-app` (Next.js 16 main app)
 **Worker repo**: `github.com/emnam009009/labyra-spectra-worker` (Python Cloud Run)
@@ -82,6 +82,10 @@ Use CSS variables, no hardcoded colors:
 
 No hex colors (`#3b82f6`) or named colors (`bg-blue-500`) except in tier-specific palettes (e.g., TIER_COLORS in message-bubble.tsx where each tier has assigned semantic color).
 
+### Brand theme + fonts (R187)
+
+SINGLE brand theme (theme key `vercel` = Labyra; 9 other themes cut). Keep dark/light mode only. Brand fonts: Inter (--font-sans, body), Plus Jakarta Sans (--font-display, headings — defined but NOT yet applied to h1-h4, pending), JetBrains Mono (--font-mono). All animations MUST respect prefers-reduced-motion (global block in globals.css).
+
 ### Icons
 
 - **`@tabler/icons-react`** ONLY (NOT Lucide — historical decision R162)
@@ -119,6 +123,18 @@ Server-side: extract tenantId via `getTenantIdFromToken(decoded)` from `@/lib/au
 Client-side: `useTenantId()` from `@/lib/auth/use-claims`.
 
 Custom claims pattern: each user has SINGLE `tenantId`. No cross-tenant superadmin in runtime — those operations use service account via admin SDK scripts.
+
+### Collection naming (R186/R187 — CRITICAL)
+
+Spectra collection = **`spectra`** (worker source of truth: notify-complete writes `tenants/{tid}/spectra/{id}`, storage path spectra/.../raw, indexes use spectra). URL routes `/api/measurements/*` are fine but their backend reads collection `spectra`. TS type name = `Measurement`/`SpectrumMetadata`; COLLECTION constant = `spectra`. DO NOT rename spectra→measurements (breaks worker). R187 fixed DELETE route that wrongly targeted `measurements`.
+
+### Soft-delete (R187 — CRITICAL)
+
+Delete = deprecate/retract (set `lifecycleStatus`), NOT hard delete (ADR-016 immutability). Therefore EVERY client list hook MUST filter out `deprecated` + `retracted`:
+```ts
+.filter((x) => x.lifecycleStatus !== 'deprecated' && x.lifecycleStatus !== 'retracted')
+```
+R187 fixed all 3 spectra hooks (rows stayed visible after delete). Apply to any new entity.
 
 **Superadmin role (R172)**: separate from tenant. Stored in custom claims `role: 'superadmin'`. Cross-tenant access via `requireSuperadmin()` guard. Cron jobs use service account `cron-runner@labyra-app-dev.iam.gserviceaccount.com`.
 
@@ -177,6 +193,10 @@ const decoded = await getAdminAuthService().verifyIdToken(token);
 
 Same pattern for Firestore: `getAdminFirestoreService()` instead of `getFirestore()`.
 
+### Client SDK auth (R187 lesson — CRITICAL)
+
+Client components / hooks MUST use `getFirebaseAuth()` from `@/lib/firebase/client`, NOT bare `getAuth()` from `firebase/auth`. Bare `getAuth()` throws "No Firebase App '[DEFAULT]'" on early mount (crashed Lineage Explorer; forms only worked by luck in event handlers). R187 fixed 17 files.
+
 ### Firestore Database
 
 Project: `labyra-app-dev`
@@ -194,14 +214,18 @@ FIRESTORE_DATABASE_ID="(default)"
 
 ### 6-tier production stack
 
-| Tier | Model | Capability | Trigger |
+| Tier | Model (R176-2bc, verified R187) | Capability | Trigger |
 |---|---|---|---|
-| T0 | gemini-2.5-flash | security-router | Mọi chat (intent classifier) |
-| T1 | gemini-2.5-flash | tool-calling-cheap | `feature: 'lab_ops'` |
-| T2 | gemini-2.5-flash | rag-balanced | `feature: 'theory'` (default) |
+| T0 | gemini-3.1-flash-lite | security-router | Mọi chat (intent classifier) |
+| T1 | gemini-3-flash-preview | tool-calling-cheap | `feature: 'lab_ops'` |
+| T2 | gemini-3-flash-preview | rag-balanced | `feature: 'theory'` (default) |
 | T3 | claude-sonnet-4-6 | reasoning-balanced | `feature: 'spectrum_analysis'` |
 | T4 | claude-sonnet-4-6 | reasoning-balanced | `feature: 'paper_writing'` (keyword override) |
 | T5 | claude-opus-4-7 | reasoning-frontier | `POST /api/messages/[id]/audit` (explicit) |
+
+UI labels (decoupled from model): T1 Lab Manager, T2 Librarian, T3 Engineer,
+T4 Writer, T5 Auditor. Gemini 3.5 Flash adoption DEFERRED (ADR-032 — 3x cost,
+3-flash works; wait for GA on Gemini API).
 
 ### Capability abstraction (single source of truth)
 
@@ -209,7 +233,7 @@ Edit `src/lib/ai/config/capabilities.ts` to swap models. Tier→Capability→Mod
 
 ### Gemini provider lessons
 
-1. **`thought_signature` requirement (R174-1)**: Gemini 3 series requires `thought_signature` field in multi-turn function calls. SDK 2026-05 release doesn't expose pass-through. Use gemini-2.5-flash until SDK stable.
+1. **`thought_signature` requirement (R174-1 → RESOLVED R176-2a)**: Gemini 3 requires `thought_signature` in multi-turn function calls. Fixed by migrating SDK `@google/generative-ai` → `@google/genai` 2.3.0 (auto-handles it). Gemini 3 re-adopted for T0-T2 (R176-2bc). Worker uses Python `google-genai` (pin too loose `>=0.10.0` — tighten to `>=2.3.0,<3.0.0`).
 
 2. **`functionResponse` role split (R174-5)**: Gemini 2.5+ rejects `functionResponse` parts on role='user'. Must split message history:
    - text + functionCall → role='model'
@@ -251,6 +275,10 @@ if (!costCheck.allowed) {
 - T4 Writer uses `[authorYear]` format via `citation-loader.ts` (R175-1)
 - NEVER let LLM hallucinate citations — always verify against RAG hits + paper metadata
 - Defer until paper metadata complete (R176 backfill)
+
+### Route maxDuration (R187 lesson)
+
+RAG chat route (`/api/chat`) needs `export const maxDuration = 60` — multi-tier + up to 3 tool rounds + Pinecone hybrid search + Voyage rerank exceeds Vercel Pro's default 15s, causing `tool_timeout` on broad queries. Any long-running route: set maxDuration explicitly (Vercel Pro allows up to 300s; cron bm25-refit uses 300).
 
 ---
 
@@ -364,6 +392,11 @@ Read in order before architectural decisions:
 5. **ADR-019** AI Tier Architecture (R169) — capability abstraction, 6-tier
 6. **ADR-020** Cost Controls (R170) — 4-gate Cost Guard, dry-run
 7. **ADR-021** Inter-tier Protocols (R169-R170, partially deferred)
+8. **ADR-022** Worker LLM Provider Strategy · **ADR-023** PDF Viewer/multi-paper RAG
+9. **ADR-024/026** Data Integrity (L1/L2) · **ADR-025** Paper Domain Classify · **ADR-027** Journal Extraction
+10. **ADR-028** Arch Upgrade+Security · **ADR-029** Graduated Security Testing
+11. **ADR-030** RBAC & Onboarding (invite-only, member=CRUD, viewer=read-only, anti-escalation)
+12. **ADR-032** AI Scaling + Rate-limit + v3.5 Eval (no per-tenant API split; defer 3.5 Flash; reject Managed Sandbox auto-code)
 
 ---
 
@@ -383,6 +416,12 @@ Read in order before architectural decisions:
 | Inline styles | Bypasses design system | Tailwind tokens only |
 | Cross-tenant Firestore queries | Data leak | Always `tenantId` filter |
 | `middleware.ts` in Next.js 16 | Conflicts with `proxy.ts` | Merge into `src/proxy.ts` |
+| Bare `getAuth()` client-side | 'No Firebase App' crash | `getFirebaseAuth()` from @/lib/firebase/client |
+| List hook without lifecycle filter | Deprecated rows stay visible | filter deprecated+retracted |
+| Long route without maxDuration | Vercel 15s cut → tool_timeout | `export const maxDuration` |
+| Per-tenant API key/project split | Quota shared per project; ops nightmare | Tier 2 + app rate-limit + Cost Guard (ADR-032) |
+| Agent auto-writes scientific code | Non-reproducible, unverified | Deterministic documented worker (ADR-032) |
+| Multiple themes / theme switcher | Template cruft, not a product feature | Single brand theme + dark/light |
 
 ---
 
@@ -436,4 +475,4 @@ Read in order before architectural decisions:
 
 Code wins over documentation if conflicts. This file is a living snapshot, evolves with project.
 
-Last major update: R175 (2026-05-16). Next update trigger: R180 forms hardening OR R195 Gemini 3 re-adoption.
+Last major update: R187 (2026-05-21). Next update trigger: dashboard redesign OR billing phase OR Gemini 3.5 adoption (when GA).

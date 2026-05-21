@@ -1002,5 +1002,60 @@
       "discriminationExperiments": "Discrimination experiments ({count})",
       "expectedOutcomes": "Expected outcomes"
     }
+  },
+  "chemicals": {
+    "title": "Chemicals",
+    "subtitle": "Chemical inventory with GHS hazard classification",
+    "addNew": "Add chemical",
+    "loading": "Loading chemicals…",
+    "empty": "No chemicals yet. Add your first chemical to start tracking inventory.",
+    "table": {
+      "code": "Code",
+      "name": "Name",
+      "cas": "CAS",
+      "hazards": "Hazards",
+      "quantity": "Quantity",
+      "status": "Status"
+    },
+    "status": {
+      "available": "Available",
+      "low": "Low",
+      "empty": "Empty",
+      "expired": "Expired"
+    },
+    "form": {
+      "code": "Chemical code",
+      "name": "Name",
+      "cas": "CAS number",
+      "lookup": "Look up",
+      "looking": "Looking up…",
+      "formula": "Formula",
+      "hazards": "GHS hazards",
+      "purity": "Purity",
+      "grade": "Grade",
+      "manufacturer": "Manufacturer",
+      "catalogNumber": "Catalog number",
+      "lotNumber": "Lot number",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "state": "State",
+      "reorderThreshold": "Reorder threshold",
+      "location": "Location",
+      "storageConditions": "Storage conditions",
+      "expiryAt": "Expiry date",
+      "create": "Chemical created",
+      "update": "Chemical updated",
+      "casNotFound": "CAS not found in PubChem — enter details manually."
+    },
+    "detail": {
+      "consume": "Consume",
+      "replenish": "Replenish",
+      "amount": "Amount",
+      "reason": "Reason (optional)",
+      "apply": "Apply",
+      "history": "Transaction history",
+      "noHistory": "No transactions yet.",
+      "deprecate": "Deprecate"
+    }
   }
 }

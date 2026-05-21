@@ -1002,5 +1002,60 @@
       "discriminationExperiments": "Thí nghiệm phân biệt ({count})",
       "expectedOutcomes": "Kết quả mong đợi"
     }
+  },
+  "chemicals": {
+    "title": "Hóa chất",
+    "subtitle": "Kho hóa chất với phân loại nguy hại GHS",
+    "addNew": "Thêm hóa chất",
+    "loading": "Đang tải hóa chất…",
+    "empty": "Chưa có hóa chất nào. Thêm hóa chất đầu tiên để bắt đầu quản lý kho.",
+    "table": {
+      "code": "Mã",
+      "name": "Tên",
+      "cas": "CAS",
+      "hazards": "Nguy hại",
+      "quantity": "Số lượng",
+      "status": "Trạng thái"
+    },
+    "status": {
+      "available": "Còn hàng",
+      "low": "Sắp hết",
+      "empty": "Hết",
+      "expired": "Hết hạn"
+    },
+    "form": {
+      "code": "Mã hóa chất",
+      "name": "Tên",
+      "cas": "Số CAS",
+      "lookup": "Tra cứu",
+      "looking": "Đang tra cứu…",
+      "formula": "Công thức",
+      "hazards": "Nguy hại GHS",
+      "purity": "Độ tinh khiết",
+      "grade": "Cấp độ",
+      "manufacturer": "Nhà sản xuất",
+      "catalogNumber": "Mã catalog",
+      "lotNumber": "Số lô",
+      "quantity": "Số lượng",
+      "unit": "Đơn vị",
+      "state": "Trạng thái vật lý",
+      "reorderThreshold": "Ngưỡng đặt lại",
+      "location": "Vị trí",
+      "storageConditions": "Điều kiện bảo quản",
+      "expiryAt": "Hạn sử dụng",
+      "create": "Đã tạo hóa chất",
+      "update": "Đã cập nhật hóa chất",
+      "casNotFound": "Không tìm thấy CAS trong PubChem — nhập thủ công."
+    },
+    "detail": {
+      "consume": "Tiêu hao",
+      "replenish": "Nhập thêm",
+      "amount": "Số lượng",
+      "reason": "Lý do (tùy chọn)",
+      "apply": "Áp dụng",
+      "history": "Lịch sử giao dịch",
+      "noHistory": "Chưa có giao dịch nào.",
+      "deprecate": "Ngừng sử dụng"
+    }
   }
 }

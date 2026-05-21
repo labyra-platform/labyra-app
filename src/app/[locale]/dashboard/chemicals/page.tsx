@@ -1,14 +1,32 @@
-import { getTranslations } from 'next-intl/server';
+import { IconPlus } from '@tabler/icons-react';
+import Link from 'next/link';
+import { getLocale, getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
+import { Button } from '@/components/ui/button';
+import { ChemicalsTable } from '@/features/chemicals/components/chemicals-table';
 
-export default async function ChemicalsPage() {
-  const t = await getTranslations('nav');
+export async function generateMetadata() {
+  const t = await getTranslations('chemicals');
+  return { title: t('title') };
+}
 
+export default async function ChemicalsListPage() {
+  const t = await getTranslations('chemicals');
+  const locale = await getLocale();
   return (
-    <PageContainer pageTitle={t('chemicals')} pageDescription='Coming soon'>
-      <div className='text-muted-foreground py-12 text-center text-sm'>
-        This page is part of Phase 4 / Phase 5 of the R160 roadmap.
-      </div>
+    <PageContainer
+      pageTitle={t('title')}
+      pageDescription={t('subtitle')}
+      pageHeaderAction={
+        <Button asChild>
+          <Link href={`/${locale}/dashboard/chemicals/new`}>
+            <IconPlus className='size-4' />
+            {t('addNew')}
+          </Link>
+        </Button>
+      }
+    >
+      <ChemicalsTable />
     </PageContainer>
   );
 }

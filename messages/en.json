@@ -615,6 +615,15 @@
       "in_progress": "In progress",
       "completed": "Completed",
       "cancelled": "Cancelled"
+    },
+    "byYou": "by you",
+    "confirmCancel": "Cancel this booking?",
+    "cancelled": "Booking cancelled",
+    "cancelFailed": "Could not cancel",
+    "filter": {
+      "upcoming": "Upcoming",
+      "all": "All",
+      "cancelled": "Cancelled"
     }
   },
   "aiAssistant": {

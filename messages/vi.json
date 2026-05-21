@@ -615,6 +615,15 @@
       "in_progress": "Đang chạy",
       "completed": "Hoàn thành",
       "cancelled": "Đã hủy"
+    },
+    "byYou": "của bạn",
+    "confirmCancel": "Hủy booking này?",
+    "cancelled": "Đã hủy booking",
+    "cancelFailed": "Không thể hủy",
+    "filter": {
+      "upcoming": "Sắp tới",
+      "all": "Tất cả",
+      "cancelled": "Đã hủy"
     }
   },
   "aiAssistant": {

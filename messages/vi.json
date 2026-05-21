@@ -599,7 +599,15 @@
       "cancel": "Hủy",
       "create": "Tạo mới",
       "update": "Cập nhật",
-      "saving": "Đang lưu..."
+      "saving": "Đang lưu...",
+      "findSlot": "Tìm khung trống",
+      "finding": "Đang tìm…",
+      "slotFound": "Đã tìm thấy khung trống",
+      "noSlotFound": "Không có khung trống trong ngày",
+      "findSlotFailed": "Không tìm được khung trống",
+      "selectEquipmentFirst": "Chọn thiết bị trước",
+      "conflict": "Trùng giờ với booking khác",
+      "conflictWith": "Trùng với booking ({from} – {to})"
     },
     "status": {
       "pending": "Chờ duyệt",

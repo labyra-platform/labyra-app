@@ -599,7 +599,15 @@
       "cancel": "Cancel",
       "create": "Create",
       "update": "Update",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "findSlot": "Find next slot",
+      "finding": "Finding…",
+      "slotFound": "Found a free slot",
+      "noSlotFound": "No free slot found that day",
+      "findSlotFailed": "Could not find slots",
+      "selectEquipmentFirst": "Select equipment first",
+      "conflict": "Time conflicts with another booking",
+      "conflictWith": "Conflicts with a booking ({from} – {to})"
     },
     "status": {
       "pending": "Pending",

@@ -1,5 +1,7 @@
 'use client';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { IconWand } from '@tabler/icons-react';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -25,8 +27,10 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useEquipmentList } from '@/lib/firestore/queries/equipment';
+import { useIsAdmin } from '@/lib/auth/use-claims';
 import type { Booking } from '@/types/bookings';
 import { type BookingFormValues, bookingFormSchema } from '../schema';
+import { DateTimePicker } from './datetime-picker';
 
 interface BookingFormProps {
   defaultValues?: Partial<Booking>;
@@ -35,16 +39,18 @@ interface BookingFormProps {
 
 const STATUSES = ['pending', 'approved', 'in_progress', 'completed', 'cancelled'] as const;
 
-function toLocalInput(ms: number | undefined): string {
-  if (!ms) return '';
-  const d = new Date(ms);
-  // Format YYYY-MM-DDTHH:MM (for datetime-local input)
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function fromLocalInput(s: string): number {
-  return new Date(s).getTime();
+async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error('not_authenticated');
+  const token = await user.getIdToken();
+  return fetch(path, {
+    ...init,
+    headers: {
+      authorization: `Bearer ${token}`,
+      ...(init?.body ? { 'content-type': 'application/json' } : {}),
+      ...init?.headers
+    }
+  });
 }
 
 export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
@@ -53,7 +59,9 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
   const t = useTranslations('bookings.form');
   const tStatus = useTranslations('bookings.status');
   const { equipment } = useEquipmentList();
+  const isAdmin = useIsAdmin();
   const [submitting, setSubmitting] = useState(false);
+  const [finding, setFinding] = useState(false);
 
   const form = useForm<BookingFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,33 +72,70 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
       startAt: defaultValues?.startAt ?? Date.now(),
       endAt: defaultValues?.endAt ?? Date.now() + 60 * 60 * 1000,
       purpose: defaultValues?.purpose ?? '',
-      status: defaultValues?.status ?? 'pending',
+      status: defaultValues?.status ?? 'approved',
       notes: defaultValues?.notes ?? ''
     }
   });
 
+  async function handleFindSlot() {
+    const equipmentId = form.getValues('equipmentId');
+    if (!equipmentId) {
+      toast.warning(t('selectEquipmentFirst'));
+      return;
+    }
+    setFinding(true);
+    try {
+      const start = form.getValues('startAt');
+      const end = form.getValues('endAt');
+      const durationMin = Math.max(Math.round((end - start) / 60000), 30);
+      const day = new Date(start);
+      const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+      const tzOffsetMin = day.getTimezoneOffset();
+      const res = await authedFetch(
+        `/api/bookings/available?equipmentId=${equipmentId}&date=${dateStr}&durationMin=${durationMin}&tzOffsetMin=${tzOffsetMin}`
+      );
+      const data = (await res.json()) as { slots: Array<{ startAt: number; endAt: number }> };
+      // Pick the first slot at/after the currently chosen start time.
+      const slot = data.slots.find(
+        (s) => s.endAt - s.startAt >= durationMin * 60000 && s.endAt > Date.now()
+      );
+      if (!slot) {
+        toast.warning(t('noSlotFound'));
+        return;
+      }
+      const slotStart = Math.max(slot.startAt, Date.now());
+      form.setValue('startAt', slotStart, { shouldDirty: true });
+      form.setValue('endAt', slotStart + durationMin * 60000, { shouldDirty: true });
+      toast.success(t('slotFound'));
+    } catch {
+      toast.error(t('findSlotFailed'));
+    } finally {
+      setFinding(false);
+    }
+  }
+
   const onSubmit = async (values: BookingFormValues) => {
     setSubmitting(true);
     try {
-      const user = getFirebaseAuth().currentUser;
-      if (!user) throw new Error('not_authenticated');
-      const token = await user.getIdToken();
-      // Denormalize equipment name
       const equip = equipment.find((e) => e.id === values.equipmentId);
-      const payload = {
-        ...values,
-        equipmentName: equip?.name ?? values.equipmentName ?? ''
-      };
+      const payload = { ...values, equipmentName: equip?.name ?? values.equipmentName ?? '' };
       const url = bookingId ? `/api/bookings/${bookingId}` : '/api/bookings';
       const method = bookingId ? 'PATCH' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const res = await authedFetch(url, { method, body: JSON.stringify(payload) });
+      if (res.status === 409) {
+        const body = (await res.json()) as {
+          conflicts?: Array<{ startAt: number; endAt: number }>;
+        };
+        const c = body.conflicts?.[0];
+        if (c) {
+          const from = new Date(c.startAt).toLocaleString();
+          const to = new Date(c.endAt).toLocaleTimeString();
+          toast.error(t('conflictWith', { from, to }));
+        } else {
+          toast.error(t('conflict'));
+        }
+        return;
+      }
       if (!res.ok) throw new Error(await res.text());
       toast.success(bookingId ? t('update') : t('create'));
       router.push(`/${locale}/dashboard/bookings`);
@@ -103,7 +148,7 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6 max-w-3xl'>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-3xl space-y-6'>
         <FormField
           control={form.control}
           name='equipmentId'
@@ -129,7 +174,7 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
           )}
         />
 
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           <FormField
             control={form.control}
             name='startAt'
@@ -137,11 +182,7 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
               <FormItem>
                 <FormLabel>{t('startAt')} *</FormLabel>
                 <FormControl>
-                  <Input
-                    type='datetime-local'
-                    value={toLocalInput(field.value)}
-                    onChange={(e) => field.onChange(fromLocalInput(e.target.value))}
-                  />
+                  <DateTimePicker value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -154,17 +195,24 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
               <FormItem>
                 <FormLabel>{t('endAt')} *</FormLabel>
                 <FormControl>
-                  <Input
-                    type='datetime-local'
-                    value={toLocalInput(field.value)}
-                    onChange={(e) => field.onChange(fromLocalInput(e.target.value))}
-                  />
+                  <DateTimePicker value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          onClick={() => void handleFindSlot()}
+          disabled={finding}
+        >
+          <IconWand className='mr-2 size-4' />
+          {finding ? t('finding') : t('findSlot')}
+        </Button>
 
         <FormField
           control={form.control}
@@ -180,30 +228,33 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name='status'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('status')} *</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {tStatus(s)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Status only editable by admin when editing; create auto-approves. */}
+        {bookingId && isAdmin && (
+          <FormField
+            control={form.control}
+            name='status'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('status')}</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {tStatus(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}

@@ -54,7 +54,16 @@ function unitLabelFor(spectrumType: string): string {
 export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysisSectionProps) {
   const [addRefOpen, setAddRefOpen] = useState(false);
   const [manageRefOpen, setManageRefOpen] = useState(false);
-  const { activeCards, allCards, toggleCard, refresh } = useReferenceCards();
+  // R192-3: useReferenceCards can yield undefined arrays on first render in
+  // some client-nav paths; coalesce here so every .length/.map below is safe.
+  const {
+    activeCards: _activeCards,
+    allCards: _allCards,
+    toggleCard,
+    refresh
+  } = useReferenceCards();
+  const allCards = _allCards ?? [];
+  const activeCards = _activeCards ?? [];
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
 

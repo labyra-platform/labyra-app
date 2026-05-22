@@ -59,7 +59,7 @@ export function computeInternalCandidates(
   userPeaks: XRDPeak[],
   refCards: ReferenceCard[]
 ): CitationCandidate[] {
-  if (userPeaks.length === 0 || refCards.length === 0) return [];
+  if (!userPeaks || userPeaks.length === 0 || refCards.length === 0) return []; // R192-2b
 
   // R163-4c-2: pipeline is XRD-only; filter out other spectrum types
   // (FTIR/Raman/UVVis integration comes in 4c-5).
@@ -160,7 +160,7 @@ export function computeFTIRCandidates(
   userPeaks: FTIRPeak[],
   refCards: FTIRReferenceCard[]
 ): FTIRCitationCandidate[] {
-  if (userPeaks.length === 0 || refCards.length === 0) return [];
+  if (!userPeaks || userPeaks.length === 0 || refCards.length === 0) return []; // R192-2b
   const candidates: FTIRCitationCandidate[] = [];
   for (const card of refCards) {
     const result = matchScoreFTIR(userPeaks, card.peaks);
@@ -197,7 +197,7 @@ export function computeRamanCandidates(
   userPeaks: RamanPeak[],
   refCards: RamanReferenceCard[]
 ): RamanCitationCandidate[] {
-  if (userPeaks.length === 0 || refCards.length === 0) return [];
+  if (!userPeaks || userPeaks.length === 0 || refCards.length === 0) return []; // R192-2b
   const candidates: RamanCitationCandidate[] = [];
   for (const card of refCards) {
     const result = matchScoreRaman(userPeaks, card.peaks);
@@ -235,7 +235,7 @@ export function computeUVVisCandidates(
   userPeaks: UVVisPeak[],
   refCards: UVVisReferenceCard[]
 ): UVVisCitationCandidate[] {
-  if (userPeaks.length === 0 || refCards.length === 0) return [];
+  if (!userPeaks || userPeaks.length === 0 || refCards.length === 0) return []; // R192-2b
   const candidates: UVVisCitationCandidate[] = [];
   for (const card of refCards) {
     const result = matchScoreUVVis(userPeaks, card.peaks);
@@ -277,6 +277,10 @@ export function computeMultiInternalCandidates(
   parsed: SpectrumParsedData,
   refCards: ReferenceCard[]
 ): MultiCitationCandidate[] {
+  // R192-1: defensive — refCards can arrive undefined in some render paths
+  // (observed on prod build: refCards.filter at line ~286 crashed the page).
+  // Coalesce once here so every branch below is safe.
+  refCards = refCards ?? [];
   if (parsed.spectrum_type === 'xrd' && 'peaks' in parsed) {
     // Reuse existing XRD logic for backward compat, tag with spectrumType
     const xrdCandidates = computeInternalCandidates(parsed.peaks, refCards);

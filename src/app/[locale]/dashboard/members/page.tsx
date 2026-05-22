@@ -36,6 +36,11 @@ interface Invite {
   expiresAt: number;
 }
 
+interface Group {
+  id: string;
+  name: string;
+}
+
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
   const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error('not_authenticated');
@@ -64,6 +69,8 @@ export default function MembersPage() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<InviteRole>('member');
   const [submitting, setSubmitting] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [groupId, setGroupId] = useState<string>('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,6 +79,16 @@ export default function MembersPage() {
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as { items: Invite[] };
       setInvites(data.items);
+      // ADR-034 TEAM-2b: load groups for the optional assignment dropdown.
+      try {
+        const gRes = await authedFetch('/api/groups');
+        if (gRes.ok) {
+          const gData = (await gRes.json()) as { items: Group[] };
+          setGroups(gData.items);
+        }
+      } catch {
+        // non-fatal — invite still works without group assignment
+      }
     } catch {
       toast.error('Failed to load invites');
     } finally {
@@ -89,7 +106,11 @@ export default function MembersPage() {
     try {
       const res = await authedFetch('/api/invites', {
         method: 'POST',
-        body: JSON.stringify({ email: email.trim().toLowerCase(), role })
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          role,
+          ...(groupId ? { groupId } : {})
+        })
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -97,6 +118,7 @@ export default function MembersPage() {
       }
       toast.success(`Invited ${email}`);
       setEmail('');
+      setGroupId('');
       void load();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'create_failed';
@@ -156,6 +178,24 @@ export default function MembersPage() {
                 {isSuperAdmin && <SelectItem value='admin'>Admin</SelectItem>}
               </SelectContent>
             </Select>
+            {groups.length > 0 && (
+              <Select
+                value={groupId || 'none'}
+                onValueChange={(v) => setGroupId(v === 'none' ? '' : v)}
+              >
+                <SelectTrigger className='w-full sm:w-44' aria-label='Assign to group'>
+                  <SelectValue placeholder='No group' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='none'>No group</SelectItem>
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Button onClick={() => void handleCreate()} disabled={submitting || !email.trim()}>
               {submitting ? 'Inviting…' : 'Send invite'}
             </Button>

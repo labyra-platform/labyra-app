@@ -182,6 +182,15 @@ export const navGroups: NavGroup[] = [
     labelKey: 'nav.groups.admin',
     items: [
       {
+        title: 'Research Groups',
+        titleKey: 'nav.researchGroups',
+        url: '/dashboard/groups',
+        icon: 'teams',
+        shortcut: ['g', 'r'],
+        items: [],
+        access: { role: 'admin' }
+      },
+      {
         title: 'Members',
         titleKey: 'nav.members',
         url: '/dashboard/members',

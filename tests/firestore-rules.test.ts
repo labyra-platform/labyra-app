@@ -86,9 +86,7 @@ describe('Firestore rules — POSITIVE (writer can write own-tenant data)', () =
   it('member CAN write spectra', async () => {
     const db = ctxMember(TENANT_A);
     await assertSucceeds(
-      db
-        .doc(`tenants/${TENANT_A}/spectra/x1`)
-        .set({ spectrumType: 'XRD', createdAt: Date.now() })
+      db.doc(`tenants/${TENANT_A}/spectra/x1`).set({ spectrumType: 'XRD', createdAt: Date.now() })
     );
   });
   it('member CAN write equipment', async () => {
@@ -111,17 +109,13 @@ describe('Firestore rules — POSITIVE (writer can write own-tenant data)', () =
       db.doc(`tenants/${TENANT_A}/aiConversations/c1`).set({ title: 'hi', userId: 'u' })
     );
     await assertSucceeds(
-      db
-        .doc(`tenants/${TENANT_A}/aiConversations/c1/messages/m1`)
-        .set({ role: 'user', text: 'hi' })
+      db.doc(`tenants/${TENANT_A}/aiConversations/c1/messages/m1`).set({ role: 'user', text: 'hi' })
     );
   });
   it('member CAN create an audit log entry', async () => {
     const db = ctxMember(TENANT_A);
     await assertSucceeds(
-      db
-        .doc(`tenants/${TENANT_A}/auditLogs/log-new`)
-        .set({ event: 'login', at: Date.now() })
+      db.doc(`tenants/${TENANT_A}/auditLogs/log-new`).set({ event: 'login', at: Date.now() })
     );
   });
 });
@@ -129,24 +123,18 @@ describe('Firestore rules — POSITIVE (writer can write own-tenant data)', () =
 describe('Firestore rules — NEGATIVE (these MUST be denied — current rules let them through = C1)', () => {
   it('member must NOT write usage (quota bypass risk)', async () => {
     const db = ctxMember(TENANT_A);
-    await assertFails(
-      db.doc(`tenants/${TENANT_A}/usage/2026-05`).set({ tokensUsed: 0, usd: 0 })
-    );
+    await assertFails(db.doc(`tenants/${TENANT_A}/usage/2026-05`).set({ tokensUsed: 0, usd: 0 }));
   });
   it('member must NOT write aiProvenance (audit forgery)', async () => {
     const db = ctxMember(TENANT_A);
     await assertFails(
-      db
-        .doc(`tenants/${TENANT_A}/aiProvenance/p1`)
-        .set({ messageId: 'm1', model: 'forged' })
+      db.doc(`tenants/${TENANT_A}/aiProvenance/p1`).set({ messageId: 'm1', model: 'forged' })
     );
   });
   it('member must NOT update an existing auditLog (immutability)', async () => {
     await seed(`tenants/${TENANT_A}/auditLogs/log1`, { event: 'login', at: 1 });
     const db = ctxMember(TENANT_A);
-    await assertFails(
-      db.doc(`tenants/${TENANT_A}/auditLogs/log1`).update({ event: 'tampered' })
-    );
+    await assertFails(db.doc(`tenants/${TENANT_A}/auditLogs/log1`).update({ event: 'tampered' }));
   });
   it('member must NOT delete an existing auditLog (immutability)', async () => {
     await seed(`tenants/${TENANT_A}/auditLogs/log2`, { event: 'login', at: 1 });
@@ -161,21 +149,15 @@ describe('Firestore rules — NEGATIVE (these MUST be denied — current rules l
   });
   it('member must NOT write paper chunks', async () => {
     const db = ctxMember(TENANT_A);
-    await assertFails(
-      db.doc(`tenants/${TENANT_A}/papers/p1/chunks/ch1`).set({ text: 'inj' })
-    );
+    await assertFails(db.doc(`tenants/${TENANT_A}/papers/p1/chunks/ch1`).set({ text: 'inj' }));
   });
   it('member must NOT write citations', async () => {
     const db = ctxMember(TENANT_A);
-    await assertFails(
-      db.doc(`tenants/${TENANT_A}/citations/c1`).set({ from: 'p1', to: 'p2' })
-    );
+    await assertFails(db.doc(`tenants/${TENANT_A}/citations/c1`).set({ from: 'p1', to: 'p2' }));
   });
   it('member must NOT write analyses', async () => {
     const db = ctxMember(TENANT_A);
-    await assertFails(
-      db.doc(`tenants/${TENANT_A}/analyses/a1`).set({ result: 'fake' })
-    );
+    await assertFails(db.doc(`tenants/${TENANT_A}/analyses/a1`).set({ result: 'fake' }));
   });
   it('member must NOT write references', async () => {
     const db = ctxMember(TENANT_A);
@@ -217,9 +199,7 @@ describe('Firestore rules — cross-tenant ISOLATION', () => {
   });
   it('member of A CANNOT write tenant B materials', async () => {
     const db = ctxMember(TENANT_A);
-    await assertFails(
-      db.doc(`tenants/${TENANT_B}/materials/m1`).set({ owned: 'A' })
-    );
+    await assertFails(db.doc(`tenants/${TENANT_B}/materials/m1`).set({ owned: 'A' }));
   });
   it('member of A CANNOT read tenant B aiConversations', async () => {
     await seed(`tenants/${TENANT_B}/aiConversations/c1`, { userId: 'b' });
@@ -231,15 +211,11 @@ describe('Firestore rules — cross-tenant ISOLATION', () => {
 describe('Firestore rules — members subcollection (admin-only write)', () => {
   it('member CANNOT write members', async () => {
     const db = ctxMember(TENANT_A);
-    await assertFails(
-      db.doc(`tenants/${TENANT_A}/members/x`).set({ uid: 'x', role: 'member' })
-    );
+    await assertFails(db.doc(`tenants/${TENANT_A}/members/x`).set({ uid: 'x', role: 'member' }));
   });
   it('admin CAN write members', async () => {
     const db = ctxAdmin(TENANT_A);
-    await assertSucceeds(
-      db.doc(`tenants/${TENANT_A}/members/x`).set({ uid: 'x', role: 'member' })
-    );
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/members/x`).set({ uid: 'x', role: 'member' }));
   });
 });
 
@@ -278,5 +254,39 @@ describe('Firestore rules — materialProfiles (global, signed-in read)', () => 
   it('member must NOT write materialProfiles (superadmin only)', async () => {
     const db = ctxMember(TENANT_A);
     await assertFails(db.doc('materialProfiles/WO3').set({ bandgap: 9 }));
+  });
+});
+
+describe('Firestore rules — groups (ADR-034 TEAM-1)', () => {
+  it('member CAN read own-tenant groups', async () => {
+    await seed(`tenants/${TENANT_A}/groups/g1`, { name: 'Battery', createdAt: Date.now() });
+    const db = ctxMember(TENANT_A);
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/groups/g1`).get());
+  });
+
+  it('member CANNOT write groups (admin-managed)', async () => {
+    const db = ctxMember(TENANT_A);
+    await assertFails(
+      db.doc(`tenants/${TENANT_A}/groups/g2`).set({ name: 'Catalysis', createdAt: Date.now() })
+    );
+  });
+
+  it('admin CAN write groups', async () => {
+    const db = ctxAdmin(TENANT_A);
+    await assertSucceeds(
+      db.doc(`tenants/${TENANT_A}/groups/g3`).set({ name: 'Membranes', createdAt: Date.now() })
+    );
+  });
+
+  it('superadmin CAN read cross-tenant groups', async () => {
+    await seed(`tenants/${TENANT_A}/groups/g4`, { name: 'X', createdAt: Date.now() });
+    const db = ctxSuperadmin();
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/groups/g4`).get());
+  });
+
+  it('other-tenant member CANNOT read tenant-A groups (isolation)', async () => {
+    await seed(`tenants/${TENANT_A}/groups/g5`, { name: 'Secret', createdAt: Date.now() });
+    const db = ctxMember(TENANT_B);
+    await assertFails(db.doc(`tenants/${TENANT_A}/groups/g5`).get());
   });
 });

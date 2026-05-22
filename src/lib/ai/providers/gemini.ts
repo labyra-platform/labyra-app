@@ -41,7 +41,14 @@ function getClient(): GoogleGenAI {
   if (!apiKey?.startsWith('AIza')) {
     throw new Error('GEMINI_API_KEY missing or malformed (expected AIza...). Set in .env.local');
   }
-  _client = new GoogleGenAI({ apiKey });
+  // G-6 (R191-3): explicit SDK retry + client timeout. SDK retries 429/5xx
+  // with exponential backoff natively; we make it explicit and bound it so a
+  // hung request fails fast + retries instead of holding the function.
+  // timeout is a sibling of retryOptions under httpOptions (ms).
+  _client = new GoogleGenAI({
+    apiKey,
+    httpOptions: { timeout: 20_000, retryOptions: { attempts: 3 } }
+  });
   return _client;
 }
 
@@ -292,6 +299,10 @@ export class GeminiProvider implements LLMProvider {
           systemInstruction: toSystemInstruction(request.system),
           maxOutputTokens: request.maxTokens ?? 2048,
           safetySettings: SAFETY_SETTINGS, // R189-1 (G-5)
+          // G-6 (R191-3): T2 RAG is legitimately slow (~25s). 40s timeout +
+          // 2 attempts keeps worst case inside chat route maxDuration 60s.
+          // Stream retries only the initial connection; mid-stream drop is fatal.
+          httpOptions: { timeout: 40_000, retryOptions: { attempts: 2 } },
           ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           ...(tools ? { tools } : {})
         }

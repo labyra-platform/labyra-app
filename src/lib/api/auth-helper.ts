@@ -9,13 +9,21 @@
  */
 import 'server-only';
 import { type NextRequest, NextResponse } from 'next/server';
-import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
+import {
+  getTenantIdFromToken,
+  getRoleFromToken,
+  getGroupIdFromToken,
+  isGroupLeadFromToken
+} from '@/lib/auth/token';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 
 export interface AuthSuccess {
   tenantId: string;
   uid: string;
   role: 'superadmin' | 'admin' | 'member' | 'viewer' | null;
+  /** ADR-034 TEAM-1/2: group scope claims (single group per user). */
+  groupId: string | null;
+  isGroupLead: boolean;
   error?: undefined;
 }
 export interface AuthFailure {
@@ -38,7 +46,9 @@ export async function authenticate(req: NextRequest): Promise<AuthResult> {
       return { error: new NextResponse('no_tenant', { status: 403 }) };
     }
     const role = getRoleFromToken(decoded);
-    return { tenantId, uid: decoded.uid, role };
+    const groupId = getGroupIdFromToken(decoded);
+    const isGroupLead = isGroupLeadFromToken(decoded);
+    return { tenantId, uid: decoded.uid, role, groupId, isGroupLead };
   } catch {
     return { error: new NextResponse('invalid_token', { status: 401 }) };
   }

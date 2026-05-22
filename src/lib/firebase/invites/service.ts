@@ -36,9 +36,11 @@ export async function createInvite(
     invitedBy: invitedByUid,
     status: 'pending',
     createdAt: now,
-    expiresAt: now + INVITE_TTL_MS
+    expiresAt: now + INVITE_TTL_MS,
+    ...(input.groupId ? { groupId: input.groupId } : {})
   };
-  await ref.set(invite);
+  // Strip undefined before write (Firestore rejects undefined).
+  await ref.set(JSON.parse(JSON.stringify(invite)));
   return invite;
 }
 
@@ -105,7 +107,7 @@ export async function acceptInvite(
       acceptedAt: Date.now(),
       acceptedBy: uid
     });
-    return { tenantId: invite.tenantId, role: invite.role };
+    return { tenantId: invite.tenantId, role: invite.role, groupId: invite.groupId };
   });
 
   // Grant custom claims (outside tx — Auth API isn't transactional with Firestore).
@@ -115,7 +117,10 @@ export async function acceptInvite(
   await auth.setCustomUserClaims(uid, {
     ...currentClaims,
     tenantId: result.tenantId,
-    role: result.role
+    role: result.role,
+    // ADR-034 TEAM-2: assign group on accept if the invite specified one.
+    // isGroupLead stays false — leadership is appointed separately by an admin.
+    ...(result.groupId ? { groupId: result.groupId } : {})
   });
 
   return result;

@@ -7,7 +7,7 @@
  * @phase ONBOARD-1
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate, authenticateAdmin } from '@/lib/api/auth-helper';
+import { authenticate, authenticateAdmin, authenticateWriter } from '@/lib/api/auth-helper';
 import { createInvite, listInvites } from '@/lib/firebase/invites/service';
 import { sendInviteEmail } from '@/lib/email/send-invite';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
@@ -17,7 +17,9 @@ import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
-  const auth = await authenticateAdmin(req);
+  // ADR-034 TEAM-2: admins OR group leaders may create invites. authenticateWriter
+  // admits member-role leaders; the body below enforces the leader restrictions.
+  const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
 
   const rl = await checkRateLimit(rateLimitKey('invite-create', auth.tenantId), 20, 60);
@@ -35,9 +37,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
   }
 
-  // Anti-escalation: only superadmin may invite an 'admin'.
+  // Anti-escalation tier 1 (admin/superadmin): only superadmin may invite 'admin'.
   if (parsed.role === 'admin' && auth.role !== 'superadmin') {
     return NextResponse.json({ error: 'forbidden_invite_admin' }, { status: 403 });
+  }
+
+  // ADR-034 TEAM-2: group leaders (isGroupLead) may invite into THEIR group only,
+  // and only as member/viewer. Non-admins who are not group leads cannot invite.
+  const isTenantAdmin = auth.role === 'admin' || auth.role === 'superadmin';
+  if (!isTenantAdmin) {
+    if (!auth.isGroupLead || !auth.groupId) {
+      return NextResponse.json({ error: 'forbidden_not_admin' }, { status: 403 });
+    }
+    if (parsed.role === 'admin') {
+      return NextResponse.json({ error: 'forbidden_lead_invite_admin' }, { status: 403 });
+    }
+    // Force the invite into the leader's own group — ignore any client groupId.
+    parsed.groupId = auth.groupId;
   }
 
   try {

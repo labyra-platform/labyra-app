@@ -155,3 +155,35 @@ mỗi phase đụng rules PHẢI thêm rules test (đọc chéo group = deny).
 ## 5. Living Notes
 - R192: ADR tạo (design-only). Verify hiện trạng: invite/RBAC/RAG/Pinecone đã đọc file gốc
   (anti-escalation ADR-030 sẵn, namespace=tenantId, metadata-filter sẵn). Chưa code dòng nào.
+
+---
+
+## Addendum R192-5 (2026-05-22) — Role hierarchy finalized + TEAM-2 invites
+
+Decision after building TEAM-1/2. The hierarchy (1 user = 1 group) is:
+
+```
+superadmin   = platform operator (the founder) — cross-tenant, SCRIPT-ONLY,
+               NEVER invitable via app (security: no one else may become superadmin).
+─────────────────────────────────────────────────────────────────────────────
+admin        = tenant owner/admin — full control WITHIN tenant: create groups,
+               appoint leaders, invite (member/viewer; admin only if superadmin).
+group_admin  = group leader — expressed as role 'member' + isGroupLead=true on
+               their groupId. NOT a 5th enum role (RBAC stays 2-axis: role × scope).
+               May invite member/viewer INTO THEIR OWN GROUP only.
+member       = works within their group.
+viewer       = read-only within their group.
+```
+
+TEAM-2 wiring:
+- Invite carries optional `groupId`. Admin may assign any group (or none).
+- A group leader (isGroupLead) inviting is forced to role∈{member,viewer} and
+  groupId = their own group (client groupId ignored). Enforced in
+  `POST /api/invites` (route admits leaders via authenticateWriter, then restricts).
+- `acceptInvite` grants `groupId` into claims on accept; `isGroupLead` stays false
+  (leadership is appointed separately by an admin via the Groups page).
+- `authenticate()` now returns `groupId` + `isGroupLead` for downstream scope checks.
+
+Owner vs admin: NOT split into separate roles. `admin` = owner within a tenant;
+`superadmin` is the platform founder, outside the tenant role ladder. A dedicated
+billing-owner concept (the paying seat) is deferred to the billing ADR.

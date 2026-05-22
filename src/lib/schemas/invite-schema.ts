@@ -11,7 +11,10 @@ export type InviteRole = z.infer<typeof InviteRoleSchema>;
 
 export const CreateInviteSchema = z.object({
   email: z.string().email().max(254).toLowerCase(),
-  role: InviteRoleSchema
+  role: InviteRoleSchema,
+  // ADR-034 TEAM-2: optionally assign the invitee to a research group.
+  // For group leaders this is forced to their own group at the route layer.
+  groupId: z.string().min(1).max(128).optional()
 });
 export type CreateInviteInput = z.infer<typeof CreateInviteSchema>;
 
@@ -28,4 +31,6 @@ export interface Invite {
   expiresAt: number;
   acceptedAt?: number;
   acceptedBy?: string; // uid
+  /** ADR-034 TEAM-2: research group the invitee joins on accept, if any. */
+  groupId?: string;
 }

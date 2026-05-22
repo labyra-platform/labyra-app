@@ -44,6 +44,10 @@ export interface ToolResult {
 export interface ToolContext {
   tenantId: string;
   userId: string;
+  /** ADR-034 TEAM-5: viewer's group (single per user), null if none. */
+  viewerGroupId?: string | null;
+  /** admin/superadmin → cross-group RAG visibility (no group filter). */
+  isPrivileged?: boolean;
   /**
    * R178-2a: optional list of paper IDs to scope RAG retrieval.
    * When empty/undefined → search all tenant papers (default behavior).

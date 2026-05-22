@@ -31,7 +31,7 @@ import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
 import { generateConversationTitle } from '@/lib/ai/title-generator';
 import { executeToolCall } from '@/lib/ai/tools/dispatch';
 import { getToolDefinitions } from '@/lib/ai/tools/registry';
-import { getTenantIdFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getGroupIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiCostBreakdown, AiTier, ChatRequestBodyV2, ChatStreamEventV2 } from '@/types/ai';
@@ -122,6 +122,10 @@ export async function POST(request: Request) {
 
   const tenantId = getTenantIdFromToken(decoded);
   const userId = decoded.uid;
+  // ADR-034 TEAM-5: RAG group scope for tool context.
+  const viewerGroupId = getGroupIdFromToken(decoded);
+  const viewerRole = getRoleFromToken(decoded);
+  const isPrivileged = viewerRole === 'admin' || viewerRole === 'superadmin';
   const userEmail = decoded.email ?? '';
   if (!tenantId) {
     return new Response(JSON.stringify({ error: 'missing_tenant_claim' }), {
@@ -679,7 +683,13 @@ export async function POST(request: Request) {
               // kill the chat turn -> convert to error ToolResult with a graceful,
               // user-facing message so the turn survives (no empty "..." bubble).
               withTimeout(
-                executeToolCall(call, { tenantId: tenantId!, userId, selectedPaperIds }),
+                executeToolCall(call, {
+                  tenantId: tenantId!,
+                  userId,
+                  selectedPaperIds,
+                  viewerGroupId,
+                  isPrivileged
+                }),
                 45_000
               ).catch((e) => ({
                 toolCallId: call.id,

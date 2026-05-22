@@ -72,6 +72,10 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
     ...req.filter,
     section: { $nin: EXCLUDED_SECTIONS }
   };
+  // ADR-034 TEAM-5: group scope. Privileged viewers see all groups.
+  if (!req.isPrivileged && req.viewerGroupId !== undefined) {
+    mergedFilter.groupId = { $in: [req.viewerGroupId, 'lab-shared'] };
+  }
 
   const vectorMatches = await vectorStore.query(
     req.tenantId,
@@ -84,7 +88,14 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   // BM25 retrieval (only if encoder available — may be null for new tenants)
   let bm25Hits: { chunkId: string; score: number; chunk: PaperChunkDoc }[] = [];
   if (bm25Encoder) {
-    bm25Hits = await retrieveBM25(req.tenantId, req.query, bm25Encoder, DEFAULT_BM25_TOP_K);
+    bm25Hits = await retrieveBM25(
+      req.tenantId,
+      req.query,
+      bm25Encoder,
+      DEFAULT_BM25_TOP_K,
+      req.viewerGroupId,
+      req.isPrivileged
+    );
     _mark('bm25_retrieve');
   }
 
@@ -229,13 +240,19 @@ async function retrieveBM25(
   tenantId: string,
   query: string,
   encoder: import('./sparse').BM25Encoder,
-  topK: number
+  topK: number,
+  viewerGroupId?: string | null,
+  isPrivileged?: boolean
 ): Promise<{ chunkId: string; score: number; chunk: PaperChunkDoc }[]> {
   const db = getAdminFirestoreService();
-  const papers = await db
+  // ADR-034 TEAM-5: group scope. status uses '==' so adding one 'in' is allowed.
+  let papersQuery: FirebaseFirestore.Query = db
     .collection(`tenants/${tenantId}/papers`)
-    .where('status', '==', 'indexed')
-    .get();
+    .where('status', '==', 'indexed');
+  if (!isPrivileged && viewerGroupId !== undefined) {
+    papersQuery = papersQuery.where('groupId', 'in', [viewerGroupId, 'lab-shared']);
+  }
+  const papers = await papersQuery.get();
 
   const allChunks: { chunkId: string; chunk: PaperChunkDoc }[] = [];
   const excludedSet = new Set([

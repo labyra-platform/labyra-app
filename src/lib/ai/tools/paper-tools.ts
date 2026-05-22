@@ -38,7 +38,10 @@ async function searchPapersHandler(input: Record<string, unknown>, ctx: ToolCont
   const result = await searchPapers({
     tenantId: ctx.tenantId,
     query,
-    filter: Object.keys(filter).length > 0 ? filter : undefined
+    filter: Object.keys(filter).length > 0 ? filter : undefined,
+    // ADR-034 TEAM-5: KB group scope (privileged viewers bypass in search.ts).
+    viewerGroupId: ctx.viewerGroupId,
+    isPrivileged: ctx.isPrivileged
   });
 
   // Compact result for LLM context (preserve structure for UI use)

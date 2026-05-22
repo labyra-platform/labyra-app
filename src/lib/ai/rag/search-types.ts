@@ -12,6 +12,10 @@ export interface SearchRequest {
   topN?: number;
   /** Optional filter for Pinecone (e.g. paperYear, paperDoi) */
   filter?: Record<string, unknown>;
+  /** ADR-034 TEAM-5: viewer group for KB isolation (null = no group). */
+  viewerGroupId?: string | null;
+  /** admin/superadmin → no group filter (cross-group visibility). */
+  isPrivileged?: boolean;
 }
 
 export interface SearchHit {

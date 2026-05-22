@@ -57,7 +57,10 @@ export function useReferenceCards() {
       });
       if (!res.ok) return;
       const { cards } = (await res.json()) as { cards: ReferenceCard[] };
-      setAllCards(cards);
+      // R192-4: API may return a body without `cards` (shape drift) -> cards
+      // undefined -> every consumer's allCards.length/.map crashed. Coalesce here
+      // (the single source) so allCards is never undefined.
+      setAllCards(cards ?? []);
     } finally {
       setLoading(false);
     }

@@ -90,7 +90,7 @@ export function ReferenceCardsManager({
                       </span>
                     )}
                     {card.spectrumType === 'xrd' && card.anode && <span>Anode: {card.anode}</span>}
-                    <span>{card.peaks.length} peaks</span>
+                    <span>{card.peaks?.length ?? 0} peaks</span>
                   </div>
                 </div>
                 <Button

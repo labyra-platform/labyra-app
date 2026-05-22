@@ -36,3 +36,17 @@ export function getRoleFromToken(
   }
   return null;
 }
+
+/**
+ * Group claims — ADR-034 TEAM-1. Separate from `role` (2-axis RBAC).
+ * groupId scopes the user to a research group; isGroupLead marks the leader.
+ * @phase TEAM-1
+ */
+export function getGroupIdFromToken(decoded: DecodedIdToken): string | null {
+  const claim = (decoded as { groupId?: unknown }).groupId;
+  return typeof claim === 'string' ? claim : null;
+}
+
+export function isGroupLeadFromToken(decoded: DecodedIdToken): boolean {
+  return (decoded as { isGroupLead?: unknown }).isGroupLead === true;
+}

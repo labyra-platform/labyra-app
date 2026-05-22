@@ -43,6 +43,18 @@ export function useIsSuperAdmin(): boolean {
   return useRole() === 'superadmin';
 }
 
+/** Current user's groupId from custom claims, or null (ADR-034 TEAM-1). */
+export function useGroupId(): string | null {
+  const { claims } = useAuth();
+  return typeof claims.groupId === 'string' ? claims.groupId : null;
+}
+
+/** True if the user is the appointed leader (group_admin) of their group. */
+export function useIsGroupLead(): boolean {
+  const { claims } = useAuth();
+  return claims.isGroupLead === true;
+}
+
 /**
  * True if signed in AND has a tenantId claim.
  *

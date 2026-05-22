@@ -200,6 +200,16 @@ service cloud.firestore {
         allow read: if belongsToTenant(tenantId) || isSuperAdmin();
         allow write: if isAdmin(tenantId) || isSuperAdmin();
       }
+
+      // ---------- Groups (research groups / teams) — ADR-034 TEAM-1 ----------
+      // Owner (admin/superadmin) manages groups + appoints leaders. Any
+      // tenant member may READ the group list (to see their group + leader).
+      // Leadership claims are set server-side (Admin SDK), never client.
+      // NOTE: per-group DATA isolation is TEAM-4 — not yet enforced here.
+      match /groups/{groupId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isAdmin(tenantId) || isSuperAdmin();
+      }
     }
 
     // =====================================================

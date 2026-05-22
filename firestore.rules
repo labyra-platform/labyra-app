@@ -132,7 +132,14 @@ service cloud.firestore {
       }
 
       match /papers/{paperId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        // ADR-034 TEAM-4a: group-scoped read. Same-tenant admins/superadmin see
+        // all; members/leaders see only their group or lab-shared papers.
+        allow read: if isSuperAdmin() ||
+          (belongsToTenant(tenantId) && (
+            isAdmin(tenantId) ||
+            resource.data.get('groupId', 'lab-shared') == 'lab-shared' ||
+            resource.data.get('groupId', 'lab-shared') == request.auth.token.groupId
+          ));
         allow write: if false;
 
         match /chunks/{chunkId} {

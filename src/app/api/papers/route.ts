@@ -28,10 +28,13 @@ export async function GET(req: NextRequest) {
   const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 50, 200) : undefined;
 
   try {
+    const isPrivileged = auth.role === 'admin' || auth.role === 'superadmin';
     const items = await listPapers(auth.tenantId, {
       includeDeprecated,
       includeRetracted,
-      limit
+      limit,
+      viewerGroupId: auth.groupId,
+      isPrivileged
     });
     return NextResponse.json({ items });
   } catch (err) {

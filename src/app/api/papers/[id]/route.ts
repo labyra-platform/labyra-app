@@ -27,6 +27,13 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
   const item = await getPaper(auth.tenantId, id);
   if (!item) return new NextResponse('not_found', { status: 404 });
+
+  // ADR-034 TEAM-4a: group scope. Non-privileged viewers may only read papers
+  // in their own group or lab-shared. 404 (not 403) to avoid leaking existence.
+  const isPrivileged = auth.role === 'admin' || auth.role === 'superadmin';
+  if (!isPrivileged && item.groupId !== 'lab-shared' && item.groupId !== auth.groupId) {
+    return new NextResponse('not_found', { status: 404 });
+  }
   return NextResponse.json(item);
 }
 

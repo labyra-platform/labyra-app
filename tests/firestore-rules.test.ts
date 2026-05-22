@@ -290,3 +290,33 @@ describe('Firestore rules — groups (ADR-034 TEAM-1)', () => {
     await assertFails(db.doc(`tenants/${TENANT_A}/groups/g5`).get());
   });
 });
+
+describe('Firestore rules — papers group isolation (ADR-034 TEAM-4a)', () => {
+  function ctxGroupMember(tenantId: string, groupId: string, uid = `${tenantId}-${groupId}-m`) {
+    return env.authenticatedContext(uid, { tenantId, role: 'member', groupId }).firestore();
+  }
+
+  it('member CAN read lab-shared paper', async () => {
+    await seed(`tenants/${TENANT_A}/papers/p-shared`, { groupId: 'lab-shared', title: 'S' });
+    const db = ctxGroupMember(TENANT_A, 'g-battery');
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/papers/p-shared`).get());
+  });
+
+  it('member CAN read own-group paper', async () => {
+    await seed(`tenants/${TENANT_A}/papers/p-own`, { groupId: 'g-battery', title: 'O' });
+    const db = ctxGroupMember(TENANT_A, 'g-battery');
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/papers/p-own`).get());
+  });
+
+  it('member CANNOT read other-group paper (isolation)', async () => {
+    await seed(`tenants/${TENANT_A}/papers/p-other`, { groupId: 'g-catalysis', title: 'X' });
+    const db = ctxGroupMember(TENANT_A, 'g-battery');
+    await assertFails(db.doc(`tenants/${TENANT_A}/papers/p-other`).get());
+  });
+
+  it('admin CAN read any-group paper (cross-group visibility)', async () => {
+    await seed(`tenants/${TENANT_A}/papers/p-other2`, { groupId: 'g-catalysis', title: 'Y' });
+    const db = ctxAdmin(TENANT_A);
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/papers/p-other2`).get());
+  });
+});

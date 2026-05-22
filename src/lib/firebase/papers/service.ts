@@ -36,6 +36,14 @@ export interface ListPapersOptions {
   includeRetracted?: boolean;
   status?: string;
   limit?: number;
+  /**
+   * ADR-034 TEAM-4a: KB group scope. When set (and not privileged), only papers
+   * with groupId === viewerGroupId OR 'lab-shared' are returned. Filtered
+   * in-memory (Firestore forbids a 2nd 'in' alongside lifecycleStatus).
+   */
+  viewerGroupId?: string | null;
+  /** admin/superadmin → see all groups (cross-group visibility). */
+  isPrivileged?: boolean;
 }
 
 export async function listPapers(tenantId: string, opts: ListPapersOptions = {}): Promise<Paper[]> {
@@ -52,7 +60,14 @@ export async function listPapers(tenantId: string, opts: ListPapersOptions = {})
   if (opts.limit) q = q.limit(opts.limit);
 
   const snap = await q.get();
-  return snap.docs.map((d) => d.data() as Paper);
+  let papers = snap.docs.map((d) => d.data() as Paper);
+
+  // ADR-034 TEAM-4a: group scope (in-memory). Privileged viewers see all.
+  if (!opts.isPrivileged && opts.viewerGroupId !== undefined) {
+    const vg = opts.viewerGroupId;
+    papers = papers.filter((p) => p.groupId === 'lab-shared' || p.groupId === vg);
+  }
+  return papers;
 }
 
 interface UpdatePaperContext {

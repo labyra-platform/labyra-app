@@ -12,7 +12,7 @@ import { throwIfCancelled } from './state';
 
 interface IndexStepInput {
   tenantId: string;
-  paper: Pick<Paper, 'id' | 'title' | 'authors' | 'year' | 'doi'>;
+  paper: Pick<Paper, 'id' | 'title' | 'authors' | 'year' | 'doi' | 'groupId'>;
   chunks: EmbeddedChunk[];
   signal: AbortSignal;
 }
@@ -58,7 +58,9 @@ export async function runIndexStep(input: IndexStepInput): Promise<number> {
       // Pinecone metadata: string[] must be non-empty
       paperAuthors: paper.authors.length > 0 ? paper.authors : ['unknown'],
       paperYear: paper.year,
-      paperDoi: paper.doi
+      paperDoi: paper.doi,
+      // ADR-034 TEAM-5: group scope (mirrors worker index.py).
+      groupId: paper.groupId
     }
   }));
 

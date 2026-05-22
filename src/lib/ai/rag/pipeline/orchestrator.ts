@@ -171,7 +171,9 @@ export async function processPaperJob(job: PaperProcessingJob, signal: AbortSign
         title: paper.title,
         authors: paper.authors,
         year: paper.year,
-        doi: paper.doi
+        doi: paper.doi,
+        // ADR-034 TEAM-5: pass group scope into the index step.
+        groupId: paper.groupId
       },
       chunks: embedded,
       signal

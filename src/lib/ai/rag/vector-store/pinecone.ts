@@ -30,6 +30,12 @@ export interface PaperChunkMetadata extends RecordMetadata {
   paperYear: number;
   /** DOI or empty string */
   paperDoi: string;
+  /**
+   * ADR-034 TEAM-5: research group for KB isolation. 'lab-shared' = visible to
+   * all groups; a real groupId scopes the chunk to that group. Worker writes
+   * this from the paper doc (index.py _build_metadata). Query-time filter: B4.
+   */
+  groupId: string;
 }
 
 function getClient(): Pinecone {
@@ -164,6 +170,26 @@ export async function pineconeDeleteByPaperId(tenantId: string, paperId: string)
     if (errName === 'PineconeNotFoundError') return;
     throw err;
   }
+}
+
+/**
+ * Update metadata on a single existing vector (no re-embed).
+ *
+ * ADR-034 TEAM-5: used by the groupId backfill to stamp group scope onto
+ * already-indexed chunks without recomputing embeddings. Pinecone applies a
+ * partial metadata merge for the given id within the tenant namespace.
+ *
+ * @param id  vector id = `${paperId}-${chunkIdx}` (worker convention)
+ */
+export async function pineconeUpdateMetadata(
+  tenantId: string,
+  id: string,
+  metadata: Partial<PaperChunkMetadata>
+): Promise<void> {
+  const index = getIndex();
+  const ns = index.namespace(tenantId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await ns.update({ id, metadata } as any);
 }
 
 /**

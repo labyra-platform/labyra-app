@@ -329,6 +329,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "aiAudits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sourceMessageId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "evaluatedAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -1,6 +1,6 @@
 'use client';
 import { useTranslations } from 'next-intl';
-import { IconCheck, IconCopy } from '@tabler/icons-react';
+import { IconCheck, IconCopy, IconShieldSearch } from '@tabler/icons-react';
 import { type ReactNode, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
@@ -13,6 +13,7 @@ import { useChatSources } from '../hooks/use-chat-sources';
 import { CitationChip } from './citation-chip';
 import { CitationModal } from './citation-modal';
 import { GroundingWarning } from './grounding-warning';
+import { AuditPanel } from './audit-panel';
 
 // R176-2a-hotfix-role-labels
 // Role-based labels decouple UI from model identity. Researcher sees what
@@ -107,7 +108,14 @@ function renderWithCitations(
   return nodes;
 }
 
-export function MessageBubble({ message }: { message: AiMessage }) {
+export function MessageBubble({
+  message,
+  conversationId
+}: {
+  message: AiMessage;
+  conversationId?: string;
+}) {
+  const [showAudit, setShowAudit] = useState(false);
   const isUser = message.role === 'user';
   const sources = useChatSources(message.toolCalls);
   const [activeRef, setActiveRef] = useState<number | null>(null);
@@ -161,6 +169,19 @@ export function MessageBubble({ message }: { message: AiMessage }) {
             <CitationModal source={activeSource} onClose={() => setActiveRef(null)} />
             {message.grounding && <GroundingWarning grounding={message.grounding} />}
             {message.content && <CopyButton text={message.content} />}
+            {message.content && conversationId && (message.tier === 3 || message.tier === 4) && (
+              <>
+                <button
+                  type='button'
+                  onClick={() => setShowAudit((s) => !s)}
+                  aria-label='Audit response'
+                  className='text-muted-foreground hover:text-foreground hover:bg-background/60 absolute -bottom-3 right-12 rounded-md border bg-background p-1.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus-visible:opacity-100'
+                >
+                  <IconShieldSearch className='size-3.5' />
+                </button>
+                {showAudit && <AuditPanel messageId={message.id} conversationId={conversationId} />}
+              </>
+            )}
           </>
         )}
       </div>

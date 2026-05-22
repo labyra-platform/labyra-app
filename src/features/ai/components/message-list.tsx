@@ -19,10 +19,12 @@ const NEAR_BOTTOM_THRESHOLD_PX = 100;
 
 export function MessageList({
   messages,
-  isStreaming
+  isStreaming,
+  conversationId
 }: {
   messages: AiMessage[];
   isStreaming?: boolean;
+  conversationId?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -75,7 +77,7 @@ export function MessageList({
           if (isLastEmpty) {
             return <ThinkingIndicator key={m.id} />;
           }
-          return <MessageBubble key={m.id} message={m} />;
+          return <MessageBubble key={m.id} message={m} conversationId={conversationId} />;
         })
       )}
     </div>

@@ -193,7 +193,25 @@
     "paperSelectorClear": "Clear",
     "paperSelectorSaving": "Saving...",
     "paperSelectorStartConversation": "Send a message to start scoping papers",
-    "unknownAuthors": "Unknown authors"
+    "unknownAuthors": "Unknown authors",
+    "audit": {
+      "title": "Audit",
+      "runAudit": "Audit response",
+      "loading": "Loading audit…",
+      "running": "Auditing claims…",
+      "error": "Audit failed",
+      "supported": "{n} supported",
+      "unsupported": "{n} unsupported",
+      "contradicted": "{n} contradicted",
+      "overall": "Confidence {pct}%",
+      "confidence": "{pct}% sure",
+      "verdict": {
+        "supported": "Supported",
+        "partially_supported": "Partial",
+        "unsupported": "Unsupported",
+        "contradicted": "Contradicted"
+      }
+    }
   },
   "papers": {
     "uploadPageTitle": "Upload paper",

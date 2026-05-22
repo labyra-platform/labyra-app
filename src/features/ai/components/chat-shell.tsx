@@ -134,7 +134,11 @@ export function ChatShell() {
           {/* min-h-0 critical: lets flex-1 child shrink below content size,
               enabling MessageList's overflow-y-auto to engage */}
           <div className='flex min-h-0 flex-1 flex-col'>
-            <MessageList messages={messages} isStreaming={isStreaming} />
+            <MessageList
+              messages={messages}
+              isStreaming={isStreaming}
+              conversationId={conversationId ?? undefined}
+            />
           </div>
 
           {error && (

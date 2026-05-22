@@ -29,6 +29,72 @@ interface RequestBody {
 // H4: runtime Zod validation
 const RequestBodySchema = z.object({ conversationId: z.string().min(1).max(128) });
 
+/**
+ * GET /api/messages/[id]/audit?conversationId=X
+ *
+ * Loads the most recent CACHED audit for this message (no T5 run, no cost).
+ * Returns { audit: AuditResult | null }. Same ownership check as POST.
+ *
+ * @phase R176-5a
+ */
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+  const token = authHeader.slice(7);
+  let tenantId: string | null;
+  let callerUid: string;
+  let callerRole: string | undefined;
+  try {
+    const decoded = await getAdminAuthService().verifyIdToken(token);
+    tenantId = getTenantIdFromToken(decoded);
+    callerUid = decoded.uid;
+    callerRole = (decoded as { role?: string }).role;
+  } catch {
+    return NextResponse.json({ error: 'invalid_token' }, { status: 401 });
+  }
+  if (!tenantId) {
+    return NextResponse.json({ error: 'no_tenant' }, { status: 403 });
+  }
+  const { id: messageId } = await params;
+  const conversationId = new URL(request.url).searchParams.get('conversationId');
+  if (!conversationId) {
+    return NextResponse.json({ error: 'conversationId_required' }, { status: 400 });
+  }
+
+  const db = getAdminFirestoreService();
+  // Same C6 ownership check as POST: caller must own the conversation (or be
+  // admin/superadmin) — tenantId match alone is not sufficient.
+  const convSnap = await db.doc(`tenants/${tenantId}/aiConversations/${conversationId}`).get();
+  if (!convSnap.exists) {
+    return NextResponse.json({ error: 'conversation_not_found' }, { status: 404 });
+  }
+  const convOwnerId = (convSnap.data() as { userId?: string }).userId;
+  const isOwner = convOwnerId === callerUid;
+  const isPrivileged = callerRole === 'admin' || callerRole === 'superadmin';
+  if (!isOwner && !isPrivileged) {
+    return NextResponse.json({ error: 'forbidden_not_owner' }, { status: 403 });
+  }
+
+  // Latest cached audit for this message (R176-5a: needs composite index
+  // sourceMessageId ASC + evaluatedAt DESC).
+  const auditSnap = await db
+    .collection(`tenants/${tenantId}/aiAudits`)
+    .where('sourceMessageId', '==', messageId)
+    .orderBy('evaluatedAt', 'desc')
+    .limit(1)
+    .get();
+
+  if (auditSnap.empty) {
+    return NextResponse.json({ audit: null });
+  }
+  return NextResponse.json({ audit: auditSnap.docs[0].data() });
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

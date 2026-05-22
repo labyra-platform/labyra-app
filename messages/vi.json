@@ -193,7 +193,25 @@
     "paperSelectorClear": "Xóa",
     "paperSelectorSaving": "Đang lưu...",
     "paperSelectorStartConversation": "Gửi tin nhắn để bắt đầu chọn paper",
-    "unknownAuthors": "Tác giả không rõ"
+    "unknownAuthors": "Tác giả không rõ",
+    "audit": {
+      "title": "Kiểm chứng",
+      "runAudit": "Kiểm chứng câu trả lời",
+      "loading": "Đang tải kết quả…",
+      "running": "Đang kiểm chứng…",
+      "error": "Kiểm chứng thất bại",
+      "supported": "{n} được hỗ trợ",
+      "unsupported": "{n} không hỗ trợ",
+      "contradicted": "{n} mâu thuẫn",
+      "overall": "Độ tin cậy {pct}%",
+      "confidence": "chắc {pct}%",
+      "verdict": {
+        "supported": "Được hỗ trợ",
+        "partially_supported": "Một phần",
+        "unsupported": "Không hỗ trợ",
+        "contradicted": "Mâu thuẫn"
+      }
+    }
   },
   "papers": {
     "uploadPageTitle": "Tải lên paper",

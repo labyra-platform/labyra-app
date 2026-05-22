@@ -63,6 +63,36 @@
 
 ---
 
+## R188–R189 — Gemini 3 conversation fidelity, tool-timeout, soft-delete indexes, cost-token tracking (May 21, 2026)
+
+> Backfilled from commit log 4653e8f..7239b75 (the R188–R189 session left commits
+> but no CHANGELOG section at the time). Two paired session blocks.
+
+### R188 — Gemini 3 model wiring + R187 soft-delete fallout + tool reliability
+- **R176-3** (18a8347): persist + restore Gemini 3 `thoughtSignature` across
+  conversation reload — prevents thought-context loss on multi-turn resume.
+- **R176-3d** (3178359): `functionResponse.name` must be the function name, not the
+  tool-call ID (G-2); unified `toolResults` type — completes the R176-3 multi-turn
+  400 fix.
+- **R188-1** (cfe0188): sync Gemini 3 model strings to `capabilities.ts`.
+- **R188-2** (7cd5191 + 2833d84): restore current CLAUDE.md to repo (was stale at
+  R160; repo now R187).
+- **R188-4** (7944265): tool_timeout phase 1 — sin1 region + 45s timeout + graceful
+  message + search-timing logs. (Superseded R187 by the later maxDuration→60 fix.)
+- **R188-5** (fbe5df7): add `lifecycleStatus` composite indexes for 8 entities —
+  R187 soft-delete had broken LIST queries (FAILED_PRECONDITION).
+- **ADR-033** (0ba4602): RAG retrieval scaling + GraphRAG prerequisite documented.
+- Also: Vercel Speed Insights added for real-user Core Web Vitals (97bea6b).
+
+### R189 — Gemini safety + cost-telemetry token accounting
+- **R189-1** (4200ee5): Gemini `safetySettings` — relax `dangerous_content`
+  threshold for materials-science content (false-positive blocks on legitimate
+  chemistry/spectroscopy prompts) (G-5).
+- **R189-2** (414f438): track Gemini cached + thoughts tokens in cost telemetry
+  (G-3/G-4) — prerequisite for the R190-1 T0 pricing fix.
+
+---
+
 ## R187 — Launch hardening: Chemicals, Bookings, Perf, AI polish, bug fixes (May 21, 2026)
 
 > Large UI/UX + correctness session. Security/RBAC/onboarding finalized; two new

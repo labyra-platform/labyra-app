@@ -53,6 +53,13 @@ import type { ProvBase } from './prov-base';
 
 export interface Paper extends ProvBase {
   schemaVersion: 2;
+  /**
+   * ADR-034 TEAM-3a: research group that owns this paper for KB isolation.
+   * 'lab-shared' = visible to all groups in the tenant. A real groupId scopes
+   * it to that group. Read-path filtering lands in TEAM-4; Pinecone metadata
+   * filter in TEAM-5.
+   */
+  groupId: string;
   // Versioning (immutable scientific records per ADR-016)
   currentVersion: number;
   // Original fields kept for backward compat:

@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { Timestamp } from 'firebase-admin/firestore';
 import { trackUsage } from '@/lib/ai/governance/quota';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
-import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getRoleFromToken, getGroupIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import {
   deleteFile,
@@ -70,6 +70,15 @@ export async function POST(request: Request) {
   const tenantId = getTenantIdFromToken(decoded);
   const userId = decoded.uid;
   if (!tenantId) return jsonError(403, 'missing_tenant_claim');
+
+  // ADR-034 TEAM-3a: KB group scope. Admin/superadmin uploads → lab-shared;
+  // a member with a group → that group; member without group → lab-shared.
+  const uploaderRole = getRoleFromToken(decoded);
+  const uploaderGroupId = getGroupIdFromToken(decoded);
+  const paperGroupId =
+    uploaderRole === 'admin' || uploaderRole === 'superadmin'
+      ? 'lab-shared'
+      : (uploaderGroupId ?? 'lab-shared');
 
   const rl = await checkRateLimit(rateLimitKey('paper-upload-complete', tenantId), 30, 60);
   if (!rl.allowed) return jsonError(429, 'rate_limited', { retryAfter: rl.resetSec });
@@ -172,6 +181,7 @@ export async function POST(request: Request) {
   const now = Date.now();
   const paper: Paper = {
     schemaVersion: 2,
+    groupId: paperGroupId,
     currentVersion: version,
     createdBy: userId,
     createdAt: now,

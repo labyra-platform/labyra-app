@@ -19,7 +19,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Timestamp } from 'firebase-admin/firestore';
 import { checkQuota, trackUsage } from '@/lib/ai/governance/quota';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
-import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getRoleFromToken, getGroupIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { paperStoragePath, uploadBuffer } from '@/lib/firebase/storage';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -57,6 +57,14 @@ export async function POST(request: Request) {
   if (!tenantId) {
     return jsonError(403, 'missing_tenant_claim');
   }
+
+  // ADR-034 TEAM-3a: KB group scope (mirrors upload-complete route).
+  const uploaderRole = getRoleFromToken(decoded);
+  const uploaderGroupId = getGroupIdFromToken(decoded);
+  const paperGroupId =
+    uploaderRole === 'admin' || uploaderRole === 'superadmin'
+      ? 'lab-shared'
+      : (uploaderGroupId ?? 'lab-shared');
 
   // R162-security — per-tenant rate limit
   const rl = await checkRateLimit(rateLimitKey('paper-upload', tenantId), 30, 60);
@@ -132,6 +140,7 @@ export async function POST(request: Request) {
   const now = Date.now();
   const paper: Paper = {
     schemaVersion: 2,
+    groupId: paperGroupId,
     // R164-phase-1c: ProvBase + versioning
     currentVersion: 1,
     createdBy: userId,

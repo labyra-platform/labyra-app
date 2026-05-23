@@ -25,6 +25,7 @@ export const fakeUsers = {
 
   initialize() {
     const sampleUsers: User[] = [];
+    // eslint-disable-next-line unicorn/consistent-function-scoping -- mock seed helper, kept local to initialize()
     function generateRandomUserData(id: number): User {
       const roles = ['Developer', 'Designer', 'Manager', 'QA', 'DevOps', 'Product Owner'];
       const statuses = ['Active', 'Inactive', 'Invited'];

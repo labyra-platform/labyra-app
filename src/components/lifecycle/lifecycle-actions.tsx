@@ -48,6 +48,20 @@ interface LifecycleActionsProps {
   i18nNamespace?: string;
 }
 
+async function callApi(method: string, path: string, body?: unknown): Promise<Response> {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error('not_authenticated');
+  const token = await user.getIdToken();
+  return fetch(path, {
+    method,
+    headers: {
+      authorization: `Bearer ${token}`,
+      ...(body ? { 'Content-Type': 'application/json' } : {})
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+}
+
 export function LifecycleActions({ entity, id, status, i18nNamespace }: LifecycleActionsProps) {
   const router = useRouter();
   const locale = useLocale();
@@ -56,20 +70,6 @@ export function LifecycleActions({ entity, id, status, i18nNamespace }: Lifecycl
   const _tEntity = useTranslations(i18nNamespace ?? entity);
   const [retractReason, setRetractReason] = useState('');
   const [busy, setBusy] = useState(false);
-
-  async function callApi(method: string, path: string, body?: unknown): Promise<Response> {
-    const user = getFirebaseAuth().currentUser;
-    if (!user) throw new Error('not_authenticated');
-    const token = await user.getIdToken();
-    return fetch(path, {
-      method,
-      headers: {
-        authorization: `Bearer ${token}`,
-        ...(body ? { 'Content-Type': 'application/json' } : {})
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-  }
 
   async function handleDeprecate() {
     setBusy(true);

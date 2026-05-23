@@ -21,8 +21,11 @@ type LogContext = {
 
 function emit(level: 'info' | 'warn' | 'error', msg: string, ctx?: LogContext): void {
   const line = JSON.stringify({ level, msg, ts: new Date().toISOString(), ...ctx });
+  // eslint-disable-next-line no-console -- logger is the single sanctioned console boundary
   if (level === 'error') console.error(line);
+  // eslint-disable-next-line no-console -- logger is the single sanctioned console boundary
   else if (level === 'warn') console.warn(line);
+  // eslint-disable-next-line no-console -- logger is the single sanctioned console boundary
   else console.log(line);
 }
 

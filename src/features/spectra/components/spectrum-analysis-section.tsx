@@ -61,8 +61,8 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     toggleCard,
     refresh
   } = useReferenceCards();
-  const allCards = _allCards ?? [];
-  const activeCards = _activeCards ?? [];
+  const allCards = useMemo(() => _allCards ?? [], [_allCards]);
+  const activeCards = useMemo(() => _activeCards ?? [], [_activeCards]);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
 

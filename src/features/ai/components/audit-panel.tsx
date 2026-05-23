@@ -29,6 +29,12 @@ const VERDICT_STYLE: Record<Verdict, string> = {
   contradicted: 'bg-red-500/10 text-red-600 dark:text-red-400'
 };
 
+async function authToken(): Promise<string> {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error('not_authenticated');
+  return user.getIdToken();
+}
+
 export function AuditPanel({
   messageId,
   conversationId
@@ -40,12 +46,6 @@ export function AuditPanel({
   const [audit, setAudit] = useState<AuditResult | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'running' | 'error'>('idle');
   const [loaded, setLoaded] = useState(false);
-
-  async function authToken(): Promise<string> {
-    const user = getFirebaseAuth().currentUser;
-    if (!user) throw new Error('not_authenticated');
-    return user.getIdToken();
-  }
 
   // Load cached audit on first expand.
   async function loadCached() {

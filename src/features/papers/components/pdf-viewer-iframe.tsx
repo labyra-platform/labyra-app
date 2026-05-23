@@ -142,6 +142,7 @@ export function PdfViewerIframe({ paperId }: { paperId: string }) {
             key={signed.url}
             src={signed.url}
             title={displayTitle}
+            sandbox='allow-same-origin allow-popups'
             className='h-full w-full border-0'
           />
         )}

@@ -40,6 +40,17 @@ async function authedFetch(path: string, init?: RequestInit): Promise<Response> 
   });
 }
 
+async function handleReloadUser() {
+  // Pull fresh emailVerified after the user clicks the link in their inbox.
+  const u = getFirebaseAuth().currentUser;
+  if (u) {
+    await u.reload();
+    // Force token refresh so AuthProvider re-reads; then reload page state.
+    await u.getIdToken(true);
+    window.location.reload();
+  }
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -109,17 +120,6 @@ export default function OnboardingPage() {
       toast.error('Failed to send verification email.');
     } finally {
       setResending(false);
-    }
-  }
-
-  async function handleReloadUser() {
-    // Pull fresh emailVerified after the user clicks the link in their inbox.
-    const u = getFirebaseAuth().currentUser;
-    if (u) {
-      await u.reload();
-      // Force token refresh so AuthProvider re-reads; then reload page state.
-      await u.getIdToken(true);
-      window.location.reload();
     }
   }
 

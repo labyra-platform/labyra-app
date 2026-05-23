@@ -320,3 +320,124 @@ describe('Firestore rules — papers group isolation (ADR-034 TEAM-4a)', () => {
     await assertSucceeds(db.doc(`tenants/${TENANT_A}/papers/p-other2`).get());
   });
 });
+// =====================================================
+// AI memory — ADR-035 (M0 foundation)
+// =====================================================
+// Context helper that also carries a uid (preferences are keyed by auth uid).
+function ctxUser(uid: string, tenantId: string, role = 'member') {
+  return env.authenticatedContext(uid, { tenantId, role }).firestore();
+}
+
+describe('Firestore rules — L3 AiPreferences (top-level, own-user only)', () => {
+  it('user CAN read+write OWN preferences', async () => {
+    const db = ctxUser('alice', TENANT_A);
+    await assertSucceeds(
+      db.doc('users/alice/aiPreferences/settings').set({ language: 'vi', updatedAt: Date.now() })
+    );
+    await assertSucceeds(db.doc('users/alice/aiPreferences/settings').get());
+  });
+
+  it('user CANNOT read ANOTHER user preferences', async () => {
+    await seed('users/bob/aiPreferences/settings', { language: 'en', updatedAt: 1 });
+    const db = ctxUser('alice', TENANT_A);
+    await assertFails(db.doc('users/bob/aiPreferences/settings').get());
+  });
+
+  it('user CANNOT write ANOTHER user preferences', async () => {
+    const db = ctxUser('alice', TENANT_A);
+    await assertFails(
+      db.doc('users/bob/aiPreferences/settings').set({ language: 'en', updatedAt: Date.now() })
+    );
+  });
+
+  it('superadmin CANNOT read another user preferences (personal, no platform override)', async () => {
+    await seed('users/bob/aiPreferences/settings', { language: 'en', updatedAt: 1 });
+    const db = ctxSuperadmin();
+    await assertFails(db.doc('users/bob/aiPreferences/settings').get());
+  });
+
+  it('unauthenticated CANNOT read preferences', async () => {
+    await seed('users/bob/aiPreferences/settings', { language: 'en', updatedAt: 1 });
+    const db = env.unauthenticatedContext().firestore();
+    await assertFails(db.doc('users/bob/aiPreferences/settings').get());
+  });
+});
+
+describe('Firestore rules — L4 aiContext (tenant-shared: read member / write admin)', () => {
+  it('member CAN read own-tenant aiContext', async () => {
+    await seed(`tenants/${TENANT_A}/aiContext/main`, { labName: 'Vật liệu BKU', updatedAt: 1 });
+    const db = ctxMember(TENANT_A);
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/aiContext/main`).get());
+  });
+
+  it('member CANNOT write aiContext (admin-managed)', async () => {
+    const db = ctxMember(TENANT_A);
+    await assertFails(
+      db.doc(`tenants/${TENANT_A}/aiContext/main`).set({ labName: 'x', updatedAt: Date.now() })
+    );
+  });
+
+  it('admin CAN write aiContext', async () => {
+    const db = ctxAdmin(TENANT_A);
+    await assertSucceeds(
+      db
+        .doc(`tenants/${TENANT_A}/aiContext/main`)
+        .set({ labName: 'BKU', updatedAt: Date.now(), updatedBy: `${TENANT_A}-admin` })
+    );
+  });
+
+  it('other-tenant member CANNOT read tenant-A aiContext (isolation)', async () => {
+    await seed(`tenants/${TENANT_A}/aiContext/main`, { labName: 'Secret', updatedAt: 1 });
+    const db = ctxMember(TENANT_B);
+    await assertFails(db.doc(`tenants/${TENANT_A}/aiContext/main`).get());
+  });
+});
+
+describe('Firestore rules — L1/L2 userMemories (own-user within tenant only)', () => {
+  it('owner CAN write+read OWN facts', async () => {
+    const db = ctxUser('alice', TENANT_A);
+    await assertSucceeds(
+      db
+        .doc(`tenants/${TENANT_A}/userMemories/alice/facts/f1`)
+        .set({ subject: 'user.research_focus', object: 'WO3', extractedAt: Date.now() })
+    );
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/userMemories/alice/facts/f1`).get());
+  });
+
+  it('owner CAN write+read OWN episodes', async () => {
+    const db = ctxUser('alice', TENANT_A);
+    await assertSucceeds(
+      db
+        .doc(`tenants/${TENANT_A}/userMemories/alice/episodes/e1`)
+        .set({ summary: 'WO3 chat', topics: ['WO3'], createdAt: Date.now() })
+    );
+    await assertSucceeds(db.doc(`tenants/${TENANT_A}/userMemories/alice/episodes/e1`).get());
+  });
+
+  it('member CANNOT read ANOTHER user memories in same tenant', async () => {
+    await seed(`tenants/${TENANT_A}/userMemories/bob/facts/f1`, { subject: 'x', object: 'y' });
+    const db = ctxUser('alice', TENANT_A);
+    await assertFails(db.doc(`tenants/${TENANT_A}/userMemories/bob/facts/f1`).get());
+  });
+
+  it('admin CANNOT read another member private memories (privacy, not data)', async () => {
+    await seed(`tenants/${TENANT_A}/userMemories/bob/facts/f1`, { subject: 'x', object: 'y' });
+    const db = ctxAdmin(TENANT_A, 'alice-admin');
+    await assertFails(db.doc(`tenants/${TENANT_A}/userMemories/bob/facts/f1`).get());
+  });
+
+  it('cross-tenant: user CANNOT read same-uid memories in another tenant', async () => {
+    await seed(`tenants/${TENANT_B}/userMemories/alice/facts/f1`, { subject: 'x', object: 'y' });
+    const db = ctxUser('alice', TENANT_A);
+    await assertFails(db.doc(`tenants/${TENANT_B}/userMemories/alice/facts/f1`).get());
+  });
+
+  it('owner CANNOT write memories in a tenant they do not belong to', async () => {
+    const db = ctxUser('alice', TENANT_A);
+    await assertFails(
+      db
+        .doc(`tenants/${TENANT_B}/userMemories/alice/facts/f1`)
+        .set({ subject: 'x', object: 'y', extractedAt: Date.now() })
+    );
+  });
+});

@@ -55,7 +55,9 @@
     "superadmin": "Superadmin",
     "superadminCosts": "Cost Overview",
     "superadminEvals": "Quality Evals",
-    "superadminDrift": "Cost Drift"
+    "superadminDrift": "Cost Drift",
+    "aiPreferences": "AI Preferences",
+    "labContext": "Lab Context"
   },
   "groups": {
     "title": "Research Groups",
@@ -1121,6 +1123,46 @@
       "history": "Transaction history",
       "noHistory": "No transactions yet.",
       "deprecate": "Deprecate"
+    }
+  },
+  "settings": {
+    "aiPreferences": {
+      "title": "AI Preferences",
+      "subtitle": "Personalize how the AI assistant responds to you. These apply across all your labs.",
+      "language": "Response language",
+      "languageAuto": "Auto (match my message)",
+      "verbosity": "Verbosity",
+      "verbosityConcise": "Concise",
+      "verbosityNormal": "Normal",
+      "verbosityDetailed": "Detailed",
+      "mathNotation": "Math notation",
+      "mathPlaintext": "Plain text",
+      "tone": "Tone",
+      "toneFormal": "Formal",
+      "toneCasual": "Casual",
+      "includeReferences": "Include references",
+      "includeReferencesDesc": "Add literature citations when relevant.",
+      "enableMemory": "Enable memory",
+      "enableMemoryDesc": "Let the assistant remember facts about your research across conversations. Off by default; you can turn this off anytime.",
+      "save": "Save preferences",
+      "saved": "Preferences saved"
+    },
+    "labContext": {
+      "title": "Lab Context",
+      "subtitle": "Shared context the AI uses for everyone in this lab. Admin only.",
+      "labName": "Lab name",
+      "labDescription": "Lab description",
+      "labDescriptionDesc": "2-3 sentences describing your lab's focus.",
+      "commonTechniques": "Common techniques",
+      "commonMaterials": "Common materials",
+      "commonEquipment": "Common equipment",
+      "commaSeparated": "Comma-separated.",
+      "glossary": "Glossary",
+      "glossaryDesc": "One per line, format: term: definition",
+      "houseStyle": "House style",
+      "houseStyleDesc": "Free-text instructions appended to the AI system prompt.",
+      "save": "Save lab context",
+      "saved": "Lab context saved"
     }
   }
 }

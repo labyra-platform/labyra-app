@@ -27,6 +27,7 @@ import { selectProvider } from '@/lib/ai/providers';
 import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
 import { runReflection } from '@/lib/ai/reflection/orchestrator';
 import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
+import { buildSystemPromptWithMemory } from '@/lib/ai/memory/system-prompt-builder';
 import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
 import { generateConversationTitle } from '@/lib/ai/title-generator';
 import { executeToolCall } from '@/lib/ai/tools/dispatch';
@@ -628,6 +629,14 @@ export async function POST(request: Request) {
           | undefined;
         let round = 0;
 
+        // ADR-035 M1: assemble system prompt with L3 (prefs) + L4 (tenant)
+        // memory, plus the dynamic scoped-paper block. Built once per turn.
+        const systemBlocks = await buildSystemPromptWithMemory(LABYRA_SYSTEM_PROMPT, {
+          userId,
+          tenantId: tenantId!,
+          dynamicBlock: scopeSystemBlock
+        });
+
         while (round < MAX_TOOL_ROUNDS) {
           round++;
           const pendingCalls: LLMToolCall[] = [];
@@ -637,12 +646,7 @@ export async function POST(request: Request) {
           for await (const event of provider.streamChat({
             model: config.model,
             maxTokens: 2048,
-            system: scopeSystemBlock
-              ? [
-                  { text: LABYRA_SYSTEM_PROMPT, cache: true, cacheTtl: '1h' },
-                  { text: scopeSystemBlock, cache: false }
-                ]
-              : [{ text: LABYRA_SYSTEM_PROMPT, cache: true, cacheTtl: '1h' }],
+            system: systemBlocks,
             messages: conversationMessages,
             tools: toolDefinitions,
             toolResults: pendingToolResults

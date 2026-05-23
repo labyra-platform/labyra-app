@@ -217,6 +217,25 @@ service cloud.firestore {
         allow read: if belongsToTenant(tenantId) || isSuperAdmin();
         allow write: if isAdmin(tenantId) || isSuperAdmin();
       }
+      // ---------- AI memory: tenant-shared context (ADR-035 L4) ----------
+      // Lab house-style + glossary. Any tenant member may READ (injected into
+      // their AI system prompt); only admins WRITE. Single doc per tenant in
+      // practice, but rule is per-doc for forward-compat.
+      match /aiContext/{contextId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isAdmin(tenantId) || isSuperAdmin();
+      }
+
+      // ---------- AI memory: per-user episodic + semantic (ADR-035 L1/L2) ----------
+      // Research knowledge is tenant-scoped AND user-private: only the owning
+      // user, within their own tenant, may read/write. No cross-tenant
+      // pollination; no cross-user reads (a tenant admin does NOT read another
+      // member's private memories). Server (Admin SDK) bypasses these for
+      // extraction writes.
+      match /userMemories/{ownerUid}/{document=**} {
+        allow read, write: if belongsToTenant(tenantId)
+          && request.auth.uid == ownerUid;
+      }
     }
 
     // =====================================================
@@ -250,6 +269,19 @@ service cloud.firestore {
     // PubChem lookup cache — server-side (Admin SDK) only. CHEM-2.
     match /_pubchem_cache/{cas} {
       allow read, write: if false;
+    }
+
+    // =====================================================
+    // AI preferences — TOP-LEVEL, per-user personal (ADR-035 L3)
+    // =====================================================
+    // Preferences belong to the human, not a tenant. A user in multiple
+    // tenants keeps one set of preferences (language, verbosity, tone, ...).
+    // This is the single intentional exception to the "everything under
+    // tenants/{tid}" rule — and it holds personal settings, never scientific
+    // data. Own-user only: nobody else (not even superadmin) reads another
+    // user's preferences from the client.
+    match /users/{uid}/aiPreferences/{settingsId} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
     // =====================================================

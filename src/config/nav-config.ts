@@ -191,6 +191,23 @@ export const navGroups: NavGroup[] = [
         access: { role: 'admin' }
       },
       {
+        title: 'AI Preferences',
+        titleKey: 'nav.aiPreferences',
+        url: '/dashboard/settings/ai-preferences',
+        icon: 'settings',
+        shortcut: ['a', 'p'],
+        items: []
+      },
+      {
+        title: 'Lab Context',
+        titleKey: 'nav.labContext',
+        url: '/dashboard/settings/lab-context',
+        icon: 'adjustments',
+        shortcut: ['l', 'c'],
+        items: [],
+        access: { role: 'admin' }
+      },
+      {
         title: 'Members',
         titleKey: 'nav.members',
         url: '/dashboard/members',

@@ -55,7 +55,9 @@
     "superadmin": "Quản trị cao cấp",
     "superadminCosts": "Tổng quan chi phí",
     "superadminEvals": "Đánh giá chất lượng",
-    "superadminDrift": "Sai lệch chi phí"
+    "superadminDrift": "Sai lệch chi phí",
+    "aiPreferences": "Tùy chỉnh AI",
+    "labContext": "Bối cảnh Lab"
   },
   "groups": {
     "title": "Nhóm nghiên cứu",
@@ -1121,6 +1123,46 @@
       "history": "Lịch sử giao dịch",
       "noHistory": "Chưa có giao dịch nào.",
       "deprecate": "Ngừng sử dụng"
+    }
+  },
+  "settings": {
+    "aiPreferences": {
+      "title": "Tùy chỉnh AI",
+      "subtitle": "Cá nhân hóa cách trợ lý AI phản hồi. Áp dụng cho mọi lab của bạn.",
+      "language": "Ngôn ngữ phản hồi",
+      "languageAuto": "Tự động (theo tin nhắn)",
+      "verbosity": "Độ chi tiết",
+      "verbosityConcise": "Ngắn gọn",
+      "verbosityNormal": "Bình thường",
+      "verbosityDetailed": "Chi tiết",
+      "mathNotation": "Ký hiệu toán",
+      "mathPlaintext": "Văn bản thuần",
+      "tone": "Giọng điệu",
+      "toneFormal": "Trang trọng",
+      "toneCasual": "Thân mật",
+      "includeReferences": "Kèm trích dẫn",
+      "includeReferencesDesc": "Thêm trích dẫn tài liệu khi phù hợp.",
+      "enableMemory": "Bật ghi nhớ",
+      "enableMemoryDesc": "Cho phép trợ lý ghi nhớ thông tin về nghiên cứu của bạn qua các cuộc trò chuyện. Mặc định tắt; bạn có thể tắt bất cứ lúc nào.",
+      "save": "Lưu tùy chỉnh",
+      "saved": "Đã lưu tùy chỉnh"
+    },
+    "labContext": {
+      "title": "Bối cảnh Lab",
+      "subtitle": "Bối cảnh chung AI dùng cho mọi người trong lab. Chỉ admin.",
+      "labName": "Tên lab",
+      "labDescription": "Mô tả lab",
+      "labDescriptionDesc": "2-3 câu mô tả trọng tâm của lab.",
+      "commonTechniques": "Kỹ thuật thường dùng",
+      "commonMaterials": "Vật liệu thường dùng",
+      "commonEquipment": "Thiết bị thường dùng",
+      "commaSeparated": "Phân tách bằng dấu phẩy.",
+      "glossary": "Thuật ngữ",
+      "glossaryDesc": "Mỗi dòng một mục, định dạng: thuật ngữ: định nghĩa",
+      "houseStyle": "Quy ước phòng lab",
+      "houseStyleDesc": "Hướng dẫn dạng văn bản tự do, thêm vào system prompt của AI.",
+      "save": "Lưu bối cảnh lab",
+      "saved": "Đã lưu bối cảnh lab"
     }
   }
 }

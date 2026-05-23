@@ -413,6 +413,7 @@ Read in order before architectural decisions:
 | LLM-generated DOIs | Hallucination risk | Crossref/OpenAlex ground truth |
 | Hooks after conditional return | Runtime crash | Hoist hooks to top |
 | `console.log` debug in prod | Pollution | Remove before commit |
+| Unguarded Firestore field access | `undefined.length/.map` crashes whole page (R192) | `card.peaks?.length ?? 0`; `setState(apiData ?? [])` at the hook |
 | Inline styles | Bypasses design system | Tailwind tokens only |
 | Cross-tenant Firestore queries | Data leak | Always `tenantId` filter |
 | `middleware.ts` in Next.js 16 | Conflicts with `proxy.ts` | Merge into `src/proxy.ts` |

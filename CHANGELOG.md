@@ -9,6 +9,32 @@
 
 ---
 
+## R176-5 + R192 — Audit findings UI + spectra/reference-cards crash fix (May 22, 2026)
+
+### R176-5 — T5 audit findings UI
+- 5a: `GET /api/messages/[id]/audit?conversationId=X` loads the cached AuditResult
+  (query aiAudits by sourceMessageId) + composite index aiAudits
+  (sourceMessageId ASC + evaluatedAt DESC). Reuses POST auth + C6 ownership.
+- 5b: `audit-panel.tsx` + Audit button (IconShieldSearch) on T3/T4 assistant
+  bubbles; GET cached → render, else POST runs T5. Findings cards (verdict badge
+  4 colours) + summary (supported/unsupported/contradicted + overall confidence).
+  conversationId threaded chat-shell → message-list → bubble. i18n ai.audit en+vi.
+
+### R192 — spectra + reference-cards crash ("This page couldn't load")
+- ROOT (R192-4): useReferenceCards did `setAllCards(cards)` where `cards` came
+  from `res.json().cards`; if /api/references returns a body without a top-level
+  `cards` field, cards is undefined → setAllCards(undefined) → every consumer's
+  `allCards.length`/`.map` crashed. Fixed at the hook: `setAllCards(cards ?? [])`
+  (one place closes the crash for list page + spectrum-analysis + manager).
+- R192-1/2/2b/3: defensive guards (refCards/userPeaks/parsed.peaks/allCards) in
+  internal-candidates + spectrum-analysis-section + reference-cards-list + manager.
+- R192-5: dashboard-level `error.tsx` safety net — any child route without its own
+  boundary degrades a crash to a friendly retry instead of a blank screen.
+- Diagnosis lesson (recorded CLAUDE.md §11 + handoff): minified prod stacks are
+  useless; use `pnpm dev` source maps + read full files before guessing.
+
+---
+
 ## R190–R191 — Cost telemetry fix, test infra, nonce-CSP, Gemini retry (May 22, 2026)
 
 > Tech-debt cleanup session, verify-before-assert throughout. Six atomic rounds.

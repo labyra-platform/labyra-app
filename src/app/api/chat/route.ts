@@ -138,6 +138,12 @@ export async function POST(request: Request) {
     const { loadProceduralMemory } = await import('@/lib/ai/memory/loader');
     const prefsForMem = await loadProceduralMemory(userId);
     memoryEnabled = prefsForMem?.enableMemory === true;
+    console.warn('[M2-gate]', {
+      memoryEnabled,
+      userId,
+      hasPrefs: prefsForMem != null,
+      enableMemoryRaw: prefsForMem?.enableMemory
+    });
   } catch {
     /* non-fatal */
   }
@@ -546,10 +552,15 @@ export async function POST(request: Request) {
           // via after(), unlike bare fire-and-forget which Vercel would kill).
           if (memoryEnabled) {
             const _userTurn = userText;
+            console.warn('[M2-wire] reached after() block', {
+              userTextLen: userText.length,
+              fullTextLen: fullText.length
+            });
             const _assistantTurn = fullText;
             const _msgId = assistantMessageId;
             const _convId = conversationId!;
             after(async () => {
+              console.warn('[M2-cb] after() callback running');
               await extractFactsAsync({
                 tenantId: tenantId!,
                 userId,

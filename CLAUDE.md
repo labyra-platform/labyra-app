@@ -42,6 +42,28 @@
 - No `window`/`document` in Server Components
 - Hooks (`useMemo`/`useState`/`useEffect`) MUST be called before any conditional early return. Violations = runtime crash on prod ("Rendered more hooks than during the previous render"). Audit hook order before every patch touching components with hooks.
 
+### Lint conventions (oxlint — `.oxlintrc.json`, R195 cleanup 90 -> 0)
+
+`pnpm lint:strict` (= `oxlint --deny-warnings`) must stay at 0 warnings; the
+pre-push hook enforces it. Three deliberate rule decisions — do NOT undo them:
+
+1. **`_`-prefix = intentionally unused.** Enforced via `no-unused-vars`
+   `argsIgnorePattern`/`varsIgnorePattern: "^_"`. `no-underscore-dangle` is set
+   `"off"` (it conflicts with the `^_` convention) — **do not re-enable it**.
+   To rename an unused destructured field, use an alias: `const { locale: _locale }`
+   (the key must still match the source type).
+2. **`react/no-unstable-nested-components` is `"off"`.** All hits were
+   false-positives: library render-props, not nested components — data-table column
+   `cell: (r) => <.../>`, react-markdown `components={{...}}`, react-day-picker
+   `components={{ Chevron }}`, kbar `onRender`. **Do not refactor these.**
+3. **`logger.ts` is the only file allowed to call `console`** (via
+   `// eslint-disable-next-line no-console`). Everywhere else, use the `logger`.
+
+To silence an oxlint rule, set it to `"off"` in `.oxlintrc.json`. **Never delete
+its `rules{}` block** — a block there usually *softens* a category-enabled rule
+(e.g. via an `allow` list); deleting it removes the softening and the rule fires
+*harder*.
+
 ### Forms (mandatory shadcn pattern)
 
 ```tsx
@@ -320,11 +342,11 @@ Do NOT include `cp` commands or manual file moves — user downloads patch scrip
 
 ### Husky pre-push
 
-Runs full `pnpm build`. May block push when:
-- Untracked files have TS errors (e.g., hand-tracking stash)
-- Workspace package errors
+Runs `rm -rf .next/dev/types` (clear stale route types), then
+`pnpm exec tsc --noEmit` + `pnpm lint:strict` (oxlint --deny-warnings). Blocks the
+push on any TS error OR any lint warning — this is what keeps lint debt at zero.
 
-Use `--no-verify` cautiously when needed (only when sure push is safe).
+Use `--no-verify` only when you are certain the push is safe.
 
 ---
 

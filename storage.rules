@@ -2,8 +2,9 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Papers: tenant-scoped, authenticated users in their tenant only
-    match /papers/{tenantId}/{paperFile} {
+    // Papers: tenant-scoped, nested under /tenants/ (R198 C2 — unified path format)
+    // {path=**} covers {paperId}/v{N}.pdf and _uploads/{sessionId}.pdf
+    match /tenants/{tenantId}/papers/{path=**} {
       allow read: if isAuthenticated() && isTenantMember(tenantId);
       // Writes only through API route (Admin SDK bypasses rules)
       allow write: if false;

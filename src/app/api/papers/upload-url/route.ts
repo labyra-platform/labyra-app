@@ -105,7 +105,8 @@ export async function POST(request: Request) {
 
   // ─── Generate session + temp storage path ────────────────────
   const sessionId = randomUUID();
-  const storagePath = `papers/${tenantId}/_uploads/${sessionId}.pdf`;
+  // R198 C2: temp upload path moved under /tenants/ for single storage.rules pattern
+  const storagePath = `tenants/${tenantId}/papers/_uploads/${sessionId}.pdf`;
   const expiresAt = Date.now() + SIGNED_URL_TTL_MS;
 
   // ─── Generate signed URL ─────────────────────────────────────

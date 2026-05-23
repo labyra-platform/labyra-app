@@ -8,7 +8,8 @@ import { getAdminStorageService } from './admin';
 
 /** Tenant-scoped paper storage path */
 export function paperStoragePath(tenantId: string, paperId: string, version: number): string {
-  return `papers/${tenantId}/${paperId}.v${version}.pdf`;
+  // R198 C2: nested path under /tenants/ — đồng bộ với spectra, gom version theo paperId
+  return `tenants/${tenantId}/papers/${paperId}/v${version}.pdf`;
 }
 
 /**

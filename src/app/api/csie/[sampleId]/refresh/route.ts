@@ -11,7 +11,7 @@
  * @phase R185-10c (HTTP) → R186-4 (Pub/Sub)
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
+import { authenticateWriter } from '@/lib/api/auth-helper';
 import { publishCsieTrigger } from '@/lib/pubsub/topics/csie-trigger';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 

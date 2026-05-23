@@ -6,7 +6,7 @@
  * @phase R164-phase-4a
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
+import { authenticateWriter } from '@/lib/api/auth-helper';
 import { reactivateMaterial } from '@/lib/firebase/materials/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 

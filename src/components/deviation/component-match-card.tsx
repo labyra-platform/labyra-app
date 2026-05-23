@@ -10,7 +10,6 @@
 import { Badge } from '@/components/ui/badge';
 import { HypothesisCard } from '@/components/deviation/hypothesis-card';
 import { MatchSummaryStats } from '@/components/deviation/match-summary-stats';
-import { QualityGradeBadge } from '@/components/deviation/quality-grade-badge';
 import { formatFormula } from '@/lib/utils/format-formula';
 import { cn } from '@/lib/utils';
 import type { ComponentMatch, Hypothesis } from '@/types/deviation-analysis';

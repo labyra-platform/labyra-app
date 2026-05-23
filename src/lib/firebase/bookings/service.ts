@@ -201,7 +201,7 @@ export async function findAvailableSlots(
     .map((d) => d.data() as Booking)
     .filter((b) => BLOCKING_STATUSES.includes(b.status) && b.endAt > dayStart)
     .map((b) => ({ start: Math.max(b.startAt, dayStart), end: Math.min(b.endAt, dayEnd) }))
-    .sort((a, b) => a.start - b.start);
+    .toSorted((a, b) => a.start - b.start);
 
   // Merge overlapping busy intervals.
   const merged: Array<{ start: number; end: number }> = [];

@@ -158,7 +158,7 @@ export function useChemicalsByHazard(): {
     }
     return Object.entries(counts)
       .map(([code, count]) => ({ hazard: GHS_SHORT[code] ?? code, count }))
-      .sort((a, b) => b.count - a.count);
+      .toSorted((a, b) => b.count - a.count);
   }, [data]);
 
   return { data: buckets, isLoading };

@@ -79,42 +79,7 @@
     "jsx-a11y/role-has-required-aria-props": "warn",
     "jsx-a11y/role-supports-aria-props": "warn",
     "jsx-a11y/prefer-tag-over-role": "off",
-    "no-underscore-dangle": [
-      "warn",
-      {
-        "allow": [
-          "_client",
-          "_index",
-          "_nlp",
-          "_its",
-          "_hybrid",
-          "_exhaustive",
-          "_store",
-          "_provider",
-          "_auth",
-          "_registered",
-          "_BM25Vectorizer",
-          "__labyraActiveJobs",
-          "__labyraJobProcessor",
-          "__labyraBM25Cache",
-          "_seconds",
-          "_nanoseconds",
-          "_patched",
-          "_path",
-          "_meta",
-          "_id",
-          "_idx",
-          "_app",
-          "_values",
-          "_adminApp",
-          "_adminFirestore",
-          "_firestoreSettingsApplied",
-          "protected_",
-          "_queue",
-          "_processorEnsured"
-        ]
-      }
-    ]
+    "no-underscore-dangle": "off"
   },
   "overrides": [
     {

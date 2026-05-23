@@ -7,7 +7,7 @@
  * @phase ONBOARD-1
  */
 import { type NextRequest, NextResponse } from 'next/server';
-import { authenticate, authenticateAdmin, authenticateWriter } from '@/lib/api/auth-helper';
+import { authenticateAdmin, authenticateWriter } from '@/lib/api/auth-helper';
 import { createInvite, listInvites } from '@/lib/firebase/invites/service';
 import { sendInviteEmail } from '@/lib/email/send-invite';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';

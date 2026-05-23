@@ -5,7 +5,7 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
+import { authenticateWriter } from '@/lib/api/auth-helper';
 import { retractExperiment } from '@/lib/firebase/experiments/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 

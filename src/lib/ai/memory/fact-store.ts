@@ -42,7 +42,7 @@ export function selectEvictions(
   const evictable = facts
     .filter((f) => f.verifiedAt == null) // never auto-evict user-confirmed facts
     .filter((f) => !HIGH_VALUE_SUBJECTS.has(f.subject as FactSubject))
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       // lowest confidence first; tie-break oldest first
       if (a.confidence !== b.confidence) return a.confidence - b.confidence;
       return a.extractedAt - b.extractedAt;

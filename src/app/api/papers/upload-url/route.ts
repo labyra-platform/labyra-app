@@ -18,7 +18,7 @@
 import { randomUUID } from 'node:crypto';
 import { Timestamp } from 'firebase-admin/firestore';
 import { checkQuota } from '@/lib/ai/governance/quota';
-import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getSignedUploadUrl } from '@/lib/firebase/storage';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';

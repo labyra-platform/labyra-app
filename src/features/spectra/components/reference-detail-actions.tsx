@@ -8,7 +8,6 @@
  */
 import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 import { LifecycleStatusBadge } from '@/components/lifecycle/lifecycle-status-badge';
-import { LineageGraph } from '@/components/lineage/lineage-graph';
 import type { LifecycleStatus } from '@/types/prov-base';
 
 interface ReferenceDetailActionsProps {
@@ -28,8 +27,4 @@ export function ReferenceDetailActions({ id, status }: ReferenceDetailActionsPro
       />
     </div>
   );
-}
-
-interface ReferenceLineageSectionProps {
-  id: string;
 }

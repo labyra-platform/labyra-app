@@ -44,7 +44,7 @@ export async function extractMetadata(firstPageText: string): Promise<ExtractedM
 
   try {
     // Use T2 tier (Anthropic Haiku/Sonnet) - reliable for structured output
-    const { provider, config } = selectProvider(2);
+    const { provider } = selectProvider(2);
     const result = await provider.complete({
       model: 'claude-haiku-4-5-20251001', // cheap haiku for extraction
       maxTokens: 500,

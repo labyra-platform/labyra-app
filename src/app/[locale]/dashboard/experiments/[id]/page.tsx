@@ -7,7 +7,6 @@ import PageContainer from '@/components/layout/page-container';
 import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 // R164-phase-8-9b: lineage graph
 import { NavBack } from '@/components/nav/nav-back';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExperimentForm } from '@/features/experiments/components/experiment-form';
 import { SpectraList } from '@/features/spectra/components/spectra-list';

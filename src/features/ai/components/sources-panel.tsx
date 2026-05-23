@@ -29,7 +29,11 @@ interface SourcesPanelProps {
   locale?: string;
 }
 
-export function SourcesPanel({ sources, highlightedRef, locale = 'en' }: SourcesPanelProps) {
+export function SourcesPanel({
+  sources,
+  highlightedRef,
+  locale: _locale = 'en'
+}: SourcesPanelProps) {
   const [expanded, setExpanded] = useState(true); // auto-expanded default
 
   if (sources.length === 0) return null;

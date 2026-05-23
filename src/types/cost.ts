@@ -16,7 +16,8 @@ export type FeatureKind =
   | 'audit'
   | 'title_generation'
   | 'intent_classify'
-  | 'classify'; // R178-3 paper domain classification — @r178-3-applied
+  | 'classify' // R178-3 paper domain classification — @r178-3-applied
+  | 'fact_extraction'; // R193 ADR-035 M2 memory fact extraction
 
 /** Per-capability stats (R170-3 extended) */
 export interface CapabilityStats {

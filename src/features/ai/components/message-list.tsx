@@ -11,11 +11,36 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
  *
  * @phase R160-ai-3b-hotfix-scroll
  */
+import { useTranslations } from 'next-intl';
 import type { AiMessage } from '@/types/ai';
 import { MessageBubble } from './message-bubble';
 import { ThinkingIndicator } from './thinking-indicator';
 
 const NEAR_BOTTOM_THRESHOLD_PX = 100;
+
+// Helper inserted into message-list.tsx — computes the thinking label from the
+// streaming assistant message (most specific first: active tool > tier > default).
+function thinkingLabel(m: AiMessage, t: (k: string) => string): string {
+  // Active searchPapers tool (called, no result yet) → literature search.
+  const tools = m.toolCalls ?? [];
+  const searching = tools.some((tc) => tc.name === 'searchPapers' && tc.result === undefined);
+  if (searching) return t('thinkingSearchPapers');
+
+  switch (m.tier) {
+    case 1:
+      return t('thinkingTier1');
+    case 2:
+      return t('thinkingTier2');
+    case 3:
+      return t('thinkingTier3');
+    case 4:
+      return t('thinkingTier4');
+    case 5:
+      return t('thinkingTier5');
+    default:
+      return t('thinking');
+  }
+}
 
 export function MessageList({
   messages,
@@ -26,6 +51,7 @@ export function MessageList({
   isStreaming?: boolean;
   conversationId?: string;
 }) {
+  const t = useTranslations('ai');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
 
@@ -66,7 +92,7 @@ export function MessageList({
       className='flex-1 space-y-4 overflow-y-auto rounded-lg border bg-card p-4 scroll-smooth'
     >
       {messages.length === 0 ? (
-        <p className='text-muted-foreground py-8 text-center text-sm'>Start a conversation...</p>
+        <p className='text-muted-foreground py-8 text-center text-sm'>{t('emptyHistory')}</p>
       ) : (
         messages.map((m) => {
           const isLastEmpty =
@@ -75,7 +101,7 @@ export function MessageList({
             m.role === 'assistant' &&
             !m.content;
           if (isLastEmpty) {
-            return <ThinkingIndicator key={m.id} />;
+            return <ThinkingIndicator key={m.id} label={thinkingLabel(m, t)} />;
           }
           return <MessageBubble key={m.id} message={m} conversationId={conversationId} />;
         })

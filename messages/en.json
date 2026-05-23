@@ -70,7 +70,7 @@
     "creating": "Creating…",
     "listHeading": "Groups",
     "loading": "Loading…",
-    "empty": "No groups yet.",
+    "empty": "No groups yet. Create one to organize your lab.",
     "noLeader": "No leader appointed",
     "leaderUid": "Leader: {uid}",
     "leaderInputLabel": "Leader user ID",
@@ -158,7 +158,7 @@
     "groupLast7Days": "Last 7 days",
     "groupLast30Days": "Last 30 days",
     "groupEarlier": "Earlier",
-    "emptyHistory": "No conversations yet",
+    "emptyHistory": "No conversations yet. Ask anything about your lab or literature.",
     "loading": "Loading...",
     "loadError": "Could not load conversations",
     "delete": "Delete",
@@ -201,7 +201,7 @@
       "runAudit": "Audit response",
       "loading": "Loading audit…",
       "running": "Auditing claims…",
-      "error": "Audit failed",
+      "error": "We couldn't run the audit. Please try again in a moment.",
       "supported": "{n} supported",
       "unsupported": "{n} unsupported",
       "contradicted": "{n} contradicted",
@@ -213,7 +213,17 @@
         "unsupported": "Unsupported",
         "contradicted": "Contradicted"
       }
-    }
+    },
+    "thinkingTier1": "Looking up your lab data…",
+    "thinkingTier2": "Searching the literature…",
+    "thinkingTier3": "Analyzing…",
+    "thinkingTier4": "Drafting…",
+    "thinkingTier5": "Verifying…",
+    "thinkingSearchPapers": "Searching your paper library…",
+    "errorBusy": "Labyra is handling a lot of requests right now. Please try again in a few minutes.",
+    "errorTimeout": "This took too long. Try selecting fewer papers or breaking up your question.",
+    "errorGeneric": "Something interrupted the system. Please try again.",
+    "retry": "Retry"
   },
   "papers": {
     "uploadPageTitle": "Upload paper",
@@ -223,7 +233,7 @@
     "uploading": "Uploading...",
     "pdfOnlyMax": "PDF only, max {mb} MB",
     "uploadStarted": "Upload started. Processing begins shortly.",
-    "uploadFailed": "Upload failed",
+    "uploadFailed": "We couldn't upload this file. Please check the format and try again.",
     "duplicateDetected": "This paper already exists in your library.",
     "listPageTitle": "Papers",
     "listPageSubtitle": "Research papers in your lab's knowledge base.",
@@ -375,8 +385,8 @@
     "newPageTitle": "Add new material",
     "editPageTitle": "Edit material",
     "addNew": "Add new",
-    "loading": "Loading...",
-    "empty": "No materials yet. Click \"Add new\" to start.",
+    "loading": "Loading materials…",
+    "empty": "No materials yet. Add your first material to start.",
     "notFound": "Material not found",
     "deleteConfirm": "Delete this material?",
     "delete": "Delete",
@@ -434,8 +444,8 @@
     "newPageTitle": "Add new sample",
     "editPageTitle": "Edit sample",
     "addNew": "Add new",
-    "loading": "Loading...",
-    "empty": "No samples yet. Click \"Add new\" to start.",
+    "loading": "Loading samples…",
+    "empty": "No samples yet. Add your first sample to start.",
     "notFound": "Sample not found",
     "deleteConfirm": "Delete this sample?",
     "delete": "Delete",
@@ -514,8 +524,8 @@
     "newPageTitle": "Add new experiment",
     "editPageTitle": "Edit experiment",
     "addNew": "Add new",
-    "loading": "Loading...",
-    "empty": "No experiments yet. Click \"Add new\" to start.",
+    "loading": "Loading experiments…",
+    "empty": "No experiments yet. Add your first experiment to start.",
     "notFound": "Experiment not found",
     "deleteConfirm": "Delete this experiment?",
     "delete": "Delete",
@@ -567,8 +577,8 @@
     "addNew": "Add new",
     "newPageTitle": "Add new equipment",
     "editPageTitle": "Edit equipment",
-    "loading": "Loading...",
-    "empty": "No equipment yet. Click \"Add new\" to start.",
+    "loading": "Loading equipment…",
+    "empty": "No equipment yet. Add your first instrument to start.",
     "notFound": "Equipment not found",
     "deleteConfirm": "Delete this equipment?",
     "delete": "Delete",
@@ -623,7 +633,7 @@
     "addNew": "New booking",
     "newPageTitle": "New booking",
     "editPageTitle": "Edit booking",
-    "loading": "Loading...",
+    "loading": "Loading bookings…",
     "empty": "No bookings yet. Click \"New booking\" to start.",
     "notFound": "Booking not found",
     "deleteConfirm": "Delete this booking?",
@@ -682,8 +692,8 @@
   "spectra": {
     "title": "Measurements",
     "subtitle": "Manage measurements for experiments",
-    "loading": "Loading...",
-    "empty": "No measurements yet. Upload one to start.",
+    "loading": "Loading measurements…",
+    "empty": "No measurements yet. Upload a spectrum to start.",
     "upload": "Upload",
     "uploading": "Uploading...",
     "uploadSuccess": "Upload complete",
@@ -898,7 +908,7 @@
     "reactivated": "Reactivated",
     "cannotReactivateRetracted": "Cannot reactivate retracted records (immutable per compliance policy).",
     "cancel": "Cancel",
-    "errorGeneric": "An error occurred"
+    "errorGeneric": "Something went wrong. Please try again."
   },
   "versioning": {
     "loading": "Loading history...",
@@ -912,7 +922,7 @@
   },
   "lineage": {
     "loading": "Loading lineage graph...",
-    "error": "Lineage load error: {msg}",
+    "error": "Lineage data error: {msg}",
     "noLineage": "No lineage relations yet",
     "title": "PROV-O lineage graph",
     "legend": {
@@ -1163,6 +1173,13 @@
       "houseStyleDesc": "Free-text instructions appended to the AI system prompt.",
       "save": "Save lab context",
       "saved": "Lab context saved"
+    },
+    "memory": {
+      "title": "Remembered facts",
+      "subtitle": "What the assistant has learned about you. Delete anything you don't want kept.",
+      "empty": "Nothing remembered yet. Enable memory above and chat to let the assistant learn.",
+      "delete": "Delete",
+      "deleted": "Fact deleted"
     }
   }
 }

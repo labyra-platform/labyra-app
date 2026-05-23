@@ -11,7 +11,7 @@
  */
 
 import { Timestamp } from 'firebase-admin/firestore';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { getCapabilityForTier } from '@/lib/ai/config/capabilities';
 import { loadConversationHistory } from '@/lib/ai/conversation-history';
 import { estimateCost } from '@/lib/ai/cost/estimator';
@@ -28,6 +28,7 @@ import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
 import { runReflection } from '@/lib/ai/reflection/orchestrator';
 import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { buildSystemPromptWithMemory } from '@/lib/ai/memory/system-prompt-builder';
+import { extractFactsAsync } from '@/lib/ai/memory/extract-orchestrator';
 import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
 import { generateConversationTitle } from '@/lib/ai/title-generator';
 import { executeToolCall } from '@/lib/ai/tools/dispatch';
@@ -128,6 +129,18 @@ export async function POST(request: Request) {
   const viewerRole = getRoleFromToken(decoded);
   const isPrivileged = viewerRole === 'admin' || viewerRole === 'superadmin';
   const userEmail = decoded.email ?? '';
+
+  // ADR-035 M2: opt-in flag, loaded once at handler scope (gates L2 inject +
+  // fact extraction). Declared here so both the after() extraction wire and the
+  // system-prompt build call can read it.
+  let memoryEnabled = false;
+  try {
+    const { loadProceduralMemory } = await import('@/lib/ai/memory/loader');
+    const prefsForMem = await loadProceduralMemory(userId);
+    memoryEnabled = prefsForMem?.enableMemory === true;
+  } catch {
+    /* non-fatal */
+  }
   if (!tenantId) {
     return new Response(JSON.stringify({ error: 'missing_tenant_claim' }), {
       status: 403,
@@ -529,6 +542,25 @@ export async function POST(request: Request) {
             reflectionHistory
           });
 
+          // ADR-035 M2: extract user facts AFTER the response (guaranteed to run
+          // via after(), unlike bare fire-and-forget which Vercel would kill).
+          if (memoryEnabled) {
+            const _userTurn = userText;
+            const _assistantTurn = fullText;
+            const _msgId = assistantMessageId;
+            const _convId = conversationId!;
+            after(async () => {
+              await extractFactsAsync({
+                tenantId: tenantId!,
+                userId,
+                conversationId: _convId,
+                sourceMessageId: _msgId,
+                userTurn: _userTurn,
+                assistantTurn: _assistantTurn
+              });
+            });
+          }
+
           const { FieldValue } = await import('firebase-admin/firestore');
           await convRef.update({
             updatedAt: Timestamp.now(),
@@ -634,7 +666,8 @@ export async function POST(request: Request) {
         const systemBlocks = await buildSystemPromptWithMemory(LABYRA_SYSTEM_PROMPT, {
           userId,
           tenantId: tenantId!,
-          dynamicBlock: scopeSystemBlock
+          dynamicBlock: scopeSystemBlock,
+          enableMemory: memoryEnabled
         });
 
         while (round < MAX_TOOL_ROUNDS) {

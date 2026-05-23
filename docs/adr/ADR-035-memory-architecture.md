@@ -91,3 +91,66 @@ Rules tests MUST be run on the Firestore emulator via `pnpm test:rules` (the
 sandbox that authored M0 cannot download the emulator JAR — host not in network
 allowlist). All new POSITIVE cases must SUCCEED and all NEGATIVE cases must be
 DENIED before this is considered verified.
+
+---
+
+## M2 — Semantic fact extraction (shipped R193)
+
+### Decisions (Part 7 resolved)
+
+**Q3 — Retention cap → hard technical cap now, billing-tier deferred.**
+`MAX_FACTS_PER_USER = 200` (fact-store.ts). This is NOT a billing-tier gate; it
+prevents unbounded Firestore growth + injection cost. A researcher has ~20-50
+meaningful facts, so 200 only triggers on anomaly (loop/spam/extraction bug).
+Tier-based caps (free vs paid) layer on top in the billing phase — one constant.
+
+Eviction is **NOT FIFO**. `selectEvictions()` protects: (a) user-verified facts
+(verifiedAt != null), (b) HIGH_VALUE_SUBJECTS (research_focus, material_systems,
+expertise_level). It evicts lowest-confidence, then oldest, among unverified
+non-high-value facts. Rationale: the oldest fact is often the most important
+("user studies WO₃" — stated once, true forever); FIFO would delete core identity.
+
+**Q4 — Manual fact-add → deferred. Xem+xóa NOT deferred.**
+M2 ships auto-extraction + a UI to VIEW + DELETE facts (trust/GDPR, non-negotiable:
+`/dashboard/settings/ai-preferences` renders `RememberedFacts`; GET/DELETE
+`/api/me/facts`). Letting users TYPE new facts is a nice-to-have deferred (it needs
+a different provenance model — manual facts have no sourceQuote).
+
+**Q5 — Audit fact writes → YES.**
+Every fact write (`memory.fact_extracted`) and delete (`memory.fact_deleted`) is
+appended to `tenants/{tid}/auditLogs/` via Admin SDK, carrying factId + subject +
+confidence + sourceMessageId. Provenance is Labyra's trust backbone (ADR-016); fact
+extraction is no exception.
+
+### Async architecture — Next.js `after()`, NOT fire-and-forget, NOT Pub/Sub
+
+Extraction runs via `after(() => extractFactsAsync(...))` in the chat route (after
+the response is sent). Rejected alternatives:
+- **Bare fire-and-forget** (`void (async()=>{})()`, as the proposal wrote): on
+  Vercel serverless (sin1) the function is frozen/killed once the response stream
+  closes; an un-awaited promise is cut mid-flight → facts silently lost. Worst
+  failure mode (no error, just missing data). The route already `await`s all
+  post-stream work, confirming they avoid this.
+- **Pub/Sub → worker** (ADR-018 pattern): correct for heavy paper OCR/embedding
+  (~16s), over-engineered for a ~1s extraction call. Adds a topic, worker handler,
+  deploy, eventarc — touches the worker repo, more failure surface.
+- **`after()`** (Next.js 16): guaranteed to complete within `maxDuration=60`, does
+  not delay chat, no extra infra. Upgrade path to Pub/Sub later is local (swap the
+  callback body) — choosing `after()` now does not lock the door.
+
+### Opt-in (unchanged from M0/M1)
+`extractFactsAsync` first loads prefs and returns immediately unless
+`enableMemory === true`. Memory stays OFF by default.
+
+### Cost
+Per-turn extraction = 1 Gemini 3.1 Flash-Lite call (~$0.001/turn), recorded under
+feature `fact_extraction`. L2 injection adds ~300 tokens (cache:false — facts change
+per turn). Only incurred when the user opts in.
+
+### Files
+New: fact-taxonomy.ts, fact-extractor.ts, fact-store.ts, extract-orchestrator.ts;
+api/me/facts/route.ts; features/settings/components/remembered-facts.tsx;
+tests/unit/{fact-store,fact-extractor}.test.ts.
+Edited: system-prompt-builder.ts (renderSemanticMemory + L2 injection), chat/route.ts
+(after() wire), settings/ai-preferences/page.tsx (RememberedFacts), types/cost.ts
+('fact_extraction' feature), messages/{en,vi}.json (settings.memory).

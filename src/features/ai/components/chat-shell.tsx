@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 /**
  * Chat shell v5 — fixed layout (input stays at bottom).
@@ -24,6 +24,16 @@ import { MessageInput } from './message-input';
 import { MessageList } from './message-list';
 import { PaperSelectorPanel } from './paper-selector-panel';
 
+// R194: classify AI stream error into a branded, actionable message.
+// Matches on the raw error string (stream returns a message, not a code), with a
+// safe generic fallback. Busy = 429/quota/resource; timeout = timeout/deadline.
+function classifyAiError(error: string, t: (k: string) => string): string {
+  const e = error.toLowerCase();
+  if (/(429|quota|resource_exhausted|rate.?limit|overload|busy)/.test(e)) return t('errorBusy');
+  if (/(timeout|timed out|deadline|tool_timeout|aborted)/.test(e)) return t('errorTimeout');
+  return t('errorGeneric');
+}
+
 export function ChatShell() {
   // R160-ai-5d-3d: copy math equations as LaTeX source
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,7 +42,6 @@ export function ChatShell() {
   const t = useTranslations('ai');
   const searchParams = useSearchParams();
   const router = useRouter();
-  const _pathname = usePathname();
   const urlConvId = searchParams.get('c');
 
   const {
@@ -52,11 +61,7 @@ export function ChatShell() {
 
   const lastLoadedConvIdRef = useRef<string | null>(null);
 
-  const {
-    data: loadedMessages,
-    isLoading: isLoadingMessages,
-    dataUpdatedAt
-  } = useConversationMessages(urlConvId);
+  const { data: loadedMessages, isLoading: isLoadingMessages } = useConversationMessages(urlConvId);
 
   // R178-3-hotfix5: priority-ordered URL ⇄ conversationId sync.
   // @r178-3-hotfix5-applied (supersedes hotfix3)
@@ -142,8 +147,19 @@ export function ChatShell() {
           </div>
 
           {error && (
-            <div className='bg-destructive/10 text-destructive shrink-0 rounded-md border px-3 py-2 text-sm'>
-              {t('error')}: {error}
+            <div className='bg-destructive/10 text-destructive shrink-0 space-y-2 rounded-md border px-3 py-2 text-sm'>
+              <p>{classifyAiError(error, t)}</p>
+              <button
+                type='button'
+                onClick={() => {
+                  const lastUser = messages.findLast((m) => m.role === 'user');
+                  if (lastUser?.content) void send(lastUser.content);
+                }}
+                disabled={isStreaming}
+                className='border-destructive/40 text-destructive hover:bg-destructive/10 inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50'
+              >
+                {t('retry')}
+              </button>
             </div>
           )}
 

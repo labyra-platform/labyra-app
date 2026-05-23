@@ -70,7 +70,7 @@
     "creating": "Đang tạo…",
     "listHeading": "Danh sách nhóm",
     "loading": "Đang tải…",
-    "empty": "Chưa có nhóm nào.",
+    "empty": "Chưa có nhóm nào. Tạo nhóm để tổ chức lab.",
     "noLeader": "Chưa có trưởng nhóm",
     "leaderUid": "Trưởng nhóm: {uid}",
     "leaderInputLabel": "User ID trưởng nhóm",
@@ -158,7 +158,7 @@
     "groupLast7Days": "7 ngày qua",
     "groupLast30Days": "30 ngày qua",
     "groupEarlier": "Trước đó",
-    "emptyHistory": "Chưa có cuộc trò chuyện nào",
+    "emptyHistory": "Chưa có hội thoại nào. Hỏi bất cứ điều gì về lab hoặc tài liệu.",
     "loading": "Đang tải...",
     "loadError": "Không tải được danh sách",
     "delete": "Xóa",
@@ -201,7 +201,7 @@
       "runAudit": "Kiểm chứng câu trả lời",
       "loading": "Đang tải kết quả…",
       "running": "Đang kiểm chứng…",
-      "error": "Kiểm chứng thất bại",
+      "error": "Không thể thực hiện kiểm chứng. Vui lòng thử lại sau giây lát.",
       "supported": "{n} được hỗ trợ",
       "unsupported": "{n} không hỗ trợ",
       "contradicted": "{n} mâu thuẫn",
@@ -213,7 +213,17 @@
         "unsupported": "Không hỗ trợ",
         "contradicted": "Mâu thuẫn"
       }
-    }
+    },
+    "thinkingTier1": "Đang tra cứu dữ liệu lab…",
+    "thinkingTier2": "Đang tìm tài liệu…",
+    "thinkingTier3": "Đang phân tích…",
+    "thinkingTier4": "Đang soạn thảo…",
+    "thinkingTier5": "Đang kiểm chứng…",
+    "thinkingSearchPapers": "Đang tìm trong thư viện paper…",
+    "errorBusy": "Labyra đang xử lý nhiều yêu cầu. Vui lòng thử lại sau ít phút.",
+    "errorTimeout": "Quá thời gian phản hồi. Vui lòng chọn ít tài liệu hơn hoặc chia nhỏ câu hỏi.",
+    "errorGeneric": "Hệ thống vừa gặp sự cố gián đoạn. Vui lòng thử lại.",
+    "retry": "Thử lại"
   },
   "papers": {
     "uploadPageTitle": "Tải lên paper",
@@ -223,7 +233,7 @@
     "uploading": "Đang tải lên...",
     "pdfOnlyMax": "Chỉ PDF, tối đa {mb} MB",
     "uploadStarted": "Đã bắt đầu tải lên. Sắp xử lý.",
-    "uploadFailed": "Tải lên thất bại",
+    "uploadFailed": "Không thể tải tệp lên. Vui lòng kiểm tra định dạng và thử lại.",
     "duplicateDetected": "Paper này đã có trong thư viện.",
     "listPageTitle": "Papers",
     "listPageSubtitle": "Các paper nghiên cứu trong thư viện của lab.",
@@ -375,8 +385,8 @@
     "newPageTitle": "Thêm vật liệu mới",
     "editPageTitle": "Chỉnh sửa vật liệu",
     "addNew": "Thêm mới",
-    "loading": "Đang tải...",
-    "empty": "Chưa có vật liệu nào. Click \"Thêm mới\" để bắt đầu.",
+    "loading": "Đang tải vật liệu…",
+    "empty": "Chưa có vật liệu nào. Thêm vật liệu đầu tiên để bắt đầu.",
     "notFound": "Không tìm thấy vật liệu",
     "deleteConfirm": "Xóa vật liệu này?",
     "delete": "Xóa",
@@ -434,8 +444,8 @@
     "newPageTitle": "Thêm mẫu mới",
     "editPageTitle": "Chỉnh sửa mẫu",
     "addNew": "Thêm mới",
-    "loading": "Đang tải...",
-    "empty": "Chưa có mẫu nào. Click \"Thêm mới\" để bắt đầu.",
+    "loading": "Đang tải mẫu…",
+    "empty": "Chưa có mẫu nào. Thêm mẫu đầu tiên để bắt đầu.",
     "notFound": "Không tìm thấy mẫu",
     "deleteConfirm": "Xóa mẫu này?",
     "delete": "Xóa",
@@ -514,8 +524,8 @@
     "newPageTitle": "Thêm thí nghiệm mới",
     "editPageTitle": "Chỉnh sửa thí nghiệm",
     "addNew": "Thêm mới",
-    "loading": "Đang tải...",
-    "empty": "Chưa có thí nghiệm nào. Click \"Thêm mới\" để bắt đầu.",
+    "loading": "Đang tải thí nghiệm…",
+    "empty": "Chưa có thí nghiệm nào. Thêm thí nghiệm đầu tiên để bắt đầu.",
     "notFound": "Không tìm thấy thí nghiệm",
     "deleteConfirm": "Xóa thí nghiệm này?",
     "delete": "Xóa",
@@ -567,8 +577,8 @@
     "addNew": "Thêm mới",
     "newPageTitle": "Thêm thiết bị mới",
     "editPageTitle": "Chỉnh sửa thiết bị",
-    "loading": "Đang tải...",
-    "empty": "Chưa có thiết bị nào. Click \"Thêm mới\" để bắt đầu.",
+    "loading": "Đang tải thiết bị…",
+    "empty": "Chưa có thiết bị nào. Thêm thiết bị đầu tiên để bắt đầu.",
     "notFound": "Không tìm thấy thiết bị",
     "deleteConfirm": "Xóa thiết bị này?",
     "delete": "Xóa",
@@ -623,7 +633,7 @@
     "addNew": "Đặt mới",
     "newPageTitle": "Đặt lịch mới",
     "editPageTitle": "Chỉnh sửa lịch đặt",
-    "loading": "Đang tải...",
+    "loading": "Đang tải lịch đặt…",
     "empty": "Chưa có lịch đặt nào. Click \"Đặt mới\" để bắt đầu.",
     "notFound": "Không tìm thấy lịch đặt",
     "deleteConfirm": "Xóa lịch đặt này?",
@@ -682,8 +692,8 @@
   "spectra": {
     "title": "Phổ đo",
     "subtitle": "Quản lý phổ đo cho thí nghiệm",
-    "loading": "Đang tải...",
-    "empty": "Chưa có phổ đo nào. Tải lên để bắt đầu.",
+    "loading": "Đang tải phép đo…",
+    "empty": "Chưa có phép đo nào. Tải lên một phổ để bắt đầu.",
     "upload": "Tải lên",
     "uploading": "Đang tải...",
     "uploadSuccess": "Tải lên thành công",
@@ -898,7 +908,7 @@
     "reactivated": "Đã khôi phục",
     "cannotReactivateRetracted": "Không thể khôi phục bản ghi đã thu hồi (immutable theo chính sách compliance).",
     "cancel": "Hủy",
-    "errorGeneric": "Có lỗi xảy ra"
+    "errorGeneric": "Đã xảy ra sự cố. Vui lòng thử lại."
   },
   "versioning": {
     "loading": "Đang tải lịch sử...",
@@ -912,7 +922,7 @@
   },
   "lineage": {
     "loading": "Đang tải sơ đồ lineage...",
-    "error": "Lỗi tải lineage: {msg}",
+    "error": "Lỗi tải dữ liệu lineage: {msg}",
     "noLineage": "Chưa có quan hệ lineage",
     "title": "Sơ đồ lineage PROV-O",
     "legend": {
@@ -1163,6 +1173,13 @@
       "houseStyleDesc": "Hướng dẫn dạng văn bản tự do, thêm vào system prompt của AI.",
       "save": "Lưu bối cảnh lab",
       "saved": "Đã lưu bối cảnh lab"
+    },
+    "memory": {
+      "title": "Thông tin đã ghi nhớ",
+      "subtitle": "Những gì trợ lý đã học về bạn. Xóa bất cứ điều gì bạn không muốn giữ.",
+      "empty": "Chưa ghi nhớ gì. Bật ghi nhớ ở trên và trò chuyện để trợ lý học.",
+      "delete": "Xóa",
+      "deleted": "Đã xóa"
     }
   }
 }

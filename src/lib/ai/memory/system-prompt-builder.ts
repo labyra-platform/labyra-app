@@ -28,6 +28,7 @@
  */
 import 'server-only';
 import { loadProceduralMemory, loadTenantContext } from './loader';
+import { loadCurrentFacts } from './fact-store';
 import type { AiPreferences, TenantAiContext } from '@/types/memory';
 import type { LLMSystemBlock } from '@/lib/ai/providers/types';
 
@@ -87,11 +88,28 @@ export function renderTenantContext(c: TenantAiContext): string {
   return lines.join('\n');
 }
 
+/** Render L2 semantic facts as a system segment (~300 tokens). NOT cached. */
+export function renderSemanticMemory(facts: Array<{ subject: string; object: unknown }>): string {
+  if (facts.length === 0) return '';
+  const lines = ['# About this user (remembered facts)'];
+  for (const f of facts) {
+    const lbl = f.subject.replace(/^user\./, '').replace(/_/g, ' ');
+    const val = typeof f.object === 'string' ? f.object : JSON.stringify(f.object);
+    lines.push(`- ${lbl}: ${val}`);
+  }
+  lines.push(
+    'Use these only if relevant; the user may correct them. Do not state them back unprompted.'
+  );
+  return lines.join('\n');
+}
+
 interface BuildOpts {
   userId: string;
   tenantId: string;
   /** Dynamic, per-conversation segment (e.g. scoped paper list). Not cached. */
   dynamicBlock?: string | null;
+  /** L2 fact injection only when the user opted in (M2). */
+  enableMemory?: boolean;
 }
 
 /**
@@ -117,6 +135,20 @@ export async function buildSystemPromptWithMemory(
   if (prefs) {
     const text = renderProceduralMemory(prefs).trim();
     if (text) blocks.push({ text, cache: true, cacheTtl: '1h' });
+  }
+
+  // L2 semantic facts — dynamic per user (change each turn) -> NOT cached.
+  // Placed after static prefs/tenant, before per-conversation dynamic scope.
+  if (opts.enableMemory) {
+    try {
+      const facts = await loadCurrentFacts(opts.tenantId, opts.userId, 10);
+      const text = renderSemanticMemory(
+        facts.map((f) => ({ subject: f.subject, object: f.object }))
+      ).trim();
+      if (text) blocks.push({ text, cache: false });
+    } catch {
+      // non-fatal: memory must never break the chat path
+    }
   }
 
   if (opts.dynamicBlock) {

@@ -84,3 +84,7 @@ README.md.bak*
 *.bak18*
 *.bak186*
 .next/dev
+
+# Service account keys (R198 — never commit)
+serviceAccountKey.json
+*-firebase-adminsdk-*.json

@@ -157,7 +157,7 @@ export function MessageInput({
           onClick={() => inputRef.current?.click()}
           disabled={disabled || files.length >= MAX_FILES}
           aria-label={t('attachAdd')}
-          className='flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40'
+          className='flex size-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40'
         >
           <IconPaperclip className='size-5' />
         </button>
@@ -180,7 +180,7 @@ export function MessageInput({
           disabled={!canSend}
           aria-label={t('send')}
           className={cn(
-            'flex size-9 shrink-0 items-center justify-center rounded-full transition-colors',
+            'flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
             canSend
               ? 'bg-primary text-primary-foreground hover:bg-primary/90'
               : 'bg-muted text-muted-foreground'

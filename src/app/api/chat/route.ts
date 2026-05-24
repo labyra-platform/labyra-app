@@ -874,6 +874,31 @@ export async function POST(request: Request) {
             ...(toolCallRecords.length > 0 ? { toolCalls: toolCallRecords } : {})
           });
 
+        // ADR-035 M2 (R197c): fact extraction cho TIER THƯỜNG (T0/T1/T2).
+        // Bug gốc: khối này trước đây CHỈ ở nhánh tier===3, nên chat thường
+        // không bao giờ extract fact. Đặt sau save message, chạy qua after().
+        if (memoryEnabled) {
+          console.warn('[M2-wire2] default-tier after() block', {
+            userTextLen: userText.length,
+            fullTextLen: fullText.length
+          });
+          const _userTurn2 = userText;
+          const _assistantTurn2 = fullText;
+          const _msgId2 = assistantMessageId;
+          const _convId2 = conversationId!;
+          after(async () => {
+            console.warn('[M2-cb] default-tier callback running');
+            await extractFactsAsync({
+              tenantId: tenantId!,
+              userId,
+              conversationId: _convId2,
+              sourceMessageId: _msgId2,
+              userTurn: _userTurn2,
+              assistantTurn: _assistantTurn2
+            });
+          });
+        }
+
         // Conversation aggregate
         const { FieldValue } = await import('firebase-admin/firestore');
         await convRef.update({

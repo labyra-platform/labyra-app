@@ -36,7 +36,11 @@ export function useExperiments() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setExperiments(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Experiment));
+        setExperiments(
+          snap.docs
+            .map((d) => ({ ...d.data(), id: d.id }) as Experiment)
+            .filter((e) => e.lifecycleStatus !== 'deprecated' && e.lifecycleStatus !== 'retracted')
+        );
         setLoading(false);
       },
       (err) => {

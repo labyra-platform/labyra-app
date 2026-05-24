@@ -575,7 +575,13 @@
       "cancelled": "Đã hủy"
     },
     "tabEdit": "Chỉnh sửa",
-    "tabSpectra": "Phổ đo"
+    "tabSpectra": "Phổ đo",
+    "view": "Xem",
+    "actions": "Thao tác",
+    "undo": "Hoàn tác",
+    "toastRestored": "Đã khôi phục",
+    "toastRestoreFailed": "Khôi phục thất bại",
+    "toastBulkDeleted": "Đã xoá {count}"
   },
   "equipment": {
     "title": "Thiết bị",
@@ -859,7 +865,8 @@
     "save": "Lưu",
     "saving": "Đang lưu…",
     "cancel": "Huỷ",
-    "toastUpdated": "Đã cập nhật"
+    "toastUpdated": "Đã cập nhật",
+    "edit": "Sửa"
   },
   "referenceCards": {
     "title": "Reference card library",

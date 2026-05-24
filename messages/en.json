@@ -575,7 +575,13 @@
       "cancelled": "Cancelled"
     },
     "tabEdit": "Edit",
-    "tabSpectra": "Measurements"
+    "tabSpectra": "Measurements",
+    "view": "View",
+    "actions": "Actions",
+    "undo": "Undo",
+    "toastRestored": "Restored",
+    "toastRestoreFailed": "Restore failed",
+    "toastBulkDeleted": "{count} deleted"
   },
   "equipment": {
     "title": "Equipment",
@@ -859,7 +865,8 @@
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
-    "toastUpdated": "Updated"
+    "toastUpdated": "Updated",
+    "edit": "Edit"
   },
   "referenceCards": {
     "title": "Reference card library",

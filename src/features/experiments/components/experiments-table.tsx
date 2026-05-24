@@ -10,6 +10,9 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { useExperiments } from '@/lib/firestore/queries/experiments';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { toast } from 'sonner';
+import { ExperimentsRowActions } from './experiments-row-actions';
 
 const statusColor: Record<string, string> = {
   planned: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
@@ -109,6 +112,36 @@ export function ExperimentsTable() {
     }
   ];
 
+  const bulkDelete = async (ids: string[]) => {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return;
+    const token = await user.getIdToken();
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/experiments/${id}?reason=bulk_delete`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        })
+      )
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    toast.success(t('toastBulkDeleted', { count: ok }), {
+      action: {
+        label: t('undo'),
+        onClick: () => {
+          void Promise.allSettled(
+            ids.map((id) =>
+              fetch(`/api/experiments/${id}/reactivate`, {
+                method: 'POST',
+                headers: { authorization: `Bearer ${token}` }
+              })
+            )
+          );
+        }
+      }
+    });
+  };
+
   return (
     <DataTable<ExperimentRow>
       rows={rows}
@@ -124,6 +157,17 @@ export function ExperimentsTable() {
         if (key === 'startedAt') return formatDate(r.startedAt);
         return null;
       }}
+      selectable
+      renderBulkActions={(ids) => (
+        <button
+          type='button'
+          onClick={() => void bulkDelete(ids)}
+          className='inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10'
+        >
+          {t('delete')} ({ids.length})
+        </button>
+      )}
+      rowActions={(r) => <ExperimentsRowActions id={r.id} name={r.title} />}
     />
   );
 }

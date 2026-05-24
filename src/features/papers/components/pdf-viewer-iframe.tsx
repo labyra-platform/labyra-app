@@ -1,6 +1,6 @@
 'use client';
 
-import { IconAlertCircle, IconArrowLeft, IconDownload, IconLoader2 } from '@tabler/icons-react';
+import { IconAlertCircle, IconArrowLeft, IconDownload } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { usePaper } from '@/lib/firestore/queries/papers';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /**
  * PDF viewer using browser-native iframe (R178-1b-1 V1).
@@ -133,8 +134,11 @@ export function PdfViewerIframe({ paperId }: { paperId: string }) {
           </div>
         )}
         {!urlError && !signed && (
-          <div className='flex h-full items-center justify-center'>
-            <IconLoader2 className='size-6 animate-spin text-muted-foreground' />
+          <div className='flex h-full justify-center p-4'>
+            <Skeleton
+              className='w-full max-w-2xl rounded-md'
+              style={{ aspectRatio: '1 / 1.414' }}
+            />
           </div>
         )}
         {!urlError && signed && (

@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { VersionHistoryViewer } from '@/components/versioning/version-history-viewer';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { usePaper } from '@/lib/firestore/queries/papers';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CANCELLABLE_STATUSES, TERMINAL_STATUSES } from '@/types/papers';
 import { CitationsSection } from './citations-section'; // R166-6b-1
 import { ProcessingTimeline } from './processing-timeline';
@@ -58,8 +59,35 @@ export function PaperDetail({ paperId }: { paperId: string }) {
 
   if (loading) {
     return (
-      <div className='flex items-center justify-center py-12'>
-        <IconLoader2 className='size-6 animate-spin text-muted-foreground' />
+      <div className='space-y-6'>
+        {/* header */}
+        <div className='space-y-3'>
+          <Skeleton className='h-7 w-3/4' />
+          <div className='flex flex-wrap gap-2'>
+            <Skeleton className='h-5 w-24' />
+            <Skeleton className='h-5 w-20' />
+            <Skeleton className='h-5 w-28' />
+          </div>
+        </div>
+        {/* domain badges */}
+        <div className='space-y-2'>
+          <Skeleton className='h-4 w-20' />
+          <div className='flex flex-wrap gap-2'>
+            <Skeleton className='h-6 w-24 rounded-md' />
+            <Skeleton className='h-6 w-20 rounded-md' />
+          </div>
+        </div>
+        {/* timeline / metadata block */}
+        <div className='space-y-3'>
+          <Skeleton className='h-4 w-32' />
+          <Skeleton className='h-24 w-full rounded-lg' />
+        </div>
+        <div className='space-y-2'>
+          <Skeleton className='h-4 w-28' />
+          <Skeleton className='h-4 w-full' />
+          <Skeleton className='h-4 w-5/6' />
+          <Skeleton className='h-4 w-2/3' />
+        </div>
       </div>
     );
   }

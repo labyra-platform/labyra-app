@@ -21,6 +21,7 @@ import {
 import { type ReactNode, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface DataTableColumn<T> {
   key: string;
@@ -49,6 +50,14 @@ interface DataTableProps<T> {
   exportFilename?: string;
   /** Custom value extractor for export (default: use column.cell as string) */
   exportValue?: (row: T, columnKey: string) => string | number | null;
+  /** #7: show a leading checkbox column for multi-row selection (opt-in). */
+  selectable?: boolean;
+  /** Called whenever selection changes (selected row keys). */
+  onSelectionChange?: (selectedKeys: string[]) => void;
+  /** Render a bulk-action bar shown above the table when rows are selected. */
+  renderBulkActions?: (selectedKeys: string[]) => ReactNode;
+  /** #7: trailing per-row actions (caller builds a kebab DropdownMenu). */
+  rowActions?: (row: T) => ReactNode;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -64,9 +73,14 @@ export function DataTable<T>({
   footer,
   emptyMessage = 'No data.',
   exportFilename,
-  exportValue
+  exportValue,
+  selectable = false,
+  onSelectionChange,
+  renderBulkActions,
+  rowActions
 }: DataTableProps<T>) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
   const [sortDir, setSortDir] = useState<SortDirection>(defaultSort?.direction ?? null);
 
@@ -99,6 +113,23 @@ export function DataTable<T>({
       setSortKey(null);
       setSortDir(null);
     }
+  };
+
+  const emitSelection = (next: Set<string>) => {
+    setSelectedKeys(next);
+    onSelectionChange?.([...next]);
+  };
+  const toggleRow = (key: string) => {
+    const next = new Set(selectedKeys);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    emitSelection(next);
+  };
+  const allKeys = sortedRows.map((r, i) => rowKey(r, i));
+  const allSelected = allKeys.length > 0 && allKeys.every((k) => selectedKeys.has(k));
+  const someSelected = allKeys.some((k) => selectedKeys.has(k));
+  const toggleAll = () => {
+    emitSelection(allSelected ? new Set() : new Set(allKeys));
   };
 
   const handleExport = () => {
@@ -174,6 +205,22 @@ export function DataTable<T>({
           </div>
         </div>
       )}
+      {!collapsed && selectable && selectedKeys.size > 0 && (
+        <div className='flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2'>
+          <span className='text-xs text-muted-foreground'>{selectedKeys.size} selected</span>
+          <div className='flex items-center gap-2'>
+            {renderBulkActions?.([...selectedKeys])}
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => emitSelection(new Set())}
+              className='h-7 text-xs'
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
       {!collapsed && (
         <>
           {sortedRows.length === 0 ? (
@@ -183,6 +230,15 @@ export function DataTable<T>({
               <table className='w-full text-xs'>
                 <thead className='sticky top-0 bg-muted/80 backdrop-blur'>
                   <tr>
+                    {selectable && (
+                      <th className='w-8 px-2 py-2'>
+                        <Checkbox
+                          checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                          onCheckedChange={toggleAll}
+                          aria-label='Select all'
+                        />
+                      </th>
+                    )}
                     {columns.map((col) => (
                       <th
                         key={col.key}
@@ -203,18 +259,34 @@ export function DataTable<T>({
                         )}
                       </th>
                     ))}
+                    {rowActions && <th className='w-8 px-2 py-2' aria-label='Actions' />}
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedRows.map((row, idx) => (
-                    <tr key={rowKey(row, idx)} className='border-t hover:bg-muted/30'>
-                      {columns.map((col) => (
-                        <td key={col.key} className={col.cellClassName ?? 'px-2 py-1.5'}>
-                          {col.cell(row, idx)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {sortedRows.map((row, idx) => {
+                    const key = rowKey(row, idx);
+                    return (
+                      <tr key={key} className='border-t hover:bg-muted/30'>
+                        {selectable && (
+                          <td className='px-2 py-1.5'>
+                            <Checkbox
+                              checked={selectedKeys.has(key)}
+                              onCheckedChange={() => toggleRow(key)}
+                              aria-label='Select row'
+                            />
+                          </td>
+                        )}
+                        {columns.map((col) => (
+                          <td key={col.key} className={col.cellClassName ?? 'px-2 py-1.5'}>
+                            {col.cell(row, idx)}
+                          </td>
+                        ))}
+                        {rowActions && (
+                          <td className='px-2 py-1.5 text-right'>{rowActions(row)}</td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

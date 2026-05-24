@@ -836,7 +836,7 @@
     "formulaPlaceholder": "Formula (e.g. WO3)",
     "notFound": "Spectrum not found",
     "delete": "Delete",
-    "deleteConfirm": "Delete this spectrum permanently?",
+    "deleteConfirm": "Delete this measurement? You can undo.",
     "toastDeleted": "Spectrum deleted",
     "demo": {
       "button": "Try demo data",
@@ -846,7 +846,13 @@
       "hint": "No data yet? Try a prepared XRD sample.",
       "syntheticBadge": "Simulated"
     },
-    "uploadFromSampleHint": "Measurements are uploaded from each sample. This list shows all measurements linked to this experiment."
+    "uploadFromSampleHint": "Measurements are uploaded from each sample. This list shows all measurements linked to this experiment.",
+    "actions": "Actions",
+    "view": "View",
+    "undo": "Undo",
+    "toastRestored": "Restored",
+    "toastRestoreFailed": "Restore failed",
+    "toastBulkDeleted": "{count} deleted"
   },
   "referenceCards": {
     "title": "Reference card library",

@@ -10,6 +10,9 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { useAllSpectra } from '@/lib/firestore/queries/spectra';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { toast } from 'sonner';
+import { SpectraRowActions } from './spectra-row-actions';
 import type { SpectrumStatus } from '@/types/spectra';
 
 const statusColor: Record<SpectrumStatus, string> = {
@@ -120,6 +123,36 @@ export function SpectraTableAll() {
     }
   ];
 
+  const bulkDelete = async (ids: string[]) => {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return;
+    const token = await user.getIdToken();
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/measurements/${id}?reason=bulk_delete`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        })
+      )
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    toast.success(t('toastBulkDeleted', { count: ok }), {
+      action: {
+        label: t('undo'),
+        onClick: () => {
+          void Promise.allSettled(
+            ids.map((id) =>
+              fetch(`/api/measurements/${id}/reactivate`, {
+                method: 'POST',
+                headers: { authorization: `Bearer ${token}` }
+              })
+            )
+          );
+        }
+      }
+    });
+  };
+
   return (
     <DataTable<SpectrumRow>
       rows={rows}
@@ -136,6 +169,17 @@ export function SpectraTableAll() {
         if (key === 'measuredAt') return formatDateTime(r.measuredAt);
         return null;
       }}
+      selectable
+      renderBulkActions={(ids) => (
+        <button
+          type='button'
+          onClick={() => void bulkDelete(ids)}
+          className='inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10'
+        >
+          {t('delete')} ({ids.length})
+        </button>
+      )}
+      rowActions={(r) => <SpectraRowActions id={r.id} name={r.originalFilename} />}
     />
   );
 }

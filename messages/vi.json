@@ -836,7 +836,7 @@
     "formulaPlaceholder": "CT (vd: WO3)",
     "notFound": "Không tìm thấy phổ",
     "delete": "Xóa",
-    "deleteConfirm": "Xóa phổ này vĩnh viễn?",
+    "deleteConfirm": "Xoá phép đo này? Có thể hoàn tác.",
     "toastDeleted": "Đã xóa phổ",
     "demo": {
       "button": "Thử với dữ liệu mẫu",
@@ -846,7 +846,13 @@
       "hint": "Chưa có dữ liệu? Thử với mẫu XRD đã chuẩn bị sẵn.",
       "syntheticBadge": "Mô phỏng"
     },
-    "uploadFromSampleHint": "Phép đo được upload từ từng mẫu. Danh sách này hiển thị mọi phép đo gắn với thí nghiệm."
+    "uploadFromSampleHint": "Phép đo được upload từ từng mẫu. Danh sách này hiển thị mọi phép đo gắn với thí nghiệm.",
+    "actions": "Thao tác",
+    "view": "Xem",
+    "undo": "Hoàn tác",
+    "toastRestored": "Đã khôi phục",
+    "toastRestoreFailed": "Khôi phục thất bại",
+    "toastBulkDeleted": "Đã xoá {count}"
   },
   "referenceCards": {
     "title": "Reference card library",

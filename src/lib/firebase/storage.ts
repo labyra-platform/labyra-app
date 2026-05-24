@@ -96,6 +96,20 @@ export function measurementThumbnailPath(tenantId: string, measurementId: string
   return `tenants/${tenantId}/spectra/${measurementId}/thumbnail.jpg`;
 }
 
+/**
+ * ADR-036: chat image attachment path.
+ * tenants/{tid}/chat-attachments/{convId}/{attachmentId}.{ext}
+ */
+export function chatAttachmentPath(
+  tenantId: string,
+  conversationId: string,
+  attachmentId: string,
+  ext: string
+): string {
+  const safeExt = ext.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'bin';
+  return `tenants/${tenantId}/chat-attachments/${conversationId}/${attachmentId}.${safeExt}`;
+}
+
 /** @deprecated Use measurementRawPath. R164 alias for R160-R163 callers. */
 export function spectrumRawPath(tenantId: string, spectrumId: string, filename: string): string {
   return measurementRawPath(tenantId, spectrumId, filename);
@@ -136,6 +150,15 @@ export async function getSignedUploadUrl(
 }
 
 /** Verify a file exists in Storage at the given path */
+/**
+ * ADR-036: download a storage object as a Buffer (for base64 inlining).
+ */
+export async function downloadBuffer(storagePath: string): Promise<Buffer> {
+  const bucket = getAdminStorageService().bucket();
+  const [buf] = await bucket.file(storagePath).download();
+  return buf;
+}
+
 export async function fileExists(storagePath: string): Promise<boolean> {
   const bucket = getAdminStorageService().bucket();
   const file = bucket.file(storagePath);

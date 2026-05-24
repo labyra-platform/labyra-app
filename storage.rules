@@ -17,6 +17,13 @@ service firebase.storage {
       allow write: if false;
     }
 
+    // Chat attachments: tenant-scoped images (ADR-036). Read for tenant members;
+    // writes via signed upload URL only.
+    match /tenants/{tenantId}/chat-attachments/{path=**} {
+      allow read: if isAuthenticated() && isTenantMember(tenantId);
+      allow write: if false;
+    }
+
     // Default deny
     match /{allPaths=**} {
       allow read, write: if false;

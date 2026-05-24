@@ -14,6 +14,7 @@ import { CitationChip } from './citation-chip';
 import { CitationModal } from './citation-modal';
 import { GroundingWarning } from './grounding-warning';
 import { AuditPanel } from './audit-panel';
+import { MessageAttachments } from './message-attachments';
 
 // R176-2a-hotfix-role-labels
 // Role-based labels decouple UI from model identity. Researcher sees what
@@ -152,7 +153,12 @@ export function MessageBubble({
         )}
       >
         {isUser ? (
-          <p className='whitespace-pre-wrap'>{message.content}</p>
+          <>
+            {message.attachments && message.attachments.length > 0 && (
+              <MessageAttachments attachments={message.attachments} />
+            )}
+            {message.content && <p className='whitespace-pre-wrap'>{message.content}</p>}
+          </>
         ) : (
           <>
             {message.tier && <TierBadge tier={message.tier} />}

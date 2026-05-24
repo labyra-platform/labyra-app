@@ -43,6 +43,8 @@ export interface AiMessage {
   /** Reflection iterations for T3 messages (R160-ai-4) */
   /** Grounding warnings (R160-ai-5e-1) */
   grounding?: GroundingDetails;
+  /** ADR-036: image attachments on a user message */
+  attachments?: ChatAttachment[];
   reflectionHistory?: Array<{
     round: number;
     response: string;
@@ -129,10 +131,21 @@ export interface AiConversation {
   selectedPaperIds?: string[];
 }
 
+/** ADR-036: chat image attachment reference (stored, not inlined) */
+export interface ChatAttachment {
+  storagePath: string;
+  mimeType: string;
+  name: string;
+  /** ADR-036: client-only blob: URL for instant preview (not persisted) */
+  previewUrl?: string;
+}
+
 /** Updated chat request — conversationId optional (auto-create if missing) */
 export interface ChatRequestBodyV2 {
   message: string;
   conversationId?: string;
+  /** ADR-036: image attachments (phase 2a). Max 4. */
+  attachments?: ChatAttachment[];
 }
 
 /** Server-sent event payload v2 — adds conversationId for client to track */

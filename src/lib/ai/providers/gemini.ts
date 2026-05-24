@@ -92,6 +92,8 @@ type LabyraBlock = {
   tool_use_id?: string;
   content?: unknown;
   thoughtSignature?: string; // R176-2bc-thought-signature
+  mimeType?: string; // ADR-036: image block
+  data?: string; // ADR-036: image block (base64)
 };
 
 function buildHistory(messages: LLMStreamRequest['messages']): Content[] {
@@ -126,6 +128,9 @@ function buildHistory(messages: LLMStreamRequest['messages']): Content[] {
     for (const b of blocks) {
       if (b.type === 'text' && typeof b.text === 'string') {
         parts.push({ text: b.text });
+      } else if (b.type === 'image' && b.mimeType && b.data) {
+        // ADR-036: inline image for vision
+        parts.push({ inlineData: { mimeType: b.mimeType, data: b.data } });
       } else if (b.type === 'tool_use') {
         // R176-2bc-thought-signature: attach signature to part if persisted
         const part: Part = {
@@ -188,6 +193,9 @@ function buildCurrentTurnParts(content: unknown): Part[] {
       });
     } else if (b?.type === 'text' && typeof b.text === 'string') {
       parts.push({ text: b.text });
+    } else if (b?.type === 'image' && b.mimeType && b.data) {
+      // ADR-036: inline image for vision
+      parts.push({ inlineData: { mimeType: b.mimeType, data: b.data } });
     }
   }
   return parts.length > 0 ? parts : [{ text: '' }];

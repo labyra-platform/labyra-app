@@ -5,6 +5,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { calculateCost } from './cost-calculator';
 import type {
+  LLMMessage,
   LLMProvider,
   LLMProviderId,
   LLMStreamEvent,
@@ -52,13 +53,36 @@ function toAnthropicTools(tools: LLMToolDefinition[]) {
   }));
 }
 
+/**
+ * ADR-036: map our LLMContentBlock image -> Anthropic SDK image block.
+ * { type:'image', mimeType, data } -> { type:'image', source:{ type:'base64', media_type, data } }
+ * text blocks + string content pass through unchanged.
+ */
+function toAnthropicContent(content: LLMMessage['content']) {
+  if (typeof content === 'string') return content;
+  return content.map((b) => {
+    if (b.type === 'image') {
+      return {
+        type: 'image' as const,
+        source: { type: 'base64' as const, media_type: b.mimeType, data: b.data }
+      };
+    }
+    return { type: 'text' as const, text: b.text };
+  });
+}
+
 /** Build Anthropic messages array including tool_use + tool_result blocks */
 function buildAnthropicMessages(request: LLMStreamRequest) {
+  // ADR-036: transform multimodal content (image blocks) to SDK format
+  const mapped = request.messages.map((m) => ({
+    role: m.role,
+    content: toAnthropicContent(m.content)
+  }));
   // If toolResults supplied, attach to the last assistant message as tool_result blocks
   // The caller is responsible for including the assistant tool_use turn in messages.
   if (request.toolResults && request.toolResults.length > 0) {
     return [
-      ...request.messages,
+      ...mapped,
       {
         role: 'user' as const,
         content: request.toolResults.map((tr) => ({
@@ -70,7 +94,7 @@ function buildAnthropicMessages(request: LLMStreamRequest) {
       }
     ];
   }
-  return request.messages;
+  return mapped;
 }
 
 export class AnthropicProvider implements LLMProvider {

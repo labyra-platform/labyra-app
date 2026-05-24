@@ -223,7 +223,11 @@
     "errorBusy": "Labyra đang xử lý nhiều yêu cầu. Vui lòng thử lại sau ít phút.",
     "errorTimeout": "Quá thời gian phản hồi. Vui lòng chọn ít tài liệu hơn hoặc chia nhỏ câu hỏi.",
     "errorGeneric": "Hệ thống vừa gặp sự cố gián đoạn. Vui lòng thử lại.",
-    "retry": "Thử lại"
+    "retry": "Thử lại",
+    "send": "Gửi",
+    "attachAdd": "Đính ảnh",
+    "attachRemove": "Xoá",
+    "attachDrop": "Thả ảnh để đính kèm"
   },
   "papers": {
     "uploadPageTitle": "Tải lên paper",

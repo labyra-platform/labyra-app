@@ -223,7 +223,11 @@
     "errorBusy": "Labyra is handling a lot of requests right now. Please try again in a few minutes.",
     "errorTimeout": "This took too long. Try selecting fewer papers or breaking up your question.",
     "errorGeneric": "Something interrupted the system. Please try again.",
-    "retry": "Retry"
+    "retry": "Retry",
+    "send": "Send",
+    "attachAdd": "Attach image",
+    "attachRemove": "Remove",
+    "attachDrop": "Drop images to attach"
   },
   "papers": {
     "uploadPageTitle": "Upload paper",

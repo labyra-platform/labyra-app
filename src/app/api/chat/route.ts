@@ -35,6 +35,7 @@ import { executeToolCall } from '@/lib/ai/tools/dispatch';
 import { getToolDefinitions } from '@/lib/ai/tools/registry';
 import { getTenantIdFromToken, getGroupIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { downloadBuffer } from '@/lib/firebase/storage';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiCostBreakdown, AiTier, ChatRequestBodyV2, ChatStreamEventV2 } from '@/types/ai';
 
@@ -185,6 +186,16 @@ export async function POST(request: Request) {
   }
 
   const userText = body.message;
+
+  // ADR-036: validate image attachments (phase 2a — max 4, path must belong
+  // to this tenant's chat-attachments to prevent cross-tenant traversal).
+  const rawAttachments = Array.isArray(body.attachments) ? body.attachments : [];
+  if (rawAttachments.length > 4) {
+    return new Response(JSON.stringify({ error: 'too_many_attachments', max: 4 }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' }
+    });
+  }
   const db = getAdminFirestoreService();
   const tenantRef = db.collection('tenants').doc(tenantId);
 
@@ -292,13 +303,25 @@ export async function POST(request: Request) {
     }
   }
 
+  // ADR-036: keep only attachments whose path belongs to this tenant + conversation
+  const attachmentPrefix = `tenants/${tenantId}/chat-attachments/${conversationId}/`;
+  const safeAttachments = rawAttachments.filter(
+    (a) =>
+      a &&
+      typeof a.storagePath === 'string' &&
+      a.storagePath.startsWith(attachmentPrefix) &&
+      typeof a.mimeType === 'string' &&
+      a.mimeType.startsWith('image/')
+  );
+
   // Save user message
   const userMessageRef = convRef.collection('messages').doc();
   await userMessageRef.set({
     role: 'user',
     content: userText,
     createdAt: now,
-    userId
+    userId,
+    ...(safeAttachments.length > 0 ? { attachments: safeAttachments } : {})
   });
 
   // R160-ai-5e-2 L6: OOD check — bail early on off-topic queries
@@ -421,7 +444,9 @@ export async function POST(request: Request) {
       }
     });
   }
-  const tier: AiTier = intentDecision.tier;
+  // ADR-036: vision needs >= T1 (gemini-3-flash). T0 flash-lite vision weak.
+  const tier: AiTier =
+    safeAttachments.length > 0 && intentDecision.tier < 1 ? 1 : intentDecision.tier;
   const { provider, config } = selectProvider(tier);
 
   const assistantMessageId = convRef.collection('messages').doc().id;
@@ -651,10 +676,26 @@ export async function POST(request: Request) {
         } catch (err) {
           console.error('history_load_failed', err);
         }
+        // ADR-036: load image attachments -> base64 blocks for the current user turn
+        const imageBlocks = await Promise.all(
+          safeAttachments.map(async (a) => {
+            const buf = await downloadBuffer(a.storagePath);
+            return {
+              type: 'image' as const,
+              mimeType: a.mimeType,
+              data: buf.toString('base64')
+            };
+          })
+        );
+        const currentUserContent =
+          imageBlocks.length > 0
+            ? [{ type: 'text' as const, text: userText }, ...imageBlocks]
+            : userText;
+
         // Multi-round conversation: each round may emit tool_use → execute → feed back
         let conversationMessages: LLMMessage[] = [
           ...priorHistory,
-          { role: 'user', content: userText }
+          { role: 'user', content: currentUserContent }
         ];
         let pendingToolResults:
           | Array<{ toolCallId: string; result: unknown; isError?: boolean }>

@@ -75,7 +75,7 @@ export function PaperSelectorPanel({
   return (
     <aside
       className={cn(
-        'flex shrink-0 flex-col border-l bg-background transition-[width] duration-200 ease-in-out',
+        'flex min-h-0 shrink-0 flex-col border-l bg-background transition-[width] duration-200 ease-in-out',
         isOpen ? 'w-80' : 'w-12'
       )}
       aria-label={t('paperSelectorLabel')}

@@ -7,7 +7,7 @@ import { getFirebaseAuth } from '@/lib/firebase/client';
  * @phase R160-ai-2a
  */
 import { useCallback, useRef, useState } from 'react';
-import type { AiCostBreakdown, AiMessage, ChatStreamEventV2 } from '@/types/ai';
+import type { AiCostBreakdown, AiMessage, ChatAttachment, ChatStreamEventV2 } from '@/types/ai';
 
 export interface UseChatStreamResult {
   messages: AiMessage[];
@@ -16,7 +16,7 @@ export interface UseChatStreamResult {
   lastUsage: AiCostBreakdown | null;
   sessionUsage: AiCostBreakdown;
   conversationId: string | null;
-  send: (text: string) => Promise<void>;
+  send: (text: string, files?: File[]) => Promise<void>;
   reset: () => void;
   loadConversation: (messages: AiMessage[], conversationId: string) => void;
 }
@@ -68,17 +68,73 @@ export function useChatStream(): UseChatStreamResult {
   }, []);
 
   const send = useCallback(
-    async (text: string) => {
-      if (!text.trim() || isStreaming) return;
+    async (text: string, files: File[] = []) => {
+      if ((!text.trim() && files.length === 0) || isStreaming) return;
 
       setError(null);
       setIsStreaming(true);
+
+      // ADR-036: ensure a conversationId BEFORE uploading attachments
+      // (route get-or-creates by this id; upload path needs it).
+      let convId = conversationId;
+      if (files.length > 0 && !convId) {
+        convId = crypto.randomUUID();
+        setConversationId(convId);
+      }
+
+      // ADR-036: upload images via signed URL, collect refs.
+      const attachments: ChatAttachment[] = [];
+      const previewUrls: string[] = [];
+      try {
+        if (files.length > 0 && convId) {
+          const authUser = getFirebaseAuth().currentUser;
+          if (!authUser) throw new Error('not_authenticated');
+          const tok = await authUser.getIdToken();
+          for (const file of files) {
+            const sigRes = await fetch('/api/chat/attachment-url', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json', authorization: `Bearer ${tok}` },
+              body: JSON.stringify({
+                conversationId: convId,
+                contentType: file.type,
+                sizeBytes: file.size,
+                name: file.name
+              })
+            });
+            if (!sigRes.ok) throw new Error(`attachment_upload_failed_${sigRes.status}`);
+            const { signedUploadUrl, storagePath } = (await sigRes.json()) as {
+              signedUploadUrl: string;
+              storagePath: string;
+            };
+            const put = await fetch(signedUploadUrl, {
+              method: 'PUT',
+              headers: { 'content-type': file.type },
+              body: file
+            });
+            if (!put.ok) throw new Error(`attachment_put_failed_${put.status}`);
+            attachments.push({ storagePath, mimeType: file.type, name: file.name });
+            previewUrls.push(URL.createObjectURL(file));
+          }
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'attachment_error');
+        setIsStreaming(false);
+        return;
+      }
 
       const userMsg: AiMessage = {
         id: `user-${Date.now()}`,
         role: 'user',
         content: text,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ...(attachments.length > 0
+          ? {
+              attachments: attachments.map((a, i) => ({
+                ...a,
+                previewUrl: previewUrls[i]
+              }))
+            }
+          : {})
       };
 
       const assistantMsg: AiMessage = {
@@ -104,7 +160,7 @@ export function useChatStream(): UseChatStreamResult {
             'content-type': 'application/json',
             authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ message: text, conversationId }),
+          body: JSON.stringify({ message: text, conversationId: convId, attachments }),
           signal: controller.signal
         });
 

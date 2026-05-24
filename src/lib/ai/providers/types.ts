@@ -12,10 +12,31 @@
 
 import type { AiCostBreakdown, AiTier } from '@/types/ai';
 
+/**
+ * Content block (ADR-036 R200): multimodal message content.
+ * `text` = plain text segment. `image` = inline image for vision models.
+ * tool_use / tool_result blocks are handled provider-side (LabyraBlock) and
+ * not part of this user-facing union.
+ */
+export type LLMContentBlock =
+  | { type: 'text'; text: string }
+  | {
+      type: 'image';
+      /** MIME type e.g. 'image/png', 'image/jpeg', 'image/webp', 'image/gif' */
+      mimeType: string;
+      /** Base64-encoded image bytes (no data: prefix) */
+      data: string;
+    };
+
 /** Standard chat message shape, provider-agnostic */
 export interface LLMMessage {
   role: 'user' | 'assistant';
-  content: string;
+  /**
+   * string for plain text (legacy + common case), or block array for
+   * multimodal turns (text + image). Providers map blocks to their native
+   * format (Gemini parts / Anthropic content blocks).
+   */
+  content: string | LLMContentBlock[];
 }
 
 /** Static block in system prompt that can be cached */

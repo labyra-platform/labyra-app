@@ -89,7 +89,7 @@ export function MessageList({
     <div
       ref={scrollRef}
       onScroll={handleScroll}
-      className='flex-1 space-y-4 overflow-y-auto rounded-lg border bg-card p-4 scroll-smooth'
+      className='flex-1 space-y-6 overflow-y-auto px-1 py-2 scroll-smooth'
     >
       {messages.length === 0 ? (
         <p className='text-muted-foreground py-8 text-center text-sm'>{t('emptyHistory')}</p>

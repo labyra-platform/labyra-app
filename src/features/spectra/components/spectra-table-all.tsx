@@ -1,15 +1,14 @@
+/**
+ * SpectraTableAll — sortable + Excel export via shared DataTable.
+ *
+ * R202: migrated from raw shadcn Table to DataTable (ui-extra) for consistency
+ * with experiments/samples/materials tables. Empty cells render as '—' (UX #6).
+ */
 'use client';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { useAllSpectra } from '@/lib/firestore/queries/spectra';
 import type { SpectrumStatus } from '@/types/spectra';
 
@@ -22,9 +21,25 @@ const statusColor: Record<SpectrumStatus, string> = {
 };
 
 function formatSize(bytes: number): string {
+  if (!bytes) return '—';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function formatDateTime(ms: number | undefined): string {
+  if (!ms) return '—';
+  return new Date(ms).toLocaleString();
+}
+
+interface SpectrumRow {
+  id: string;
+  originalFilename: string;
+  spectrumType: string;
+  group: string;
+  sizeBytes: number;
+  status: SpectrumStatus;
+  measuredAt: number | undefined;
 }
 
 export function SpectraTableAll() {
@@ -38,52 +53,89 @@ export function SpectraTableAll() {
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
   }
-
   if (spectra.length === 0) {
     return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
+  const safeType = (k: string): string => (tType.has(k) ? tType(k) : k);
+  const safeGroup = (k: string): string => (tGroup.has(k) ? tGroup(k) : k);
+  const safeStatus = (k: string): string => (tStatus.has(k) ? tStatus(k) : k);
+
+  const rows: SpectrumRow[] = spectra.map((s) => ({
+    id: s.id,
+    originalFilename: s.originalFilename,
+    spectrumType: s.spectrumType,
+    group: s.group,
+    sizeBytes: s.sizeBytes,
+    status: s.status,
+    measuredAt: s.measuredAt
+  }));
+
+  const columns: DataTableColumn<SpectrumRow>[] = [
+    {
+      key: 'filename',
+      header: t('colFilename'),
+      cell: (r) => (
+        <Link href={`/${locale}/dashboard/spectra/${r.id}`} className='font-medium hover:underline'>
+          {r.originalFilename || '—'}
+        </Link>
+      ),
+      sortValue: (r) => r.originalFilename
+    },
+    {
+      key: 'type',
+      header: t('colType'),
+      cell: (r) => safeType(r.spectrumType),
+      sortValue: (r) => safeType(r.spectrumType)
+    },
+    {
+      key: 'group',
+      header: t('colGroup'),
+      cell: (r) => <span className='text-muted-foreground'>{safeGroup(r.group)}</span>,
+      sortValue: (r) => safeGroup(r.group)
+    },
+    {
+      key: 'size',
+      header: t('colSize'),
+      cell: (r) => (
+        <span className='text-muted-foreground tabular-nums'>{formatSize(r.sizeBytes)}</span>
+      ),
+      sortValue: (r) => r.sizeBytes ?? 0
+    },
+    {
+      key: 'status',
+      header: t('colStatus'),
+      cell: (r) => (
+        <Badge className={statusColor[r.status] ?? 'bg-muted'} variant='secondary'>
+          {safeStatus(r.status)}
+        </Badge>
+      ),
+      sortValue: (r) => safeStatus(r.status)
+    },
+    {
+      key: 'measuredAt',
+      header: t('colMeasuredAt'),
+      cell: (r) => <span className='text-muted-foreground'>{formatDateTime(r.measuredAt)}</span>,
+      sortValue: (r) => r.measuredAt ?? 0
+    }
+  ];
+
   return (
-    <div className='rounded-lg border'>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('colFilename')}</TableHead>
-            <TableHead>{t('colType')}</TableHead>
-            <TableHead>{t('colGroup')}</TableHead>
-            <TableHead>{t('colSize')}</TableHead>
-            <TableHead>{t('colStatus')}</TableHead>
-            <TableHead>{t('colMeasuredAt')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {spectra.map((s) => (
-            <TableRow key={s.id}>
-              <TableCell>
-                <Link
-                  href={`/${locale}/dashboard/spectra/${s.id}`}
-                  className='font-medium hover:underline'
-                >
-                  {s.originalFilename}
-                </Link>
-              </TableCell>
-              <TableCell>{tType(s.spectrumType)}</TableCell>
-              <TableCell className='text-muted-foreground'>{tGroup(s.group)}</TableCell>
-              <TableCell className='text-muted-foreground tabular-nums'>
-                {formatSize(s.sizeBytes)}
-              </TableCell>
-              <TableCell>
-                <Badge className={statusColor[s.status]} variant='secondary'>
-                  {tStatus(s.status)}
-                </Badge>
-              </TableCell>
-              <TableCell className='text-muted-foreground'>
-                {new Date(s.measuredAt).toLocaleString()}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable<SpectrumRow>
+      rows={rows}
+      columns={columns}
+      rowKey={(r) => r.id}
+      defaultSort={{ key: 'measuredAt', direction: 'desc' }}
+      exportFilename='measurements'
+      exportValue={(r, key) => {
+        if (key === 'filename') return r.originalFilename;
+        if (key === 'type') return safeType(r.spectrumType);
+        if (key === 'group') return safeGroup(r.group);
+        if (key === 'size') return formatSize(r.sizeBytes);
+        if (key === 'status') return safeStatus(r.status);
+        if (key === 'measuredAt') return formatDateTime(r.measuredAt);
+        return null;
+      }}
+    />
   );
 }

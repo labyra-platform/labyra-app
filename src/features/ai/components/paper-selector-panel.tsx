@@ -153,7 +153,7 @@ export function PaperSelectorPanel({
             )}
           </div>
 
-          <ScrollArea className='flex-1'>
+          <ScrollArea className='h-0 flex-1'>
             <div className='space-y-1 p-2'>
               {papersLoading &&
                 Array.from({ length: 4 }).map((_, i) => (

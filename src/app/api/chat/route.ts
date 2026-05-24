@@ -138,12 +138,6 @@ export async function POST(request: Request) {
     const { loadProceduralMemory } = await import('@/lib/ai/memory/loader');
     const prefsForMem = await loadProceduralMemory(userId);
     memoryEnabled = prefsForMem?.enableMemory === true;
-    console.warn('[M2-gate]', {
-      memoryEnabled,
-      userId,
-      hasPrefs: prefsForMem != null,
-      enableMemoryRaw: prefsForMem?.enableMemory
-    });
   } catch {
     /* non-fatal */
   }
@@ -552,15 +546,10 @@ export async function POST(request: Request) {
           // via after(), unlike bare fire-and-forget which Vercel would kill).
           if (memoryEnabled) {
             const _userTurn = userText;
-            console.warn('[M2-wire] reached after() block', {
-              userTextLen: userText.length,
-              fullTextLen: fullText.length
-            });
             const _assistantTurn = fullText;
             const _msgId = assistantMessageId;
             const _convId = conversationId!;
             after(async () => {
-              console.warn('[M2-cb] after() callback running');
               await extractFactsAsync({
                 tenantId: tenantId!,
                 userId,
@@ -878,16 +867,11 @@ export async function POST(request: Request) {
         // Bug gốc: khối này trước đây CHỈ ở nhánh tier===3, nên chat thường
         // không bao giờ extract fact. Đặt sau save message, chạy qua after().
         if (memoryEnabled) {
-          console.warn('[M2-wire2] default-tier after() block', {
-            userTextLen: userText.length,
-            fullTextLen: fullText.length
-          });
           const _userTurn2 = userText;
           const _assistantTurn2 = fullText;
           const _msgId2 = assistantMessageId;
           const _convId2 = conversationId!;
           after(async () => {
-            console.warn('[M2-cb] default-tier callback running');
             await extractFactsAsync({
               tenantId: tenantId!,
               userId,

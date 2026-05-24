@@ -30,29 +30,20 @@ export async function extractFactsAsync(opts: {
   assistantTurn: string;
 }): Promise<void> {
   try {
-    console.warn('[M2] entered extractFactsAsync', {
-      tenantId: opts.tenantId,
-      userId: opts.userId,
-      turnLen: opts.userTurn.length
-    });
     // 1. Opt-in gate (ADR-035: memory OFF by default).
     const prefs = await loadProceduralMemory(opts.userId);
     if (prefs?.enableMemory !== true) {
-      console.warn('[M2] STOP: enableMemory not true', prefs?.enableMemory);
       return;
     }
-    console.warn('[M2] opt-in ok');
 
     // Skip trivially short turns — nothing durable to extract.
     if (opts.userTurn.trim().length < 8) {
-      console.warn('[M2] STOP: turn too short');
       return;
     }
 
     // 2. Existing facts for dedupe.
     const existing = await loadCurrentFacts(opts.tenantId, opts.userId, 50);
     const existingBrief = existing.map((f) => ({ subject: f.subject, object: f.object }));
-    console.warn('[M2] existing facts loaded', existing.length);
 
     // 3. Extract.
     const { facts, costUsd } = await extractFacts({
@@ -61,13 +52,6 @@ export async function extractFactsAsync(opts: {
       existingFacts: existingBrief
     });
 
-    console.warn(
-      '[M2] extracted',
-      facts.length,
-      'facts; costUsd',
-      costUsd,
-      JSON.stringify(facts).slice(0, 300)
-    );
     // 4. Persist (supersede + cap + audit).
     if (facts.length > 0) {
       await upsertFacts({
@@ -77,9 +61,6 @@ export async function extractFactsAsync(opts: {
         sourceMessageId: opts.sourceMessageId,
         facts
       });
-      console.warn('[M2] upserted', facts.length, 'facts to Firestore');
-    } else {
-      console.warn('[M2] no facts to upsert (extractor returned 0)');
     }
 
     // 5. Telemetry (best-effort; recordCost skips when costUsd <= 0).
@@ -94,10 +75,7 @@ export async function extractFactsAsync(opts: {
       });
     }
   } catch (err) {
-    console.warn(
-      '[M2] ERROR in extractFactsAsync',
-      err instanceof Error ? err.message : err,
-      err instanceof Error ? err.stack : ''
-    );
+    // eslint-disable-next-line no-console
+    console.error('extractFactsAsync failed (non-fatal)', err instanceof Error ? err.message : err);
   }
 }

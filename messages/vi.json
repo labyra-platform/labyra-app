@@ -377,7 +377,9 @@
     "zoomIn": "Phóng to",
     "zoomOut": "Thu nhỏ",
     "resetZoom": "Đặt lại",
-    "fullscreen": "Toàn màn hình"
+    "fullscreen": "Toàn màn hình",
+    "filtersButton": "Bộ lọc",
+    "clearAll": "Xoá tất cả"
   },
   "materials": {
     "title": "Vật liệu",

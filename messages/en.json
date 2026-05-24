@@ -377,7 +377,9 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "resetZoom": "Reset zoom",
-    "fullscreen": "Fullscreen"
+    "fullscreen": "Fullscreen",
+    "filtersButton": "Filters",
+    "clearAll": "Clear all"
   },
   "materials": {
     "title": "Materials",

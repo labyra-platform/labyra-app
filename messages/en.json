@@ -852,7 +852,14 @@
     "undo": "Undo",
     "toastRestored": "Restored",
     "toastRestoreFailed": "Restore failed",
-    "toastBulkDeleted": "{count} deleted"
+    "toastBulkDeleted": "{count} deleted",
+    "editTitle": "Edit measurement",
+    "editHint": "Update instrument and measurement time.",
+    "instrument": "Instrument",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "toastUpdated": "Updated"
   },
   "referenceCards": {
     "title": "Reference card library",

@@ -852,7 +852,14 @@
     "undo": "Hoàn tác",
     "toastRestored": "Đã khôi phục",
     "toastRestoreFailed": "Khôi phục thất bại",
-    "toastBulkDeleted": "Đã xoá {count}"
+    "toastBulkDeleted": "Đã xoá {count}",
+    "editTitle": "Sửa phép đo",
+    "editHint": "Cập nhật thiết bị và thời điểm đo.",
+    "instrument": "Thiết bị",
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "cancel": "Huỷ",
+    "toastUpdated": "Đã cập nhật"
   },
   "referenceCards": {
     "title": "Reference card library",

@@ -43,6 +43,7 @@ interface SpectrumRow {
   sizeBytes: number;
   status: SpectrumStatus;
   measuredAt: number | undefined;
+  instrument: string | undefined;
 }
 
 export function SpectraTableAll() {
@@ -71,7 +72,8 @@ export function SpectraTableAll() {
     group: s.group,
     sizeBytes: s.sizeBytes,
     status: s.status,
-    measuredAt: s.measuredAt
+    measuredAt: s.measuredAt,
+    instrument: s.instrument
   }));
 
   const columns: DataTableColumn<SpectrumRow>[] = [
@@ -179,7 +181,14 @@ export function SpectraTableAll() {
           {t('delete')} ({ids.length})
         </button>
       )}
-      rowActions={(r) => <SpectraRowActions id={r.id} name={r.originalFilename} />}
+      rowActions={(r) => (
+        <SpectraRowActions
+          id={r.id}
+          name={r.originalFilename}
+          instrument={r.instrument}
+          measuredAt={r.measuredAt}
+        />
+      )}
     />
   );
 }

@@ -33,7 +33,14 @@ import {
   META_SLUGS,
   SYNTHESIS_SLUGS
 } from '@/features/papers/lib/taxonomy';
-import { createEmptyDomainFilter, type DomainFilterValue } from './paper-domain-filter';
+// Domain filter value (R199b: nhúng tại chỗ, gỡ phụ thuộc paper-domain-filter)
+export interface DomainFilterValue {
+  selected: Set<string>;
+}
+
+export function createEmptyDomainFilter(): DomainFilterValue {
+  return { selected: new Set() };
+}
 import {
   aggregateJournalStats,
   aggregateYearRange,

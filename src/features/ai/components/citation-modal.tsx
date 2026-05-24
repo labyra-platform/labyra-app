@@ -6,6 +6,11 @@ import { IconExternalLink, IconFileText, IconX } from '@tabler/icons-react';
  * @phase R160-ai-5d-3b
  */
 import { useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import 'katex/dist/katex.min.css';
 import type { SourceHit } from './sources-panel';
 
 interface CitationModalProps {
@@ -107,8 +112,10 @@ export function CitationModal({ source, onClose }: CitationModalProps) {
               Relevance {(source.score * 100).toFixed(0)}%
             </span>
           </div>
-          <div className='prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed'>
-            {source.excerpt}
+          <div className='prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed'>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {source.excerpt}
+            </ReactMarkdown>
           </div>
         </div>
 

@@ -15,6 +15,7 @@ import { CitationModal } from './citation-modal';
 import { GroundingWarning } from './grounding-warning';
 import { AuditPanel } from './audit-panel';
 import { MessageAttachments } from './message-attachments';
+import { copyRich } from '../lib/copy-rich';
 
 // R176-2a-hotfix-role-labels
 // Role-based labels decouple UI from model identity. Researcher sees what
@@ -39,7 +40,7 @@ function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const onCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyRich(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

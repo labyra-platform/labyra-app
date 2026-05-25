@@ -125,6 +125,7 @@ function DayBlock({
   height,
   draggable,
   onResize,
+  onResizeTop,
   locale,
   statusLabel
 }: {
@@ -133,6 +134,7 @@ function DayBlock({
   height: number;
   draggable: boolean;
   onResize: (b: Booking, deltaPx: number) => void;
+  onResizeTop: (b: Booking, deltaPx: number) => void;
   locale: string;
   statusLabel: string;
 }) {
@@ -140,43 +142,63 @@ function DayBlock({
     id: booking.id,
     disabled: !draggable
   });
-  const resizing = useRef(false);
+  const resizeEdge = useRef<'top' | 'bottom' | null>(null);
   const startY = useRef(0);
   const [previewDelta, setPreviewDelta] = useState(0);
 
-  function onHandleDown(e: ReactPointerEvent) {
-    e.stopPropagation();
-    e.preventDefault();
-    resizing.current = true;
-    startY.current = e.clientY;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  function makeDown(edge: 'top' | 'bottom') {
+    return (e: ReactPointerEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      resizeEdge.current = edge;
+      startY.current = e.clientY;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    };
   }
   function onHandleMove(e: ReactPointerEvent) {
-    if (!resizing.current) return;
+    if (!resizeEdge.current) return;
     setPreviewDelta(e.clientY - startY.current);
   }
   function onHandleUp(e: ReactPointerEvent) {
-    if (!resizing.current) return;
-    resizing.current = false;
+    const edge = resizeEdge.current;
+    if (!edge) return;
+    resizeEdge.current = null;
     const d = e.clientY - startY.current;
     setPreviewDelta(0);
-    if (Math.abs(d) >= 2) onResize(booking, d);
+    if (Math.abs(d) < 2) return;
+    if (edge === 'bottom') onResize(booking, d);
+    else onResizeTop(booking, d);
   }
 
-  const effHeight = Math.max(height + previewDelta, 18);
+  // top edge: shift top down + shrink height; bottom edge: grow height.
+  const isTop = resizeEdge.current === 'top';
+  const effTop = isTop ? top + previewDelta : top;
+  const effHeight = isTop
+    ? Math.max(height - previewDelta, 18)
+    : Math.max(height + previewDelta, 18);
   const block = (
     <div
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
       {...attributes}
       className={`absolute inset-x-1 overflow-hidden rounded-md px-2 py-1 text-[11px] leading-tight transition-shadow ${statusStyle[booking.status] ?? 'bg-muted'} ${draggable ? 'cursor-grab active:cursor-grabbing hover:brightness-95' : ''} ${isDragging ? 'opacity-40' : ''}`}
-      style={{ top, height: effHeight }}
+      style={{ top: effTop, height: effHeight }}
     >
+      {draggable && (
+        <div
+          className='absolute inset-x-0 top-0 h-2 cursor-ns-resize'
+          onPointerDown={makeDown('top')}
+          onPointerMove={onHandleMove}
+          onPointerUp={onHandleUp}
+        >
+          <div className='mx-auto mb-0.5 h-0.5 w-6 rounded-full bg-current opacity-30' />
+        </div>
+      )}
       <BlockBody booking={booking} height={effHeight} />
       {draggable && (
         <div
           className='absolute inset-x-0 bottom-0 h-2 cursor-ns-resize'
-          onPointerDown={onHandleDown}
+          onPointerDown={makeDown('bottom')}
           onPointerMove={onHandleMove}
           onPointerUp={onHandleUp}
         >
@@ -406,6 +428,26 @@ export function BookingTimeline() {
     void persist(b, startAt, newEnd);
   }
 
+  function handleResizeTop(b: Booking, deltaPx: number) {
+    if (b.status === 'completed') {
+      toast.error(t('lockedCompleted'));
+      return;
+    }
+    const { startAt, endAt } = effTime(b);
+    const dayBase = startOfDay(new Date(startAt)).getTime();
+    const gTop = dayBase + DAY_START_HOUR * 3600000;
+    const slotDelta = Math.round(deltaPx / ROW_H);
+    if (slotDelta === 0) return;
+    let newStart = startAt + slotDelta * SLOT_MS;
+    newStart = Math.min(endAt - MIN_MS, Math.max(newStart, gTop));
+    if (newStart === startAt) return;
+    if (newStart < Date.now()) {
+      toast.error(t('noPast'));
+      return;
+    }
+    void persist(b, newStart, endAt);
+  }
+
   const weekStart = startOfWeek(anchor);
   const weekDays = Array.from({ length: 7 }, (_, i) => new Date(weekStart.getTime() + i * DAY_MS));
   const activeEquip = weekEquip || equipment[0]?.id || '';
@@ -562,6 +604,7 @@ export function BookingTimeline() {
                               height={height}
                               draggable={isAdmin}
                               onResize={handleResize}
+                              onResizeTop={handleResizeTop}
                               locale={locale}
                               statusLabel={tStatus(b.status)}
                             />

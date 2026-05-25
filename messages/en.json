@@ -718,7 +718,8 @@
     "prevDay": "Previous day",
     "nextDay": "Next day",
     "timelineReadonly": "View only. Admins can drag to reschedule.",
-    "timelineConflict": "Time conflict — reverted."
+    "timelineConflict": "Time conflict — reverted.",
+    "cancel": "Cancel"
   },
   "aiAssistant": {
     "title": "AI Assistant",

@@ -718,7 +718,8 @@
     "prevDay": "Ngày trước",
     "nextDay": "Ngày sau",
     "timelineReadonly": "Chỉ xem. Quản trị viên có thể kéo-thả để đổi lịch.",
-    "timelineConflict": "Trùng lịch — đã hoàn tác."
+    "timelineConflict": "Trùng lịch — đã hoàn tác.",
+    "cancel": "Huỷ"
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

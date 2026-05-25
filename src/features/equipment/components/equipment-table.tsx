@@ -1,19 +1,16 @@
+/**
+ * EquipmentTable — DataTable migration (R212). Sortable + export + kebab.
+ * Hard delete (confirm dialog), no bulk (each delete needs explicit confirm).
+ */
 'use client';
-import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { useEquipmentList } from '@/lib/firestore/queries/equipment';
+import type { Equipment } from '@/types/equipment';
+import { EquipmentRowActions } from './equipment-row-actions';
 
-// R162-batch8-safe-hoisted: extracted from EquipmentTable to satisfy
-// consistent-function-scoping rule (no closure over component state).
 function safe(fn: (k: string) => string, key: string): string {
   try {
     return fn(key);
@@ -30,6 +27,18 @@ const statusColor: Record<string, string> = {
   retired: 'bg-muted text-muted-foreground'
 };
 
+// Backward-compat legacy schema {name, type, status, location}
+function codeOf(e: Equipment): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = e as any;
+  return (d.equipmentCode as string | undefined) ?? e.id;
+}
+function catOf(e: Equipment): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = e as any;
+  return (d.category as string | undefined) ?? (d.type as string | undefined) ?? 'other';
+}
+
 export function EquipmentTable() {
   const { equipment, loading } = useEquipmentList();
   const locale = useLocale();
@@ -40,52 +49,70 @@ export function EquipmentTable() {
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
   }
-
   if (equipment.length === 0) {
     return <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>;
   }
 
-  // R162-batch8-safe-hoisted: see top-level safe() below
+  const columns: DataTableColumn<Equipment>[] = [
+    {
+      key: 'code',
+      header: t('colCode'),
+      cell: (e) => (
+        <Link
+          href={`/${locale}/dashboard/equipment/${e.id}`}
+          className='font-mono text-xs hover:underline'
+        >
+          {codeOf(e)}
+        </Link>
+      ),
+      sortValue: (e) => codeOf(e)
+    },
+    {
+      key: 'name',
+      header: t('colName'),
+      cell: (e) => <span className='font-medium'>{e.name}</span>,
+      sortValue: (e) => e.name
+    },
+    {
+      key: 'category',
+      header: t('colCategory'),
+      cell: (e) => safe(tCat, catOf(e)),
+      sortValue: (e) => safe(tCat, catOf(e))
+    },
+    {
+      key: 'status',
+      header: t('colStatus'),
+      cell: (e) => (
+        <Badge className={statusColor[e.status] ?? 'bg-muted'} variant='secondary'>
+          {safe(tStatus, e.status)}
+        </Badge>
+      ),
+      sortValue: (e) => safe(tStatus, e.status)
+    },
+    {
+      key: 'location',
+      header: t('colLocation'),
+      cell: (e) => <span className='text-muted-foreground'>{e.location ?? '—'}</span>,
+      sortValue: (e) => e.location ?? ''
+    }
+  ];
 
   return (
-    <div className='rounded-lg border'>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('colCode')}</TableHead>
-            <TableHead>{t('colName')}</TableHead>
-            <TableHead>{t('colCategory')}</TableHead>
-            <TableHead>{t('colStatus')}</TableHead>
-            <TableHead>{t('colLocation')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {equipment.map((e) => {
-            // Backward-compat: legacy schema {name, type, status, location}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const data = e as any;
-            const code = data.equipmentCode ?? e.id;
-            const category = data.category ?? data.type ?? 'other';
-            return (
-              <TableRow key={e.id}>
-                <TableCell className='font-mono text-xs'>
-                  <Link href={`/${locale}/dashboard/equipment/${e.id}`} className='hover:underline'>
-                    {code}
-                  </Link>
-                </TableCell>
-                <TableCell className='font-medium'>{e.name}</TableCell>
-                <TableCell>{safe(tCat, category)}</TableCell>
-                <TableCell>
-                  <Badge className={statusColor[e.status] ?? 'bg-muted'} variant='secondary'>
-                    {safe(tStatus, e.status)}
-                  </Badge>
-                </TableCell>
-                <TableCell className='text-muted-foreground'>{e.location ?? '—'}</TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable<Equipment>
+      rows={equipment}
+      columns={columns}
+      rowKey={(e) => e.id}
+      defaultSort={{ key: 'code', direction: 'asc' }}
+      exportFilename='equipment'
+      exportValue={(e, key) => {
+        if (key === 'code') return codeOf(e);
+        if (key === 'name') return e.name;
+        if (key === 'category') return safe(tCat, catOf(e));
+        if (key === 'status') return safe(tStatus, e.status);
+        if (key === 'location') return e.location ?? '';
+        return null;
+      }}
+      rowActions={(e) => <EquipmentRowActions id={e.id} name={e.name} />}
+    />
   );
 }

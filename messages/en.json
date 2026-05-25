@@ -649,7 +649,11 @@
       "maintenance": "Maintenance",
       "broken": "Broken",
       "retired": "Retired"
-    }
+    },
+    "view": "View",
+    "actions": "Actions",
+    "cancel": "Cancel",
+    "deleteConfirmHint": "Permanently delete \"{name}\"? This cannot be undone."
   },
   "bookings": {
     "title": "Bookings",

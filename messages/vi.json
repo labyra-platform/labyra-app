@@ -649,7 +649,11 @@
       "maintenance": "Bảo trì",
       "broken": "Hỏng",
       "retired": "Đã ngừng"
-    }
+    },
+    "view": "Xem",
+    "actions": "Thao tác",
+    "cancel": "Huỷ",
+    "deleteConfirmHint": "Xoá vĩnh viễn \"{name}\"? Không thể hoàn tác."
   },
   "bookings": {
     "title": "Đặt lịch",

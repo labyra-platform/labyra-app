@@ -1,6 +1,5 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -24,18 +23,26 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { Experiment } from '@/types/experiments';
 import { type ExperimentFormValues, experimentFormSchema } from '../schema';
 
 interface ExperimentFormProps {
   defaultValues?: Partial<Experiment>;
   experimentId?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 const TYPES = ['synthesis', 'characterization', 'measurement', 'analysis', 'other'] as const;
 const STATUSES = ['planned', 'running', 'completed', 'failed', 'cancelled'] as const;
 
-export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormProps) {
+export function ExperimentForm({
+  defaultValues,
+  experimentId,
+  onSuccess,
+  onCancel
+}: ExperimentFormProps) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('experiments.form');
@@ -78,7 +85,11 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success(experimentId ? t('update') : t('create'));
-      router.push(`/${locale}/dashboard/experiments`);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/${locale}/dashboard/experiments`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -88,8 +99,8 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6 max-w-3xl'>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-3xl space-y-6'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           <FormField
             control={form.control}
             name='experimentCode'
@@ -157,7 +168,7 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
           )}
         />
 
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
           <FormField
             control={form.control}
             name='temperature'
@@ -239,7 +250,11 @@ export function ExperimentForm({ defaultValues, experimentId }: ExperimentFormPr
         />
 
         <div className='flex justify-end gap-2'>
-          <Button type='button' variant='outline' onClick={() => router.back()}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => (onCancel ? onCancel() : router.back())}
+          >
             {t('cancel')}
           </Button>
           <Button type='submit' disabled={submitting}>

@@ -425,7 +425,9 @@
       "cancel": "Hủy",
       "create": "Tạo mới",
       "update": "Cập nhật",
-      "saving": "Đang lưu..."
+      "saving": "Đang lưu...",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Vì sao quan tâm vật liệu này, ghi chú chính…"
     },
     "category": {
       "chemical": "Hóa chất",
@@ -434,7 +436,16 @@
       "gas": "Khí",
       "consumable": "Vật tư tiêu hao",
       "equipment": "Thiết bị",
-      "other": "Khác"
+      "other": "Khác",
+      "oxide": "Oxit",
+      "sulfide": "Sunfua",
+      "nitride": "Nitrua",
+      "carbon": "Carbon",
+      "metal": "Kim loại",
+      "polymer": "Polymer",
+      "composite": "Composite",
+      "perovskite": "Perovskite",
+      "two_dimensional": "Vật liệu 2D"
     },
     "hazard": {
       "none": "Không",
@@ -449,7 +460,9 @@
     "toastRestored": "Đã khôi phục",
     "toastRestoreFailed": "Khôi phục thất bại",
     "toastBulkDeleted": "Đã xoá {count}",
-    "scientificData": "Dữ liệu tham chiếu khoa học"
+    "scientificData": "Dữ liệu tham chiếu khoa học",
+    "colFormula": "Công thức",
+    "colDescription": "Mô tả"
   },
   "samples": {
     "title": "Mẫu",

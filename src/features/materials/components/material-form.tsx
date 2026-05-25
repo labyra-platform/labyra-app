@@ -1,6 +1,5 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -24,32 +23,42 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { Material } from '@/types/materials';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import type { Material, MaterialCategory } from '@/types/materials';
 import { type MaterialFormValues, materialFormSchema } from '../schema';
 
 interface MaterialFormProps {
   defaultValues?: Partial<Material>;
   materialId?: string;
+  /** When provided (e.g. inside a Sheet), called after success instead of navigating. */
+  onSuccess?: () => void;
+  /** Cancel handler (e.g. close the Sheet). Falls back to router.back(). */
+  onCancel?: () => void;
 }
 
-const CATEGORIES = [
-  'chemical',
-  'reagent',
-  'solvent',
-  'gas',
-  'consumable',
-  'equipment',
+const CATEGORIES: MaterialCategory[] = [
+  'oxide',
+  'sulfide',
+  'nitride',
+  'carbon',
+  'metal',
+  'polymer',
+  'composite',
+  'perovskite',
+  'two_dimensional',
   'other'
-] as const;
-const UNITS = ['g', 'kg', 'mg', 'mL', 'L', 'µL', 'mol', 'mmol', 'piece', 'box'] as const;
-const HAZARDS = ['none', 'low', 'medium', 'high', 'extreme'] as const;
+];
 
-export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
+export function MaterialForm({
+  defaultValues,
+  materialId,
+  onSuccess,
+  onCancel
+}: MaterialFormProps) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('materials.form');
   const tCat = useTranslations('materials.category');
-  const tHaz = useTranslations('materials.hazard');
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<MaterialFormValues>({
@@ -58,15 +67,8 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
     defaultValues: {
       name: defaultValues?.name ?? '',
       formula: defaultValues?.formula ?? '',
-      category: defaultValues?.category ?? 'chemical',
-      cas: defaultValues?.cas ?? '',
-      quantity: defaultValues?.quantity ?? 0,
-      unit: defaultValues?.unit ?? 'g',
-      location: defaultValues?.location ?? '',
-      supplier: defaultValues?.supplier ?? '',
-      lotNumber: defaultValues?.lotNumber ?? '',
-      hazardLevel: defaultValues?.hazardLevel ?? 'none',
-      hazardNotes: defaultValues?.hazardNotes ?? ''
+      category: defaultValues?.category ?? 'oxide',
+      description: defaultValues?.description ?? ''
     }
   });
 
@@ -88,7 +90,11 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success(materialId ? t('update') : t('create'));
-      router.push(`/${locale}/dashboard/materials`);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/${locale}/dashboard/materials`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -98,8 +104,8 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6 max-w-3xl'>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-3xl space-y-6'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           <FormField
             control={form.control}
             name='name'
@@ -128,134 +134,12 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
           />
         </div>
 
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-          <FormField
-            control={form.control}
-            name='category'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('category')} *</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {tCat(c)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name='cas'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('cas')}</FormLabel>
-                <FormControl>
-                  <Input placeholder={t('casPlaceholder')} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name='location'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('location')}</FormLabel>
-                <FormControl>
-                  <Input placeholder={t('locationPlaceholder')} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          <FormField
-            control={form.control}
-            name='quantity'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('quantity')} *</FormLabel>
-                <FormControl>
-                  <Input type='number' step='any' {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name='unit'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('unit')} *</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {UNITS.map((u) => (
-                      <SelectItem key={u} value={u}>
-                        {u}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          <FormField
-            control={form.control}
-            name='supplier'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('supplier')}</FormLabel>
-                <FormControl>
-                  <Input placeholder={t('supplierPlaceholder')} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name='lotNumber'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('lotNumber')}</FormLabel>
-                <FormControl>
-                  <Input placeholder={t('lotPlaceholder')} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
         <FormField
           control={form.control}
-          name='hazardLevel'
+          name='category'
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('hazardLevel')} *</FormLabel>
+            <FormItem className='max-w-xs'>
+              <FormLabel>{t('category')} *</FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger>
@@ -263,9 +147,9 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {HAZARDS.map((h) => (
-                    <SelectItem key={h} value={h}>
-                      {tHaz(h)}
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {tCat(c)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -277,12 +161,12 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
 
         <FormField
           control={form.control}
-          name='hazardNotes'
+          name='description'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('hazardNotes')}</FormLabel>
+              <FormLabel>{t('description')}</FormLabel>
               <FormControl>
-                <Textarea rows={3} {...field} />
+                <Textarea rows={4} placeholder={t('descriptionPlaceholder')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -290,7 +174,11 @@ export function MaterialForm({ defaultValues, materialId }: MaterialFormProps) {
         />
 
         <div className='flex justify-end gap-2'>
-          <Button type='button' variant='outline' onClick={() => router.back()}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => (onCancel ? onCancel() : router.back())}
+          >
             {t('cancel')}
           </Button>
           <Button type='submit' disabled={submitting}>

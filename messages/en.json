@@ -425,7 +425,9 @@
       "cancel": "Cancel",
       "create": "Create",
       "update": "Update",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "description": "Description",
+      "descriptionPlaceholder": "Why this material is of interest, key notes…"
     },
     "category": {
       "chemical": "Chemical",
@@ -434,7 +436,16 @@
       "gas": "Gas",
       "consumable": "Consumable",
       "equipment": "Equipment",
-      "other": "Other"
+      "other": "Other",
+      "oxide": "Oxide",
+      "sulfide": "Sulfide",
+      "nitride": "Nitride",
+      "carbon": "Carbon",
+      "metal": "Metal",
+      "polymer": "Polymer",
+      "composite": "Composite",
+      "perovskite": "Perovskite",
+      "two_dimensional": "2D material"
     },
     "hazard": {
       "none": "None",
@@ -449,7 +460,9 @@
     "toastRestored": "Restored",
     "toastRestoreFailed": "Restore failed",
     "toastBulkDeleted": "{count} deleted",
-    "scientificData": "Scientific reference data"
+    "scientificData": "Scientific reference data",
+    "colFormula": "Formula",
+    "colDescription": "Description"
   },
   "samples": {
     "title": "Samples",

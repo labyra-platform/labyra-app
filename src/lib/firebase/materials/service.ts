@@ -39,20 +39,11 @@ export async function createMaterial(
     derivedFrom: input.derivedFrom,
     generatedBy: input.generatedBy,
     lifecycleStatus: 'active',
-    // Core
+    // Core reference fields
     name: input.name,
     formula: input.formula,
     category: input.category,
-    cas: input.cas,
-    quantity: input.quantity,
-    unit: input.unit,
-    location: input.location,
-    supplier: input.supplier,
-    lotNumber: input.lotNumber,
-    purchaseDate: input.purchaseDate,
-    expiryDate: input.expiryDate,
-    hazardLevel: input.hazardLevel,
-    hazardNotes: input.hazardNotes
+    description: input.description
   };
 
   await db.collection('tenants').doc(ctx.tenantId).collection(COLLECTION).doc(id).set(material);

@@ -1221,7 +1221,9 @@
       "expiryAt": "Hạn sử dụng",
       "create": "Đã tạo hóa chất",
       "update": "Đã cập nhật hóa chất",
-      "casNotFound": "Không tìm thấy CAS trong PubChem — nhập thủ công."
+      "casNotFound": "Không tìm thấy CAS trong PubChem — nhập thủ công.",
+      "cancel": "Hủy",
+      "saving": "Đang lưu…"
     },
     "detail": {
       "consume": "Tiêu hao",

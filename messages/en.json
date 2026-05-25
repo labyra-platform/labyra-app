@@ -1221,7 +1221,9 @@
       "expiryAt": "Expiry date",
       "create": "Chemical created",
       "update": "Chemical updated",
-      "casNotFound": "CAS not found in PubChem — enter details manually."
+      "casNotFound": "CAS not found in PubChem — enter details manually.",
+      "cancel": "Cancel",
+      "saving": "Saving…"
     },
     "detail": {
       "consume": "Consume",

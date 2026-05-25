@@ -719,7 +719,11 @@
     "nextDay": "Ngày sau",
     "timelineReadonly": "Chỉ xem. Quản trị viên có thể kéo-thả để đổi lịch.",
     "timelineConflict": "Trùng lịch — đã hoàn tác.",
-    "cancel": "Huỷ"
+    "cancel": "Huỷ",
+    "actions": "Thao tác",
+    "view": "Xem",
+    "cancelHint": "Khung giờ thiết bị sẽ được giải phóng. Không thể hoàn tác.",
+    "keepBooking": "Giữ lại"
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

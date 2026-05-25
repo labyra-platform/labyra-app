@@ -719,7 +719,11 @@
     "nextDay": "Next day",
     "timelineReadonly": "View only. Admins can drag to reschedule.",
     "timelineConflict": "Time conflict — reverted.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "actions": "Actions",
+    "view": "View",
+    "cancelHint": "The equipment slot will be released. This cannot be undone.",
+    "keepBooking": "Keep"
   },
   "aiAssistant": {
     "title": "AI Assistant",

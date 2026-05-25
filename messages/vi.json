@@ -704,7 +704,8 @@
         "too_far_ahead": "Không thể đặt trước quá 14 ngày."
       },
       "unavailable": "Không khả dụng",
-      "quickDuration": "Nhanh"
+      "quickDuration": "Nhanh",
+      "conflictWarning": "Trùng giờ với:"
     },
     "status": {
       "pending": "Chờ duyệt",

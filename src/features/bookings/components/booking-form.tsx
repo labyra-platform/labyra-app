@@ -5,7 +5,7 @@ import { IconWand } from '@tabler/icons-react';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -26,10 +26,16 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useBookings } from '@/lib/firestore/queries/bookings';
 import { useEquipmentList } from '@/lib/firestore/queries/equipment';
 import { useIsAdmin } from '@/lib/auth/use-claims';
 import type { Booking } from '@/types/bookings';
-import { MAX_DURATION_MS, isEquipmentBookable } from '../constants';
+import {
+  BLOCKING_STATUSES,
+  MAX_DURATION_MS,
+  intervalsOverlap,
+  isEquipmentBookable
+} from '../constants';
 import { type BookingFormValues, bookingFormSchema } from '../schema';
 import { DateTimePicker } from './datetime-picker';
 
@@ -75,20 +81,10 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
   const t = useTranslations('bookings.form');
   const tStatus = useTranslations('bookings.status');
   const { equipment } = useEquipmentList();
+  const { bookings } = useBookings();
   const isAdmin = useIsAdmin();
   const [submitting, setSubmitting] = useState(false);
   const [finding, setFinding] = useState(false);
-
-  // Translate known schema error keys; pass through anything else.
-  const errText = (msg: string | undefined): string | undefined =>
-    msg && ERROR_KEYS.has(msg) ? t(`err.${msg}`) : msg;
-
-  // Set endAt = startAt + minutes (clamped to MAX_DURATION_MS).
-  const setDuration = (minutes: number) => {
-    const start = form.getValues('startAt');
-    const ms = Math.min(minutes * 60_000, MAX_DURATION_MS);
-    form.setValue('endAt', start + ms, { shouldDirty: true, shouldValidate: true });
-  };
 
   const form = useForm<BookingFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -103,6 +99,34 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
       notes: defaultValues?.notes ?? ''
     }
   });
+
+  // Translate known schema error keys; pass through anything else.
+  const errText = (msg: string | undefined): string | undefined =>
+    msg && ERROR_KEYS.has(msg) ? t(`err.${msg}`) : msg;
+
+  // Realtime conflict check (mirrors server overlap; client UX only).
+  const wEquip = form.watch('equipmentId');
+  const wStart = form.watch('startAt');
+  const wEnd = form.watch('endAt');
+  const conflict = useMemo(() => {
+    if (!wEquip || !wStart || !wEnd || wEnd <= wStart) return null;
+    return (
+      bookings.find(
+        (b) =>
+          b.id !== bookingId &&
+          b.equipmentId === wEquip &&
+          (BLOCKING_STATUSES as readonly string[]).includes(b.status) &&
+          intervalsOverlap(wStart, wEnd, b.startAt, b.endAt)
+      ) ?? null
+    );
+  }, [bookings, bookingId, wEquip, wStart, wEnd]);
+
+  // Set endAt = startAt + minutes (clamped to MAX_DURATION_MS).
+  const setDuration = (minutes: number) => {
+    const start = form.getValues('startAt');
+    const ms = Math.min(minutes * 60_000, MAX_DURATION_MS);
+    form.setValue('endAt', start + ms, { shouldDirty: true, shouldValidate: true });
+  };
 
   async function handleFindSlot() {
     const equipmentId = form.getValues('equipmentId');
@@ -280,6 +304,17 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
             {finding ? t('finding') : t('findSlot')}
           </Button>
         </div>
+
+        {conflict && (
+          <div className='border-destructive/40 bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border px-3 py-2 text-sm'>
+            <span className='font-medium'>{t('conflictWarning')}</span>
+            <span className='text-destructive/80'>
+              {conflict.userName ?? conflict.purpose} ·{' '}
+              {new Date(conflict.startAt).toLocaleString()} –{' '}
+              {new Date(conflict.endAt).toLocaleTimeString()}
+            </span>
+          </div>
+        )}
 
         <FormField
           control={form.control}

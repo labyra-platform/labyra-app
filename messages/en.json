@@ -704,7 +704,8 @@
         "too_far_ahead": "Can't book more than 14 days ahead."
       },
       "unavailable": "Unavailable",
-      "quickDuration": "Quick"
+      "quickDuration": "Quick",
+      "conflictWarning": "Time conflicts with:"
     },
     "status": {
       "pending": "Pending",

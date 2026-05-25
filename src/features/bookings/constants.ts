@@ -27,3 +27,11 @@ export function isEquipmentBookable(status: string | undefined): boolean {
   if (!status) return true; // unknown status -> don't block (avoid false negatives)
   return !UNAVAILABLE_EQUIPMENT_STATUSES.includes(status as UnavailableEquipmentStatus);
 }
+
+/** Booking statuses that occupy a time slot (block overlap). */
+export const BLOCKING_STATUSES = ['pending', 'approved', 'in_progress'] as const;
+
+/** Half-open interval overlap test [s,e): touching edges don't overlap. */
+export function intervalsOverlap(s1: number, e1: number, s2: number, e2: number): boolean {
+  return s1 < e2 && e1 > s2;
+}

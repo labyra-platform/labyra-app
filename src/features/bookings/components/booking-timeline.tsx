@@ -44,6 +44,8 @@ const SLOT_MS = SLOT_MIN * 60000;
 const GUTTER_W = 56;
 const MIN_MS = SLOT_MS;
 const DAY_MS = 86400000;
+const BIZ_START_HOUR = 8;
+const BIZ_END_HOUR = 18;
 
 // Google-Calendar-style SOLID pastel fills, dark readable text.
 const statusStyle: Record<string, string> = {
@@ -230,13 +232,17 @@ function HourGutter() {
 function SlotLines() {
   return (
     <>
-      {Array.from({ length: SLOTS }, (_, i) => (
-        <div
-          key={i}
-          className={`border-b ${i % 2 === 1 ? 'border-border/60' : 'border-border/25'}`}
-          style={{ height: ROW_H }}
-        />
-      ))}
+      {Array.from({ length: SLOTS }, (_, i) => {
+        const hour = DAY_START_HOUR + (i * SLOT_MIN) / 60;
+        const offHours = hour < BIZ_START_HOUR || hour >= BIZ_END_HOUR;
+        return (
+          <div
+            key={i}
+            className={`border-b ${i % 2 === 1 ? 'border-border/60' : 'border-border/25'} ${offHours ? 'bg-muted/30' : ''}`}
+            style={{ height: ROW_H }}
+          />
+        );
+      })}
     </>
   );
 }

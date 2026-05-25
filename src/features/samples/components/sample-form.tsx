@@ -32,11 +32,13 @@ import { type SampleFormValues, sampleFormSchema } from '../schema';
 interface SampleFormProps {
   defaultValues?: Partial<Sample>;
   sampleId?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 const STATUSES = ['prepared', 'in_use', 'consumed', 'archived', 'discarded'] as const;
 
-export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
+export function SampleForm({ defaultValues, sampleId, onSuccess, onCancel }: SampleFormProps) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('samples.form');
@@ -93,7 +95,11 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success(sampleId ? t('update') : t('create'));
-      router.push(`/${locale}/dashboard/samples`);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/${locale}/dashboard/samples`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -103,7 +109,7 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6 max-w-3xl'>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-3xl space-y-6'>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           <FormField
             control={form.control}
@@ -287,7 +293,11 @@ export function SampleForm({ defaultValues, sampleId }: SampleFormProps) {
         <CompositionField form={form} />
 
         <div className='flex justify-end gap-2'>
-          <Button type='button' variant='outline' onClick={() => router.back()}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => (onCancel ? onCancel() : router.back())}
+          >
             {t('cancel')}
           </Button>
           <Button type='submit' disabled={submitting}>

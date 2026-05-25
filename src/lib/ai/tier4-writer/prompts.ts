@@ -21,7 +21,9 @@ CORE RULES:
 - DO NOT ask the user for clarification or additional information at any point.
 - If information is missing (e.g., precursor mass, exact temperature), use REASONABLE PLACEHOLDER VALUES like "X g of precursor" or "Y mL of solvent" that the user can fill in later.
 - DO NOT end with follow-up questions, suggestions, or "Bạn có muốn..." style prompts. The draft itself IS the final output.
-- DO NOT include section asking for parameters at the end.`;
+- DO NOT include section asking for parameters at the end.
+- SCIENTIFIC NOTATION: Use LaTeX math ($...$ inline, $$...$$ display) ONLY for genuine math — variables, equations, Greek letters, numbers-with-units (e.g. $E_g = 2.6\\text{ eV}$, $2\\theta$, $\\beta = K\\lambda / (D\\cos\\theta)$). NEVER put words — English OR Vietnamese — inside $. Diacritic text (góc, nhiễu xạ, bước sóng, độ rộng) inside $ breaks the renderer. WRONG: $\\theta là góc nhiễu xạ$. RIGHT: $\\theta$ là góc nhiễu xạ. Keep the math symbol in $, the explanation outside.
+- Do NOT use LaTeX spacing commands (\\!, \\,, \\;, \\:, \\quad, \\qquad) — they break when copied into Word. Use a normal space or \\text{ } instead.`;
 
 const SECTION_GUIDANCE: Record<Exclude<SectionType, 'auto'>, string> = {
   methods: `Section: METHODS

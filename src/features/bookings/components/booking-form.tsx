@@ -32,6 +32,7 @@ import { useIsAdmin } from '@/lib/auth/use-claims';
 import type { Booking } from '@/types/bookings';
 import {
   BLOCKING_STATUSES,
+  BOOKING_PURPOSE_PRESETS,
   MAX_DURATION_MS,
   intervalsOverlap,
   isEquipmentBookable
@@ -334,6 +335,20 @@ export function BookingForm({ defaultValues, bookingId, onSuccess, onCancel }: B
               <FormControl>
                 <Input placeholder={t('purposePlaceholder')} {...field} />
               </FormControl>
+              <div className='flex flex-wrap gap-1.5'>
+                {BOOKING_PURPOSE_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type='button'
+                    onClick={() =>
+                      form.setValue('purpose', preset, { shouldDirty: true, shouldValidate: true })
+                    }
+                    className='border-input hover:bg-accent rounded-full border px-2.5 py-0.5 text-xs transition-colors'
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
               <FormMessage />
             </FormItem>
           )}

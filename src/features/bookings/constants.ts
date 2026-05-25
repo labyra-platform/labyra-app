@@ -35,3 +35,13 @@ export const BLOCKING_STATUSES = ['pending', 'approved', 'in_progress'] as const
 export function intervalsOverlap(s1: number, e1: number, s2: number, e2: number): boolean {
   return s1 < e2 && e1 > s2;
 }
+
+/** Quick-suggest purposes (free text still allowed; these are click-to-fill). */
+export const BOOKING_PURPOSE_PRESETS = [
+  'Nung mẫu',
+  'Đo điện hóa',
+  'Thủy nhiệt',
+  'Sấy mẫu',
+  'Chuẩn bị mẫu',
+  'Đo phổ'
+] as const;

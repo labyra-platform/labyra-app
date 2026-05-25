@@ -233,7 +233,7 @@ export function FileUploader(props: FileUploaderProps) {
           <div className='max-h-48 space-y-4'>
             {files?.map((file, index) => (
               <FileCard
-                key={index}
+                key={`${file.name}-${file.size}-${file.lastModified}`}
                 file={file}
                 onRemove={() => onRemove(index)}
                 progress={progresses?.[file.name]}

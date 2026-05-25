@@ -43,15 +43,23 @@ export function PaperSelectorPanel({
   );
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored !== null) setIsOpen(stored === 'true');
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored !== null) setIsOpen(stored === 'true');
+    } catch {
+      // localStorage unavailable (private mode / quota) — keep default open state
+    }
     setMounted(true);
   }, []);
 
   const toggleOpen = () => {
     const next = !isOpen;
     setIsOpen(next);
-    localStorage.setItem(STORAGE_KEY, String(next));
+    try {
+      localStorage.setItem(STORAGE_KEY, String(next));
+    } catch {
+      // ignore persistence failure
+    }
   };
 
   const displayed = useMemo(() => {

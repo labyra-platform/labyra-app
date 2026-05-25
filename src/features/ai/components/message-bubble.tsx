@@ -1,7 +1,7 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { IconCheck, IconCopy, IconShieldSearch } from '@tabler/icons-react';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -123,9 +123,9 @@ export function MessageBubble({
   const sources = useChatSources(message.toolCalls);
   const [activeRef, setActiveRef] = useState<number | null>(null);
 
-  const handleCitationClick = (refNumber: number) => {
+  const handleCitationClick = useCallback((refNumber: number) => {
     setActiveRef(refNumber);
-  };
+  }, []);
 
   const activeSource =
     activeRef !== null ? (sources.find((s) => s.ref === activeRef) ?? null) : null;
@@ -142,7 +142,6 @@ export function MessageBubble({
         <li {...props}>{processChildren(children, sources.length, handleCitationClick)}</li>
       )
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [sources.length, handleCitationClick]
   );
 

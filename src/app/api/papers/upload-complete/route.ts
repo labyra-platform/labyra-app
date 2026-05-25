@@ -106,7 +106,14 @@ export async function POST(request: Request) {
   if (reservation.userId !== userId) {
     return jsonError(403, 'session_owner_mismatch');
   }
-  if (reservation.expiresAt.toMillis() < Date.now()) {
+  const _exp: unknown = reservation.expiresAt;
+  const _expiresMs =
+    typeof (_exp as { toMillis?: () => number }).toMillis === 'function'
+      ? (_exp as { toMillis: () => number }).toMillis()
+      : typeof _exp === 'number'
+        ? _exp
+        : 0;
+  if (_expiresMs < Date.now()) {
     await resRef.delete();
     await deleteFile(reservation.storagePath).catch(() => undefined);
     return jsonError(410, 'session_expired');

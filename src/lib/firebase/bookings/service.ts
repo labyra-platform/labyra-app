@@ -17,18 +17,18 @@ import 'server-only';
 import { getAdminFirestoreService, getUserById } from '@/lib/firebase/admin';
 import { getGroup } from '@/lib/firebase/groups/service';
 import {
+  BLOCKING_STATUSES,
   MAX_ADVANCE_MS,
   MAX_DURATION_MS,
   MIN_DURATION_MS,
+  intervalsOverlap,
   isEquipmentBookable
 } from '@/features/bookings/constants';
-import type { Booking, BookingStatus } from '@/types/bookings';
+import type { Booking } from '@/types/bookings';
 
 function bookingsCol(tenantId: string) {
   return getAdminFirestoreService().collection(`tenants/${tenantId}/bookings`);
 }
-
-const BLOCKING_STATUSES: BookingStatus[] = ['pending', 'approved', 'in_progress'];
 
 export interface CreateBookingInput {
   equipmentId: string;
@@ -46,11 +46,6 @@ export class BookingConflictError extends Error {
     this.name = 'BookingConflictError';
     this.conflicts = conflicts;
   }
-}
-
-/** Half-open interval overlap test. */
-function overlaps(s1: number, e1: number, s2: number, e2: number): boolean {
-  return s1 < e2 && e1 > s2;
 }
 
 export async function createBooking(
@@ -112,8 +107,8 @@ export async function createBooking(
       .map((d) => d.data() as Booking)
       .filter(
         (b) =>
-          BLOCKING_STATUSES.includes(b.status) &&
-          overlaps(input.startAt, input.endAt, b.startAt, b.endAt)
+          (BLOCKING_STATUSES as readonly string[]).includes(b.status) &&
+          intervalsOverlap(input.startAt, input.endAt, b.startAt, b.endAt)
       )
       .map((b) => ({ id: b.id, startAt: b.startAt, endAt: b.endAt, userName: b.userName }));
 
@@ -214,8 +209,8 @@ export async function updateBooking(
         .filter(
           (other) =>
             other.id !== id &&
-            BLOCKING_STATUSES.includes(other.status) &&
-            overlaps(newStart, newEnd, other.startAt, other.endAt)
+            (BLOCKING_STATUSES as readonly string[]).includes(other.status) &&
+            intervalsOverlap(newStart, newEnd, other.startAt, other.endAt)
         );
       if (conflicts.length > 0)
         throw new BookingConflictError(
@@ -251,7 +246,9 @@ export async function findAvailableSlots(
 
   const busy = snap.docs
     .map((d) => d.data() as Booking)
-    .filter((b) => BLOCKING_STATUSES.includes(b.status) && b.endAt > dayStart)
+    .filter(
+      (b) => (BLOCKING_STATUSES as readonly string[]).includes(b.status) && b.endAt > dayStart
+    )
     .map((b) => ({ start: Math.max(b.startAt, dayStart), end: Math.min(b.endAt, dayEnd) }))
     .toSorted((a, b) => a.start - b.start);
 

@@ -42,6 +42,11 @@ import { DateTimePicker } from './datetime-picker';
 interface BookingFormProps {
   defaultValues?: Partial<Booking>;
   bookingId?: string;
+  /** When provided (e.g. inside a Sheet), called after a successful save
+   *  instead of navigating. Lets the same form work in a page or a panel. */
+  onSuccess?: () => void;
+  /** Cancel handler (e.g. close the Sheet). Falls back to router.back(). */
+  onCancel?: () => void;
 }
 
 const STATUSES = ['pending', 'approved', 'in_progress', 'completed', 'cancelled'] as const;
@@ -75,7 +80,7 @@ async function authedFetch(path: string, init?: RequestInit): Promise<Response> 
   });
 }
 
-export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
+export function BookingForm({ defaultValues, bookingId, onSuccess, onCancel }: BookingFormProps) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('bookings.form');
@@ -189,7 +194,11 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
       }
       if (!res.ok) throw new Error(await res.text());
       toast.success(bookingId ? t('update') : t('create'));
-      router.push(`/${locale}/dashboard/bookings`);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/${locale}/dashboard/bookings`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -373,7 +382,11 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
         />
 
         <div className='flex justify-end gap-2'>
-          <Button type='button' variant='outline' onClick={() => router.back()}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => (onCancel ? onCancel() : router.back())}
+          >
             {t('cancel')}
           </Button>
           <Button type='submit' disabled={submitting}>

@@ -15,6 +15,8 @@ export interface Booking {
 
   userId: string;
   userName?: string; // denormalized
+  groupId?: string; // denormalized (ADR-039, display/filter only)
+  groupName?: string;
 
   startAt: number; // epoch ms
   endAt: number;

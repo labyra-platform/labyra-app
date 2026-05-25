@@ -727,7 +727,9 @@
     "viewDay": "Ngày",
     "viewWeek": "Tuần",
     "filterUser": "Người đặt",
-    "filterAllUsers": "Tất cả người đặt"
+    "filterAllUsers": "Tất cả người đặt",
+    "filterGroup": "Nhóm",
+    "filterAllGroups": "Tất cả nhóm"
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

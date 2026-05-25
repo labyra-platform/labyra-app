@@ -190,6 +190,9 @@ function DayBlock({
               {statusLabel}
             </Badge>
           </div>
+          {booking.groupName && (
+            <div className='text-muted-foreground text-[11px]'>{booking.groupName}</div>
+          )}
           <div className='text-muted-foreground text-xs'>
             {booking.equipmentName ?? booking.equipmentId}
           </div>
@@ -258,6 +261,7 @@ export function BookingTimeline() {
   const [now, setNow] = useState<number | undefined>(undefined);
   const [weekEquip, setWeekEquip] = useState<string>('');
   const [filterUser, setFilterUser] = useState<string>('all');
+  const [filterGroup, setFilterGroup] = useState<string>('all');
   const [pending, setPending] = useState<Record<string, { startAt: number; endAt: number }>>({});
 
   useEffect(() => {
@@ -344,6 +348,13 @@ export function BookingTimeline() {
       bookings.filter((b) => b.userId).map((b) => [b.userId, b.userName?.trim() || b.userId])
     ).entries()
   ).toSorted((a, b) => a[1].localeCompare(b[1]));
+  const groups = Array.from(
+    new Map(
+      bookings
+        .filter((b) => b.groupId && b.groupName)
+        .map((b) => [b.groupId as string, b.groupName as string])
+    ).entries()
+  ).toSorted((a, b) => a[1].localeCompare(b[1]));
   const weekLabel = `${weekStart.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} – ${new Date(weekStart.getTime() + 6 * DAY_MS).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
 
   const step = (dir: number) =>
@@ -378,6 +389,21 @@ export function BookingTimeline() {
         </div>
 
         <div className='flex items-center gap-2'>
+          {groups.length > 0 && (
+            <Select value={filterGroup} onValueChange={setFilterGroup}>
+              <SelectTrigger className='h-8 w-40 text-xs'>
+                <SelectValue placeholder={t('filterGroup')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>{t('filterAllGroups')}</SelectItem>
+                {groups.map(([gid, name]) => (
+                  <SelectItem key={gid} value={gid}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={filterUser} onValueChange={setFilterUser}>
             <SelectTrigger className='h-8 w-40 text-xs'>
               <SelectValue placeholder={t('filterUser')} />
@@ -432,6 +458,7 @@ export function BookingTimeline() {
                     return (
                       b.equipmentId === activeEquip &&
                       (filterUser === 'all' || b.userId === filterUser) &&
+                      (filterGroup === 'all' || b.groupId === filterGroup) &&
                       b.status !== 'cancelled' &&
                       endAt > gTop &&
                       startAt < gBottom

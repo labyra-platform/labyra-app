@@ -58,7 +58,8 @@ export async function POST(req: NextRequest) {
         purpose: parsed.purpose,
         notes: parsed.notes
       },
-      auth.uid
+      auth.uid,
+      auth.groupId
     );
     return NextResponse.json(booking, { status: 201 });
   } catch (err) {

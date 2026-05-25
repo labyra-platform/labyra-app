@@ -14,7 +14,8 @@
  * @phase BOOK-1
  */
 import 'server-only';
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
+import { getAdminFirestoreService, getUserById } from '@/lib/firebase/admin';
+import { getGroup } from '@/lib/firebase/groups/service';
 import type { Booking, BookingStatus } from '@/types/bookings';
 
 function bookingsCol(tenantId: string) {
@@ -49,7 +50,8 @@ function overlaps(s1: number, e1: number, s2: number, e2: number): boolean {
 export async function createBooking(
   tenantId: string,
   input: CreateBookingInput,
-  userId: string
+  userId: string,
+  groupId?: string | null
 ): Promise<Booking> {
   if (input.endAt <= input.startAt) throw new Error('invalid_interval');
 
@@ -57,6 +59,24 @@ export async function createBooking(
   const col = bookingsCol(tenantId);
   const ref = col.doc();
   const now = Date.now();
+
+  // ADR-039: denormalize user + group (display/filter). Lookups before tx.
+  let userName: string | undefined;
+  try {
+    const u = await getUserById(userId);
+    userName = u.displayName || u.email || undefined;
+  } catch {
+    userName = undefined;
+  }
+  let groupName: string | undefined;
+  if (groupId) {
+    try {
+      const g = await getGroup(tenantId, groupId);
+      groupName = g?.name;
+    } catch {
+      groupName = undefined;
+    }
+  }
 
   return db.runTransaction(async (tx) => {
     // Candidate conflicts: same equipment, starting before our end.
@@ -82,6 +102,9 @@ export async function createBooking(
       equipmentId: input.equipmentId,
       equipmentName: input.equipmentName,
       userId,
+      userName,
+      groupId: groupId ?? undefined,
+      groupName,
       startAt: input.startAt,
       endAt: input.endAt,
       purpose: input.purpose,

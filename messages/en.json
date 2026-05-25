@@ -727,7 +727,9 @@
     "viewDay": "Day",
     "viewWeek": "Week",
     "filterUser": "User",
-    "filterAllUsers": "All users"
+    "filterAllUsers": "All users",
+    "filterGroup": "Group",
+    "filterAllGroups": "All groups"
   },
   "aiAssistant": {
     "title": "AI Assistant",

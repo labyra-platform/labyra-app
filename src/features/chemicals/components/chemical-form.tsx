@@ -47,6 +47,8 @@ const STATES = ['solid', 'liquid', 'gas'] as const;
 interface ChemicalFormProps {
   defaultValues?: Partial<Chemical>;
   chemicalId?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
@@ -63,7 +65,12 @@ async function authedFetch(path: string, init?: RequestInit): Promise<Response> 
   });
 }
 
-export function ChemicalForm({ defaultValues, chemicalId }: ChemicalFormProps) {
+export function ChemicalForm({
+  defaultValues,
+  chemicalId,
+  onSuccess,
+  onCancel
+}: ChemicalFormProps) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('chemicals.form');
@@ -147,7 +154,11 @@ export function ChemicalForm({ defaultValues, chemicalId }: ChemicalFormProps) {
       const res = await authedFetch(url, { method, body: JSON.stringify(values) });
       if (!res.ok) throw new Error(await res.text());
       toast.success(chemicalId ? t('update') : t('create'));
-      router.push(`/${locale}/dashboard/chemicals`);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/${locale}/dashboard/chemicals`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -414,16 +425,16 @@ export function ChemicalForm({ defaultValues, chemicalId }: ChemicalFormProps) {
           />
         </div>
 
-        <div className='flex gap-2'>
-          <Button type='submit' disabled={submitting}>
-            {submitting ? '…' : chemicalId ? t('update') : t('create')}
-          </Button>
+        <div className='flex justify-end gap-2'>
           <Button
             type='button'
-            variant='ghost'
-            onClick={() => router.push(`/${locale}/dashboard/chemicals`)}
+            variant='outline'
+            onClick={() => (onCancel ? onCancel() : router.push(`/${locale}/dashboard/chemicals`))}
           >
-            Cancel
+            {t('cancel')}
+          </Button>
+          <Button type='submit' disabled={submitting}>
+            {submitting ? t('saving') : chemicalId ? t('update') : t('create')}
           </Button>
         </div>
       </form>

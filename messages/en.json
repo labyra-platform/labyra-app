@@ -1240,7 +1240,10 @@
     "toastDeleted": "Deleted",
     "toastRestored": "Restored",
     "toastRestoreFailed": "Restore failed",
-    "toastBulkDeleted": "{count} deleted"
+    "toastBulkDeleted": "{count} deleted",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "editPageTitle": "Edit chemical"
   },
   "settings": {
     "aiPreferences": {

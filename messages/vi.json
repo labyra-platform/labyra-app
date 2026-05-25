@@ -1240,7 +1240,10 @@
     "toastDeleted": "Đã xoá",
     "toastRestored": "Đã khôi phục",
     "toastRestoreFailed": "Khôi phục thất bại",
-    "toastBulkDeleted": "Đã xoá {count}"
+    "toastBulkDeleted": "Đã xoá {count}",
+    "cancel": "Hủy",
+    "saving": "Đang lưu…",
+    "editPageTitle": "Sửa hóa chất"
   },
   "settings": {
     "aiPreferences": {

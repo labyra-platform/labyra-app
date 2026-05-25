@@ -1171,7 +1171,15 @@
       "history": "Lịch sử giao dịch",
       "noHistory": "Chưa có giao dịch nào.",
       "deprecate": "Ngừng sử dụng"
-    }
+    },
+    "view": "Xem",
+    "actions": "Thao tác",
+    "undo": "Hoàn tác",
+    "delete": "Xoá",
+    "toastDeleted": "Đã xoá",
+    "toastRestored": "Đã khôi phục",
+    "toastRestoreFailed": "Khôi phục thất bại",
+    "toastBulkDeleted": "Đã xoá {count}"
   },
   "settings": {
     "aiPreferences": {

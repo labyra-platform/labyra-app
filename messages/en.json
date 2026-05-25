@@ -1171,7 +1171,15 @@
       "history": "Transaction history",
       "noHistory": "No transactions yet.",
       "deprecate": "Deprecate"
-    }
+    },
+    "view": "View",
+    "actions": "Actions",
+    "undo": "Undo",
+    "delete": "Delete",
+    "toastDeleted": "Deleted",
+    "toastRestored": "Restored",
+    "toastRestoreFailed": "Restore failed",
+    "toastBulkDeleted": "{count} deleted"
   },
   "settings": {
     "aiPreferences": {

@@ -27,7 +27,7 @@ export function useChemicalsList() {
         setChemicals(
           snap.docs
             .map((d) => ({ ...d.data(), id: d.id }) as Chemical)
-            .filter((c) => c.lifecycleStatus !== 'retracted')
+            .filter((c) => c.lifecycleStatus !== 'retracted' && c.lifecycleStatus !== 'deprecated')
         );
         setLoading(false);
       },

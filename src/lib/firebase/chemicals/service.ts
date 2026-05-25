@@ -154,6 +154,13 @@ export async function deprecateChemical(tenantId: string, id: string): Promise<v
   await ref.update({ lifecycleStatus: 'deprecated', updatedAt: Date.now() });
 }
 
+export async function reactivateChemical(tenantId: string, id: string): Promise<void> {
+  const ref = chemCol(tenantId).doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error('chemical_not_found');
+  await ref.update({ lifecycleStatus: 'active', updatedAt: Date.now() });
+}
+
 /**
  * Apply an inventory transaction (consume = negative, replenish = positive).
  * Atomically appends to the log and updates the cached quantity + status.

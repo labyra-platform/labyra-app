@@ -23,15 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getFirebaseAuth } from '@/lib/firebase/client';
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** epoch ms -> value for <input type="datetime-local"> (local time, no seconds). */
-function toLocalInput(ms: number | undefined): string {
-  if (!ms) return '';
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+import { DateTimePicker } from '@/features/bookings/components/datetime-picker';
 
 interface EditSpectrumDialogProps {
   open: boolean;
@@ -50,7 +42,7 @@ export function EditSpectrumDialog({
 }: EditSpectrumDialogProps) {
   const t = useTranslations('spectra');
   const [instrument, setInstrument] = useState(initialInstrument ?? '');
-  const [measuredAtLocal, setMeasuredAtLocal] = useState(toLocalInput(initialMeasuredAt));
+  const [measuredAtMs, setMeasuredAtMs] = useState<number | undefined>(initialMeasuredAt);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSave = async () => {
@@ -59,7 +51,6 @@ export function EditSpectrumDialog({
       const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('not_authenticated');
       const token = await user.getIdToken();
-      const measuredAtMs = measuredAtLocal ? new Date(measuredAtLocal).getTime() : undefined;
       const res = await fetch(`/api/measurements/${id}`, {
         method: 'PATCH',
         headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
@@ -98,12 +89,7 @@ export function EditSpectrumDialog({
           </div>
           <div className='space-y-2'>
             <Label htmlFor='spec-measured'>{t('colMeasuredAt')}</Label>
-            <Input
-              id='spec-measured'
-              type='datetime-local'
-              value={measuredAtLocal}
-              onChange={(e) => setMeasuredAtLocal(e.target.value)}
-            />
+            <DateTimePicker value={measuredAtMs} onChange={setMeasuredAtMs} />
           </div>
         </div>
         <DialogFooter>

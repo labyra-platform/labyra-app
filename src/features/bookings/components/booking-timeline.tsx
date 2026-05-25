@@ -12,12 +12,19 @@ import {
   type DragEndEvent,
   PointerSensor,
   useDraggable,
+  useDroppable,
   useSensor,
   useSensors
 } from '@dnd-kit/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode
+} from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -131,6 +138,7 @@ function DayBlock({
     id: booking.id,
     disabled: !draggable
   });
+  const dx = transform ? transform.x : 0;
   const dy = transform ? transform.y : 0;
   const resizing = useRef(false);
   const startY = useRef(0);
@@ -162,7 +170,7 @@ function DayBlock({
       {...(draggable ? listeners : {})}
       {...attributes}
       className={`absolute inset-x-1 overflow-hidden rounded-md px-2 py-1 text-[11px] leading-tight transition-shadow ${statusStyle[booking.status] ?? 'bg-muted'} ${draggable ? 'cursor-grab active:cursor-grabbing hover:brightness-95' : ''} ${isDragging ? 'z-20 opacity-90 shadow-md' : ''}`}
-      style={{ top: top + dy, height: effHeight }}
+      style={{ top: top + dy, left: dx, height: effHeight, position: 'absolute' }}
     >
       <BlockBody booking={booking} height={effHeight} />
       {draggable && (
@@ -250,6 +258,16 @@ function SlotLines() {
   );
 }
 
+/** A day column's hour area = droppable target (id = day-start ms as string). */
+function DroppableColumn({ dayStart, children }: { dayStart: number; children: ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: String(dayStart) });
+  return (
+    <div ref={setNodeRef} className='relative' style={{ height: SLOTS * ROW_H }}>
+      {children}
+    </div>
+  );
+}
+
 export function BookingTimeline() {
   const t = useTranslations('bookings');
   const tStatus = useTranslations('bookings.status');
@@ -311,18 +329,23 @@ export function BookingTimeline() {
 
   // drag: vertical -> change time within the booking's own day
   function handleDragEnd(ev: DragEndEvent) {
-    const dy = ev.delta.y;
-    if (Math.abs(dy) < 2) return;
     const b = bookings.find((x) => x.id === ev.active.id);
     if (!b) return;
     const { startAt, endAt } = effTime(b);
     const duration = endAt - startAt;
-    const dayBase = startOfDay(new Date(startAt)).getTime();
-    const gTop = dayBase + DAY_START_HOUR * 3600000;
-    const gBottom = dayBase + DAY_END_HOUR * 3600000;
+    const dy = ev.delta.y;
     const slotDelta = Math.round(dy / ROW_H);
-    if (slotDelta === 0) return;
-    let newStart = startAt + slotDelta * SLOT_MS;
+
+    // target day: dropped column (over.id = day-start ms), else same day
+    const targetDay = ev.over ? Number(ev.over.id) : startOfDay(new Date(startAt)).getTime();
+    const srcDay = startOfDay(new Date(startAt)).getTime();
+    if (targetDay === srcDay && slotDelta === 0) return;
+
+    // keep time-of-day, shift by vertical slots, rebase onto target day
+    const timeOfDayMs = startAt - srcDay;
+    let newStart = targetDay + timeOfDayMs + slotDelta * SLOT_MS;
+    const gTop = targetDay + DAY_START_HOUR * 3600000;
+    const gBottom = targetDay + DAY_END_HOUR * 3600000;
     newStart = Math.max(gTop, Math.min(newStart, gBottom - duration));
     if (newStart === startAt) return;
     void persist(b, newStart, newStart + duration);
@@ -474,7 +497,7 @@ export function BookingTimeline() {
                         </span>
                         <span className='tabular-nums'>{wd.getDate()}</span>
                       </div>
-                      <div className='relative' style={{ height: SLOTS * ROW_H }}>
+                      <DroppableColumn dayStart={wdStart}>
                         <SlotLines />
                         {nowTop !== null && (
                           <div
@@ -500,7 +523,7 @@ export function BookingTimeline() {
                             />
                           );
                         })}
-                      </div>
+                      </DroppableColumn>
                     </div>
                   );
                 })}

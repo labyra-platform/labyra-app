@@ -448,7 +448,8 @@
     "undo": "Hoàn tác",
     "toastRestored": "Đã khôi phục",
     "toastRestoreFailed": "Khôi phục thất bại",
-    "toastBulkDeleted": "Đã xoá {count}"
+    "toastBulkDeleted": "Đã xoá {count}",
+    "scientificData": "Dữ liệu tham chiếu khoa học"
   },
   "samples": {
     "title": "Mẫu",

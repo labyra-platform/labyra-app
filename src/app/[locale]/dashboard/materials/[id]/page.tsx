@@ -8,6 +8,8 @@ import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 import { LifecycleStatusBadge } from '@/components/lifecycle/lifecycle-status-badge';
 // R164-phase-8-9b: lineage graph
 import { MaterialForm } from '@/features/materials/components/material-form';
+// R231-a: scientific reference data (MaterialProfile by formula)
+import { MaterialKnowledgePanel } from '@/features/samples/components/material-knowledge-panel';
 import { useMaterial } from '@/lib/firestore/queries/materials';
 
 export default function MaterialDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,7 +17,6 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ id: s
   const _locale = useLocale();
   const t = useTranslations('materials');
   const { material, loading } = useMaterial(id);
-
   if (loading) {
     return (
       <PageContainer>
@@ -23,7 +24,6 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ id: s
       </PageContainer>
     );
   }
-
   if (!material) {
     return (
       <PageContainer>
@@ -31,7 +31,6 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ id: s
       </PageContainer>
     );
   }
-
   return (
     <PageContainer>
       <div className='max-w-3xl mx-auto space-y-6'>
@@ -48,6 +47,17 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ id: s
           />
         </header>
         <MaterialForm defaultValues={material} materialId={id} />
+
+        {/* R231-a: scientific reference sections. Modular — future computer-vision
+            (SEM/TEM imagery + morphology analysis) plugs in as another section here. */}
+        {material.formula && material.formula.trim().length >= 2 && (
+          <section className='space-y-3'>
+            <div className='flex items-center justify-between'>
+              <h2 className='text-lg font-semibold tracking-tight'>{t('scientificData')}</h2>
+            </div>
+            <MaterialKnowledgePanel formula={material.formula} />
+          </section>
+        )}
       </div>
     </PageContainer>
   );

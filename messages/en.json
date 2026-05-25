@@ -448,7 +448,8 @@
     "undo": "Undo",
     "toastRestored": "Restored",
     "toastRestoreFailed": "Restore failed",
-    "toastBulkDeleted": "{count} deleted"
+    "toastBulkDeleted": "{count} deleted",
+    "scientificData": "Scientific reference data"
   },
   "samples": {
     "title": "Samples",

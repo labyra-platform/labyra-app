@@ -653,7 +653,10 @@
     "view": "View",
     "actions": "Actions",
     "cancel": "Cancel",
-    "deleteConfirmHint": "Permanently delete \"{name}\"? This cannot be undone."
+    "deleteConfirmHint": "Permanently delete \"{name}\"? This cannot be undone.",
+    "toastBulkDeleted": "Deleted {count} item(s).",
+    "bulkDeleteTitle": "Delete equipment?",
+    "bulkDeleteConfirm": "Permanently delete {count} item(s)? This cannot be undone."
   },
   "bookings": {
     "title": "Bookings",
@@ -736,7 +739,8 @@
     "tooShort": "Booking is too short (min 30 min).",
     "tooLong": "Booking is too long (max 8 hours).",
     "tooFarAhead": "Can't book more than 14 days ahead.",
-    "viewMonth": "Month"
+    "viewMonth": "Month",
+    "toastBulkCancelled": "Cancelled {count} booking(s)."
   },
   "aiAssistant": {
     "title": "AI Assistant",

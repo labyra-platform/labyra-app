@@ -5,8 +5,21 @@
 'use client';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useEquipmentList } from '@/lib/firestore/queries/equipment';
 import type { Equipment } from '@/types/equipment';
 import { EquipmentRowActions } from './equipment-row-actions';
@@ -45,6 +58,25 @@ export function EquipmentTable() {
   const t = useTranslations('equipment');
   const tCat = useTranslations('equipment.category');
   const tStatus = useTranslations('equipment.status');
+
+  const [pendingIds, setPendingIds] = useState<string[] | null>(null);
+
+  const doBulkDelete = async (ids: string[]) => {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return;
+    const token = await user.getIdToken();
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/equipment/${id}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        })
+      )
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    toast.success(t('toastBulkDeleted', { count: ok }));
+    setPendingIds(null);
+  };
 
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
@@ -98,21 +130,52 @@ export function EquipmentTable() {
   ];
 
   return (
-    <DataTable<Equipment>
-      rows={equipment}
-      columns={columns}
-      rowKey={(e) => e.id}
-      defaultSort={{ key: 'code', direction: 'asc' }}
-      exportFilename='equipment'
-      exportValue={(e, key) => {
-        if (key === 'code') return codeOf(e);
-        if (key === 'name') return e.name;
-        if (key === 'category') return safe(tCat, catOf(e));
-        if (key === 'status') return safe(tStatus, e.status);
-        if (key === 'location') return e.location ?? '';
-        return null;
-      }}
-      rowActions={(e) => <EquipmentRowActions id={e.id} name={e.name} />}
-    />
+    <>
+      <DataTable<Equipment>
+        rows={equipment}
+        columns={columns}
+        rowKey={(e) => e.id}
+        defaultSort={{ key: 'code', direction: 'asc' }}
+        exportFilename='equipment'
+        exportValue={(e, key) => {
+          if (key === 'code') return codeOf(e);
+          if (key === 'name') return e.name;
+          if (key === 'category') return safe(tCat, catOf(e));
+          if (key === 'status') return safe(tStatus, e.status);
+          if (key === 'location') return e.location ?? '';
+          return null;
+        }}
+        selectable
+        renderBulkActions={(ids) => (
+          <button
+            type='button'
+            onClick={() => setPendingIds(ids)}
+            className='inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10'
+          >
+            {t('delete')} ({ids.length})
+          </button>
+        )}
+        rowActions={(e) => <EquipmentRowActions id={e.id} name={e.name} />}
+      />
+      <AlertDialog open={pendingIds !== null} onOpenChange={(o) => !o && setPendingIds(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bulkDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('bulkDeleteConfirm', { count: pendingIds?.length ?? 0 })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+              onClick={() => pendingIds && void doBulkDelete(pendingIds)}
+            >
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

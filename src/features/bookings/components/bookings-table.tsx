@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
@@ -48,6 +49,22 @@ export function BookingsTable() {
       return true;
     });
   }, [bookings, filter]);
+
+  const bulkCancel = async (ids: string[]) => {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return;
+    const token = await user.getIdToken();
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/bookings/${id}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        })
+      )
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    toast.success(t('toastBulkCancelled', { count: ok }));
+  };
 
   if (loading) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
@@ -136,6 +153,16 @@ export function BookingsTable() {
             if (key === 'status') return tStatus(b.status);
             return null;
           }}
+          selectable
+          renderBulkActions={(ids) => (
+            <button
+              type='button'
+              onClick={() => void bulkCancel(ids)}
+              className='inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10'
+            >
+              {t('cancel')} ({ids.length})
+            </button>
+          )}
           rowActions={(b) => (
             <BookingsRowActions
               id={b.id}

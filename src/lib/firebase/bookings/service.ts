@@ -24,6 +24,11 @@ function bookingsCol(tenantId: string) {
 
 const BLOCKING_STATUSES: BookingStatus[] = ['pending', 'approved', 'in_progress'];
 
+// R221: booking constraints (apply to everyone, incl admin).
+const MAX_ADVANCE_MS = 14 * 86400000; // book at most 14 days ahead
+const MIN_DURATION_MS = 30 * 60000; // 30 minutes
+const MAX_DURATION_MS = 8 * 3600000; // 8 hours
+
 export interface CreateBookingInput {
   equipmentId: string;
   equipmentName?: string;
@@ -54,6 +59,12 @@ export async function createBooking(
   groupId?: string | null
 ): Promise<Booking> {
   if (input.endAt <= input.startAt) throw new Error('invalid_interval');
+
+  // R221: duration + advance-window constraints.
+  const duration = input.endAt - input.startAt;
+  if (duration < MIN_DURATION_MS) throw new Error('too_short');
+  if (duration > MAX_DURATION_MS) throw new Error('too_long');
+  if (input.startAt > Date.now() + MAX_ADVANCE_MS) throw new Error('too_far_ahead');
 
   const db = getAdminFirestoreService();
   const col = bookingsCol(tenantId);

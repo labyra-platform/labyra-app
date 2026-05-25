@@ -732,7 +732,10 @@
     "filterAllGroups": "All groups",
     "lockedCompleted": "Completed bookings can't be changed.",
     "noPast": "Can't move to the past.",
-    "equipmentUnavailable": "This equipment is unavailable (maintenance/broken)."
+    "equipmentUnavailable": "This equipment is unavailable (maintenance/broken).",
+    "tooShort": "Booking is too short (min 30 min).",
+    "tooLong": "Booking is too long (max 8 hours).",
+    "tooFarAhead": "Can't book more than 14 days ahead."
   },
   "aiAssistant": {
     "title": "AI Assistant",

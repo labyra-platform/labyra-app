@@ -732,7 +732,10 @@
     "filterAllGroups": "Tất cả nhóm",
     "lockedCompleted": "Lịch đã hoàn thành không thể đổi.",
     "noPast": "Không thể chuyển về quá khứ.",
-    "equipmentUnavailable": "Thiết bị không khả dụng (bảo trì/hỏng)."
+    "equipmentUnavailable": "Thiết bị không khả dụng (bảo trì/hỏng).",
+    "tooShort": "Lịch quá ngắn (tối thiểu 30 phút).",
+    "tooLong": "Lịch quá dài (tối đa 8 giờ).",
+    "tooFarAhead": "Không thể đặt trước quá 14 ngày."
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

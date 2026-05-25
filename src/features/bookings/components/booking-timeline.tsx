@@ -43,12 +43,13 @@ const GUTTER_W = 56;
 const MIN_MS = SLOT_MS;
 const DAY_MS = 86400000;
 
+// Google-Calendar-style soft pastel fills, no heavy border, dark readable text.
 const statusStyle: Record<string, string> = {
-  pending: 'bg-amber-500/20 border-l-amber-500 text-amber-900 dark:text-amber-100',
-  approved: 'bg-blue-500/20 border-l-blue-500 text-blue-900 dark:text-blue-100',
-  in_progress: 'bg-violet-500/20 border-l-violet-500 text-violet-900 dark:text-violet-100',
-  completed: 'bg-emerald-500/20 border-l-emerald-500 text-emerald-900 dark:text-emerald-100',
-  cancelled: 'bg-muted border-l-border text-muted-foreground line-through'
+  pending: 'bg-amber-200/70 text-amber-950 dark:bg-amber-400/25 dark:text-amber-50',
+  approved: 'bg-emerald-200/70 text-emerald-950 dark:bg-emerald-400/25 dark:text-emerald-50',
+  in_progress: 'bg-sky-200/70 text-sky-950 dark:bg-sky-400/25 dark:text-sky-50',
+  completed: 'bg-muted/80 text-muted-foreground',
+  cancelled: 'bg-muted/60 text-muted-foreground line-through'
 };
 
 function startOfDay(d: Date): Date {
@@ -141,7 +142,7 @@ function DayBlock({
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
       {...attributes}
-      className={`absolute inset-x-1.5 overflow-hidden rounded-md border border-l-[3px] px-2 py-1 text-[11px] leading-tight shadow-sm transition-shadow ${statusStyle[booking.status] ?? 'bg-muted border-l-border'} ${draggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : ''} ${isDragging ? 'z-20 opacity-90 shadow-lg ring-2 ring-primary/40' : ''}`}
+      className={`absolute inset-x-1 overflow-hidden rounded-md px-2 py-1 text-[11px] leading-tight transition-shadow ${statusStyle[booking.status] ?? 'bg-muted'} ${draggable ? 'cursor-grab active:cursor-grabbing hover:brightness-95' : ''} ${isDragging ? 'z-20 opacity-90 shadow-md' : ''}`}
       style={{ top: top + dy, height: effHeight }}
       title={`${booking.userName ?? ''} — ${booking.purpose}`}
     >
@@ -164,7 +165,7 @@ function DayBlock({
 function WeekBlock({ booking, top, height }: { booking: Booking; top: number; height: number }) {
   return (
     <div
-      className={`absolute inset-x-0.5 overflow-hidden rounded border border-l-[3px] px-1 py-0.5 text-[10px] leading-tight shadow-sm ${statusStyle[booking.status] ?? 'bg-muted border-l-border'}`}
+      className={`absolute inset-x-0.5 overflow-hidden rounded px-1 py-0.5 text-[10px] leading-tight ${statusStyle[booking.status] ?? 'bg-muted'}`}
       style={{ top, height }}
       title={`${booking.userName ?? ''} — ${booking.purpose}`}
     >

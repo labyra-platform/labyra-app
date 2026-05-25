@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import { remarkUnwrapViMath } from '../lib/remark-unwrap-vi-math';
 import { cn } from '@/lib/utils';
 import type { AiMessage } from '@/types/ai';
 import 'katex/dist/katex.min.css';
@@ -168,8 +169,8 @@ export function MessageBubble({
             {/* Tool calls hidden from UI (ai-5d-3c) — sources accessible via citation chip modal */}
             <div className='prose prose-sm dark:prose-invert max-w-none prose-table:my-2 prose-pre:my-2 prose-p:my-1.5'>
               <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex]}
+                remarkPlugins={[remarkGfm, remarkMath, remarkUnwrapViMath]}
+                rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
                 components={markdownComponents}
               >
                 {message.content || '...'}

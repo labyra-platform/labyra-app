@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import { remarkUnwrapViMath } from '../lib/remark-unwrap-vi-math';
 import 'katex/dist/katex.min.css';
 import type { SourceHit } from './sources-panel';
 
@@ -113,7 +114,10 @@ export function CitationModal({ source, onClose }: CitationModalProps) {
             </span>
           </div>
           <div className='prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed'>
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath, remarkUnwrapViMath]}
+              rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
+            >
               {source.excerpt}
             </ReactMarkdown>
           </div>

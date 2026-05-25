@@ -731,7 +731,8 @@
     "filterGroup": "Group",
     "filterAllGroups": "All groups",
     "lockedCompleted": "Completed bookings can't be changed.",
-    "noPast": "Can't move to the past."
+    "noPast": "Can't move to the past.",
+    "equipmentUnavailable": "This equipment is unavailable (maintenance/broken)."
   },
   "aiAssistant": {
     "title": "AI Assistant",

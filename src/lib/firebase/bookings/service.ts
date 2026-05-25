@@ -60,6 +60,18 @@ export async function createBooking(
   const ref = col.doc();
   const now = Date.now();
 
+  // R220: block booking on unavailable equipment (maintenance/broken/retired).
+  try {
+    const eqSnap = await db.doc(`tenants/${tenantId}/equipment/${input.equipmentId}`).get();
+    const eqStatus = eqSnap.exists ? (eqSnap.data()?.status as string | undefined) : undefined;
+    if (eqStatus === 'maintenance' || eqStatus === 'broken' || eqStatus === 'retired') {
+      throw new Error('equipment_unavailable');
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message === 'equipment_unavailable') throw e;
+    // other lookup errors: don't block the booking on a transient read failure
+  }
+
   // ADR-039: denormalize user + group (display/filter). Lookups before tx.
   let userName: string | undefined;
   try {

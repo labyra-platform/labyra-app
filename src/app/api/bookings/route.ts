@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const msg = err instanceof Error ? err.message : 'create_failed';
-    return NextResponse.json({ error: msg }, { status: msg === 'invalid_interval' ? 400 : 500 });
+    const status = msg === 'invalid_interval' ? 400 : msg === 'equipment_unavailable' ? 422 : 500;
+    return NextResponse.json({ error: msg }, { status });
   }
 }

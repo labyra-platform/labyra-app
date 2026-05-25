@@ -731,7 +731,8 @@
     "filterGroup": "Nhóm",
     "filterAllGroups": "Tất cả nhóm",
     "lockedCompleted": "Lịch đã hoàn thành không thể đổi.",
-    "noPast": "Không thể chuyển về quá khứ."
+    "noPast": "Không thể chuyển về quá khứ.",
+    "equipmentUnavailable": "Thiết bị không khả dụng (bảo trì/hỏng)."
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

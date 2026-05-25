@@ -9,7 +9,9 @@
  */
 import {
   DndContext,
+  DragOverlay,
   type DragEndEvent,
+  type DragStartEvent,
   PointerSensor,
   useDraggable,
   useDroppable,
@@ -134,12 +136,10 @@ function DayBlock({
   locale: string;
   statusLabel: string;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: booking.id,
     disabled: !draggable
   });
-  const dx = transform ? transform.x : 0;
-  const dy = transform ? transform.y : 0;
   const resizing = useRef(false);
   const startY = useRef(0);
   const [previewDelta, setPreviewDelta] = useState(0);
@@ -169,8 +169,8 @@ function DayBlock({
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
       {...attributes}
-      className={`absolute inset-x-1 overflow-hidden rounded-md px-2 py-1 text-[11px] leading-tight transition-shadow ${statusStyle[booking.status] ?? 'bg-muted'} ${draggable ? 'cursor-grab active:cursor-grabbing hover:brightness-95' : ''} ${isDragging ? 'z-20 opacity-90 shadow-md' : ''}`}
-      style={{ top: top + dy, left: dx, height: effHeight, position: 'absolute' }}
+      className={`absolute inset-x-1 overflow-hidden rounded-md px-2 py-1 text-[11px] leading-tight transition-shadow ${statusStyle[booking.status] ?? 'bg-muted'} ${draggable ? 'cursor-grab active:cursor-grabbing hover:brightness-95' : ''} ${isDragging ? 'opacity-40' : ''}`}
+      style={{ top, height: effHeight }}
     >
       <BlockBody booking={booking} height={effHeight} />
       {draggable && (
@@ -258,6 +258,27 @@ function SlotLines() {
   );
 }
 
+/** Floating preview shown in DragOverlay (keeps block shape while dragging). */
+function DragPreview({
+  booking,
+  startAt,
+  endAt
+}: {
+  booking: Booking;
+  startAt: number;
+  endAt: number;
+}) {
+  const h = Math.max(((endAt - startAt) / SLOT_MS) * ROW_H - 2, 18);
+  return (
+    <div
+      className={`overflow-hidden rounded-md px-2 py-1 text-[11px] leading-tight shadow-lg ${statusStyle[booking.status] ?? 'bg-muted'}`}
+      style={{ height: h, width: 140 }}
+    >
+      <BlockBody booking={booking} height={h} />
+    </div>
+  );
+}
+
 /** A day column's hour area = droppable target (id = day-start ms as string). */
 function DroppableColumn({ dayStart, children }: { dayStart: number; children: ReactNode }) {
   const { setNodeRef } = useDroppable({ id: String(dayStart) });
@@ -281,6 +302,7 @@ export function BookingTimeline() {
   const [filterUser, setFilterUser] = useState<string>('all');
   const [filterGroup, setFilterGroup] = useState<string>('all');
   const [pending, setPending] = useState<Record<string, { startAt: number; endAt: number }>>({});
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     setAnchor(startOfWeek(new Date()));
@@ -328,7 +350,12 @@ export function BookingTimeline() {
   }
 
   // drag: vertical -> change time within the booking's own day
+  function handleDragStart(ev: DragStartEvent) {
+    setActiveId(String(ev.active.id));
+  }
+
   function handleDragEnd(ev: DragEndEvent) {
+    setActiveId(null);
     const b = bookings.find((x) => x.id === ev.active.id);
     if (!b) return;
     const { startAt, endAt } = effTime(b);
@@ -366,6 +393,7 @@ export function BookingTimeline() {
   const weekStart = startOfWeek(anchor);
   const weekDays = Array.from({ length: 7 }, (_, i) => new Date(weekStart.getTime() + i * DAY_MS));
   const activeEquip = weekEquip || equipment[0]?.id || '';
+  const activeBooking = activeId ? (bookings.find((x) => x.id === activeId) ?? null) : null;
   const users = Array.from(
     new Map(
       bookings.filter((b) => b.userId).map((b) => [b.userId, b.userName?.trim() || b.userId])
@@ -462,7 +490,7 @@ export function BookingTimeline() {
           {t('empty')}
         </div>
       ) : (
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className='overflow-hidden rounded-lg border'>
             <div className='flex'>
               <HourGutter />
@@ -530,6 +558,15 @@ export function BookingTimeline() {
               </div>
             </div>
           </div>
+          <DragOverlay dropAnimation={null}>
+            {activeBooking && (
+              <DragPreview
+                booking={activeBooking}
+                startAt={effTime(activeBooking).startAt}
+                endAt={effTime(activeBooking).endAt}
+              />
+            )}
+          </DragOverlay>
         </DndContext>
       )}
 

@@ -697,7 +697,13 @@
       "findSlotFailed": "Không tìm được khung trống",
       "selectEquipmentFirst": "Chọn thiết bị trước",
       "conflict": "Trùng giờ với booking khác",
-      "conflictWith": "Trùng với booking ({from} – {to})"
+      "conflictWith": "Trùng với booking ({from} – {to})",
+      "err": {
+        "too_short": "Lịch quá ngắn (tối thiểu 30 phút).",
+        "too_long": "Lịch quá dài (tối đa 8 giờ).",
+        "too_far_ahead": "Không thể đặt trước quá 14 ngày."
+      },
+      "unavailable": "Không khả dụng"
     },
     "status": {
       "pending": "Chờ duyệt",

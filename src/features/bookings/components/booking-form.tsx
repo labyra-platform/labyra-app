@@ -29,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useEquipmentList } from '@/lib/firestore/queries/equipment';
 import { useIsAdmin } from '@/lib/auth/use-claims';
 import type { Booking } from '@/types/bookings';
+import { isEquipmentBookable } from '../constants';
 import { type BookingFormValues, bookingFormSchema } from '../schema';
 import { DateTimePicker } from './datetime-picker';
 
@@ -38,6 +39,18 @@ interface BookingFormProps {
 }
 
 const STATUSES = ['pending', 'approved', 'in_progress', 'completed', 'cancelled'] as const;
+
+// Map schema refine keys -> i18n. Keeps schema messages stable (shared w/ server).
+const ERROR_KEYS = new Set(['too_short', 'too_long', 'too_far_ahead']);
+
+// Live status dots for the equipment dropdown.
+const eqDotColor: Record<string, string> = {
+  available: 'bg-green-500',
+  in_use: 'bg-blue-500',
+  maintenance: 'bg-amber-500',
+  broken: 'bg-red-500',
+  retired: 'bg-zinc-400'
+};
 
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
   const user = getFirebaseAuth().currentUser;
@@ -62,6 +75,10 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
   const isAdmin = useIsAdmin();
   const [submitting, setSubmitting] = useState(false);
   const [finding, setFinding] = useState(false);
+
+  // Translate known schema error keys; pass through anything else.
+  const errText = (msg: string | undefined): string | undefined =>
+    msg && ERROR_KEYS.has(msg) ? t(`err.${msg}`) : msg;
 
   const form = useForm<BookingFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,11 +179,27 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {equipment.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.equipmentCode ?? e.id} — {e.name}
-                    </SelectItem>
-                  ))}
+                  {equipment.map((e) => {
+                    const status = (e as { status?: string }).status;
+                    const bookable = isEquipmentBookable(status);
+                    return (
+                      <SelectItem key={e.id} value={e.id} disabled={!bookable}>
+                        <span className='flex items-center gap-2'>
+                          <span
+                            className={`size-2 shrink-0 rounded-full ${eqDotColor[status ?? ''] ?? 'bg-zinc-300'}`}
+                          />
+                          <span>
+                            {e.equipmentCode ?? e.id} — {e.name}
+                          </span>
+                          {!bookable && (
+                            <span className='text-muted-foreground ml-1 text-xs'>
+                              ({t('unavailable')})
+                            </span>
+                          )}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -178,26 +211,34 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
           <FormField
             control={form.control}
             name='startAt'
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>{t('startAt')} *</FormLabel>
                 <FormControl>
                   <DateTimePicker value={field.value} onChange={field.onChange} />
                 </FormControl>
-                <FormMessage />
+                {fieldState.error && (
+                  <p className='text-destructive text-sm font-medium'>
+                    {errText(fieldState.error.message)}
+                  </p>
+                )}
               </FormItem>
             )}
           />
           <FormField
             control={form.control}
             name='endAt'
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>{t('endAt')} *</FormLabel>
                 <FormControl>
                   <DateTimePicker value={field.value} onChange={field.onChange} />
                 </FormControl>
-                <FormMessage />
+                {fieldState.error && (
+                  <p className='text-destructive text-sm font-medium'>
+                    {errText(fieldState.error.message)}
+                  </p>
+                )}
               </FormItem>
             )}
           />

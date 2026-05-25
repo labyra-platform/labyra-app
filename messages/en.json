@@ -466,7 +466,9 @@
     "searchPlaceholder": "Search materials…",
     "selectPrompt": "Select a material to view details",
     "backToList": "Back to list",
-    "noDescription": "No description yet."
+    "noDescription": "No description yet.",
+    "focus": "Focus mode",
+    "exitFocus": "Exit focus mode"
   },
   "samples": {
     "title": "Samples",

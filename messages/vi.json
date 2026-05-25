@@ -466,7 +466,9 @@
     "searchPlaceholder": "Tìm vật liệu…",
     "selectPrompt": "Chọn một vật liệu để xem chi tiết",
     "backToList": "Về danh sách",
-    "noDescription": "Chưa có mô tả."
+    "noDescription": "Chưa có mô tả.",
+    "focus": "Toàn màn hình",
+    "exitFocus": "Thoát toàn màn hình"
   },
   "samples": {
     "title": "Mẫu",

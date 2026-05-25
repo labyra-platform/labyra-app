@@ -15,17 +15,28 @@
  * Responsive: below lg, the master grid is full-width and selecting a card
  * shows the detail (master hidden); a Back control returns to the grid.
  */
-import { IconArrowLeft, IconFlask2, IconSearch } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconEdit,
+  IconFlask2,
+  IconMaximize,
+  IconMinimize,
+  IconSearch
+} from '@tabler/icons-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
+import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { MaterialKnowledgePanel } from '@/features/samples/components/material-knowledge-panel';
 import { useMaterials } from '@/lib/firestore/queries/materials';
 import { formatFormula } from '@/lib/utils/format-formula';
 import type { Material } from '@/types/materials';
+import { MaterialFormSheet } from './material-form-sheet';
 
 export function MaterialsCatalog() {
   const router = useRouter();
@@ -35,6 +46,7 @@ export function MaterialsCatalog() {
   const tCat = useTranslations('materials.category');
   const { materials, loading } = useMaterials();
   const [query, setQuery] = useState('');
+  const [focused, setFocused] = useState(false);
 
   const selectedId = params.get('selected');
 
@@ -63,9 +75,15 @@ export function MaterialsCatalog() {
   }
 
   return (
-    <div className='grid grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,3fr)_7fr]'>
+    <div
+      className={
+        focused
+          ? 'grid grid-cols-1 gap-4'
+          : 'grid grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,3fr)_7fr]'
+      }
+    >
       {/* ── Master ── */}
-      <div className={selected ? 'hidden lg:block' : 'block'}>
+      <div className={focused ? 'hidden' : selected ? 'hidden lg:block' : 'block'}>
         <div className='relative mb-3'>
           <IconSearch className='text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2' />
           <Input
@@ -101,7 +119,9 @@ export function MaterialsCatalog() {
           <MaterialDetail
             material={selected}
             categoryLabel={tCat(selected.category)}
+            focused={focused}
             onBack={() => setSelected(null)}
+            onToggleFocus={() => setFocused((v) => !v)}
           />
         ) : (
           <div className='text-muted-foreground flex h-[calc(100vh-220px)] items-center justify-center rounded-lg border border-dashed text-sm'>
@@ -163,29 +183,65 @@ function MaterialCard({
   );
 }
 
-// ── Detail (R233-1 placeholder — overview only; R233-2 adds knowledge + edit) ──
+// ── Detail (R233-2 — overview + scientific knowledge + edit + focus) ──────────
 
 function MaterialDetail({
   material,
   categoryLabel,
-  onBack
+  focused,
+  onBack,
+  onToggleFocus
 }: {
   material: Material;
   categoryLabel: string;
+  focused: boolean;
   onBack: () => void;
+  onToggleFocus: () => void;
 }) {
   const t = useTranslations('materials');
+  const hasFormula = Boolean(material.formula && material.formula.trim().length >= 2);
+
   return (
     <div className='space-y-4'>
-      <button
-        type='button'
-        onClick={onBack}
-        className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm lg:hidden'
-      >
-        <IconArrowLeft className='size-4' />
-        {t('backToList')}
-      </button>
+      <div className='flex items-center justify-between gap-2'>
+        <button
+          type='button'
+          onClick={onBack}
+          className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm lg:hidden'
+        >
+          <IconArrowLeft className='size-4' />
+          {t('backToList')}
+        </button>
+        <div className='ml-auto flex items-center gap-2'>
+          <MaterialFormSheet
+            materialId={material.id}
+            defaultValues={material}
+            trigger={
+              <Button variant='outline' size='sm'>
+                <IconEdit className='mr-1 size-4' />
+                {t('form.update')}
+              </Button>
+            }
+          />
+          <LifecycleActions
+            entity='materials'
+            id={material.id}
+            status={material.lifecycleStatus ?? 'active'}
+            i18nNamespace='materials'
+          />
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={onToggleFocus}
+            aria-label={focused ? t('exitFocus') : t('focus')}
+            className='hidden lg:inline-flex'
+          >
+            {focused ? <IconMinimize className='size-4' /> : <IconMaximize className='size-4' />}
+          </Button>
+        </div>
+      </div>
 
+      {/* Overview */}
       <section className='rounded-lg border bg-card p-5'>
         <div className='flex items-start justify-between gap-3'>
           <div>
@@ -209,6 +265,15 @@ function MaterialDetail({
           </p>
         )}
       </section>
+
+      {/* Scientific knowledge (MaterialProfile by formula). Modular section —
+          future 3D viewer / spectral charts / CV imagery plug in alongside. */}
+      {hasFormula && (
+        <section className='space-y-3'>
+          <h3 className='text-sm font-semibold tracking-tight'>{t('scientificData')}</h3>
+          <MaterialKnowledgePanel formula={material.formula as string} />
+        </section>
+      )}
     </div>
   );
 }

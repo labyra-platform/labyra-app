@@ -957,7 +957,11 @@
       "twoTheta": "2θ (°)",
       "dSpacing": "d (Å)",
       "intensity": "Intensity (%)",
-      "hkl": "hkl"
+      "hkl": "hkl",
+      "wavenumber": "Wavenumber (cm⁻¹)",
+      "shift": "Raman shift (cm⁻¹)",
+      "wavelength": "Wavelength (nm)",
+      "assignment": "Assignment"
     },
     "backToSpectra": "Back to measurements",
     "formula": "Formula",

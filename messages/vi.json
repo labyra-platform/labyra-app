@@ -957,7 +957,11 @@
       "twoTheta": "2θ (°)",
       "dSpacing": "d (Å)",
       "intensity": "Cường độ (%)",
-      "hkl": "hkl"
+      "hkl": "hkl",
+      "wavenumber": "Số sóng (cm⁻¹)",
+      "shift": "Dịch chuyển Raman (cm⁻¹)",
+      "wavelength": "Bước sóng (nm)",
+      "assignment": "Quy gán"
     },
     "backToSpectra": "Quay lại danh sách phổ",
     "formula": "Công thức",

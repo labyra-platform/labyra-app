@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const includeDeprecated = req.nextUrl.searchParams.get('includeDeprecated') === 'true';
   const includeRetracted = req.nextUrl.searchParams.get('includeRetracted') === 'true';
   const limitParam = req.nextUrl.searchParams.get('limit');
-  const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 50, 200) : undefined;
+  const limit = limitParam ? Math.max(1, Math.min(parseInt(limitParam, 10) || 50, 200)) : undefined;
 
   try {
     const items = await listExperiments(auth.tenantId, {

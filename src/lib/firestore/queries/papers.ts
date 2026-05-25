@@ -38,7 +38,7 @@ export function usePapers() {
       (snap) => {
         setPapers(
           snap.docs
-            .map((d) => d.data() as Paper)
+            .map((d) => ({ ...d.data(), id: d.id }) as Paper)
             .filter((p) => !p.lifecycleStatus || p.lifecycleStatus === 'active')
         );
         setLoading(false);

@@ -20,6 +20,7 @@ import { ReferenceCardActions } from '@/features/spectra/components/reference-ca
 import { ReferenceDetailActions } from '@/features/spectra/components/reference-detail-actions';
 import { formatSciText } from '@/features/spectra/utils/format-units';
 import { getCurrentTenantId } from '@/lib/auth/server';
+import { ReferenceCardPeakList } from '@/features/spectra/components/reference-card-peak-list';
 import { getReferenceCard } from '@/lib/firebase/reference-cards/service';
 
 export const dynamic = 'force-dynamic';
@@ -104,7 +105,7 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
             </div>
             <div>
               <div className='text-muted-foreground text-xs'>{t('peaks')}</div>
-              <div>{card.peaks.length}</div>
+              <div>{card.peaks?.length ?? 0}</div>
             </div>
           </div>
 
@@ -120,31 +121,10 @@ export default async function ReferenceCardDetailPage({ params }: PageProps) {
           <div className='border-b p-3'>
             <h3 className='text-sm font-medium'>{t('peakList')}</h3>
             <p className='text-xs text-muted-foreground'>
-              {t('peakListSubtitle', { count: card.peaks.length })}
+              {t('peakListSubtitle', { count: card.peaks?.length ?? 0 })}
             </p>
           </div>
-          <table className='w-full text-sm'>
-            <thead className='bg-muted/50 text-xs'>
-              <tr>
-                <th className='p-2 text-left'>{t('col.twoTheta')}</th>
-                <th className='p-2 text-right'>{t('col.dSpacing')}</th>
-                <th className='p-2 text-right'>{t('col.intensity')}</th>
-                <th className='p-2 text-left'>{t('col.hkl')}</th>
-              </tr>
-            </thead>
-            <tbody className='divide-y'>
-              {xrdCard?.peaks.map((p, i) => (
-                <tr key={i}>
-                  <td className='p-2 font-mono'>{p.twoTheta.toFixed(3)}</td>
-                  <td className='p-2 text-right font-mono'>
-                    {p.dSpacing !== undefined ? p.dSpacing.toFixed(4) : '—'}
-                  </td>
-                  <td className='p-2 text-right font-mono'>{p.intensity.toFixed(1)}</td>
-                  <td className='p-2 font-mono'>{p.hkl ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ReferenceCardPeakList card={card} locale={locale} />
         </div>
       </div>
 

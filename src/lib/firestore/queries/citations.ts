@@ -41,7 +41,7 @@ export function useCitationsBySource(paperId: string | null) {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setCitations(snap.docs.map((d) => d.data() as Citation));
+        setCitations(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Citation));
         setLoading(false);
       },
       (err) => {
@@ -81,7 +81,7 @@ export function useCitationsByTargetPaperId(paperId: string | null) {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setCitations(snap.docs.map((d) => d.data() as Citation));
+        setCitations(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Citation));
         setLoading(false);
       },
       (err) => {

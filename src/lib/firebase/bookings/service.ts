@@ -16,6 +16,12 @@
 import 'server-only';
 import { getAdminFirestoreService, getUserById } from '@/lib/firebase/admin';
 import { getGroup } from '@/lib/firebase/groups/service';
+import {
+  MAX_ADVANCE_MS,
+  MAX_DURATION_MS,
+  MIN_DURATION_MS,
+  isEquipmentBookable
+} from '@/features/bookings/constants';
 import type { Booking, BookingStatus } from '@/types/bookings';
 
 function bookingsCol(tenantId: string) {
@@ -23,11 +29,6 @@ function bookingsCol(tenantId: string) {
 }
 
 const BLOCKING_STATUSES: BookingStatus[] = ['pending', 'approved', 'in_progress'];
-
-// R221: booking constraints (apply to everyone, incl admin).
-const MAX_ADVANCE_MS = 14 * 86400000; // book at most 14 days ahead
-const MIN_DURATION_MS = 30 * 60000; // 30 minutes
-const MAX_DURATION_MS = 8 * 3600000; // 8 hours
 
 export interface CreateBookingInput {
   equipmentId: string;
@@ -75,7 +76,7 @@ export async function createBooking(
   try {
     const eqSnap = await db.doc(`tenants/${tenantId}/equipment/${input.equipmentId}`).get();
     const eqStatus = eqSnap.exists ? (eqSnap.data()?.status as string | undefined) : undefined;
-    if (eqStatus === 'maintenance' || eqStatus === 'broken' || eqStatus === 'retired') {
+    if (!isEquipmentBookable(eqStatus)) {
       throw new Error('equipment_unavailable');
     }
   } catch (e) {

@@ -2,8 +2,8 @@
 
 /**
  * BookingTimeline (R214 / ADR-038) — Day grid: hours (rows) × equipment (cols).
- * Layer 2 + polish (R214-3): drag to reschedule startAt; redesigned grid;
- * client-only day state (fixes hydration #419); current-time line.
+ * Layers 2-4: drag (startAt) + resize bottom edge (endAt) + redesigned grid +
+ * current-time line. Client-only day state (no hydration mismatch).
  */
 import {
   DndContext,
@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useIsAdmin } from '@/lib/auth/use-claims';
@@ -31,6 +31,7 @@ const ROW_H = 30; // px per 30-min slot
 const SLOTS = ((DAY_END_HOUR - DAY_START_HOUR) * 60) / SLOT_MIN;
 const SLOT_MS = SLOT_MIN * 60000;
 const GUTTER_W = 56; // px
+const MIN_MS = SLOT_MS; // minimum booking length = 1 slot
 
 const statusStyle: Record<string, string> = {
   pending: 'bg-amber-500/15 border-l-amber-500 text-amber-900 dark:text-amber-200',
@@ -50,34 +51,71 @@ function fmtHour(h: number): string {
   return `${String(h).padStart(2, '0')}:00`;
 }
 
-/** Draggable booking block (vertical only). */
+/** Draggable booking block (vertical) + bottom resize handle. */
 function DraggableBlock({
   booking,
   top,
   height,
-  draggable
+  draggable,
+  onResize
 }: {
   booking: Booking;
   top: number;
   height: number;
   draggable: boolean;
+  onResize: (b: Booking, deltaPx: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: booking.id,
     disabled: !draggable
   });
   const dy = transform ? transform.y : 0;
+  const resizing = useRef(false);
+  const startY = useRef(0);
+  const [previewDelta, setPreviewDelta] = useState(0);
+
+  function onHandleDown(e: ReactPointerEvent) {
+    e.stopPropagation(); // không cho dnd-kit nhận -> tách resize khỏi drag
+    e.preventDefault();
+    resizing.current = true;
+    startY.current = e.clientY;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function onHandleMove(e: ReactPointerEvent) {
+    if (!resizing.current) return;
+    setPreviewDelta(e.clientY - startY.current);
+  }
+  function onHandleUp(e: ReactPointerEvent) {
+    if (!resizing.current) return;
+    resizing.current = false;
+    const d = e.clientY - startY.current;
+    setPreviewDelta(0);
+    if (Math.abs(d) >= 2) onResize(booking, d);
+  }
+
+  const effHeight = Math.max(height + previewDelta, 18);
+
   return (
     <div
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
       {...attributes}
       className={`absolute inset-x-1.5 overflow-hidden rounded-md border border-l-[3px] px-2 py-1 text-[11px] leading-tight shadow-sm transition-shadow ${statusStyle[booking.status] ?? 'bg-muted border-l-border'} ${draggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : ''} ${isDragging ? 'z-20 opacity-90 shadow-lg ring-2 ring-primary/40' : ''}`}
-      style={{ top: top + dy, height }}
+      style={{ top: top + dy, height: effHeight }}
       title={`${booking.userName ?? ''} — ${booking.purpose}`}
     >
       <div className='truncate font-semibold'>{booking.userName ?? '—'}</div>
-      {height > 26 && <div className='truncate opacity-75'>{booking.purpose}</div>}
+      {effHeight > 26 && <div className='truncate opacity-75'>{booking.purpose}</div>}
+      {draggable && (
+        <div
+          className='absolute inset-x-0 bottom-0 h-2 cursor-ns-resize'
+          onPointerDown={onHandleDown}
+          onPointerMove={onHandleMove}
+          onPointerUp={onHandleUp}
+        >
+          <div className='mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-current opacity-30' />
+        </div>
+      )}
     </div>
   );
 }
@@ -88,7 +126,6 @@ export function BookingTimeline() {
   const isAdmin = useIsAdmin();
   const { bookings, loading: bLoading } = useBookings();
   const { equipment, loading: eLoading } = useEquipmentList();
-  // client-only: undefined on server -> avoids hydration mismatch (#419)
   const [day, setDay] = useState<Date | undefined>(undefined);
   const [now, setNow] = useState<number | undefined>(undefined);
   const [pending, setPending] = useState<Record<string, { startAt: number; endAt: number }>>({});
@@ -170,6 +207,16 @@ export function BookingTimeline() {
     void persist(b, newStart, newStart + duration);
   }
 
+  function handleResize(b: Booking, deltaPx: number) {
+    const { startAt, endAt } = effTime(b);
+    const slotDelta = Math.round(deltaPx / ROW_H);
+    if (slotDelta === 0) return;
+    let newEnd = endAt + slotDelta * SLOT_MS;
+    newEnd = Math.max(startAt + MIN_MS, Math.min(newEnd, gridBottom));
+    if (newEnd === endAt) return;
+    void persist(b, startAt, newEnd);
+  }
+
   const hours = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }, (_, i) => DAY_START_HOUR + i);
   const dateLabel = day.toLocaleDateString(locale, {
     weekday: 'long',
@@ -219,7 +266,6 @@ export function BookingTimeline() {
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className='overflow-hidden rounded-lg border'>
             <div className='flex'>
-              {/* hour gutter */}
               <div className='bg-muted/20 shrink-0 border-r' style={{ width: GUTTER_W }}>
                 <div className='h-9 border-b' />
                 {hours.map((h) => (
@@ -233,7 +279,6 @@ export function BookingTimeline() {
                 ))}
               </div>
 
-              {/* equipment columns — flex-1 chia đều full width */}
               <div className='flex flex-1'>
                 {equipment.map((eq) => {
                   const colBookings = dayBookings.filter((b) => b.equipmentId === eq.id);
@@ -268,6 +313,7 @@ export function BookingTimeline() {
                               top={top}
                               height={height}
                               draggable={isAdmin}
+                              onResize={handleResize}
                             />
                           );
                         })}

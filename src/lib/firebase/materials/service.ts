@@ -35,6 +35,7 @@ export async function createMaterial(
     schemaVersion: 2,
     createdBy: ctx.createdBy,
     createdAt: now,
+    updatedAt: now,
     derivedFrom: input.derivedFrom,
     generatedBy: input.generatedBy,
     lifecycleStatus: 'active',

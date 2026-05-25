@@ -462,7 +462,11 @@
     "toastBulkDeleted": "Đã xoá {count}",
     "scientificData": "Dữ liệu tham chiếu khoa học",
     "colFormula": "Công thức",
-    "colDescription": "Mô tả"
+    "colDescription": "Mô tả",
+    "searchPlaceholder": "Tìm vật liệu…",
+    "selectPrompt": "Chọn một vật liệu để xem chi tiết",
+    "backToList": "Về danh sách",
+    "noDescription": "Chưa có mô tả."
   },
   "samples": {
     "title": "Mẫu",

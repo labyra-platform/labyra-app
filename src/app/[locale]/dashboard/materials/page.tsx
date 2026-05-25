@@ -1,9 +1,10 @@
 import { IconPlus } from '@tabler/icons-react';
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { Suspense } from 'react';
 import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
-import { MaterialsTable } from '@/features/materials/components/materials-table';
+import { MaterialsCatalog } from '@/features/materials/components/materials-catalog';
 
 export async function generateMetadata() {
   const t = await getTranslations('materials');
@@ -26,7 +27,9 @@ export default async function MaterialsListPage() {
         </Button>
       }
     >
-      <MaterialsTable />
+      <Suspense fallback={null}>
+        <MaterialsCatalog />
+      </Suspense>
     </PageContainer>
   );
 }

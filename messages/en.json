@@ -462,7 +462,11 @@
     "toastBulkDeleted": "{count} deleted",
     "scientificData": "Scientific reference data",
     "colFormula": "Formula",
-    "colDescription": "Description"
+    "colDescription": "Description",
+    "searchPlaceholder": "Search materials…",
+    "selectPrompt": "Select a material to view details",
+    "backToList": "Back to list",
+    "noDescription": "No description yet."
   },
   "samples": {
     "title": "Samples",

@@ -723,7 +723,9 @@
     "actions": "Actions",
     "view": "View",
     "cancelHint": "The equipment slot will be released. This cannot be undone.",
-    "keepBooking": "Keep"
+    "keepBooking": "Keep",
+    "viewDay": "Day",
+    "viewWeek": "Week"
   },
   "aiAssistant": {
     "title": "AI Assistant",

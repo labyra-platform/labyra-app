@@ -723,7 +723,9 @@
     "actions": "Thao tác",
     "view": "Xem",
     "cancelHint": "Khung giờ thiết bị sẽ được giải phóng. Không thể hoàn tác.",
-    "keepBooking": "Giữ lại"
+    "keepBooking": "Giữ lại",
+    "viewDay": "Ngày",
+    "viewWeek": "Tuần"
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

@@ -1,9 +1,11 @@
 'use client';
 
 /**
- * BookingTimeline (R214 / ADR-038) — Day grid: hours (rows) × equipment (cols).
- * Layers 2-4: drag (startAt) + resize bottom edge (endAt) + redesigned grid +
- * current-time line. Client-only day state (no hydration mismatch).
+ * BookingTimeline (R214 / ADR-038) — final.
+ * - Day view: equipment (cols) × hours. Drag (startAt) + resize (endAt), admin.
+ * - Week view: 7 days (cols) × hours, ONE equipment (dropdown). Read-only.
+ * - Google-Calendar-style blocks (time + name + purpose, left status border).
+ * - Client-only date state (no hydration mismatch). Current-time line.
  */
 import {
   DndContext,
@@ -18,6 +20,13 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useIsAdmin } from '@/lib/auth/use-claims';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useBookings } from '@/lib/firestore/queries/bookings';
@@ -27,17 +36,18 @@ import type { Booking } from '@/types/bookings';
 const DAY_START_HOUR = 7;
 const DAY_END_HOUR = 22;
 const SLOT_MIN = 30;
-const ROW_H = 30; // px per 30-min slot
+const ROW_H = 30;
 const SLOTS = ((DAY_END_HOUR - DAY_START_HOUR) * 60) / SLOT_MIN;
 const SLOT_MS = SLOT_MIN * 60000;
-const GUTTER_W = 56; // px
-const MIN_MS = SLOT_MS; // minimum booking length = 1 slot
+const GUTTER_W = 56;
+const MIN_MS = SLOT_MS;
+const DAY_MS = 86400000;
 
 const statusStyle: Record<string, string> = {
-  pending: 'bg-amber-500/15 border-l-amber-500 text-amber-900 dark:text-amber-200',
-  approved: 'bg-blue-500/15 border-l-blue-500 text-blue-900 dark:text-blue-200',
-  in_progress: 'bg-violet-500/15 border-l-violet-500 text-violet-900 dark:text-violet-200',
-  completed: 'bg-green-500/15 border-l-green-500 text-green-900 dark:text-green-200',
+  pending: 'bg-amber-500/20 border-l-amber-500 text-amber-900 dark:text-amber-100',
+  approved: 'bg-blue-500/20 border-l-blue-500 text-blue-900 dark:text-blue-100',
+  in_progress: 'bg-violet-500/20 border-l-violet-500 text-violet-900 dark:text-violet-100',
+  completed: 'bg-emerald-500/20 border-l-emerald-500 text-emerald-900 dark:text-emerald-100',
   cancelled: 'bg-muted border-l-border text-muted-foreground line-through'
 };
 
@@ -47,12 +57,44 @@ function startOfDay(d: Date): Date {
   return x;
 }
 
+function startOfWeek(d: Date): Date {
+  const x = startOfDay(d);
+  x.setDate(x.getDate() - x.getDay()); // Sunday start
+  return x;
+}
+
 function fmtHour(h: number): string {
   return `${String(h).padStart(2, '0')}:00`;
 }
 
-/** Draggable booking block (vertical) + bottom resize handle. */
-function DraggableBlock({
+function fmtClock(ms: number): string {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function blockFor(startAt: number, endAt: number, gTop: number, gBottom: number) {
+  const cs = Math.max(startAt, gTop);
+  const ce = Math.min(endAt, gBottom);
+  const top = ((cs - gTop) / SLOT_MS) * ROW_H;
+  const height = Math.max(((ce - cs) / SLOT_MS) * ROW_H - 2, 18);
+  return { top, height };
+}
+
+/** Block content: time range + user + purpose. */
+function BlockBody({ booking, height }: { booking: Booking; height: number }) {
+  return (
+    <>
+      <div className='truncate font-semibold'>
+        {fmtClock(booking.startAt)}–{fmtClock(booking.endAt)}
+      </div>
+      {height > 30 && <div className='truncate font-medium'>{booking.userName ?? '—'}</div>}
+      {height > 46 && <div className='truncate opacity-70'>{booking.purpose}</div>}
+    </>
+  );
+}
+
+/** Draggable + resizable block (Day view). */
+function DayBlock({
   booking,
   top,
   height,
@@ -75,7 +117,7 @@ function DraggableBlock({
   const [previewDelta, setPreviewDelta] = useState(0);
 
   function onHandleDown(e: ReactPointerEvent) {
-    e.stopPropagation(); // không cho dnd-kit nhận -> tách resize khỏi drag
+    e.stopPropagation();
     e.preventDefault();
     resizing.current = true;
     startY.current = e.clientY;
@@ -94,7 +136,6 @@ function DraggableBlock({
   }
 
   const effHeight = Math.max(height + previewDelta, 18);
-
   return (
     <div
       ref={setNodeRef}
@@ -104,8 +145,7 @@ function DraggableBlock({
       style={{ top: top + dy, height: effHeight }}
       title={`${booking.userName ?? ''} — ${booking.purpose}`}
     >
-      <div className='truncate font-semibold'>{booking.userName ?? '—'}</div>
-      {effHeight > 26 && <div className='truncate opacity-75'>{booking.purpose}</div>}
+      <BlockBody booking={booking} height={effHeight} />
       {draggable && (
         <div
           className='absolute inset-x-0 bottom-0 h-2 cursor-ns-resize'
@@ -120,18 +160,65 @@ function DraggableBlock({
   );
 }
 
+/** Static block (Week view, read-only). */
+function WeekBlock({ booking, top, height }: { booking: Booking; top: number; height: number }) {
+  return (
+    <div
+      className={`absolute inset-x-0.5 overflow-hidden rounded border border-l-[3px] px-1 py-0.5 text-[10px] leading-tight shadow-sm ${statusStyle[booking.status] ?? 'bg-muted border-l-border'}`}
+      style={{ top, height }}
+      title={`${booking.userName ?? ''} — ${booking.purpose}`}
+    >
+      <BlockBody booking={booking} height={height} />
+    </div>
+  );
+}
+
+function HourGutter() {
+  const hours = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }, (_, i) => DAY_START_HOUR + i);
+  return (
+    <div className='bg-muted/20 shrink-0 border-r' style={{ width: GUTTER_W }}>
+      <div className='h-9 border-b' />
+      {hours.map((h) => (
+        <div
+          key={h}
+          className='text-muted-foreground relative border-b px-1.5 text-right text-[10px] tabular-nums'
+          style={{ height: ROW_H * 2 }}
+        >
+          <span className='absolute -top-1.5 right-1.5'>{fmtHour(h)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SlotLines() {
+  return (
+    <>
+      {Array.from({ length: SLOTS }, (_, i) => (
+        <div
+          key={i}
+          className={`border-b ${i % 2 === 1 ? 'border-border/60' : 'border-border/25'}`}
+          style={{ height: ROW_H }}
+        />
+      ))}
+    </>
+  );
+}
+
 export function BookingTimeline() {
   const t = useTranslations('bookings');
   const locale = useLocale();
   const isAdmin = useIsAdmin();
   const { bookings, loading: bLoading } = useBookings();
   const { equipment, loading: eLoading } = useEquipmentList();
-  const [day, setDay] = useState<Date | undefined>(undefined);
+  const [mode, setMode] = useState<'day' | 'week'>('day');
+  const [anchor, setAnchor] = useState<Date | undefined>(undefined);
   const [now, setNow] = useState<number | undefined>(undefined);
+  const [weekEquip, setWeekEquip] = useState<string>('');
   const [pending, setPending] = useState<Record<string, { startAt: number; endAt: number }>>({});
 
   useEffect(() => {
-    setDay(startOfDay(new Date()));
+    setAnchor(startOfDay(new Date()));
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(id);
@@ -139,28 +226,11 @@ export function BookingTimeline() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-  if (bLoading || eLoading || !day) {
+  if (bLoading || eLoading || !anchor) {
     return <div className='text-muted-foreground py-8 text-center text-sm'>{t('loading')}</div>;
   }
 
-  const dayStart = startOfDay(day).getTime();
-  const gridTop = dayStart + DAY_START_HOUR * 3600000;
-  const gridBottom = dayStart + DAY_END_HOUR * 3600000;
-
   const effTime = (b: Booking) => pending[b.id] ?? { startAt: b.startAt, endAt: b.endAt };
-
-  const dayBookings = bookings.filter((b) => {
-    const { startAt, endAt } = effTime(b);
-    return b.status !== 'cancelled' && endAt > gridTop && startAt < gridBottom;
-  });
-
-  const blockFor = (startAt: number, endAt: number) => {
-    const clampedStart = Math.max(startAt, gridTop);
-    const clampedEnd = Math.min(endAt, gridBottom);
-    const top = ((clampedStart - gridTop) / SLOT_MS) * ROW_H;
-    const height = Math.max(((clampedEnd - clampedStart) / SLOT_MS) * ROW_H - 2, 18);
-    return { top, height };
-  };
 
   async function persist(b: Booking, startAt: number, endAt: number) {
     setPending((p) => ({ ...p, [b.id]: { startAt, endAt } }));
@@ -192,6 +262,11 @@ export function BookingTimeline() {
     }
   }
 
+  // ---- DAY view ----
+  const dayStart = startOfDay(anchor).getTime();
+  const dGridTop = dayStart + DAY_START_HOUR * 3600000;
+  const dGridBottom = dayStart + DAY_END_HOUR * 3600000;
+
   function handleDragEnd(ev: DragEndEvent) {
     const dy = ev.delta.y;
     if (Math.abs(dy) < 2) return;
@@ -202,7 +277,7 @@ export function BookingTimeline() {
     const slotDelta = Math.round(dy / ROW_H);
     if (slotDelta === 0) return;
     let newStart = startAt + slotDelta * SLOT_MS;
-    newStart = Math.max(gridTop, Math.min(newStart, gridBottom - duration));
+    newStart = Math.max(dGridTop, Math.min(newStart, dGridBottom - duration));
     if (newStart === startAt) return;
     void persist(b, newStart, newStart + duration);
   }
@@ -212,37 +287,51 @@ export function BookingTimeline() {
     const slotDelta = Math.round(deltaPx / ROW_H);
     if (slotDelta === 0) return;
     let newEnd = endAt + slotDelta * SLOT_MS;
-    newEnd = Math.max(startAt + MIN_MS, Math.min(newEnd, gridBottom));
+    newEnd = Math.max(startAt + MIN_MS, Math.min(newEnd, dGridBottom));
     if (newEnd === endAt) return;
     void persist(b, startAt, newEnd);
   }
 
-  const hours = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }, (_, i) => DAY_START_HOUR + i);
-  const dateLabel = day.toLocaleDateString(locale, {
+  const isToday = startOfDay(new Date()).getTime() === dayStart;
+  const nowTop =
+    now && isToday && now >= dGridTop && now <= dGridBottom
+      ? ((now - dGridTop) / SLOT_MS) * ROW_H
+      : null;
+
+  const dayLabel = anchor.toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long'
   });
-  const isToday = startOfDay(new Date()).getTime() === dayStart;
-  const nowTop =
-    now && isToday && now >= gridTop && now <= gridBottom
-      ? ((now - gridTop) / SLOT_MS) * ROW_H
-      : null;
+
+  // ---- WEEK view ----
+  const weekStart = startOfWeek(anchor);
+  const weekDays = Array.from({ length: 7 }, (_, i) => new Date(weekStart.getTime() + i * DAY_MS));
+  const activeEquip = weekEquip || equipment[0]?.id || '';
+  const weekLabel = `${weekStart.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} – ${new Date(weekStart.getTime() + 6 * DAY_MS).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
+
+  const step = (dir: number) => {
+    setAnchor((d) => {
+      const base = d ?? new Date();
+      return new Date(base.getTime() + dir * (mode === 'week' ? 7 * DAY_MS : DAY_MS));
+    });
+  };
 
   return (
     <div className='space-y-3'>
-      <div className='flex items-center justify-between'>
+      {/* controls */}
+      <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='flex items-center gap-1'>
           <Button
             variant='outline'
             size='icon'
             className='size-8'
             aria-label={t('prevDay')}
-            onClick={() => setDay((d) => new Date((d ?? new Date()).getTime() - 86400000))}
+            onClick={() => step(-1)}
           >
             <IconChevronLeft className='size-4' />
           </Button>
-          <Button variant='outline' size='sm' onClick={() => setDay(startOfDay(new Date()))}>
+          <Button variant='outline' size='sm' onClick={() => setAnchor(startOfDay(new Date()))}>
             {t('today')}
           </Button>
           <Button
@@ -250,51 +339,76 @@ export function BookingTimeline() {
             size='icon'
             className='size-8'
             aria-label={t('nextDay')}
-            onClick={() => setDay((d) => new Date((d ?? new Date()).getTime() + 86400000))}
+            onClick={() => step(1)}
           >
             <IconChevronRight className='size-4' />
           </Button>
+          <span className='ml-2 text-sm font-medium capitalize'>
+            {mode === 'day' ? dayLabel : weekLabel}
+          </span>
         </div>
-        <span className='text-sm font-medium capitalize'>{dateLabel}</span>
+
+        <div className='flex items-center gap-2'>
+          {mode === 'week' && equipment.length > 0 && (
+            <Select value={activeEquip} onValueChange={setWeekEquip}>
+              <SelectTrigger className='h-8 w-44 text-xs'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {equipment.map((eq) => (
+                  <SelectItem key={eq.id} value={eq.id}>
+                    {eq.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <div className='flex gap-1'>
+            <Button
+              variant={mode === 'day' ? 'secondary' : 'ghost'}
+              size='sm'
+              onClick={() => setMode('day')}
+            >
+              {t('viewDay')}
+            </Button>
+            <Button
+              variant={mode === 'week' ? 'secondary' : 'ghost'}
+              size='sm'
+              onClick={() => setMode('week')}
+            >
+              {t('viewWeek')}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {equipment.length === 0 ? (
         <div className='text-muted-foreground rounded-lg border py-12 text-center text-sm'>
           {t('empty')}
         </div>
-      ) : (
+      ) : mode === 'day' ? (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className='overflow-hidden rounded-lg border'>
             <div className='flex'>
-              <div className='bg-muted/20 shrink-0 border-r' style={{ width: GUTTER_W }}>
-                <div className='h-9 border-b' />
-                {hours.map((h) => (
-                  <div
-                    key={h}
-                    className='text-muted-foreground relative border-b px-1.5 text-right text-[10px] tabular-nums'
-                    style={{ height: ROW_H * 2 }}
-                  >
-                    <span className='absolute -top-1.5 right-1.5'>{fmtHour(h)}</span>
-                  </div>
-                ))}
-              </div>
-
+              <HourGutter />
               <div className='flex flex-1'>
                 {equipment.map((eq) => {
-                  const colBookings = dayBookings.filter((b) => b.equipmentId === eq.id);
+                  const colBookings = bookings.filter((b) => {
+                    const { startAt, endAt } = effTime(b);
+                    return (
+                      b.equipmentId === eq.id &&
+                      b.status !== 'cancelled' &&
+                      endAt > dGridTop &&
+                      startAt < dGridBottom
+                    );
+                  });
                   return (
                     <div key={eq.id} className='relative min-w-0 flex-1 border-r last:border-r-0'>
                       <div className='bg-muted/20 flex h-9 items-center justify-center border-b px-2 text-xs font-semibold'>
                         <span className='truncate'>{eq.name}</span>
                       </div>
                       <div className='relative' style={{ height: SLOTS * ROW_H }}>
-                        {Array.from({ length: SLOTS }, (_, i) => (
-                          <div
-                            key={i}
-                            className={`border-b ${i % 2 === 1 ? 'border-border/60' : 'border-border/25'}`}
-                            style={{ height: ROW_H }}
-                          />
-                        ))}
+                        <SlotLines />
                         {nowTop !== null && (
                           <div
                             className='pointer-events-none absolute inset-x-0 z-10 border-t-2 border-red-500'
@@ -305,9 +419,9 @@ export function BookingTimeline() {
                         )}
                         {colBookings.map((b) => {
                           const { startAt, endAt } = effTime(b);
-                          const { top, height } = blockFor(startAt, endAt);
+                          const { top, height } = blockFor(startAt, endAt, dGridTop, dGridBottom);
                           return (
-                            <DraggableBlock
+                            <DayBlock
                               key={b.id}
                               booking={b}
                               top={top}
@@ -325,6 +439,47 @@ export function BookingTimeline() {
             </div>
           </div>
         </DndContext>
+      ) : (
+        <div className='overflow-hidden rounded-lg border'>
+          <div className='flex'>
+            <HourGutter />
+            <div className='flex flex-1'>
+              {weekDays.map((wd) => {
+                const wdStart = wd.getTime();
+                const gTop = wdStart + DAY_START_HOUR * 3600000;
+                const gBottom = wdStart + DAY_END_HOUR * 3600000;
+                const isWtoday = startOfDay(new Date()).getTime() === wdStart;
+                const colBookings = bookings.filter((b) => {
+                  return (
+                    b.equipmentId === activeEquip &&
+                    b.status !== 'cancelled' &&
+                    b.endAt > gTop &&
+                    b.startAt < gBottom
+                  );
+                });
+                return (
+                  <div key={wdStart} className='relative min-w-0 flex-1 border-r last:border-r-0'>
+                    <div
+                      className={`flex h-9 flex-col items-center justify-center border-b text-[10px] ${isWtoday ? 'bg-primary/10 font-semibold' : 'bg-muted/20'}`}
+                    >
+                      <span className='uppercase'>
+                        {wd.toLocaleDateString(locale, { weekday: 'short' })}
+                      </span>
+                      <span className='tabular-nums'>{wd.getDate()}</span>
+                    </div>
+                    <div className='relative' style={{ height: SLOTS * ROW_H }}>
+                      <SlotLines />
+                      {colBookings.map((b) => {
+                        const { top, height } = blockFor(b.startAt, b.endAt, gTop, gBottom);
+                        return <WeekBlock key={b.id} booking={b} top={top} height={height} />;
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
       {!isAdmin && <p className='text-muted-foreground text-xs'>{t('timelineReadonly')}</p>}

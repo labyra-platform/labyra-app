@@ -16,10 +16,11 @@ import { useEffect, useState } from 'react';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { getFirebaseFirestore as db } from '@/lib/firebase/client';
 import type { Material } from '@/types/materials';
+import { safeDoc, safeDocs } from '@/lib/firestore/safe';
+import { MaterialDocSchema } from '@/lib/schemas/material-schema';
 
 function materialFromSnapshot(snap: DocumentSnapshot): Material | null {
-  if (!snap.exists()) return null;
-  return { ...snap.data(), id: snap.id } as Material;
+  return safeDoc(snap, MaterialDocSchema, 'materials') as Material | null;
 }
 
 export function useMaterials() {
@@ -38,9 +39,9 @@ export function useMaterials() {
       q,
       (snap) => {
         setMaterials(
-          snap.docs
-            .map((d) => ({ ...d.data(), id: d.id }) as Material)
-            .filter((x) => x.lifecycleStatus !== 'deprecated' && x.lifecycleStatus !== 'retracted')
+          (safeDocs(snap.docs, MaterialDocSchema, 'materials') as Material[]).filter(
+            (x) => x.lifecycleStatus !== 'deprecated' && x.lifecycleStatus !== 'retracted'
+          )
         );
         setLoading(false);
       },

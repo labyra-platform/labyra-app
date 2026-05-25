@@ -468,6 +468,12 @@ Rules:
   (H1/H2: broke `<Link>` + React keys).
 - A static guard (`scripts/check-firestore-guards.sh`, pre-push) flags the
   highest-signal violations. A verified-safe line may carry `// fs-guard-ok`.
+- **Boundary validation (R244, opt-in per entity)**: prefer parsing reads through
+  a LENIENT full-doc Zod schema via `safeDoc`/`safeDocs` (`@/lib/firestore/safe`).
+  Lenient = per-field `.catch(...)`/`.default(...)` so mid-migration/legacy docs
+  stay visible (do NOT strict-skip rows the user still needs to fix). Pilot:
+  `MaterialDocSchema` + `useMaterials`/`useMaterial`. Roll out to other entities
+  per-demand using the same `ProvBaseSchema.extend({...})` shape.
 
 ---
 

@@ -56,7 +56,7 @@ export function TaucChart({ curve, bandgap, yLabel, title }: TaucChartProps) {
       y: yFit,
       type: 'scatter',
       mode: 'lines',
-      name: `Eg = ${bandgap.bandgap_ev.toFixed(2)} eV`,
+      name: `Eg = ${bandgap.bandgap_ev?.toFixed(2) ?? '—'} eV`,
       line: { color: FIT_COLOR, width: 2, dash: 'dash' }
     });
     // Marker at bandgap point
@@ -67,7 +67,7 @@ export function TaucChart({ curve, bandgap, yLabel, title }: TaucChartProps) {
       mode: 'markers+text',
       name: 'Bandgap',
       marker: { color: FIT_COLOR, size: 12, symbol: 'x' },
-      text: [`${bandgap.bandgap_ev.toFixed(2)} eV`],
+      text: [`${bandgap.bandgap_ev?.toFixed(2) ?? '—'} eV`],
       textposition: 'bottom right' as const,
       showlegend: false
     });

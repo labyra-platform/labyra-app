@@ -25,14 +25,28 @@ function db() {
   return getFirebaseFirestore();
 }
 
+/**
+ * R245 (audit L4): coerce a Firestore timestamp field to epoch ms. Handles
+ * both Timestamp (admin/client `.toMillis()`) and legacy docs that stored a
+ * plain number — so a numeric timestamp sorts correctly instead of silently
+ * falling back to Date.now() (which scrambled ordering of legacy docs).
+ */
+function tsToMillis(v: unknown): number {
+  if (v && typeof (v as { toMillis?: () => number }).toMillis === 'function') {
+    return (v as { toMillis: () => number }).toMillis();
+  }
+  if (typeof v === 'number') return v;
+  return Date.now();
+}
+
 function conversationFromSnapshot(snap: DocumentSnapshot): AiConversation {
   const d = snap.data();
   return {
     id: snap.id,
     title: d?.title ?? 'Untitled',
     userId: d?.userId ?? '',
-    createdAt: d?.createdAt?.toMillis?.() ?? Date.now(),
-    updatedAt: d?.updatedAt?.toMillis?.() ?? Date.now(),
+    createdAt: tsToMillis(d?.createdAt),
+    updatedAt: tsToMillis(d?.updatedAt),
     messageCount: d?.messageCount ?? 0,
     totalCost: d?.totalCost ?? {
       inputTokens: 0,
@@ -54,7 +68,7 @@ function messageFromSnapshot(snap: DocumentSnapshot): AiMessage {
     id: snap.id,
     role: d?.role ?? 'assistant',
     content: d?.content ?? '',
-    createdAt: d?.createdAt?.toMillis?.() ?? Date.now(),
+    createdAt: tsToMillis(d?.createdAt),
     ...(tier === 1 || tier === 2 || tier === 3 ? { tier } : {}),
     ...(toolCalls ? { toolCalls } : {})
   };

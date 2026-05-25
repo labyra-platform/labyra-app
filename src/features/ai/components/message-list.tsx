@@ -96,10 +96,7 @@ export function MessageList({
       ) : (
         messages.map((m) => {
           const isLastEmpty =
-            isStreaming &&
-            m === messages[messages.length - 1] &&
-            m.role === 'assistant' &&
-            !m.content;
+            isStreaming && m.id === messages.at(-1)?.id && m.role === 'assistant' && !m.content;
           if (isLastEmpty) {
             return <ThinkingIndicator key={m.id} label={thinkingLabel(m, t)} />;
           }

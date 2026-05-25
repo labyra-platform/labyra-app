@@ -68,11 +68,14 @@ export function XRDPhaseSummary({ candidates }: XRDPhaseSummaryProps) {
         </p>
       </div>
       <div className='divide-y'>
-        {candidates.map((c, i) => {
+        {candidates.map((c) => {
           const conf = confidenceLabel(c.match_score);
           const link = getCitationLink(c);
           return (
-            <div key={`${c.citation.source}-${c.citation.id}-${i}`} className='p-4 space-y-3'>
+            <div
+              key={`${c.citation.source}-${c.citation.id}-${c.formula}`}
+              className='p-4 space-y-3'
+            >
               {/* R162-internal-ui — branch rendering by source */}
               {/* Header row */}
               <div className='flex flex-wrap items-center justify-between gap-3'>

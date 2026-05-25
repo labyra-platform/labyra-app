@@ -268,7 +268,7 @@ export async function POST(request: Request) {
   }
 
   return new Response(JSON.stringify({ ok: true, paperId, version, duplicate: false }), {
-    status: 200,
+    status: 201,
     headers: { 'content-type': 'application/json' }
   });
 }

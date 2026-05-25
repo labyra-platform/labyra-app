@@ -142,9 +142,10 @@ chemicals/equipment/bookings).
 `@phase R{NUM}{-suffix}` in code comments. Each architectural change → ADR.
 
 Active ADRs: 015 Stage1 Security · 016 PROV-O ELN · 017 Citation Network · 018 Async
-Worker · 019 AI Tier · 020 Cost Controls · 021 Inter-tier Protocols · 025 Paper Domain ·
-030 RBAC · 031 nonce-CSP · 032 AI Scaling · 033 RAG Scaling · 036 Chat Multimodal ·
-037 System Prompt · 038 Booking Timeline · 039 Booking Denormalize · 040 Booking Limits.
+Worker · 019 AI Tier · 020 Cost Controls · 021 Inter-tier Protocols · 025 Paper Domain
+Classification · 030 RBAC · 031 nonce-CSP · 032 AI Scaling · 033 RAG Scaling · 036 Chat
+Image Attachments · 037 System Prompt Rewrite · 038 Booking Timeline Grid · 039 Booking
+Denormalize · 040 Booking Limits.
 
 ---
 

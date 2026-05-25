@@ -19,7 +19,9 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import {
   Select,
   SelectContent,
@@ -73,6 +75,15 @@ function fmtClock(ms: number): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function fmtFull(ms: number, locale: string): string {
+  return new Date(ms).toLocaleString(locale, {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 function blockFor(startAt: number, endAt: number, gTop: number, gBottom: number) {
   const cs = Math.max(startAt, gTop);
   const ce = Math.min(endAt, gBottom);
@@ -102,13 +113,17 @@ function DayBlock({
   top,
   height,
   draggable,
-  onResize
+  onResize,
+  locale,
+  statusLabel
 }: {
   booking: Booking;
   top: number;
   height: number;
   draggable: boolean;
   onResize: (b: Booking, deltaPx: number) => void;
+  locale: string;
+  statusLabel: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: booking.id,
@@ -139,14 +154,13 @@ function DayBlock({
   }
 
   const effHeight = Math.max(height + previewDelta, 18);
-  return (
+  const block = (
     <div
       ref={setNodeRef}
       {...(draggable ? listeners : {})}
       {...attributes}
       className={`absolute inset-x-1 overflow-hidden rounded-md px-2 py-1 text-[11px] leading-tight transition-shadow ${statusStyle[booking.status] ?? 'bg-muted'} ${draggable ? 'cursor-grab active:cursor-grabbing hover:brightness-95' : ''} ${isDragging ? 'z-20 opacity-90 shadow-md' : ''}`}
       style={{ top: top + dy, height: effHeight }}
-      title={`${booking.userName ?? ''} — ${booking.purpose}`}
     >
       <BlockBody booking={booking} height={effHeight} />
       {draggable && (
@@ -160,6 +174,38 @@ function DayBlock({
         </div>
       )}
     </div>
+  );
+  // don't pop the card while dragging
+  if (isDragging) return block;
+  return (
+    <HoverCard openDelay={250} closeDelay={80}>
+      <HoverCardTrigger asChild>{block}</HoverCardTrigger>
+      <HoverCardContent side='right' align='start' className='w-64 text-sm'>
+        <div className='space-y-1.5'>
+          <div className='flex items-center justify-between gap-2'>
+            <span className='font-semibold'>{booking.userName ?? '—'}</span>
+            <Badge variant='secondary' className='shrink-0 text-[10px]'>
+              {statusLabel}
+            </Badge>
+          </div>
+          <div className='text-muted-foreground text-xs'>
+            {booking.equipmentName ?? booking.equipmentId}
+          </div>
+          <div className='text-xs'>
+            {fmtFull(booking.startAt, locale)} → {fmtFull(booking.endAt, locale)}
+          </div>
+          {booking.purpose && (
+            <div className='text-xs'>
+              <span className='text-muted-foreground'>· </span>
+              {booking.purpose}
+            </div>
+          )}
+          {booking.notes && (
+            <div className='text-muted-foreground border-t pt-1.5 text-xs'>{booking.notes}</div>
+          )}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
@@ -197,6 +243,7 @@ function SlotLines() {
 
 export function BookingTimeline() {
   const t = useTranslations('bookings');
+  const tStatus = useTranslations('bookings.status');
   const locale = useLocale();
   const isAdmin = useIsAdmin();
   const { bookings, loading: bLoading } = useBookings();
@@ -393,6 +440,8 @@ export function BookingTimeline() {
                               height={height}
                               draggable={isAdmin}
                               onResize={handleResize}
+                              locale={locale}
+                              statusLabel={tStatus(b.status)}
                             />
                           );
                         })}

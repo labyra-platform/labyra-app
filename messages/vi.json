@@ -703,7 +703,8 @@
         "too_long": "Lịch quá dài (tối đa 8 giờ).",
         "too_far_ahead": "Không thể đặt trước quá 14 ngày."
       },
-      "unavailable": "Không khả dụng"
+      "unavailable": "Không khả dụng",
+      "quickDuration": "Nhanh"
     },
     "status": {
       "pending": "Chờ duyệt",

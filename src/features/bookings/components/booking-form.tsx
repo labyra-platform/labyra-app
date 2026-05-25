@@ -29,7 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useEquipmentList } from '@/lib/firestore/queries/equipment';
 import { useIsAdmin } from '@/lib/auth/use-claims';
 import type { Booking } from '@/types/bookings';
-import { isEquipmentBookable } from '../constants';
+import { MAX_DURATION_MS, isEquipmentBookable } from '../constants';
 import { type BookingFormValues, bookingFormSchema } from '../schema';
 import { DateTimePicker } from './datetime-picker';
 
@@ -42,6 +42,9 @@ const STATUSES = ['pending', 'approved', 'in_progress', 'completed', 'cancelled'
 
 // Map schema refine keys -> i18n. Keeps schema messages stable (shared w/ server).
 const ERROR_KEYS = new Set(['too_short', 'too_long', 'too_far_ahead']);
+
+// Quick-duration presets (minutes). All within MAX_DURATION_MS.
+const DURATION_TAGS = [30, 60, 120, 240, 480] as const;
 
 // Live status dots for the equipment dropdown.
 const eqDotColor: Record<string, string> = {
@@ -79,6 +82,13 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
   // Translate known schema error keys; pass through anything else.
   const errText = (msg: string | undefined): string | undefined =>
     msg && ERROR_KEYS.has(msg) ? t(`err.${msg}`) : msg;
+
+  // Set endAt = startAt + minutes (clamped to MAX_DURATION_MS).
+  const setDuration = (minutes: number) => {
+    const start = form.getValues('startAt');
+    const ms = Math.min(minutes * 60_000, MAX_DURATION_MS);
+    form.setValue('endAt', start + ms, { shouldDirty: true, shouldValidate: true });
+  };
 
   const form = useForm<BookingFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -244,16 +254,32 @@ export function BookingForm({ defaultValues, bookingId }: BookingFormProps) {
           />
         </div>
 
-        <Button
-          type='button'
-          variant='outline'
-          size='sm'
-          onClick={() => void handleFindSlot()}
-          disabled={finding}
-        >
-          <IconWand className='mr-2 size-4' />
-          {finding ? t('finding') : t('findSlot')}
-        </Button>
+        <div className='flex flex-wrap items-center gap-2'>
+          <span className='text-muted-foreground text-xs'>{t('quickDuration')}:</span>
+          {DURATION_TAGS.map((min) => (
+            <Button
+              key={min}
+              type='button'
+              variant='outline'
+              size='sm'
+              className='h-7 px-2 text-xs'
+              onClick={() => setDuration(min)}
+            >
+              {min < 60 ? `${min}m` : `${min / 60}h`}
+            </Button>
+          ))}
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            className='h-7 px-2 text-xs'
+            onClick={() => void handleFindSlot()}
+            disabled={finding}
+          >
+            <IconWand className='mr-1 size-3.5' />
+            {finding ? t('finding') : t('findSlot')}
+          </Button>
+        </div>
 
         <FormField
           control={form.control}

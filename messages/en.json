@@ -703,7 +703,8 @@
         "too_long": "Booking is too long (max 8 hours).",
         "too_far_ahead": "Can't book more than 14 days ahead."
       },
-      "unavailable": "Unavailable"
+      "unavailable": "Unavailable",
+      "quickDuration": "Quick"
     },
     "status": {
       "pending": "Pending",

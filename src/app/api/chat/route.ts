@@ -559,16 +559,32 @@ export async function POST(request: Request) {
           totalUsage = result.totalCost;
           const latencyMs = Date.now() - startedAt;
 
-          await convRef.collection('messages').doc(assistantMessageId).set({
+          // R241-h3-atomic: assistant message + conversation aggregate commit
+          // together in one WriteBatch so a partial failure cannot leave the
+          // message persisted while messageCount/totalCost drift behind.
+          const { FieldValue } = await import('firebase-admin/firestore');
+          const batchA = db.batch();
+          batchA.set(convRef.collection('messages').doc(assistantMessageId), {
             role: 'assistant',
             content: fullText,
             createdAt: Timestamp.now(),
             tier,
             reflectionHistory
           });
+          batchA.update(convRef, {
+            updatedAt: Timestamp.now(),
+            messageCount: FieldValue.increment(2),
+            'totalCost.inputTokens': FieldValue.increment(totalUsage.inputTokens),
+            'totalCost.outputTokens': FieldValue.increment(totalUsage.outputTokens),
+            'totalCost.cacheReadTokens': FieldValue.increment(totalUsage.cacheReadTokens),
+            'totalCost.cacheWriteTokens': FieldValue.increment(totalUsage.cacheWriteTokens),
+            'totalCost.usd': FieldValue.increment(totalUsage.usd + intentDecision.classifierCostUsd)
+          });
+          await batchA.commit();
 
           // ADR-035 M2: extract user facts AFTER the response (guaranteed to run
           // via after(), unlike bare fire-and-forget which Vercel would kill).
+          // Scheduled post-commit so we never extract from an unpersisted message.
           if (memoryEnabled) {
             const _userTurn = userText;
             const _assistantTurn = fullText;
@@ -585,17 +601,6 @@ export async function POST(request: Request) {
               });
             });
           }
-
-          const { FieldValue } = await import('firebase-admin/firestore');
-          await convRef.update({
-            updatedAt: Timestamp.now(),
-            messageCount: FieldValue.increment(2),
-            'totalCost.inputTokens': FieldValue.increment(totalUsage.inputTokens),
-            'totalCost.outputTokens': FieldValue.increment(totalUsage.outputTokens),
-            'totalCost.cacheReadTokens': FieldValue.increment(totalUsage.cacheReadTokens),
-            'totalCost.cacheWriteTokens': FieldValue.increment(totalUsage.cacheWriteTokens),
-            'totalCost.usd': FieldValue.increment(totalUsage.usd + intentDecision.classifierCostUsd)
-          });
 
           // R169-4: cost telemetry (best-effort, non-blocking)
 
@@ -892,21 +897,31 @@ export async function POST(request: Request) {
 
         const latencyMs = Date.now() - startedAt;
 
-        // Save assistant message with tool calls
-        await convRef
-          .collection('messages')
-          .doc(assistantMessageId)
-          .set({
-            role: 'assistant',
-            content: fullText,
-            createdAt: Timestamp.now(),
-            tier,
-            ...(toolCallRecords.length > 0 ? { toolCalls: toolCallRecords } : {})
-          });
+        // R241-h3-atomic: assistant message + conversation aggregate commit
+        // together in one WriteBatch (atomic; no drift on partial failure).
+        const { FieldValue } = await import('firebase-admin/firestore');
+        const batchB = db.batch();
+        batchB.set(convRef.collection('messages').doc(assistantMessageId), {
+          role: 'assistant',
+          content: fullText,
+          createdAt: Timestamp.now(),
+          tier,
+          ...(toolCallRecords.length > 0 ? { toolCalls: toolCallRecords } : {})
+        });
+        batchB.update(convRef, {
+          updatedAt: Timestamp.now(),
+          messageCount: FieldValue.increment(2),
+          'totalCost.inputTokens': FieldValue.increment(totalUsage.inputTokens),
+          'totalCost.outputTokens': FieldValue.increment(totalUsage.outputTokens),
+          'totalCost.cacheReadTokens': FieldValue.increment(totalUsage.cacheReadTokens),
+          'totalCost.cacheWriteTokens': FieldValue.increment(totalUsage.cacheWriteTokens),
+          'totalCost.usd': FieldValue.increment(totalUsage.usd + intentDecision.classifierCostUsd)
+        });
+        await batchB.commit();
 
         // ADR-035 M2 (R197c): fact extraction cho TIER THƯỜNG (T0/T1/T2).
         // Bug gốc: khối này trước đây CHỈ ở nhánh tier===3, nên chat thường
-        // không bao giờ extract fact. Đặt sau save message, chạy qua after().
+        // không bao giờ extract fact. Scheduled post-commit (after()).
         if (memoryEnabled) {
           const _userTurn2 = userText;
           const _assistantTurn2 = fullText;
@@ -923,18 +938,6 @@ export async function POST(request: Request) {
             });
           });
         }
-
-        // Conversation aggregate
-        const { FieldValue } = await import('firebase-admin/firestore');
-        await convRef.update({
-          updatedAt: Timestamp.now(),
-          messageCount: FieldValue.increment(2),
-          'totalCost.inputTokens': FieldValue.increment(totalUsage.inputTokens),
-          'totalCost.outputTokens': FieldValue.increment(totalUsage.outputTokens),
-          'totalCost.cacheReadTokens': FieldValue.increment(totalUsage.cacheReadTokens),
-          'totalCost.cacheWriteTokens': FieldValue.increment(totalUsage.cacheWriteTokens),
-          'totalCost.usd': FieldValue.increment(totalUsage.usd + intentDecision.classifierCostUsd)
-        });
 
         // Provenance
         await writeProvenance({

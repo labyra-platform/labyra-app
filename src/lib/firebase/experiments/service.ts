@@ -8,7 +8,7 @@
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { generateEntityId } from '@/lib/prov/id-generator';
-import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
+import { buildDeprecatePatch, reactivateDocTx, retractDocTx } from '@/lib/prov/lifecycle';
 import type { CreateExperimentInput, UpdateExperimentInput } from '@/lib/schemas/experiment-schema';
 import type { Experiment } from '@/types/experiments';
 import type { LifecycleStatus } from '@/types/prov-base';
@@ -157,12 +157,12 @@ export async function retractExperiment(
   userId: string,
   reason: string
 ): Promise<void> {
-  await getAdminFirestoreService()
+  const ref = getAdminFirestoreService()
     .collection('tenants')
     .doc(tenantId)
     .collection(COLLECTION)
-    .doc(id)
-    .update(buildRetractPatch(userId, { reason }));
+    .doc(id);
+  await retractDocTx(ref, userId, reason);
 }
 
 export async function reactivateExperiment(
@@ -175,13 +175,7 @@ export async function reactivateExperiment(
     .doc(tenantId)
     .collection(COLLECTION)
     .doc(id);
-  const doc = await ref.get();
-  if (!doc.exists) return;
-  const status = doc.data()?.lifecycleStatus as LifecycleStatus;
-  if (status === 'retracted') {
-    throw new Error('Cannot reactivate retracted experiment (immutable per compliance)');
-  }
-  await ref.update(buildReactivatePatch(userId));
+  await reactivateDocTx(ref, userId);
 }
 
 // ─── Lineage queries ─────────────────────────────────────────────────

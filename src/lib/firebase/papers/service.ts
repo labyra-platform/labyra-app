@@ -12,7 +12,7 @@
  */
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
+import { buildDeprecatePatch, reactivateDocTx, retractDocTx } from '@/lib/prov/lifecycle';
 import type { UpdatePaperMetadataInput } from '@/lib/schemas/paper-schema';
 import type { Paper, PaperVersion } from '@/types/papers';
 import type { LifecycleStatus } from '@/types/prov-base';
@@ -167,12 +167,12 @@ export async function retractPaper(
   userId: string,
   reason: string
 ): Promise<void> {
-  await getAdminFirestoreService()
+  const ref = getAdminFirestoreService()
     .collection('tenants')
     .doc(tenantId)
     .collection(COLLECTION)
-    .doc(id)
-    .update(buildRetractPatch(userId, { reason }));
+    .doc(id);
+  await retractDocTx(ref, userId, reason);
 }
 
 export async function reactivatePaper(id: string, tenantId: string, userId: string): Promise<void> {
@@ -181,13 +181,7 @@ export async function reactivatePaper(id: string, tenantId: string, userId: stri
     .doc(tenantId)
     .collection(COLLECTION)
     .doc(id);
-  const doc = await ref.get();
-  if (!doc.exists) return;
-  const status = doc.data()?.lifecycleStatus as LifecycleStatus;
-  if (status === 'retracted') {
-    throw new Error('Cannot reactivate retracted paper (immutable per compliance)');
-  }
-  await ref.update(buildReactivatePatch(userId));
+  await reactivateDocTx(ref, userId);
 }
 
 /**

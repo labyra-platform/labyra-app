@@ -15,7 +15,7 @@
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { generateActivityId } from '@/lib/prov/id-generator';
-import { buildDeprecatePatch, buildReactivatePatch, buildRetractPatch } from '@/lib/prov/lifecycle';
+import { buildDeprecatePatch, reactivateDocTx, retractDocTx } from '@/lib/prov/lifecycle';
 import type {
   CreateMeasurementInput,
   UpdateMeasurementInput
@@ -189,12 +189,12 @@ export async function retractMeasurement(
   userId: string,
   reason: string
 ): Promise<void> {
-  await getAdminFirestoreService()
+  const ref = getAdminFirestoreService()
     .collection('tenants')
     .doc(tenantId)
     .collection(COLLECTION)
-    .doc(id)
-    .update(buildRetractPatch(userId, { reason }));
+    .doc(id);
+  await retractDocTx(ref, userId, reason);
 }
 
 export async function reactivateMeasurement(
@@ -207,13 +207,7 @@ export async function reactivateMeasurement(
     .doc(tenantId)
     .collection(COLLECTION)
     .doc(id);
-  const doc = await ref.get();
-  if (!doc.exists) return;
-  const status = doc.data()?.lifecycleStatus as LifecycleStatus;
-  if (status === 'retracted') {
-    throw new Error('Cannot reactivate retracted measurement');
-  }
-  await ref.update(buildReactivatePatch(userId));
+  await reactivateDocTx(ref, userId);
 }
 
 // ─── Lineage queries ─────────────────────────────────────────────────

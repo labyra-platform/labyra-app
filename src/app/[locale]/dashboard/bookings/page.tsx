@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
-import { BookingsTable } from '@/features/bookings/components/bookings-table';
+import { BookingsView } from '@/features/bookings/components/bookings-view';
 
 export async function generateMetadata() {
   const t = await getTranslations('bookings');
@@ -26,7 +26,7 @@ export default async function BookingsListPage() {
         </Button>
       }
     >
-      <BookingsTable />
+      <BookingsView />
     </PageContainer>
   );
 }

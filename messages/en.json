@@ -711,7 +711,13 @@
       "upcoming": "Upcoming",
       "all": "All",
       "cancelled": "Cancelled"
-    }
+    },
+    "viewTable": "Table",
+    "viewTimeline": "Calendar",
+    "today": "Today",
+    "prevDay": "Previous day",
+    "nextDay": "Next day",
+    "timelineReadonly": "View only. Admins can drag to reschedule."
   },
   "aiAssistant": {
     "title": "AI Assistant",

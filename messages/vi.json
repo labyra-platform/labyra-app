@@ -711,7 +711,13 @@
       "upcoming": "Sắp tới",
       "all": "Tất cả",
       "cancelled": "Đã hủy"
-    }
+    },
+    "viewTable": "Bảng",
+    "viewTimeline": "Lịch",
+    "today": "Hôm nay",
+    "prevDay": "Ngày trước",
+    "nextDay": "Ngày sau",
+    "timelineReadonly": "Chỉ xem. Quản trị viên có thể kéo-thả để đổi lịch."
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

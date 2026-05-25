@@ -257,6 +257,7 @@ export function BookingTimeline() {
   const [anchor, setAnchor] = useState<Date | undefined>(undefined);
   const [now, setNow] = useState<number | undefined>(undefined);
   const [weekEquip, setWeekEquip] = useState<string>('');
+  const [filterUser, setFilterUser] = useState<string>('all');
   const [pending, setPending] = useState<Record<string, { startAt: number; endAt: number }>>({});
 
   useEffect(() => {
@@ -338,6 +339,11 @@ export function BookingTimeline() {
   const weekStart = startOfWeek(anchor);
   const weekDays = Array.from({ length: 7 }, (_, i) => new Date(weekStart.getTime() + i * DAY_MS));
   const activeEquip = weekEquip || equipment[0]?.id || '';
+  const users = Array.from(
+    new Map(
+      bookings.filter((b) => b.userId).map((b) => [b.userId, b.userName?.trim() || b.userId])
+    ).entries()
+  ).toSorted((a, b) => a[1].localeCompare(b[1]));
   const weekLabel = `${weekStart.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} – ${new Date(weekStart.getTime() + 6 * DAY_MS).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
 
   const step = (dir: number) =>
@@ -371,20 +377,35 @@ export function BookingTimeline() {
           <span className='ml-2 text-sm font-medium'>{weekLabel}</span>
         </div>
 
-        {equipment.length > 0 && (
-          <Select value={activeEquip} onValueChange={setWeekEquip}>
-            <SelectTrigger className='h-8 w-44 text-xs'>
-              <SelectValue />
+        <div className='flex items-center gap-2'>
+          <Select value={filterUser} onValueChange={setFilterUser}>
+            <SelectTrigger className='h-8 w-40 text-xs'>
+              <SelectValue placeholder={t('filterUser')} />
             </SelectTrigger>
             <SelectContent>
-              {equipment.map((eq) => (
-                <SelectItem key={eq.id} value={eq.id}>
-                  {eq.name}
+              <SelectItem value='all'>{t('filterAllUsers')}</SelectItem>
+              {users.map(([uid, name]) => (
+                <SelectItem key={uid} value={uid}>
+                  {name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
+          {equipment.length > 0 && (
+            <Select value={activeEquip} onValueChange={setWeekEquip}>
+              <SelectTrigger className='h-8 w-44 text-xs'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {equipment.map((eq) => (
+                  <SelectItem key={eq.id} value={eq.id}>
+                    {eq.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       {equipment.length === 0 ? (
@@ -410,6 +431,7 @@ export function BookingTimeline() {
                     const { startAt, endAt } = effTime(b);
                     return (
                       b.equipmentId === activeEquip &&
+                      (filterUser === 'all' || b.userId === filterUser) &&
                       b.status !== 'cancelled' &&
                       endAt > gTop &&
                       startAt < gBottom

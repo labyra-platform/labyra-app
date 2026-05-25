@@ -717,7 +717,8 @@
     "today": "Hôm nay",
     "prevDay": "Ngày trước",
     "nextDay": "Ngày sau",
-    "timelineReadonly": "Chỉ xem. Quản trị viên có thể kéo-thả để đổi lịch."
+    "timelineReadonly": "Chỉ xem. Quản trị viên có thể kéo-thả để đổi lịch.",
+    "timelineConflict": "Trùng lịch — đã hoàn tác."
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

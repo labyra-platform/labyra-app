@@ -717,7 +717,8 @@
     "today": "Today",
     "prevDay": "Previous day",
     "nextDay": "Next day",
-    "timelineReadonly": "View only. Admins can drag to reschedule."
+    "timelineReadonly": "View only. Admins can drag to reschedule.",
+    "timelineConflict": "Time conflict — reverted."
   },
   "aiAssistant": {
     "title": "AI Assistant",

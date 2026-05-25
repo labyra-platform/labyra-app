@@ -54,7 +54,7 @@ export async function DELETE(req: NextRequest) {
 
   try {
     await deleteFact(auth.tenantId, auth.uid, id);
-    return NextResponse.json({ ok: true });
+    return new NextResponse(null, { status: 204 });
   } catch (err) {
     console.error('DELETE /api/me/facts', err);
     return new NextResponse('delete_failed', { status: 500 });

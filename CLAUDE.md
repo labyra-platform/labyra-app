@@ -446,6 +446,29 @@ Read in order before architectural decisions:
 | Agent auto-writes scientific code | Non-reproducible, unverified | Deterministic documented worker (ADR-032) |
 | Multiple themes / theme switcher | Template cruft, not a product feature | Single brand theme + dark/light |
 
+### 11.1 Firestore field access discipline (R192, R239-R241 — crash class)
+
+The single most common crash in this codebase: calling `.length` / `.map` /
+`.filter` / `.forEach` / `.toFixed` on a Firestore-derived field that is
+optional, missing on a partial/legacy doc, or belongs to a discriminated-union
+variant. It took down spectra detail, reference-cards, and Lineage Explorer.
+
+Rules:
+- NEVER call an array/number method on a Firestore-derived field without a guard:
+  `card.peaks?.length ?? 0`, `(parsed.peaks ?? []).map(...)`, `n?.toFixed(2) ?? '—'`.
+- At the data hook, default at the boundary: `setState(apiData ?? [])` — never
+  let `undefined` reach render.
+- Discriminated unions (e.g. `ReferenceCard` by `spectrumType`): narrow by the
+  DISCRIMINANT first (`if (card.spectrumType === 'xrd')`), then access. Do NOT
+  `as`-cast to a variant then access its fields — a cast bypasses the compiler's
+  narrowing and is the exact shape of the C1 crashes. If you must cast, gate it:
+  `c.spectrumType === 'xrd' && Array.isArray(c.peaks)`.
+- Inject the doc id on every query read: `{ ...d.data(), id: d.id }` — `d.data()`
+  does NOT contain the id, so a required `id: string` type is a lie otherwise
+  (H1/H2: broke `<Link>` + React keys).
+- A static guard (`scripts/check-firestore-guards.sh`, pre-push) flags the
+  highest-signal violations. A verified-safe line may carry `// fs-guard-ok`.
+
 ---
 
 ## 12. Tech-stack-specific gotchas

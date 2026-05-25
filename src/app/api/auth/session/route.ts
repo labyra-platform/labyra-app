@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 
 export async function DELETE(): Promise<NextResponse> {
-  const res = NextResponse.json({ ok: true });
+  const res = new NextResponse(null, { status: 204 });
   res.cookies.set(COOKIE_NAME, '', {
     httpOnly: true,
     secure: true,

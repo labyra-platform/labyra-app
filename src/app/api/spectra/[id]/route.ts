@@ -67,7 +67,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     await ref.delete();
-    return NextResponse.json({ ok: true });
+    return new NextResponse(null, { status: 204 });
   } catch (err) {
     console.error('DELETE /api/spectra error', err);
     return new NextResponse(err instanceof Error ? err.message : 'error', {

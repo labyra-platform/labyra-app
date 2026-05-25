@@ -175,6 +175,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
                 cardNumber: c.cardNumber,
                 phaseName: c.phaseName,
                 color: c.color,
+                // fs-guard-ok: activeCards pre-filtered to spectrumType==='xrd' above
                 peaks: (c as import('@/types/spectra').XRDReferenceCard).peaks.map((p) => ({
                   twoTheta: p.twoTheta,
                   intensity: p.intensity,

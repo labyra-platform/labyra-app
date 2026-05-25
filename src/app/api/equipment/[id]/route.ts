@@ -62,7 +62,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const db = getAdminFirestoreService();
     const ref = db.doc(`tenants/${auth.tenantId}/equipment/${id}`);
     await ref.delete();
-    return NextResponse.json({ ok: true });
+    return new NextResponse(null, { status: 204 });
   } catch (err) {
     console.error('DELETE /equipment/[id] error', err);
     return new NextResponse(err instanceof Error ? err.message : 'error', {

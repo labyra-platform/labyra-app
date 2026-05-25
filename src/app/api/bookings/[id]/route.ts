@@ -56,13 +56,15 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
     const msg = err instanceof Error ? err.message : 'update_failed';
     const status =
-      msg === 'forbidden'
-        ? 403
-        : msg === 'booking_not_found'
-          ? 404
-          : msg === 'invalid_interval'
-            ? 400
-            : 500;
+      msg === 'past_booking' || msg === 'completed_locked'
+        ? 422
+        : msg === 'forbidden'
+          ? 403
+          : msg === 'booking_not_found'
+            ? 404
+            : msg === 'invalid_interval'
+              ? 400
+              : 500;
     return NextResponse.json({ error: msg }, { status });
   }
 }

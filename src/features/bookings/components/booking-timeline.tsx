@@ -358,6 +358,10 @@ export function BookingTimeline() {
     setActiveId(null);
     const b = bookings.find((x) => x.id === ev.active.id);
     if (!b) return;
+    if (b.status === 'completed') {
+      toast.error(t('lockedCompleted'));
+      return;
+    }
     const { startAt, endAt } = effTime(b);
     const duration = endAt - startAt;
     const dy = ev.delta.y;
@@ -375,10 +379,18 @@ export function BookingTimeline() {
     const gBottom = targetDay + DAY_END_HOUR * 3600000;
     newStart = Math.max(gTop, Math.min(newStart, gBottom - duration));
     if (newStart === startAt) return;
+    if (newStart < Date.now()) {
+      toast.error(t('noPast'));
+      return;
+    }
     void persist(b, newStart, newStart + duration);
   }
 
   function handleResize(b: Booking, deltaPx: number) {
+    if (b.status === 'completed') {
+      toast.error(t('lockedCompleted'));
+      return;
+    }
     const { startAt, endAt } = effTime(b);
     const dayBase = startOfDay(new Date(startAt)).getTime();
     const gBottom = dayBase + DAY_END_HOUR * 3600000;
@@ -387,6 +399,10 @@ export function BookingTimeline() {
     let newEnd = endAt + slotDelta * SLOT_MS;
     newEnd = Math.max(startAt + MIN_MS, Math.min(newEnd, gBottom));
     if (newEnd === endAt) return;
+    if (newEnd < Date.now()) {
+      toast.error(t('noPast'));
+      return;
+    }
     void persist(b, startAt, newEnd);
   }
 

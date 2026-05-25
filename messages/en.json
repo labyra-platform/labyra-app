@@ -729,7 +729,9 @@
     "filterUser": "User",
     "filterAllUsers": "All users",
     "filterGroup": "Group",
-    "filterAllGroups": "All groups"
+    "filterAllGroups": "All groups",
+    "lockedCompleted": "Completed bookings can't be changed.",
+    "noPast": "Can't move to the past."
   },
   "aiAssistant": {
     "title": "AI Assistant",

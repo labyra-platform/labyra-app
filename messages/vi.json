@@ -729,7 +729,9 @@
     "filterUser": "Người đặt",
     "filterAllUsers": "Tất cả người đặt",
     "filterGroup": "Nhóm",
-    "filterAllGroups": "Tất cả nhóm"
+    "filterAllGroups": "Tất cả nhóm",
+    "lockedCompleted": "Lịch đã hoàn thành không thể đổi.",
+    "noPast": "Không thể chuyển về quá khứ."
   },
   "aiAssistant": {
     "title": "Trợ lý AI",

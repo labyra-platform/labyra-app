@@ -172,9 +172,14 @@ export async function updateBooking(
     const b = snap.data() as Booking;
     if (!isAdmin && b.userId !== requesterId) throw new Error('forbidden');
 
+    // R218: completed bookings are locked; cannot move into the past.
+    const movingTime = patch.startAt !== undefined || patch.endAt !== undefined;
+    if (movingTime && b.status === 'completed') throw new Error('completed_locked');
+
     const newStart = patch.startAt ?? b.startAt;
     const newEnd = patch.endAt ?? b.endAt;
     if (newEnd <= newStart) throw new Error('invalid_interval');
+    if (movingTime && newStart < Date.now()) throw new Error('past_booking');
 
     // Re-check overlap if time changed.
     if (patch.startAt !== undefined || patch.endAt !== undefined) {

@@ -44,12 +44,13 @@ const MIN_MS = SLOT_MS;
 const DAY_MS = 86400000;
 
 // Google-Calendar-style soft pastel fills, no heavy border, dark readable text.
+// Google-Calendar-style SOLID pastel fills (no transparency), dark readable text.
 const statusStyle: Record<string, string> = {
-  pending: 'bg-amber-200/70 text-amber-950 dark:bg-amber-400/25 dark:text-amber-50',
-  approved: 'bg-emerald-200/70 text-emerald-950 dark:bg-emerald-400/25 dark:text-emerald-50',
-  in_progress: 'bg-sky-200/70 text-sky-950 dark:bg-sky-400/25 dark:text-sky-50',
-  completed: 'bg-muted/80 text-muted-foreground',
-  cancelled: 'bg-muted/60 text-muted-foreground line-through'
+  pending: 'bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-50',
+  approved: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-50',
+  in_progress: 'bg-sky-100 text-sky-900 dark:bg-sky-900/60 dark:text-sky-50',
+  completed: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300',
+  cancelled: 'bg-zinc-100 text-zinc-400 line-through dark:bg-zinc-800 dark:text-zinc-500'
 };
 
 function startOfDay(d: Date): Date {
@@ -182,10 +183,10 @@ function HourGutter() {
       {hours.map((h) => (
         <div
           key={h}
-          className='text-muted-foreground relative border-b px-1.5 text-right text-[10px] tabular-nums'
+          className='text-muted-foreground border-b pr-2 pt-0.5 text-right text-[10px] tabular-nums'
           style={{ height: ROW_H * 2 }}
         >
-          <span className='absolute -top-1.5 right-1.5'>{fmtHour(h)}</span>
+          {fmtHour(h)}
         </div>
       ))}
     </div>

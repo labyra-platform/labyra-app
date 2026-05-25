@@ -82,15 +82,17 @@ function blockFor(startAt: number, endAt: number, gTop: number, gBottom: number)
   return { top, height };
 }
 
-/** Block content: time range + user + purpose. */
+/** Block content (Google-style): title (user) bold first, time muted, purpose. */
 function BlockBody({ booking, height }: { booking: Booking; height: number }) {
+  const title = booking.userName?.trim() || booking.purpose?.trim() || '—';
+  const showPurpose = height > 44 && booking.purpose?.trim() && booking.userName?.trim();
   return (
     <>
-      <div className='truncate font-semibold'>
+      <div className='truncate font-semibold'>{title}</div>
+      <div className='truncate text-[10px] font-normal opacity-75'>
         {fmtClock(booking.startAt)}–{fmtClock(booking.endAt)}
       </div>
-      {height > 30 && <div className='truncate font-medium'>{booking.userName ?? '—'}</div>}
-      {height > 46 && <div className='truncate opacity-70'>{booking.purpose}</div>}
+      {showPurpose && <div className='truncate text-[10px] opacity-60'>{booking.purpose}</div>}
     </>
   );
 }

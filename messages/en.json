@@ -735,7 +735,8 @@
     "equipmentUnavailable": "This equipment is unavailable (maintenance/broken).",
     "tooShort": "Booking is too short (min 30 min).",
     "tooLong": "Booking is too long (max 8 hours).",
-    "tooFarAhead": "Can't book more than 14 days ahead."
+    "tooFarAhead": "Can't book more than 14 days ahead.",
+    "viewMonth": "Month"
   },
   "aiAssistant": {
     "title": "AI Assistant",

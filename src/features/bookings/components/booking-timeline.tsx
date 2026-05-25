@@ -77,6 +77,22 @@ function startOfWeek(d: Date): Date {
   return x;
 }
 
+function startOfMonth(d: Date): Date {
+  const x = startOfDay(d);
+  x.setDate(1);
+  return x;
+}
+
+function addMonths(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setMonth(x.getMonth() + n);
+  return x;
+}
+
+function sameDay(a: number, b: number): boolean {
+  return startOfDay(new Date(a)).getTime() === startOfDay(new Date(b)).getTime();
+}
+
 function fmtHour(h: number): string {
   return `${String(h).padStart(2, '0')}:00`;
 }
@@ -311,6 +327,94 @@ function DroppableColumn({ dayStart, children }: { dayStart: number; children: R
   );
 }
 
+/** Month overview: 7×6 grid, day cells with booking chips. View-only. */
+function MonthGrid({
+  monthAnchor,
+  bookings,
+  equipmentId,
+  filterUser,
+  filterGroup,
+  now,
+  locale,
+  onPickDay
+}: {
+  monthAnchor: Date;
+  bookings: Booking[];
+  equipmentId: string;
+  filterUser: string;
+  filterGroup: string;
+  now: number | undefined;
+  locale: string;
+  onPickDay: (dayStart: number) => void;
+}) {
+  const monthStart = startOfMonth(monthAnchor);
+  const gridStart = startOfWeek(monthStart); // Sunday before/at month start
+  const days = Array.from({ length: 42 }, (_, i) => new Date(gridStart.getTime() + i * DAY_MS));
+  const monthIdx = monthStart.getMonth();
+  const weekdayNames = Array.from({ length: 7 }, (_, i) =>
+    new Date(gridStart.getTime() + i * DAY_MS).toLocaleDateString(locale, { weekday: 'short' })
+  );
+
+  return (
+    <div className='overflow-hidden rounded-lg border'>
+      <div className='grid grid-cols-7 border-b'>
+        {weekdayNames.map((w) => (
+          <div
+            key={w}
+            className='text-muted-foreground bg-muted/20 px-2 py-1 text-center text-[10px] font-medium uppercase'
+          >
+            {w}
+          </div>
+        ))}
+      </div>
+      <div className='grid grid-cols-7'>
+        {days.map((d) => {
+          const dayStart = d.getTime();
+          const inMonth = d.getMonth() === monthIdx;
+          const isToday = now !== undefined && sameDay(dayStart, now);
+          const dayEnd = dayStart + DAY_MS;
+          const dayBookings = bookings
+            .filter(
+              (b) =>
+                b.equipmentId === equipmentId &&
+                b.status !== 'cancelled' &&
+                (filterUser === 'all' || b.userId === filterUser) &&
+                (filterGroup === 'all' || b.groupId === filterGroup) &&
+                b.endAt > dayStart &&
+                b.startAt < dayEnd
+            )
+            .toSorted((a, b) => a.startAt - b.startAt);
+          const shown = dayBookings.slice(0, 3);
+          const extra = dayBookings.length - shown.length;
+          return (
+            <button
+              key={dayStart}
+              type='button'
+              onClick={() => onPickDay(dayStart)}
+              className={`flex min-h-24 flex-col gap-0.5 border-b border-r p-1 text-left last:border-r-0 hover:bg-muted/40 ${inMonth ? '' : 'bg-muted/20 text-muted-foreground'}`}
+            >
+              <span
+                className={`mb-0.5 inline-flex size-5 items-center justify-center self-start rounded-full text-[11px] tabular-nums ${isToday ? 'bg-primary text-primary-foreground font-semibold' : ''}`}
+              >
+                {d.getDate()}
+              </span>
+              {shown.map((b) => (
+                <span
+                  key={b.id}
+                  className={`truncate rounded px-1 text-[10px] leading-tight ${statusStyle[b.status] ?? 'bg-muted'}`}
+                >
+                  {fmtClock(b.startAt)} {b.userName ?? b.purpose}
+                </span>
+              ))}
+              {extra > 0 && <span className='text-muted-foreground text-[10px]'>+{extra}</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function BookingTimeline() {
   const t = useTranslations('bookings');
   const tStatus = useTranslations('bookings.status');
@@ -321,6 +425,7 @@ export function BookingTimeline() {
   const [anchor, setAnchor] = useState<Date | undefined>(undefined);
   const [now, setNow] = useState<number | undefined>(undefined);
   const [weekEquip, setWeekEquip] = useState<string>('');
+  const [view, setView] = useState<'week' | 'month'>('week');
   const [filterUser, setFilterUser] = useState<string>('all');
   const [filterGroup, setFilterGroup] = useState<string>('all');
   const [pending, setPending] = useState<Record<string, { startAt: number; endAt: number }>>({});
@@ -465,9 +570,19 @@ export function BookingTimeline() {
     ).entries()
   ).toSorted((a, b) => a[1].localeCompare(b[1]));
   const weekLabel = `${weekStart.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} – ${new Date(weekStart.getTime() + 6 * DAY_MS).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
+  const monthLabel = startOfMonth(anchor).toLocaleDateString(locale, {
+    month: 'long',
+    year: 'numeric'
+  });
+  const headerLabel = view === 'month' ? monthLabel : weekLabel;
 
   const step = (dir: number) =>
-    setAnchor((d) => new Date((d ?? new Date()).getTime() + dir * 7 * DAY_MS));
+    setAnchor((d) => {
+      const base = d ?? new Date();
+      return view === 'month' ? addMonths(base, dir) : new Date(base.getTime() + dir * 7 * DAY_MS);
+    });
+  const goToday = () =>
+    setAnchor(view === 'month' ? startOfMonth(new Date()) : startOfWeek(new Date()));
 
   return (
     <div className='space-y-3'>
@@ -482,7 +597,7 @@ export function BookingTimeline() {
           >
             <IconChevronLeft className='size-4' />
           </Button>
-          <Button variant='outline' size='sm' onClick={() => setAnchor(startOfWeek(new Date()))}>
+          <Button variant='outline' size='sm' onClick={goToday}>
             {t('today')}
           </Button>
           <Button
@@ -494,10 +609,28 @@ export function BookingTimeline() {
           >
             <IconChevronRight className='size-4' />
           </Button>
-          <span className='ml-2 text-sm font-medium'>{weekLabel}</span>
+          <span className='ml-2 text-sm font-medium'>{headerLabel}</span>
         </div>
 
         <div className='flex items-center gap-2'>
+          <div className='flex rounded-md border p-0.5'>
+            <Button
+              variant={view === 'week' ? 'secondary' : 'ghost'}
+              size='sm'
+              className='h-7 px-2 text-xs'
+              onClick={() => setView('week')}
+            >
+              {t('viewWeek')}
+            </Button>
+            <Button
+              variant={view === 'month' ? 'secondary' : 'ghost'}
+              size='sm'
+              className='h-7 px-2 text-xs'
+              onClick={() => setView('month')}
+            >
+              {t('viewMonth')}
+            </Button>
+          </div>
           {groups.length > 0 && (
             <Select value={filterGroup} onValueChange={setFilterGroup}>
               <SelectTrigger className='h-8 w-40 text-xs'>
@@ -547,6 +680,20 @@ export function BookingTimeline() {
         <div className='text-muted-foreground rounded-lg border py-12 text-center text-sm'>
           {t('empty')}
         </div>
+      ) : view === 'month' ? (
+        <MonthGrid
+          monthAnchor={anchor}
+          bookings={bookings}
+          equipmentId={activeEquip}
+          filterUser={filterUser}
+          filterGroup={filterGroup}
+          now={now}
+          locale={locale}
+          onPickDay={(dayStart) => {
+            setAnchor(startOfWeek(new Date(dayStart)));
+            setView('week');
+          }}
+        />
       ) : (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className='overflow-hidden rounded-lg border'>

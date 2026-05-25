@@ -12,6 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { SciText } from '@/features/spectra/utils/format-units';
 import { useMaterials } from '@/lib/firestore/queries/materials';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { toast } from 'sonner';
+import { MaterialsRowActions } from './materials-row-actions';
 import type { HazardLevel, Material } from '@/types/materials';
 
 const hazardColor: Record<HazardLevel, string> = {
@@ -101,6 +104,36 @@ export function MaterialsTable() {
     }
   ];
 
+  const bulkDelete = async (ids: string[]) => {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return;
+    const token = await user.getIdToken();
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/materials/${id}?reason=bulk_delete`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        })
+      )
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    toast.success(t('toastBulkDeleted', { count: ok }), {
+      action: {
+        label: t('undo'),
+        onClick: () => {
+          void Promise.allSettled(
+            ids.map((id) =>
+              fetch(`/api/materials/${id}/reactivate`, {
+                method: 'POST',
+                headers: { authorization: `Bearer ${token}` }
+              })
+            )
+          );
+        }
+      }
+    });
+  };
+
   return (
     <DataTable<Material>
       rows={materials}
@@ -116,6 +149,17 @@ export function MaterialsTable() {
         if (key === 'hazardLevel') return tHaz(m.hazardLevel);
         return null;
       }}
+      selectable
+      renderBulkActions={(ids) => (
+        <button
+          type='button'
+          onClick={() => void bulkDelete(ids)}
+          className='inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10'
+        >
+          {t('delete')} ({ids.length})
+        </button>
+      )}
+      rowActions={(m) => <MaterialsRowActions id={m.id} name={m.name} />}
     />
   );
 }

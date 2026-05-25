@@ -37,7 +37,11 @@ export function useMaterials() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setMaterials(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Material));
+        setMaterials(
+          snap.docs
+            .map((d) => ({ ...d.data(), id: d.id }) as Material)
+            .filter((x) => x.lifecycleStatus !== 'deprecated' && x.lifecycleStatus !== 'retracted')
+        );
         setLoading(false);
       },
       (err) => {

@@ -442,7 +442,13 @@
       "medium": "Medium",
       "high": "High",
       "extreme": "Extreme"
-    }
+    },
+    "view": "View",
+    "actions": "Actions",
+    "undo": "Undo",
+    "toastRestored": "Restored",
+    "toastRestoreFailed": "Restore failed",
+    "toastBulkDeleted": "{count} deleted"
   },
   "samples": {
     "title": "Samples",
@@ -522,7 +528,13 @@
       }
     },
     "lineageGraphTitle": "Lineage graph (PROV-O)",
-    "tabEdit": "Edit"
+    "tabEdit": "Edit",
+    "view": "View",
+    "actions": "Actions",
+    "undo": "Undo",
+    "toastRestored": "Restored",
+    "toastRestoreFailed": "Restore failed",
+    "toastBulkDeleted": "{count} deleted"
   },
   "experiments": {
     "title": "Experiments",

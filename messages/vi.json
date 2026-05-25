@@ -442,7 +442,13 @@
       "medium": "Trung bình",
       "high": "Cao",
       "extreme": "Cực cao"
-    }
+    },
+    "view": "Xem",
+    "actions": "Thao tác",
+    "undo": "Hoàn tác",
+    "toastRestored": "Đã khôi phục",
+    "toastRestoreFailed": "Khôi phục thất bại",
+    "toastBulkDeleted": "Đã xoá {count}"
   },
   "samples": {
     "title": "Mẫu",
@@ -522,7 +528,13 @@
       }
     },
     "lineageGraphTitle": "Sơ đồ lineage (PROV-O)",
-    "tabEdit": "Chỉnh sửa"
+    "tabEdit": "Chỉnh sửa",
+    "view": "Xem",
+    "actions": "Thao tác",
+    "undo": "Hoàn tác",
+    "toastRestored": "Đã khôi phục",
+    "toastRestoreFailed": "Khôi phục thất bại",
+    "toastBulkDeleted": "Đã xoá {count}"
   },
   "experiments": {
     "title": "Thí nghiệm",

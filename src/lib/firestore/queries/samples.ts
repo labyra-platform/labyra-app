@@ -33,7 +33,11 @@ export function useSamples() {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setSamples(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as Sample));
+        setSamples(
+          snap.docs
+            .map((d) => ({ ...d.data(), id: d.id }) as Sample)
+            .filter((x) => x.lifecycleStatus !== 'deprecated' && x.lifecycleStatus !== 'retracted')
+        );
         setLoading(false);
       },
       (err) => {

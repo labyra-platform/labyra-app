@@ -11,6 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, type DataTableColumn } from '@/components/ui-extra/data-table';
 import { SciText } from '@/features/spectra/utils/format-units';
 import { useSamples } from '@/lib/firestore/queries/samples';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { toast } from 'sonner';
+import { SamplesRowActions } from './samples-row-actions';
 import type { Sample, SampleStatus } from '@/types/samples';
 
 // R165-phase-6-samples-status: Sample.status renamed to workflowStatus in R164 Phase 1.
@@ -96,6 +99,36 @@ export function SamplesTable() {
     }
   ];
 
+  const bulkDelete = async (ids: string[]) => {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return;
+    const token = await user.getIdToken();
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/samples/${id}?reason=bulk_delete`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${token}` }
+        })
+      )
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    toast.success(t('toastBulkDeleted', { count: ok }), {
+      action: {
+        label: t('undo'),
+        onClick: () => {
+          void Promise.allSettled(
+            ids.map((id) =>
+              fetch(`/api/samples/${id}/reactivate`, {
+                method: 'POST',
+                headers: { authorization: `Bearer ${token}` }
+              })
+            )
+          );
+        }
+      }
+    });
+  };
+
   return (
     <DataTable<Sample>
       rows={samples}
@@ -112,6 +145,17 @@ export function SamplesTable() {
         if (key === 'location') return s.location ?? '';
         return null;
       }}
+      selectable
+      renderBulkActions={(ids) => (
+        <button
+          type='button'
+          onClick={() => void bulkDelete(ids)}
+          className='inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10'
+        >
+          {t('delete')} ({ids.length})
+        </button>
+      )}
+      rowActions={(s) => <SamplesRowActions id={s.id} name={s.sampleCode} />}
     />
   );
 }

@@ -1,4 +1,5 @@
 import 'server-only';
+import { SESSION_COOKIE_NAME } from '@/lib/auth/session-cookie';
 
 /**
  * Server-side auth helpers
@@ -18,7 +19,7 @@ import { verifyIdToken } from '@/lib/firebase/admin';
  */
 export async function getCurrentUser(): Promise<DecodedIdToken | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get('__Host-session')?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (!token) return null;
 

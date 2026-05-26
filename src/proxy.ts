@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { SESSION_COOKIE_NAME } from '@/lib/auth/session-cookie';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from '@/i18n/routing';
 // R162-security-merge
@@ -89,7 +90,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
     pathnameWithoutLocale.startsWith('/sign-in') || pathnameWithoutLocale.startsWith('/sign-up');
   const isProtectedRoute = pathnameWithoutLocale.startsWith('/dashboard');
 
-  const sessionCookie = request.cookies.get('__Host-session');
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
 
   // Authenticated user hitting an auth page → bounce to dashboard.
   if (sessionCookie && isAuthRoute) {

@@ -7,6 +7,7 @@
 
 export {
   resetPassword,
+  establishSession,
   signInWithEmail,
   signInWithGoogle,
   signOut,

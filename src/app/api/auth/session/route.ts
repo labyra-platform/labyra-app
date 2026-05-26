@@ -10,10 +10,10 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import { getAdminAuthService } from '@/lib/firebase/admin';
+import { SESSION_COOKIE_NAME, SESSION_COOKIE_SECURE } from '@/lib/auth/session-cookie';
 
 export const runtime = 'nodejs';
 
-const COOKIE_NAME = '__Host-session';
 const MAX_AGE = 3600; // 1h — matches Firebase ID token TTL
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -36,9 +36,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(COOKIE_NAME, token, {
+  res.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: true,
+    secure: SESSION_COOKIE_SECURE,
     sameSite: 'lax',
     path: '/',
     maxAge: MAX_AGE
@@ -48,9 +48,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 export async function DELETE(): Promise<NextResponse> {
   const res = new NextResponse(null, { status: 204 });
-  res.cookies.set(COOKIE_NAME, '', {
+  res.cookies.set(SESSION_COOKIE_NAME, '', {
     httpOnly: true,
-    secure: true,
+    secure: SESSION_COOKIE_SECURE,
     sameSite: 'lax',
     path: '/',
     maxAge: 0

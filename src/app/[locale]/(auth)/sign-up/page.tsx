@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import type React from 'react';
 import { type FormEvent, useState } from 'react';
-import { signInWithGoogle, signUpWithEmail } from '@/lib/auth';
+import { establishSession, signInWithGoogle, signUpWithEmail } from '@/lib/auth';
 
 export default function SignUpPage(): React.ReactElement {
   const router = useRouter();
@@ -22,8 +22,10 @@ export default function SignUpPage(): React.ReactElement {
     setLoading(true);
     setError(null);
     try {
-      await signUpWithEmail(email, password);
+      const cred = await signUpWithEmail(email, password);
+      await establishSession(cred);
       router.push('/dashboard');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-up failed');
     } finally {
@@ -35,8 +37,10 @@ export default function SignUpPage(): React.ReactElement {
     setLoading(true);
     setError(null);
     try {
-      await signInWithGoogle();
+      const cred = await signInWithGoogle();
+      await establishSession(cred);
       router.push('/dashboard');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
     } finally {

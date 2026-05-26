@@ -66,3 +66,21 @@ export async function resetPassword(email: string): Promise<void> {
   const auth = getFirebaseAuth();
   await sendPasswordResetEmail(auth, email);
 }
+
+/**
+ * Establish the server session cookie for a freshly signed-in user, awaiting
+ * completion so callers can safely redirect to a protected route afterwards.
+ * Without this the proxy may not see the cookie yet (race) and bounce back to
+ * sign-in. Idempotent with the AuthProvider's onIdTokenChanged sync.
+ */
+export async function establishSession(cred: UserCredential): Promise<void> {
+  const idToken = await cred.user.getIdToken();
+  const res = await fetch('/api/auth/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken })
+  });
+  if (!res.ok) {
+    throw new Error('session_failed');
+  }
+}

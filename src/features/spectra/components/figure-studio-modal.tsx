@@ -37,12 +37,14 @@ import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ColorControl } from '@/features/spectra/components/color-control';
 import {
+  applyPublicationTheme,
   type FigureCapabilities,
   type FigureConfig,
   type LineStyle,
   type PeakLabelMode,
   setTrace
 } from '@/features/spectra/figure-config';
+import { Icons } from '@/components/icons';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { SpectrumParsedData } from '@/types/spectra-analysis';
 
@@ -187,15 +189,28 @@ export function FigureStudioModal({
         <DialogHeader className='border-b px-5 py-3'>
           <DialogTitle className='flex items-center justify-between'>
             <span>Figure Studio</span>
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              onClick={() => onConfigChange({ ...config })}
-              className='mr-8 text-xs text-muted-foreground'
-            >
-              Reset
-            </Button>
+            <div className='mr-8 flex items-center gap-1'>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => onConfigChange(applyPublicationTheme(config))}
+                className='h-7 text-xs'
+                title='Nature / ACS / Elsevier house style: boxed frame, inward ticks, no gridlines, colorblind-safe colours'
+              >
+                <Icons.sparkles className='mr-1 size-3.5' />
+                Publication theme
+              </Button>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={() => onConfigChange({ ...config })}
+                className='text-xs text-muted-foreground'
+              >
+                Reset
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 

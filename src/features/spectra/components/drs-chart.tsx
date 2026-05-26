@@ -130,7 +130,7 @@ export function DRSChart({ reflectance, km, reflectanceMode, config }: DRSChartP
           linewidth: 1,
           mirror: closedFrame,
           zeroline: false,
-          ticks: 'outside'
+          ticks: config?.ticksInside ? 'inside' : 'outside'
         },
         yaxis: {
           title: { text: config?.yTitle ?? yLabel },
@@ -142,7 +142,7 @@ export function DRSChart({ reflectance, km, reflectanceMode, config }: DRSChartP
           linecolor: 'hsl(var(--foreground))',
           linewidth: 1,
           zeroline: false,
-          ticks: 'outside'
+          ticks: config?.ticksInside ? 'inside' : 'outside'
         },
         yaxis2: {
           title: { text: config?.y2Title ?? 'F(R)' },
@@ -154,7 +154,7 @@ export function DRSChart({ reflectance, km, reflectanceMode, config }: DRSChartP
           linecolor: 'hsl(var(--foreground))',
           linewidth: 1,
           zeroline: false,
-          ticks: 'outside'
+          ticks: config?.ticksInside ? 'inside' : 'outside'
         },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',

@@ -42,6 +42,8 @@ export interface FigureConfig {
   showLegend: boolean;
   /** close the top + right axis frame (boxed-axes convention) */
   closedFrame: boolean;
+  /** ticks point into the plot area (journal convention) vs outward */
+  ticksInside: boolean;
   /** axis title overrides — null means "use the chart default" */
   figureTitle: string | null;
   xTitle: string | null;
@@ -143,6 +145,7 @@ export function defaultFigureConfig(
     showGrid: true,
     showLegend: true,
     closedFrame: true,
+    ticksInside: false,
     figureTitle: null,
     xTitle: null,
     yTitle: null,
@@ -246,4 +249,26 @@ export function setTrace(
 /** Validate a hex color (#RGB or #RRGGBB). */
 export function isValidHex(value: string): boolean {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim());
+}
+
+/**
+ * Apply the "publication" (Nature/ACS/Elsevier) figure convention in one shot:
+ * boxed 4-side frame, ticks pointing inward, no gridlines, legend kept (inside),
+ * colorblind-safe Okabe-Ito series colours, and a slightly heavier 1.75px line.
+ * Mirrors the house style of top journals. Returns a new config (pure).
+ */
+export function applyPublicationTheme(config: FigureConfig): FigureConfig {
+  const palette = SCIENTIFIC_PALETTES.okabe_ito.colors;
+  return {
+    ...config,
+    showGrid: false,
+    closedFrame: true,
+    ticksInside: true,
+    showLegend: config.traces.length > 1, // single-curve figures don't need a legend
+    traces: config.traces.map((t, i) => ({
+      ...t,
+      color: palette[i % palette.length],
+      lineWidth: 1.75
+    }))
+  };
 }

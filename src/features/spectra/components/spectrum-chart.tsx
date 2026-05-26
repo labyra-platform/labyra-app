@@ -403,7 +403,7 @@ export function SpectrumChart({ parsed, config, referenceCards = [] }: SpectrumC
   // direction) are the ones Plotly.react() handles unreliably — remount on those
   // only (not on text/number edits) so the preview is always correct without a
   // modal reopen. Cheap: this string changes a handful of times, not per char.
-  const layoutKey = `${config.showLegend}-${config.closedFrame}-${config.showGrid}-${config.reverseX}`;
+  const layoutKey = `${config.showLegend}-${config.closedFrame}-${config.showGrid}-${config.reverseX}-${config.ticksInside}`;
 
   return (
     <Plot
@@ -430,7 +430,7 @@ export function SpectrumChart({ parsed, config, referenceCards = [] }: SpectrumC
           linewidth: 1,
           mirror: config.closedFrame,
           zeroline: false,
-          ticks: 'outside'
+          ticks: config.ticksInside ? 'inside' : 'outside'
         },
         yaxis: {
           title: { text: config.yTitle ?? cfg.yAxis },
@@ -442,7 +442,7 @@ export function SpectrumChart({ parsed, config, referenceCards = [] }: SpectrumC
           linewidth: 1,
           mirror: config.closedFrame,
           zeroline: false,
-          ticks: 'outside'
+          ticks: config.ticksInside ? 'inside' : 'outside'
         },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',

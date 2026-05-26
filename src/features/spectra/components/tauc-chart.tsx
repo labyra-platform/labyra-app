@@ -141,7 +141,7 @@ export function TaucChart({ curve, bandgap, yLabel, title, config }: TaucChartPr
           linewidth: 1,
           mirror: closedFrame,
           zeroline: false,
-          ticks: 'outside'
+          ticks: config?.ticksInside ? 'inside' : 'outside'
         },
         yaxis: {
           title: { text: config?.yTitle ?? yLabel },
@@ -159,7 +159,7 @@ export function TaucChart({ curve, bandgap, yLabel, title, config }: TaucChartPr
           linewidth: 1,
           mirror: closedFrame,
           zeroline: false,
-          ticks: 'outside'
+          ticks: config?.ticksInside ? 'inside' : 'outside'
         },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',

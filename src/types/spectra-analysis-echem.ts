@@ -23,7 +23,8 @@ export interface TafelAnalysis {
 export interface TafelParsedData {
   spectrum_type: 'tafel';
   peaks: [];
-  spectrum_curve: SpectrumCurve; // E (V) vs j
+  spectrum_curve: SpectrumCurve; // E (V) vs j (raw polarization)
+  tafel_curve: SpectrumCurve | null; // log10|j| vs overpotential (proper Tafel axes)
   analysis: TafelAnalysis;
   quick_stats: {
     rowCount: number;

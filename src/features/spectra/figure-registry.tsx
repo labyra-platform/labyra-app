@@ -29,9 +29,9 @@ import {
   getEisTraceDescriptors,
   getLsvTraceDescriptors,
   getTafelTraceDescriptors,
-  LSVChart,
-  TafelChart
+  LSVChart
 } from '@/features/spectra/components/spectrum-chart-echem';
+import { TafelChart } from '@/features/spectra/components/tafel-chart';
 import {
   DSCChart,
   getDscTraceDescriptors,

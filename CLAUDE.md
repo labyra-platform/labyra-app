@@ -348,6 +348,19 @@ push on any TS error OR any lint warning — this is what keeps lint debt at zer
 
 Use `--no-verify` only when you are certain the push is safe.
 
+**R209 lesson — staged-file completeness (caused a Vercel build failure):**
+The pre-push hook runs `tsc` against the WORKING TREE (files on disk), not against
+what git actually committed. So a feature that touches many interdependent files
+(e.g. a registry that imports several charts) can pass `tsc` locally while the
+commit is missing one of them → Vercel checks out an incomplete tree → build fails
+on a missing export. Guard against it:
+- After staging, run `git status -sb` and confirm it is **clean** (no `??`/` M`
+  left behind) before pushing. Prefer `git add -A` for multi-file features.
+- Never push a multi-file feature with `--no-verify`: that skips the only `tsc`
+  gate, and an import-of-a-file-not-committed slips straight to Vercel.
+- `pnpm dev` is NOT a substitute for `tsc --noEmit`: dev lazily compiles only the
+  routes you visit, so it misses cross-file import breaks the production build hits.
+
 ---
 
 ## 8. Session workflow
@@ -419,6 +432,19 @@ Read in order before architectural decisions:
 10. **ADR-028** Arch Upgrade+Security · **ADR-029** Graduated Security Testing
 11. **ADR-030** RBAC & Onboarding (invite-only, member=CRUD, viewer=read-only, anti-escalation)
 12. **ADR-032** AI Scaling + Rate-limit + v3.5 Eval (no per-tenant API split; defer 3.5 Flash; reject Managed Sandbox auto-code)
+13. **ADR-041** Electrochemistry & PEC (R212-R219) — registry-driven charts; "Edit figure" (aesthetics) vs "Re-analyze" (science) split; worker owns the RHE/density chain, client only fits the returned curve; STH only at zero bias else ABPE
+
+### Spectra figure conventions (R208-R219)
+- Every chart type is a `FigureDefinition` in `figure-registry.tsx`. New technique =
+  registry case + controlled chart (reads `config?: FigureConfig`) + descriptors.
+  Do NOT add per-type `if` branches in the section.
+- **Edit figure** = visual only (color/axes/title/theme/export). **Re-analyze** =
+  recompute science from new conditions (`echem-params-dialog.tsx` → reanalyze route
+  merges whitelisted metadata → worker). Never fold science into Edit figure.
+- Worker is the single source of processed scientific curves (e.g. Tafel `tafel_curve`
+  log|j| vs η). Client-side fits (Range Selector) run only on those curves — never
+  re-derive RHE/current-density in JS (drift → two answers → lost trust).
+- Worker parser change ⇒ MUST `bash deploy.sh` (git push ≠ deploy). Current rev 00093.
 
 ---
 

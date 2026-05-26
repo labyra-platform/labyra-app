@@ -17,6 +17,7 @@ import {
   type TraceDescriptor
 } from '@/features/spectra/figure-config';
 import type { FTIRPeak, SpectrumParsedData } from '@/types/spectra-analysis';
+import { formatSciText } from '@/features/spectra/utils/format-units';
 
 const Plot = dynamic(() => import('react-plotly.js'), {
   ssr: false,
@@ -414,7 +415,7 @@ export function SpectrumChart({ parsed, config, referenceCards = [] }: SpectrumC
         height: 420,
         datarevision: revision,
         margin: { l: 60, r: 30, t: 40, b: 50 },
-        title: { text: config.figureTitle ?? cfg.title, font: { size: 14 } },
+        title: { text: formatSciText(config.figureTitle ?? cfg.title), font: { size: 14 } },
         xaxis: {
           title: { text: config.xTitle ?? cfg.xAxis },
           range: xRange,

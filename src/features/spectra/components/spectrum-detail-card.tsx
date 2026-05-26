@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { SpectrumMetadata, SpectrumStatus } from '@/types/spectra';
+import { SciText } from '@/features/spectra/utils/format-units';
 
 const statusColor: Record<SpectrumStatus, string> = {
   uploaded: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
@@ -114,7 +115,9 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
               {tStatus(spectrum.status)}
             </Badge>
           </Row>
-          <Row label={tField('originalFilename')}>{spectrum.originalFilename}</Row>
+          <Row label={tField('originalFilename')}>
+            <SciText>{spectrum.originalFilename}</SciText>
+          </Row>
           <Row label={tField('size')}>{formatSize(spectrum.sizeBytes)}</Row>
           <Row label={tField('mimeType')}>
             <code className='text-xs'>{spectrum.mimeType}</code>
@@ -124,7 +127,11 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
           </Row>
           <Row label={tField('measuredAt')}>{new Date(spectrum.measuredAt).toLocaleString()}</Row>
           {spectrum.instrument && <Row label={tField('instrument')}>{spectrum.instrument}</Row>}
-          {spectrum.sampleLabel && <Row label={tField('sample')}>{spectrum.sampleLabel}</Row>}
+          {spectrum.sampleLabel && (
+            <Row label={tField('sample')}>
+              <SciText>{spectrum.sampleLabel}</SciText>
+            </Row>
+          )}
         </CardContent>
       </Card>
 

@@ -12,6 +12,12 @@ import type {
   TGAAIOutput,
   TGAParsedData
 } from '@/types/spectra-analysis-ext';
+import type {
+  CVParsedData,
+  EISParsedData,
+  LSVParsedData,
+  TafelParsedData
+} from '@/types/spectra-analysis-echem';
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
 
@@ -352,7 +358,11 @@ export type SpectrumParsedData =
   | FTIRParsedData
   | TGAParsedData
   | DSCParsedData
-  | OCPParsedData;
+  | OCPParsedData
+  | TafelParsedData
+  | LSVParsedData
+  | CVParsedData
+  | EISParsedData;
 
 export type SpectrumAIOutput =
   | XRDAIOutput

@@ -364,7 +364,7 @@ function getLayoutConfig(parsed: SpectrumParsedData): ChartLayout {
     title: 'Spectrum',
     xAxis: 'X',
     yAxis: 'Y',
-    xRange: parsed.quick_stats.xRange
+    xRange: 'xRange' in parsed.quick_stats ? parsed.quick_stats.xRange : [0, 1]
   };
 }
 
@@ -373,7 +373,7 @@ export function SpectrumChart({ parsed, config, referenceCards = [] }: SpectrumC
   if (parsed.spectrum_type === 'uvvis_drs') {
     return <div className='text-sm text-muted-foreground'>DRS rendered separately</div>;
   }
-  if (!parsed.spectrum_curve?.x || !parsed.spectrum_curve.y) {
+  if (!('spectrum_curve' in parsed) || !parsed.spectrum_curve?.x || !parsed.spectrum_curve.y) {
     return <div className='text-sm text-muted-foreground'>No spectrum data to display</div>;
   }
   let traces: PlotData[] = [];

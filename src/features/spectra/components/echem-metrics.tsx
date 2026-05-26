@@ -1,0 +1,152 @@
+'use client';
+
+/**
+ * EchemMetrics — key quantitative results for electrochemistry measurements
+ * (Tafel / LSV / CV / EIS), rendered as labelled metric tiles. Reads directly
+ * from the worker-parsed analysis (no recomputation).
+ * @phase R212 (electrochemistry app support)
+ */
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type {
+  CVParsedData,
+  EISParsedData,
+  LSVParsedData,
+  TafelParsedData
+} from '@/types/spectra-analysis-echem';
+
+function Metric({ label, value, unit }: { label: string; value: string; unit?: string }) {
+  return (
+    <div className='space-y-0.5'>
+      <div className='text-xs text-muted-foreground'>{label}</div>
+      <div className='text-lg font-semibold tabular-nums'>
+        {value}
+        {unit ? (
+          <span className='ml-1 text-sm font-normal text-muted-foreground'>{unit}</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function fmt(n: number | null | undefined, digits = 3): string {
+  if (n == null || Number.isNaN(n)) return '—';
+  return n.toFixed(digits);
+}
+
+function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader className='pb-3'>
+        <CardTitle className='text-sm font-medium'>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className='grid grid-cols-2 gap-4 sm:grid-cols-3'>{children}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TafelMetrics({ parsed }: { parsed: TafelParsedData }) {
+  const a = parsed.analysis;
+  return (
+    <Shell title='Tafel kinetics'>
+      <Metric label='Tafel slope' value={fmt(a.tafel_slope_mV_per_dec, 1)} unit='mV/dec' />
+      <Metric
+        label='Exchange current j₀'
+        value={fmt(a.exchange_current_density_j0, 4)}
+        unit={a.j0_unit}
+      />
+      <Metric label='R²' value={fmt(a.r_squared, 4)} />
+      <Metric
+        label='Fit window (log j)'
+        value={`${fmt(a.log_j_window[0], 2)} … ${fmt(a.log_j_window[1], 2)}`}
+      />
+      {a.mechanism_hint ? (
+        <div className='col-span-2 space-y-0.5 sm:col-span-3'>
+          <div className='text-xs text-muted-foreground'>Mechanism hint</div>
+          <div className='text-sm'>{a.mechanism_hint}</div>
+        </div>
+      ) : null}
+    </Shell>
+  );
+}
+
+export function LSVMetrics({ parsed }: { parsed: LSVParsedData }) {
+  const a = parsed.analysis;
+  return (
+    <Shell title='LSV activity'>
+      {a.reaction ? <Metric label='Reaction' value={a.reaction.toUpperCase()} /> : null}
+      <Metric label='η @ 10 mA/cm²' value={fmt(a.overpotential_at_10mA_cm2_V, 3)} unit='V' />
+      <Metric
+        label='Onset η @ 1 mA/cm²'
+        value={fmt(a.onset_overpotential_at_1mA_cm2_V, 3)}
+        unit='V'
+      />
+      {a.tafel ? (
+        <Metric label='Tafel slope' value={fmt(a.tafel.tafel_slope_mV_per_dec, 1)} unit='mV/dec' />
+      ) : null}
+      <Metric label='iR corrected' value={parsed.conditions.ir_corrected ? 'Yes' : 'No'} />
+    </Shell>
+  );
+}
+
+export function CVMetrics({ parsed }: { parsed: CVParsedData }) {
+  const a = parsed.analysis;
+  return (
+    <Shell title='CV redox'>
+      <Metric label='Eₚₐ' value={fmt(a.Epa_V, 4)} unit='V' />
+      <Metric label='Eₚ𝒸' value={fmt(a.Epc_V, 4)} unit='V' />
+      <Metric label='ΔEₚ' value={fmt(a.dEp_mV, 1)} unit='mV' />
+      <Metric label="E°'" value={fmt(a.E0_prime_V, 4)} unit='V' />
+      <Metric label='|iₚₐ/iₚ𝒸|' value={fmt(a.peak_current_ratio, 2)} />
+      <div className='col-span-2 space-y-0.5 sm:col-span-3'>
+        <div className='text-xs text-muted-foreground'>Reversibility</div>
+        <div className='text-sm'>{a.reversibility}</div>
+      </div>
+    </Shell>
+  );
+}
+
+export function EISMetrics({ parsed }: { parsed: EISParsedData }) {
+  const fit = parsed.circuit_fit;
+  const params = fit.parameters ?? {};
+  return (
+    <Shell title='EIS — impedance'>
+      <Metric label='Circuit' value={fit.circuit || '—'} />
+      {fit.error ? (
+        <div className='col-span-2 space-y-0.5 sm:col-span-3'>
+          <div className='text-xs text-muted-foreground'>Fit</div>
+          <div className='text-sm text-destructive'>{fit.error}</div>
+        </div>
+      ) : (
+        <>
+          {Object.entries(params).map(([k, v]) => (
+            <Metric key={k} label={k} value={typeof v === 'number' ? fmt(v, 3) : String(v)} />
+          ))}
+          {fit.chi_square != null ? <Metric label='χ²' value={fmt(fit.chi_square, 5)} /> : null}
+        </>
+      )}
+    </Shell>
+  );
+}
+
+/** Dispatch the right metrics block for an electrochemistry measurement. */
+export function EchemMetrics({
+  parsed
+}: {
+  parsed: TafelParsedData | LSVParsedData | CVParsedData | EISParsedData;
+}) {
+  switch (parsed.spectrum_type) {
+    case 'tafel':
+      return <TafelMetrics parsed={parsed} />;
+    case 'lsv':
+      return <LSVMetrics parsed={parsed} />;
+    case 'cv':
+      return <CVMetrics parsed={parsed} />;
+    case 'eis':
+      return <EISMetrics parsed={parsed} />;
+    default:
+      return null;
+  }
+}

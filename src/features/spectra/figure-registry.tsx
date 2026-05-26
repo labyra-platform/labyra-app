@@ -23,6 +23,24 @@ import type { ReactNode } from 'react';
 
 import { DRSChart, getDrsTraceDescriptors } from '@/features/spectra/components/drs-chart';
 import {
+  CVChart,
+  EISChart,
+  getCvTraceDescriptors,
+  getEisTraceDescriptors,
+  getLsvTraceDescriptors,
+  getTafelTraceDescriptors,
+  LSVChart,
+  TafelChart
+} from '@/features/spectra/components/spectrum-chart-echem';
+import {
+  DSCChart,
+  getDscTraceDescriptors,
+  getOcpTraceDescriptors,
+  getTgaTraceDescriptors,
+  OCPChart,
+  TGAChart
+} from '@/features/spectra/components/spectrum-chart-ext';
+import {
   getSpectrumTraceDescriptors,
   type ReferenceCardOverlay,
   SpectrumChart
@@ -166,7 +184,90 @@ export function getFigureDefinitions(
       return defs;
     }
 
-    // tga / dsc / ocp: not yet controlled — registered in a later Studio round.
+    case 'tga':
+      return [
+        {
+          key: 'main',
+          label: 'TGA / DTG',
+          descriptors: getTgaTraceDescriptors(),
+          capabilities: { peaks: false, secondaryAxis: true },
+          defaultReverseX: false,
+          render: (config) => <TGAChart parsed={parsed} config={config} />
+        }
+      ];
+
+    case 'dsc':
+      return [
+        {
+          key: 'main',
+          label: 'DSC thermogram',
+          descriptors: getDscTraceDescriptors(),
+          capabilities: { peaks: false, secondaryAxis: false },
+          defaultReverseX: false,
+          render: (config) => <DSCChart parsed={parsed} config={config} />
+        }
+      ];
+
+    case 'ocp':
+      return [
+        {
+          key: 'main',
+          label: 'OCP — Open-Circuit Potential',
+          descriptors: getOcpTraceDescriptors(),
+          capabilities: { peaks: false, secondaryAxis: false },
+          defaultReverseX: false,
+          render: (config) => <OCPChart parsed={parsed} config={config} />
+        }
+      ];
+
+    case 'tafel':
+      return [
+        {
+          key: 'main',
+          label: 'Tafel plot',
+          descriptors: getTafelTraceDescriptors(),
+          capabilities: { peaks: false, secondaryAxis: false },
+          defaultReverseX: false,
+          render: (config) => <TafelChart parsed={parsed} config={config} />
+        }
+      ];
+
+    case 'lsv':
+      return [
+        {
+          key: 'main',
+          label: 'LSV',
+          descriptors: getLsvTraceDescriptors(parsed),
+          capabilities: { peaks: false, secondaryAxis: parsed.rhe_curve != null },
+          defaultReverseX: false,
+          render: (config) => <LSVChart parsed={parsed} config={config} />
+        }
+      ];
+
+    case 'cv':
+      return [
+        {
+          key: 'main',
+          label: 'Cyclic voltammogram',
+          descriptors: getCvTraceDescriptors(),
+          capabilities: { peaks: false, secondaryAxis: false },
+          defaultReverseX: false,
+          render: (config) => <CVChart parsed={parsed} config={config} />
+        }
+      ];
+
+    case 'eis':
+      return [
+        {
+          key: 'main',
+          label: 'Nyquist plot',
+          descriptors: getEisTraceDescriptors(),
+          capabilities: { peaks: false, secondaryAxis: false },
+          defaultReverseX: false,
+          render: (config) => <EISChart parsed={parsed} config={config} />
+        }
+      ];
+
     default:
       return [];
   }

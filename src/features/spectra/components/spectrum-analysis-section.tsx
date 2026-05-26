@@ -15,10 +15,10 @@ import { MultiCitationsPanel } from '@/features/spectra/components/multi-citatio
 import { ReferenceCardsManager } from '@/features/spectra/components/reference-cards-manager';
 import { FigureStudioModal } from '@/features/spectra/components/figure-studio-modal';
 import { type FigureConfig, migrateFigureConfig } from '@/features/spectra/figure-config';
+import { EchemMetrics } from '@/features/spectra/components/echem-metrics';
 import { getFigureDefinitions } from '@/features/spectra/figure-registry';
 import { loadFigureConfigs, saveFigureConfig } from '@/lib/firestore/queries/figure-configs';
 import { useTenantId } from '@/lib/auth/use-claims';
-import { DSCChart, OCPChart, TGAChart } from '@/features/spectra/components/spectrum-chart-ext';
 import { XRDPeakDetailTable } from '@/features/spectra/components/xrd-peak-detail-table';
 import { XRDPhaseSummary } from '@/features/spectra/components/xrd-phase-summary';
 import { XRDQualityCard } from '@/features/spectra/components/xrd-quality-card';
@@ -211,11 +211,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
       }))
     }));
   const figureDefs = getFigureDefinitions(parsed, { referenceCards: xrdOverlays });
-  const isCharted =
-    figureDefs.length > 0 ||
-    parsed.spectrum_type === 'tga' ||
-    parsed.spectrum_type === 'dsc' ||
-    parsed.spectrum_type === 'ocp';
+  const isCharted = figureDefs.length > 0;
 
   const chartColumn = (
     <div className='space-y-5'>
@@ -243,23 +239,6 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
           </div>
         );
       })}
-
-      {/* Not yet registered (no Figure Studio) — rendered as-is for now. */}
-      {parsed.spectrum_type === 'tga' && (
-        <div className='rounded-lg border bg-card p-4'>
-          <TGAChart parsed={parsed} />
-        </div>
-      )}
-      {parsed.spectrum_type === 'dsc' && (
-        <div className='rounded-lg border bg-card p-4'>
-          <DSCChart parsed={parsed} />
-        </div>
-      )}
-      {parsed.spectrum_type === 'ocp' && (
-        <div className='rounded-lg border bg-card p-4'>
-          <OCPChart parsed={parsed} />
-        </div>
-      )}
     </div>
   );
 
@@ -308,6 +287,10 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
             userPeaks={(parsed.peaks ?? []) as never}
           />
         )}
+      {(parsed.spectrum_type === 'tafel' ||
+        parsed.spectrum_type === 'lsv' ||
+        parsed.spectrum_type === 'cv' ||
+        parsed.spectrum_type === 'eis') && <EchemMetrics parsed={parsed} />}
     </div>
   );
 

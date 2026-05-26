@@ -111,6 +111,19 @@ service cloud.firestore {
         }
       }
 
+      // Figure Studio per-user view configs (R5.4). Personal UI state, not
+      // scientific data: a tenant member may read/write only their OWN configs
+      // (doc.userId == auth.uid). Doc id is `${mid}__${figureKey}__${uid}`.
+      match /figureConfigs/{configId} {
+        allow read: if belongsToTenant(tenantId)
+          && resource.data.userId == request.auth.uid;
+        allow create, update: if belongsToTenant(tenantId)
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.tenantId == tenantId;
+        allow delete: if belongsToTenant(tenantId)
+          && resource.data.userId == request.auth.uid;
+      }
+
       // ---------- Client-readable, Admin-SDK-write-only ----------
       // Lifecycle managed by server pipelines (ingestion, analysis,
       // citation resolver, RAG processor). Any client write would

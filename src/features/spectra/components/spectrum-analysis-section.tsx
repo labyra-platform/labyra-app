@@ -16,6 +16,8 @@ import { ReferenceCardsManager } from '@/features/spectra/components/reference-c
 import { FigureStudioModal } from '@/features/spectra/components/figure-studio-modal';
 import { type FigureConfig, migrateFigureConfig } from '@/features/spectra/figure-config';
 import { getFigureDefinitions } from '@/features/spectra/figure-registry';
+import { loadFigureConfigs, saveFigureConfig } from '@/lib/firestore/queries/figure-configs';
+import { useTenantId } from '@/lib/auth/use-claims';
 import { DSCChart, OCPChart, TGAChart } from '@/features/spectra/components/spectrum-chart-ext';
 import { XRDPeakDetailTable } from '@/features/spectra/components/xrd-peak-detail-table';
 import { XRDPhaseSummary } from '@/features/spectra/components/xrd-phase-summary';
@@ -57,6 +59,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
   // R208 Figure Studio (registry): one config per figure on the page, keyed by
   // FigureDefinition.key. Built from the registry once the analysis loads.
   // Configs are serializable (persisted per-figure in R5.4).
+  const tenantId = useTenantId();
   const [figureConfigs, setFigureConfigs] = useState<Record<string, FigureConfig>>({});
   const [activeFigureKey, setActiveFigureKey] = useState<string | null>(null);
   // R192-3: useReferenceCards can yield undefined arrays on first render in
@@ -114,12 +117,45 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     const defs = getFigureDefinitions(p);
     if (defs.length === 0) return;
     configInitedRef.current = true;
-    const next: Record<string, FigureConfig> = {};
-    for (const def of defs) {
-      next[def.key] = migrateFigureConfig(null, def.descriptors, def.defaultReverseX);
-    }
-    setFigureConfigs(next);
-  }, [result]);
+    let cancelled = false;
+    (async () => {
+      // R210: load any saved per-user configs; merge over registry defaults via
+      // migrateFigureConfig (forward-compatible if the stored schema is older).
+      const stored = tenantId
+        ? await loadFigureConfigs(tenantId, spectrumId)
+        : ({} as Record<string, FigureConfig>);
+      if (cancelled) return;
+      const next: Record<string, FigureConfig> = {};
+      for (const def of defs) {
+        next[def.key] = migrateFigureConfig(
+          stored[def.key] ?? null,
+          def.descriptors,
+          def.defaultReverseX
+        );
+      }
+      setFigureConfigs(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [result, tenantId, spectrumId]);
+
+  // R210: debounce-save the active figure's config after edits settle, so we
+  // don't write on every keystroke/slider tick. Best-effort persistence.
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!tenantId || !activeFigureKey) return;
+    const cfg = figureConfigs[activeFigureKey];
+    if (!cfg) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const key = activeFigureKey;
+    saveTimerRef.current = setTimeout(() => {
+      void saveFigureConfig(tenantId, spectrumId, key, cfg);
+    }, 800);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [figureConfigs, activeFigureKey, tenantId, spectrumId]);
 
   // R162-hooks-fix — useMemo must be called before any conditional return
   // (React Rules of Hooks). Null-safe via optional chaining on result.

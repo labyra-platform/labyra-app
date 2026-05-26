@@ -130,61 +130,110 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     );
   }
 
-  return (
-    <div className='space-y-6'>
-      <AnalysisResultCard result={result} />
+  // R201-splitpane: master (text/analysis) + detail (chart) layout, mirroring
+  // SciNote/Benchling. On lg+ the chart column is sticky so it stays in view
+  // while the functional-group / analysis list on the left scrolls. Below lg
+  // it collapses to a single stacked column (chart first for mobile context).
+  const isCharted =
+    parsed.spectrum_type === 'xrd' ||
+    parsed.spectrum_type === 'uvvis' ||
+    parsed.spectrum_type === 'raman' ||
+    parsed.spectrum_type === 'ftir' ||
+    parsed.spectrum_type === 'uvvis_drs' ||
+    parsed.spectrum_type === 'tga' ||
+    parsed.spectrum_type === 'dsc' ||
+    parsed.spectrum_type === 'ocp';
 
-      {/* Original 4 types */}
+  const canAddReference =
+    parsed.spectrum_type === 'xrd' ||
+    parsed.spectrum_type === 'ftir' ||
+    parsed.spectrum_type === 'raman' ||
+    parsed.spectrum_type === 'uvvis';
+
+  // ── Detail column: all charts (kept in view via sticky) ──
+  const chartColumn = (
+    <div className='space-y-4'>
       {(parsed.spectrum_type === 'xrd' ||
         parsed.spectrum_type === 'uvvis' ||
         parsed.spectrum_type === 'raman' ||
         parsed.spectrum_type === 'ftir') && (
-        <div className='rounded-lg border bg-card p-4 space-y-2'>
-          {/* R163-4c-5c1: + Add reference for all 4 types */}
-          {(parsed.spectrum_type === 'xrd' ||
-            parsed.spectrum_type === 'ftir' ||
-            parsed.spectrum_type === 'raman' ||
-            parsed.spectrum_type === 'uvvis') && (
-            <div className='flex flex-wrap gap-2 items-center'>
-              <Button type='button' variant='outline' size='sm' onClick={() => setAddRefOpen(true)}>
-                + Add reference
-              </Button>
-              <Button
-                type='button'
-                variant='ghost'
-                size='sm'
-                onClick={() => setManageRefOpen(true)}
-              >
-                Manage ({allCards.length})
-              </Button>
-              {activeCards.length > 0 && (
-                <span className='text-xs text-muted-foreground'>
-                  {activeCards.length} active overlay
-                  {activeCards.length > 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-          )}
-          <SpectrumChart
-            parsed={parsed}
-            // R163-4c-2-overlay: filter XRD-only for chart overlay
-            referenceCards={activeCards
-              .filter((c) => c.spectrumType === 'xrd')
-              .map((c) => ({
-                id: c.id,
-                cardNumber: c.cardNumber,
-                phaseName: c.phaseName,
-                color: c.color,
-                // fs-guard-ok: activeCards pre-filtered to spectrumType==='xrd' above
-                peaks: (c as import('@/types/spectra').XRDReferenceCard).peaks.map((p) => ({
-                  twoTheta: p.twoTheta,
-                  intensity: p.intensity,
-                  hkl: p.hkl
-                }))
-              }))}
+        <SpectrumChart
+          parsed={parsed}
+          // R163-4c-2-overlay: filter XRD-only for chart overlay
+          referenceCards={activeCards
+            .filter((c) => c.spectrumType === 'xrd')
+            .map((c) => ({
+              id: c.id,
+              cardNumber: c.cardNumber,
+              phaseName: c.phaseName,
+              color: c.color,
+              // fs-guard-ok: activeCards pre-filtered to spectrumType==='xrd' above
+              peaks: (c as import('@/types/spectra').XRDReferenceCard).peaks.map((p) => ({
+                twoTheta: p.twoTheta,
+                intensity: p.intensity,
+                hkl: p.hkl
+              }))
+            }))}
+        />
+      )}
+
+      {/* UV-Vis: Tauc plot */}
+      {parsed.spectrum_type === 'uvvis' && parsed.tauc_bandgap && (
+        <TaucChart
+          curve={parsed.tauc_curve}
+          bandgap={parsed.tauc_bandgap}
+          yLabel={`(αhν)^n (a.u.)`}
+          title={`Tauc Plot — ${parsed.tauc_bandgap.transition}`}
+        />
+      )}
+
+      {/* UV-Vis DRS */}
+      {parsed.spectrum_type === 'uvvis_drs' && (
+        <>
+          <DRSChart
+            reflectance={parsed.reflectance_curve}
+            km={parsed.km_curve}
+            reflectanceMode={parsed.reflectance_mode}
           />
+          {parsed.tauc_bandgap && (
+            <TaucChart
+              curve={parsed.tauc_curve}
+              bandgap={parsed.tauc_bandgap}
+              yLabel={`(F(R)hν)^n (a.u.)`}
+              title={`Tauc on Kubelka-Munk — ${parsed.tauc_bandgap.transition}`}
+            />
+          )}
+        </>
+      )}
+
+      {parsed.spectrum_type === 'tga' && <TGAChart parsed={parsed} />}
+      {parsed.spectrum_type === 'dsc' && <DSCChart parsed={parsed} />}
+      {parsed.spectrum_type === 'ocp' && <OCPChart parsed={parsed} />}
+    </div>
+  );
+
+  // ── Master column: AI interpretation + reference controls + tables ──
+  const analysisColumn = (
+    <div className='space-y-6'>
+      <AnalysisResultCard result={result} />
+
+      {canAddReference && (
+        <div className='flex flex-wrap items-center gap-2'>
+          <Button type='button' variant='outline' size='sm' onClick={() => setAddRefOpen(true)}>
+            + Add reference
+          </Button>
+          <Button type='button' variant='ghost' size='sm' onClick={() => setManageRefOpen(true)}>
+            Manage ({allCards.length})
+          </Button>
+          {activeCards.length > 0 && (
+            <span className='text-muted-foreground text-xs'>
+              {activeCards.length} active overlay
+              {activeCards.length > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       )}
+
       {parsed.spectrum_type === 'xrd' && (
         <XRDQualityCard
           quality={parsed.quality_metrics}
@@ -208,62 +257,24 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
             userPeaks={(parsed.peaks ?? []) as never}
           />
         )}
+    </div>
+  );
 
-      {/* UV-Vis: add Tauc plot */}
-      {parsed.spectrum_type === 'uvvis' && parsed.tauc_bandgap && (
-        <div className='rounded-lg border bg-card p-4'>
-          <TaucChart
-            curve={parsed.tauc_curve}
-            bandgap={parsed.tauc_bandgap}
-            yLabel={`(αhν)^n (a.u.)`}
-            title={`Tauc Plot — ${parsed.tauc_bandgap.transition}`}
-          />
-        </div>
-      )}
-
-      {/* UV-Vis DRS */}
-      {parsed.spectrum_type === 'uvvis_drs' && (
-        <>
-          <div className='rounded-lg border bg-card p-4'>
-            <DRSChart
-              reflectance={parsed.reflectance_curve}
-              km={parsed.km_curve}
-              reflectanceMode={parsed.reflectance_mode}
-            />
+  return (
+    <>
+      {isCharted ? (
+        <div className='grid grid-cols-1 gap-6 lg:grid-cols-[minmax(360px,5fr)_7fr]'>
+          {/* Master (text/analysis) — scrolls with the page */}
+          <div className='min-w-0'>{analysisColumn}</div>
+          {/* Detail (chart) — sticky below the app header on lg+ */}
+          <div className='min-w-0 lg:sticky lg:top-[calc(3.5rem+1rem)] lg:self-start'>
+            <div className='rounded-lg border bg-card p-4'>{chartColumn}</div>
           </div>
-          {parsed.tauc_bandgap && (
-            <div className='rounded-lg border bg-card p-4'>
-              <TaucChart
-                curve={parsed.tauc_curve}
-                bandgap={parsed.tauc_bandgap}
-                yLabel={`(F(R)hν)^n (a.u.)`}
-                title={`Tauc on Kubelka-Munk — ${parsed.tauc_bandgap.transition}`}
-              />
-            </div>
-          )}
-        </>
+        </div>
+      ) : (
+        analysisColumn
       )}
 
-      {/* TGA */}
-      {parsed.spectrum_type === 'tga' && (
-        <div className='rounded-lg border bg-card p-4'>
-          <TGAChart parsed={parsed} />
-        </div>
-      )}
-
-      {/* DSC */}
-      {parsed.spectrum_type === 'dsc' && (
-        <div className='rounded-lg border bg-card p-4'>
-          <DSCChart parsed={parsed} />
-        </div>
-      )}
-
-      {/* OCP */}
-      {parsed.spectrum_type === 'ocp' && (
-        <div className='rounded-lg border bg-card p-4'>
-          <OCPChart parsed={parsed} />
-        </div>
-      )}
       <AddReferenceCardDialog open={addRefOpen} onOpenChange={setAddRefOpen} onCreated={refresh} />
       <ReferenceCardsManager
         open={manageRefOpen}
@@ -273,6 +284,6 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
         onToggle={toggleCard}
         onChanged={refresh}
       />
-    </div>
+    </>
   );
 }

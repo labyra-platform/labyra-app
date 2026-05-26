@@ -16,6 +16,7 @@ import { ReferenceCardsManager } from '@/features/spectra/components/reference-c
 import { FigureStudioModal } from '@/features/spectra/components/figure-studio-modal';
 import { type FigureConfig, migrateFigureConfig } from '@/features/spectra/figure-config';
 import { EchemMetrics } from '@/features/spectra/components/echem-metrics';
+import { EchemParamsDialog } from '@/features/spectra/components/echem-params-dialog';
 import { getFigureDefinitions } from '@/features/spectra/figure-registry';
 import { loadFigureConfigs, saveFigureConfig } from '@/lib/firestore/queries/figure-configs';
 import { useTenantId } from '@/lib/auth/use-claims';
@@ -62,6 +63,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
   const tenantId = useTenantId();
   const [figureConfigs, setFigureConfigs] = useState<Record<string, FigureConfig>>({});
   const [activeFigureKey, setActiveFigureKey] = useState<string | null>(null);
+  const [paramsOpen, setParamsOpen] = useState(false);
   // R192-3: useReferenceCards can yield undefined arrays on first render in
   // some client-nav paths; coalesce here so every .length/.map below is safe.
   const {
@@ -212,6 +214,11 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     }));
   const figureDefs = getFigureDefinitions(parsed, { referenceCards: xrdOverlays });
   const isCharted = figureDefs.length > 0;
+  const isEchem =
+    parsed.spectrum_type === 'tafel' ||
+    parsed.spectrum_type === 'lsv' ||
+    parsed.spectrum_type === 'cv' ||
+    parsed.spectrum_type === 'eis';
 
   const chartColumn = (
     <div className='space-y-5'>
@@ -225,15 +232,28 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
           <div key={def.key} className='space-y-3 rounded-lg border bg-card p-4'>
             <div className='flex items-center justify-between'>
               <span className='text-sm font-medium'>{def.label}</span>
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() => setActiveFigureKey(def.key)}
-              >
-                <Icons.adjustments className='mr-1.5 size-4' />
-                Edit figure
-              </Button>
+              <div className='flex items-center gap-2'>
+                {isEchem ? (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setParamsOpen(true)}
+                  >
+                    <Icons.refresh className='mr-1.5 size-4' />
+                    Re-analyze
+                  </Button>
+                ) : null}
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => setActiveFigureKey(def.key)}
+                >
+                  <Icons.adjustments className='mr-1.5 size-4' />
+                  Edit figure
+                </Button>
+              </div>
             </div>
             {def.render(cfg)}
           </div>
@@ -338,6 +358,35 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
             />
           );
         })()}
+      {isEchem ? (
+        <EchemParamsDialog
+          open={paramsOpen}
+          onOpenChange={setParamsOpen}
+          measurementId={spectrumId}
+          spectrumType={parsed.spectrum_type as 'tafel' | 'lsv' | 'cv' | 'eis'}
+          initial={
+            'conditions' in parsed
+              ? {
+                  electrodeArea:
+                    (parsed.conditions as { area_cm2?: number | null }).area_cm2 ?? undefined,
+                  referenceElectrode:
+                    (parsed.conditions as { reference?: string | null }).reference ?? undefined,
+                  pH: (parsed.conditions as { pH?: number | null }).pH ?? undefined,
+                  reaction:
+                    (parsed.conditions as { reaction?: string | null }).reaction ?? undefined,
+                  irCorrected:
+                    (parsed.conditions as { ir_corrected?: boolean }).ir_corrected ?? undefined,
+                  scanRate:
+                    (parsed.conditions as { scan_rate_v_s?: number | null }).scan_rate_v_s ??
+                    undefined,
+                  nElectrons:
+                    (parsed.conditions as { n_electrons?: number }).n_electrons ?? undefined
+                }
+              : undefined
+          }
+          onQueued={refresh}
+        />
+      ) : null}
     </>
   );
 }

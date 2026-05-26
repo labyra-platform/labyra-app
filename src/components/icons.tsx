@@ -1,6 +1,6 @@
 import {
   IconAdjustmentsHorizontal,
-  IconDownload,
+  IconRefresh,
   IconAlertCircle,
   IconAlertTriangle,
   IconArrowRight,
@@ -210,7 +210,7 @@ export const Icons = {
   trendingUp: IconTrendingUp,
   eyeOff: IconEyeOff,
   adjustments: IconAdjustmentsHorizontal,
-  download: IconDownload,
+  refresh: IconRefresh,
 
   // Text formatting
   bold: IconBold,

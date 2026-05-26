@@ -77,6 +77,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
+    // R213: accept optional updated measurement parameters (e.g. electrochemistry
+    // metadata) to merge into the spectrum doc BEFORE re-analysis, so the worker
+    // recomputes with the new conditions. Whitelist keys — never trust arbitrary
+    // client fields into the doc.
+    const ALLOWED_META_KEYS = new Set([
+      'electrodeArea',
+      'referenceElectrode',
+      'pH',
+      'reaction',
+      'irCorrected',
+      'scanRate',
+      'nElectrons',
+      'temperatureK'
+    ]);
+    let metaUpdate: Record<string, unknown> = {};
+    try {
+      const body = (await req.json()) as { metadata?: Record<string, unknown> } | null;
+      if (body?.metadata && typeof body.metadata === 'object') {
+        for (const [k, v] of Object.entries(body.metadata)) {
+          if (ALLOWED_META_KEYS.has(k) && v !== undefined) metaUpdate[k] = v;
+        }
+      }
+    } catch {
+      metaUpdate = {}; // no/invalid body → plain re-analyze
+    }
+
     // Re-publish analysis task
     try {
       const messageId = await publishSpectrumAnalysis({
@@ -86,6 +112,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         experimentId: spectrum.experimentId
       });
       await ref.update({
+        ...metaUpdate,
         status: 'queued',
         errorMessage: null,
         debugMessageId: messageId,

@@ -154,7 +154,7 @@ export function TafelChart({
             showline: true,
             linecolor: 'hsl(var(--foreground))',
             zeroline: false,
-            ticks: 'outside'
+            ticks: config?.ticksInside ? 'inside' : 'outside'
           },
           yaxis: {
             title: { text: config?.yTitle ?? 'Overpotential η (V)' },
@@ -162,7 +162,7 @@ export function TafelChart({
             showline: true,
             linecolor: 'hsl(var(--foreground))',
             zeroline: false,
-            ticks: 'outside'
+            ticks: config?.ticksInside ? 'inside' : 'outside'
           },
           paper_bgcolor: 'transparent',
           plot_bgcolor: 'transparent',

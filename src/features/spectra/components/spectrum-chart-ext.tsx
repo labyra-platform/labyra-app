@@ -59,9 +59,12 @@ function frameAxes(config: FigureConfig | undefined, closedDefault = false) {
   return {
     showGrid: config?.showGrid ?? true,
     closedFrame: config?.closedFrame ?? closedDefault,
+    ticks: (config?.ticksInside ? 'inside' : 'outside') as 'inside' | 'outside',
     showLegend: config?.showLegend ?? true,
     revision: config ? JSON.stringify(config) : 'static',
-    layoutKey: config ? `${config.showLegend}-${config.closedFrame}-${config.showGrid}` : 'static'
+    layoutKey: config
+      ? `${config.showLegend}-${config.closedFrame}-${config.showGrid}-${config.ticksInside}`
+      : 'static'
   };
 }
 
@@ -120,7 +123,7 @@ export function TGAChart({ parsed, config }: { parsed: TGAParsedData; config?: F
           linewidth: 1,
           mirror: f.closedFrame,
           zeroline: false,
-          ticks: 'outside'
+          ticks: f.ticks
         },
         yaxis: {
           title: { text: config?.yTitle ?? 'Mass (%)' },
@@ -131,7 +134,7 @@ export function TGAChart({ parsed, config }: { parsed: TGAParsedData; config?: F
           linecolor: 'hsl(var(--foreground))',
           linewidth: 1,
           zeroline: false,
-          ticks: 'outside'
+          ticks: f.ticks
         },
         yaxis2: {
           title: { text: config?.y2Title ?? 'DTG' },
@@ -142,7 +145,7 @@ export function TGAChart({ parsed, config }: { parsed: TGAParsedData; config?: F
           linecolor: 'hsl(var(--foreground))',
           linewidth: 1,
           zeroline: false,
-          ticks: 'outside'
+          ticks: f.ticks
         },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
@@ -226,7 +229,7 @@ export function DSCChart({ parsed, config }: { parsed: DSCParsedData; config?: F
           linewidth: 1,
           mirror: f.closedFrame,
           zeroline: false,
-          ticks: 'outside'
+          ticks: f.ticks
         },
         yaxis: {
           title: { text: config?.yTitle ?? 'Heat flow (mW or W/g)' },
@@ -236,7 +239,7 @@ export function DSCChart({ parsed, config }: { parsed: DSCParsedData; config?: F
           linecolor: 'hsl(var(--foreground))',
           linewidth: 1,
           zeroline: false,
-          ticks: 'outside'
+          ticks: f.ticks
         },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
@@ -300,7 +303,7 @@ export function OCPChart({ parsed, config }: { parsed: OCPParsedData; config?: F
           linewidth: 1,
           mirror: f.closedFrame,
           zeroline: false,
-          ticks: 'outside'
+          ticks: f.ticks
         },
         yaxis: {
           title: { text: config?.yTitle ?? 'Potential (V vs ref)' },
@@ -310,7 +313,7 @@ export function OCPChart({ parsed, config }: { parsed: OCPParsedData; config?: F
           linecolor: 'hsl(var(--foreground))',
           linewidth: 1,
           zeroline: false,
-          ticks: 'outside'
+          ticks: f.ticks
         },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',

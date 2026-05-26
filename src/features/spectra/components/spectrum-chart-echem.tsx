@@ -46,13 +46,16 @@ function frame(config: FigureConfig | undefined) {
   return {
     showGrid: config?.showGrid ?? true,
     closedFrame: config?.closedFrame ?? false,
+    ticksInside: config?.ticksInside ?? false,
     showLegend: config?.showLegend ?? true,
     rev: config ? JSON.stringify(config) : 'static',
-    key: config ? `${config.showLegend}-${config.closedFrame}-${config.showGrid}` : 'static'
+    key: config
+      ? `${config.showLegend}-${config.closedFrame}-${config.showGrid}-${config.ticksInside}`
+      : 'static'
   };
 }
 
-function axis(title: string, showgrid: boolean, mirror = false) {
+function axis(title: string, showgrid: boolean, mirror = false, ticksInside = false) {
   return {
     title: { text: title },
     showgrid,
@@ -62,7 +65,7 @@ function axis(title: string, showgrid: boolean, mirror = false) {
     linewidth: 1,
     mirror,
     zeroline: false,
-    ticks: 'outside' as const
+    ticks: (ticksInside ? 'inside' : 'outside') as 'inside' | 'outside'
   };
 }
 
@@ -122,8 +125,13 @@ export function TafelChart({ parsed, config }: { parsed: TafelParsedData; config
         ...BASE_LAYOUT,
         datarevision: f.rev,
         title: { text: config?.figureTitle ?? 'Tafel plot', font: { size: 14 } },
-        xaxis: axis(config?.xTitle ?? 'Potential (V)', f.showGrid, f.closedFrame),
-        yaxis: axis(config?.yTitle ?? `j (${parsed.quick_stats.current_unit})`, f.showGrid),
+        xaxis: axis(config?.xTitle ?? 'Potential (V)', f.showGrid, f.closedFrame, f.ticksInside),
+        yaxis: axis(
+          config?.yTitle ?? `j (${parsed.quick_stats.current_unit})`,
+          f.showGrid,
+          false,
+          f.ticksInside
+        ),
         showlegend: f.showLegend
       }}
       config={{ displaylogo: false, responsive: true }}
@@ -176,8 +184,13 @@ export function LSVChart({ parsed, config }: { parsed: LSVParsedData; config?: F
         datarevision: f.rev,
         margin: { l: 64, r: parsed.rhe_curve ? 64 : 30, t: 40, b: 52 },
         title: { text: config?.figureTitle ?? 'LSV', font: { size: 14 } },
-        xaxis: axis(config?.xTitle ?? 'Potential (V)', f.showGrid, f.closedFrame),
-        yaxis: axis(config?.yTitle ?? `Current (${parsed.y_unit})`, f.showGrid),
+        xaxis: axis(config?.xTitle ?? 'Potential (V)', f.showGrid, f.closedFrame, f.ticksInside),
+        yaxis: axis(
+          config?.yTitle ?? `Current (${parsed.y_unit})`,
+          f.showGrid,
+          false,
+          f.ticksInside
+        ),
         ...(parsed.rhe_curve
           ? {
               yaxis2: {
@@ -252,8 +265,13 @@ export function CVChart({ parsed, config }: { parsed: CVParsedData; config?: Fig
         ...BASE_LAYOUT,
         datarevision: f.rev,
         title: { text: config?.figureTitle ?? 'Cyclic voltammogram', font: { size: 14 } },
-        xaxis: axis(config?.xTitle ?? 'Potential (V)', f.showGrid, f.closedFrame),
-        yaxis: axis(config?.yTitle ?? `Current (${parsed.y_unit})`, f.showGrid),
+        xaxis: axis(config?.xTitle ?? 'Potential (V)', f.showGrid, f.closedFrame, f.ticksInside),
+        yaxis: axis(
+          config?.yTitle ?? `Current (${parsed.y_unit})`,
+          f.showGrid,
+          false,
+          f.ticksInside
+        ),
         showlegend: f.showLegend
       }}
       config={{ displaylogo: false, responsive: true }}
@@ -293,10 +311,10 @@ export function EISChart({ parsed, config }: { parsed: EISParsedData; config?: F
         ...BASE_LAYOUT,
         datarevision: f.rev,
         title: { text: config?.figureTitle ?? 'Nyquist plot', font: { size: 14 } },
-        xaxis: axis(config?.xTitle ?? "Z' (Ω)", f.showGrid, f.closedFrame),
+        xaxis: axis(config?.xTitle ?? "Z' (Ω)", f.showGrid, f.closedFrame, f.ticksInside),
         // equal aspect: -Z'' scaled to Z' so the semicircle isn't distorted
         yaxis: {
-          ...axis(config?.yTitle ?? "-Z'' (Ω)", f.showGrid),
+          ...axis(config?.yTitle ?? "-Z'' (Ω)", f.showGrid, false, f.ticksInside),
           scaleanchor: 'x',
           scaleratio: 1
         },

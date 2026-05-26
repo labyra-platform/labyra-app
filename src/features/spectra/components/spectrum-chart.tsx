@@ -8,10 +8,18 @@
  */
 
 import dynamic from 'next/dynamic';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
@@ -368,6 +376,9 @@ export function SpectrumChart({ parsed, referenceCards = [] }: SpectrumChartProp
     showLegend: true,
     peakLabel: 'number'
   });
+  // R203-export: hold the Plotly graph div so Quick export (client-side) can
+  // call Plotly.downloadImage on it for SVG/PNG.
+  const gdRef = useRef<HTMLElement | null>(null);
 
   // Defensive: missing curve data — uvvis_drs has reflectance_curve, not spectrum_curve
   if (parsed.spectrum_type === 'uvvis_drs') {
@@ -391,10 +402,17 @@ export function SpectrumChart({ parsed, referenceCards = [] }: SpectrumChartProp
 
   return (
     <div className='space-y-2'>
-      <div className='flex items-center justify-end'>
+      <div className='flex items-center justify-end gap-2'>
+        <ExportMenu gdRef={gdRef} parsed={parsed} />
         <PlotCustomizePanel opts={opts} onChange={setOpts} canLabelGroups={canLabelGroups} />
       </div>
       <Plot
+        onInitialized={(_fig, graphDiv) => {
+          gdRef.current = graphDiv as unknown as HTMLElement;
+        }}
+        onUpdate={(_fig, graphDiv) => {
+          gdRef.current = graphDiv as unknown as HTMLElement;
+        }}
         data={traces}
         layout={{
           autosize: true,
@@ -536,5 +554,66 @@ function PlotCustomizePanel({ opts, onChange, canLabelGroups }: PlotCustomizePan
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+interface ExportMenuProps {
+  gdRef: React.RefObject<HTMLElement | null>;
+  parsed: SpectrumParsedData;
+}
+
+// R203-export: client-side quick export via Plotly.downloadImage (SVG/PNG) for
+// drafts and slides. Publication-grade export (matplotlib worker, exact journal
+// specs) is offered separately once the worker render route is wired.
+function ExportMenu({ gdRef, parsed }: ExportMenuProps) {
+  const filenameBase = `spectrum_${parsed.spectrum_type}`;
+
+  const quickDownload = async (format: 'svg' | 'png') => {
+    const gd = gdRef.current;
+    if (!gd) return;
+    // Import the pre-built bundle (the same one react-plotly.js uses) rather
+    // than the 'plotly.js' entry, which pulls WebGL source deps (glslify) that
+    // break the Turbopack client build. The dist bundle ships no .d.ts.
+    // @ts-expect-error -- plotly.js/dist/plotly has no type declarations
+    const mod = (await import('plotly.js/dist/plotly')) as {
+      default: {
+        downloadImage: (
+          gd: HTMLElement,
+          opts: { format: string; filename: string; width?: number; height?: number }
+        ) => Promise<string>;
+      };
+    };
+    const Plotly = mod.default;
+    const px = format === 'png' ? { width: 2400, height: 1488 } : { width: 1000, height: 620 };
+    await Plotly.downloadImage(gd, {
+      format,
+      filename: filenameBase,
+      ...px
+    });
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type='button' variant='outline' size='sm'>
+          <Icons.download className='mr-1.5 size-4' />
+          Export
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-56'>
+        <DropdownMenuLabel className='text-muted-foreground text-xs'>
+          Quick export (for drafts/slides)
+        </DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => quickDownload('svg')}>SVG (vector)</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => quickDownload('png')}>PNG (3× raster)</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className='text-muted-foreground text-xs'>
+          Publication (exact journal specs)
+        </DropdownMenuLabel>
+        <DropdownMenuItem disabled className='text-xs'>
+          Nature / ACS / Elsevier / RSC — coming soon
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

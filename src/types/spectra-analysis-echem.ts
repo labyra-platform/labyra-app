@@ -51,6 +51,7 @@ export interface LSVParsedData {
   peaks: [];
   spectrum_curve: SpectrumCurve; // E (V) vs I
   rhe_curve: SpectrumCurve | null; // E_rhe vs j (if reference+pH known)
+  tafel_curve: SpectrumCurve | null; // log10|j| vs eta (Tafel view from this LSV)
   analysis: LSVAnalysis;
   conditions: {
     area_cm2: number | null;

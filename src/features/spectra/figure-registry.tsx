@@ -228,12 +228,18 @@ export function getFigureDefinitions(
           descriptors: getTafelTraceDescriptors(),
           capabilities: { peaks: false, secondaryAxis: false },
           defaultReverseX: false,
-          render: (config) => <TafelChart parsed={parsed} config={config} />
+          render: (config) => (
+            <TafelChart
+              curve={parsed.tafel_curve}
+              autoSlope={parsed.analysis.tafel_slope_mV_per_dec}
+              config={config}
+            />
+          )
         }
       ];
 
-    case 'lsv':
-      return [
+    case 'lsv': {
+      const defs: FigureDefinition[] = [
         {
           key: 'main',
           label: 'LSV',
@@ -243,6 +249,26 @@ export function getFigureDefinitions(
           render: (config) => <LSVChart parsed={parsed} config={config} />
         }
       ];
+      // From an LSV with RHE+reaction, the worker also returns the Tafel curve —
+      // surface it as a second figure with the same Range Selector fit.
+      if (parsed.tafel_curve) {
+        defs.push({
+          key: 'tafel',
+          label: 'Tafel plot (from LSV)',
+          descriptors: getTafelTraceDescriptors(),
+          capabilities: { peaks: false, secondaryAxis: false },
+          defaultReverseX: false,
+          render: (config) => (
+            <TafelChart
+              curve={parsed.tafel_curve}
+              autoSlope={parsed.analysis.tafel?.tafel_slope_mV_per_dec ?? null}
+              config={config}
+            />
+          )
+        });
+      }
+      return defs;
+    }
 
     case 'cv':
       return [

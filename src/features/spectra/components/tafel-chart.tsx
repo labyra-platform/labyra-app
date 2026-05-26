@@ -17,7 +17,7 @@ import { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { type FigureConfig } from '@/features/spectra/figure-config';
-import type { TafelParsedData } from '@/types/spectra-analysis-echem';
+import type { SpectrumCurve } from '@/types/spectra-analysis';
 
 const Plot = dynamic(() => import('react-plotly.js'), {
   ssr: false,
@@ -73,8 +73,15 @@ function linearFit(xs: number[], ys: number[]): Omit<FitResult, 'xLo' | 'xHi'> |
   };
 }
 
-export function TafelChart({ parsed, config }: { parsed: TafelParsedData; config?: FigureConfig }) {
-  const curve = parsed.tafel_curve;
+export function TafelChart({
+  curve,
+  autoSlope,
+  config
+}: {
+  curve: SpectrumCurve | null;
+  autoSlope?: number | null;
+  config?: FigureConfig;
+}) {
   const [range, setRange] = useState<[number, number] | null>(null);
 
   // Recompute the fit whenever the selected window changes.
@@ -129,8 +136,6 @@ export function TafelChart({ parsed, config }: { parsed: TafelParsedData; config
       line: { color: FIT, width: 2.5 }
     });
   }
-
-  const autoSlope = parsed.analysis.tafel_slope_mV_per_dec;
 
   return (
     <div className='space-y-2'>

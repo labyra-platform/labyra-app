@@ -147,4 +147,43 @@ export interface EISParsedData {
   y_unit: string;
 }
 
-export type EchemParsedData = TafelParsedData | LSVParsedData | CVParsedData | EISParsedData;
+// ============================================================
+// PEC J-V — photoelectrochemistry linear sweep under illumination
+// ============================================================
+
+export interface PECJVAnalysis {
+  current_density_unit: string;
+  photocurrent_onset_V?: number;
+  photocurrent_at_1p23V_RHE?: number;
+  sth_percent?: number;
+  abpe_percent?: number;
+}
+
+export interface PECJVParsedData {
+  spectrum_type: 'pec_jv';
+  peaks: [];
+  spectrum_curve: SpectrumCurve; // E (V) vs j (net/measured photocurrent)
+  light_dark_curve: { light: SpectrumCurve; dark: SpectrumCurve } | null;
+  analysis: PECJVAnalysis;
+  conditions: {
+    area_cm2: number | null;
+    light_power_mw_cm2: number;
+    applied_bias_v: number | null;
+  };
+  notes: string[];
+  quick_stats: {
+    rowCount: number;
+    xRange: [number, number];
+    yRange: [number, number];
+    peakCount: number;
+  };
+  x_unit: string;
+  y_unit: string;
+}
+
+export type EchemParsedData =
+  | TafelParsedData
+  | LSVParsedData
+  | CVParsedData
+  | EISParsedData
+  | PECJVParsedData;

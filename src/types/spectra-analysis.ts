@@ -16,6 +16,7 @@ import type {
   CVParsedData,
   EISParsedData,
   LSVParsedData,
+  PECJVParsedData,
   TafelParsedData
 } from '@/types/spectra-analysis-echem';
 
@@ -362,7 +363,8 @@ export type SpectrumParsedData =
   | TafelParsedData
   | LSVParsedData
   | CVParsedData
-  | EISParsedData;
+  | EISParsedData
+  | PECJVParsedData;
 
 export type SpectrumAIOutput =
   | XRDAIOutput

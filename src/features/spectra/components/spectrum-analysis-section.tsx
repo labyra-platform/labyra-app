@@ -214,7 +214,10 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
     }));
   const figureDefs = getFigureDefinitions(parsed, { referenceCards: xrdOverlays });
   const isCharted = figureDefs.length > 0;
-  const isEchem =
+  // The parameter dialog currently covers reaction/reference/pH/area/scan-rate.
+  // PEC needs different inputs (light power, applied bias) — handled at upload
+  // for now, so its Re-analyze button is deferred.
+  const hasReanalyzeParams =
     parsed.spectrum_type === 'tafel' ||
     parsed.spectrum_type === 'lsv' ||
     parsed.spectrum_type === 'cv' ||
@@ -233,7 +236,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
             <div className='flex items-center justify-between'>
               <span className='text-sm font-medium'>{def.label}</span>
               <div className='flex items-center gap-2'>
-                {isEchem ? (
+                {hasReanalyzeParams ? (
                   <Button
                     type='button'
                     variant='outline'
@@ -310,7 +313,8 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
       {(parsed.spectrum_type === 'tafel' ||
         parsed.spectrum_type === 'lsv' ||
         parsed.spectrum_type === 'cv' ||
-        parsed.spectrum_type === 'eis') && <EchemMetrics parsed={parsed} />}
+        parsed.spectrum_type === 'eis' ||
+        parsed.spectrum_type === 'pec_jv') && <EchemMetrics parsed={parsed} />}
     </div>
   );
 
@@ -358,7 +362,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
             />
           );
         })()}
-      {isEchem ? (
+      {hasReanalyzeParams ? (
         <EchemParamsDialog
           open={paramsOpen}
           onOpenChange={setParamsOpen}

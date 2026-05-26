@@ -12,6 +12,7 @@ import type {
   CVParsedData,
   EISParsedData,
   LSVParsedData,
+  PECJVParsedData,
   TafelParsedData
 } from '@/types/spectra-analysis-echem';
 
@@ -131,11 +132,36 @@ export function EISMetrics({ parsed }: { parsed: EISParsedData }) {
   );
 }
 
+export function PECJVMetrics({ parsed }: { parsed: PECJVParsedData }) {
+  const a = parsed.analysis;
+  return (
+    <Shell title='PEC J-V (photoelectrochemistry)'>
+      <Metric label='Photocurrent onset' value={fmt(a.photocurrent_onset_V, 3)} unit='V' />
+      <Metric
+        label='j @ 1.23 V_RHE'
+        value={fmt(a.photocurrent_at_1p23V_RHE, 3)}
+        unit={a.current_density_unit}
+      />
+      {a.sth_percent != null ? (
+        <Metric label='STH efficiency' value={fmt(a.sth_percent, 3)} unit='%' />
+      ) : null}
+      {a.abpe_percent != null ? (
+        <Metric label='ABPE (biased)' value={fmt(a.abpe_percent, 3)} unit='%' />
+      ) : null}
+      <Metric
+        label='Light power'
+        value={fmt(parsed.conditions.light_power_mw_cm2, 0)}
+        unit='mW/cm²'
+      />
+    </Shell>
+  );
+}
+
 /** Dispatch the right metrics block for an electrochemistry measurement. */
 export function EchemMetrics({
   parsed
 }: {
-  parsed: TafelParsedData | LSVParsedData | CVParsedData | EISParsedData;
+  parsed: TafelParsedData | LSVParsedData | CVParsedData | EISParsedData | PECJVParsedData;
 }) {
   switch (parsed.spectrum_type) {
     case 'tafel':
@@ -146,6 +172,8 @@ export function EchemMetrics({
       return <CVMetrics parsed={parsed} />;
     case 'eis':
       return <EISMetrics parsed={parsed} />;
+    case 'pec_jv':
+      return <PECJVMetrics parsed={parsed} />;
     default:
       return null;
   }

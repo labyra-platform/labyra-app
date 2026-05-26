@@ -29,7 +29,9 @@ import {
   getEisTraceDescriptors,
   getLsvTraceDescriptors,
   getTafelTraceDescriptors,
-  LSVChart
+  LSVChart,
+  PECJVChart,
+  getPecJvTraceDescriptors
 } from '@/features/spectra/components/spectrum-chart-echem';
 import { TafelChart } from '@/features/spectra/components/tafel-chart';
 import {
@@ -291,6 +293,18 @@ export function getFigureDefinitions(
           capabilities: { peaks: false, secondaryAxis: false },
           defaultReverseX: false,
           render: (config) => <EISChart parsed={parsed} config={config} />
+        }
+      ];
+
+    case 'pec_jv':
+      return [
+        {
+          key: 'main',
+          label: 'PEC J-V',
+          descriptors: getPecJvTraceDescriptors(parsed),
+          capabilities: { peaks: false, secondaryAxis: false },
+          defaultReverseX: false,
+          render: (config) => <PECJVChart parsed={parsed} config={config} />
         }
       ];
 

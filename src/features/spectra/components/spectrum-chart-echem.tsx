@@ -18,6 +18,7 @@ import type {
   CVParsedData,
   EISParsedData,
   LSVParsedData,
+  PECJVParsedData,
   TafelParsedData
 } from '@/types/spectra-analysis-echem';
 
@@ -319,6 +320,90 @@ export function EISChart({ parsed, config }: { parsed: EISParsedData; config?: F
           scaleratio: 1
         },
         showlegend: f.showLegend
+      }}
+      config={{ displaylogo: false, responsive: true }}
+      useResizeHandler
+      style={{ width: '100%', height: '100%' }}
+    />
+  );
+}
+
+// ============================================================
+// PEC J-V — photoelectrochemistry under illumination
+// ============================================================
+export function getPecJvTraceDescriptors(parsed: PECJVParsedData): TraceDescriptor[] {
+  const d: TraceDescriptor[] = [{ id: 'jv', label: 'Photocurrent', defaultColor: PRIMARY }];
+  if (parsed.light_dark_curve) {
+    d.push({ id: 'light', label: 'Light', defaultColor: '#e69f00' });
+    d.push({ id: 'dark', label: 'Dark', defaultColor: '#444444' });
+  }
+  return d;
+}
+
+export function PECJVChart({ parsed, config }: { parsed: PECJVParsedData; config?: FigureConfig }) {
+  if (!parsed?.spectrum_curve?.x) {
+    return <div className='text-sm text-muted-foreground'>No data</div>;
+  }
+  const f = frame(config);
+  const traces: Array<Record<string, unknown>> = [];
+  if (parsed.light_dark_curve) {
+    const lightCfg = config?.traces.find((t) => t.id === 'light');
+    const darkCfg = config?.traces.find((t) => t.id === 'dark');
+    if (lightCfg?.visible ?? true) {
+      traces.push({
+        x: parsed.light_dark_curve.light.x,
+        y: parsed.light_dark_curve.light.y,
+        type: 'scatter',
+        mode: 'lines',
+        name: lightCfg?.label ?? 'Light',
+        line: styleOf(lightCfg, '#e69f00')
+      });
+    }
+    if (darkCfg?.visible ?? true) {
+      traces.push({
+        x: parsed.light_dark_curve.dark.x,
+        y: parsed.light_dark_curve.dark.y,
+        type: 'scatter',
+        mode: 'lines',
+        name: darkCfg?.label ?? 'Dark',
+        line: styleOf(darkCfg, '#444444')
+      });
+    }
+  } else {
+    const cfg = config?.traces.find((t) => t.id === 'jv');
+    if (cfg?.visible ?? true) {
+      traces.push({
+        x: parsed.spectrum_curve.x,
+        y: parsed.spectrum_curve.y,
+        type: 'scatter',
+        mode: 'lines',
+        name: cfg?.label ?? 'Photocurrent',
+        line: styleOf(cfg, PRIMARY)
+      });
+    }
+  }
+  return (
+    <Plot
+      key={f.key}
+      data={traces}
+      revision={f.rev.length}
+      layout={{
+        ...BASE_LAYOUT,
+        datarevision: f.rev,
+        title: { text: config?.figureTitle ?? 'PEC J-V', font: { size: 14 } },
+        xaxis: axis(
+          config?.xTitle ?? 'Potential (V vs RHE)',
+          f.showGrid,
+          f.closedFrame,
+          f.ticksInside
+        ),
+        yaxis: axis(
+          config?.yTitle ?? `j (${parsed.analysis.current_density_unit})`,
+          f.showGrid,
+          false,
+          f.ticksInside
+        ),
+        showlegend: f.showLegend || parsed.light_dark_curve != null
       }}
       config={{ displaylogo: false, responsive: true }}
       useResizeHandler

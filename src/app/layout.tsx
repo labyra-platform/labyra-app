@@ -37,14 +37,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
       <head>
         {/* R191-1: zod v4 JIT uses new Function() -> CSP eval violation.
-            Set jitless before any bundle loads so zod skips the eval probe. */}
+            Set jitless before any bundle loads so zod skips the eval probe.
+            suppressHydrationWarning: browsers strip the nonce attr from the DOM
+            after applying CSP, so server (nonce set) vs client (nonce removed)
+            mismatch is expected and harmless. */}
         <script
+          suppressHydrationWarning
           nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `globalThis.__zod_globalConfig = globalThis.__zod_globalConfig || {}; globalThis.__zod_globalConfig.jitless = true;`
           }}
         />
         <script
+          suppressHydrationWarning
           nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `

@@ -1,32 +1,21 @@
 'use client';
-// R165-phase-1-oxlint: oxlint cleanup
 
 /**
  * SpectrumChart — Plotly chart with full spectrum curve + peak markers.
  * Renders different chart configurations per spectrum type.
- * @phase R160-spectra-3c-hotfix · R202-customize (plot options)
+ * Appearance is driven by a FigureConfig (edited in the Figure Studio modal).
+ * @phase R160-spectra-3c-hotfix · R206-figure-studio
  */
 
 import dynamic from 'next/dynamic';
-import { useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
 
-import { Icons } from '@/components/icons';
-import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { getFirebaseAuth } from '@/lib/firebase/client';
+  DEFAULT_LINE_COLOR,
+  type FigureConfig,
+  type LineStyle,
+  type PeakLabelMode,
+  type TraceDescriptor
+} from '@/features/spectra/figure-config';
 import type { FTIRPeak, SpectrumParsedData } from '@/types/spectra-analysis';
 
 const Plot = dynamic(() => import('react-plotly.js'), {
@@ -38,33 +27,13 @@ const Plot = dynamic(() => import('react-plotly.js'), {
   )
 });
 
-// R202-customize: user-adjustable plot appearance (local UI state, no backend).
-type PeakLabelMode = 'none' | 'number' | 'group';
-
-interface PlotOptions {
-  lineColor: string;
-  lineWidth: number;
-  reverseX: boolean;
-  showGrid: boolean;
-  showLegend: boolean;
-  peakLabel: PeakLabelMode;
-}
-
-const LINE_COLOR_CHOICES = [
-  'hsl(220, 70%, 50%)', // blue (default)
-  'hsl(0, 0%, 20%)', // near-black (print)
-  'hsl(0, 70%, 50%)', // red
-  'hsl(150, 60%, 38%)', // green
-  'hsl(28, 80%, 52%)' // orange
-];
-
 interface ReferenceCardPeakInput {
   twoTheta: number;
   intensity: number;
   hkl?: string;
 }
 
-interface ReferenceCardOverlay {
+export interface ReferenceCardOverlay {
   id: string;
   cardNumber: string;
   phaseName: string;
@@ -75,7 +44,8 @@ interface ReferenceCardOverlay {
 
 interface SpectrumChartProps {
   parsed: SpectrumParsedData;
-  measurementId?: string;
+  /** Appearance config. SpectrumChart is now controlled — the parent owns it. */
+  config: FigureConfig;
   referenceCards?: ReferenceCardOverlay[];
 }
 
@@ -85,7 +55,7 @@ interface PlotData {
   type: 'scatter';
   mode: 'lines' | 'markers' | 'lines+markers' | 'text+markers';
   name: string;
-  line?: { color: string; width?: number };
+  line?: { color: string; width?: number; dash?: LineStyle };
   marker?: {
     color: string;
     size?: number;
@@ -98,15 +68,30 @@ interface PlotData {
   customdata?: number[] | string[];
 }
 
-const LINE_COLOR = 'hsl(220, 70%, 50%)';
 const PEAK_COLOR = 'hsl(0, 70%, 55%)';
 
-// R202-customize: build peak labels by mode. 'group' maps each peak to the
-// nearest FTIR functional group (by wavenumber) so a peak can be labelled with
-// its chemistry (e.g. "O-H stretch") instead of an index; other techniques and
-// unmatched peaks fall back to the index number.
+/**
+ * Single-curve spectra (XRD/UV-Vis/Raman/FTIR) declare one trace. The label
+ * follows the technique's Y quantity so the legend/panel reads naturally.
+ */
+export function getSpectrumTraceDescriptors(parsed: SpectrumParsedData): TraceDescriptor[] {
+  const label =
+    parsed.spectrum_type === 'xrd'
+      ? 'Intensity'
+      : parsed.spectrum_type === 'ftir'
+        ? 'Transmittance'
+        : parsed.spectrum_type === 'raman'
+          ? 'Intensity'
+          : 'Absorbance';
+  return [{ id: 'main', label, defaultColor: DEFAULT_LINE_COLOR }];
+}
+
+// Build peak labels by mode. 'group' maps each peak to the nearest FTIR
+// functional group (by wavenumber) so a peak can be labelled with its chemistry
+// (e.g. "O-H stretch"); 'value' shows the x-position; others fall back to index.
 function peakLabels(parsed: SpectrumParsedData, xs: number[], mode: PeakLabelMode): string[] {
   if (mode === 'none') return xs.map(() => '');
+  if (mode === 'value') return xs.map((x) => `${Math.round(x)}`);
   if (mode === 'number') return xs.map((_x, i) => `${i + 1}`);
   // mode === 'group'
   if (parsed.spectrum_type === 'ftir' && parsed.functional_groups?.length) {
@@ -128,7 +113,7 @@ function peakLabels(parsed: SpectrumParsedData, xs: number[], mode: PeakLabelMod
 
 function getXRDTraces(
   parsed: SpectrumParsedData,
-  opts: PlotOptions,
+  config: FigureConfig,
   referenceCards: ReferenceCardOverlay[] = []
 ): PlotData[] {
   if (parsed.spectrum_type !== 'xrd') return [];
@@ -139,10 +124,14 @@ function getXRDTraces(
       type: 'scatter',
       mode: 'lines',
       name: 'Diffractogram',
-      line: { color: opts.lineColor, width: opts.lineWidth }
+      line: {
+        color: config.traces[0]?.color ?? '#1f4e9c',
+        width: config.traces[0]?.lineWidth ?? 1.5,
+        dash: config.traces[0]?.lineStyle ?? 'solid'
+      }
     }
   ];
-  if ((parsed.peaks?.length ?? 0) > 0) {
+  if (config.showPeaks && (parsed.peaks?.length ?? 0) > 0) {
     traces.push({
       x: (parsed.peaks ?? []).map((p) => p.two_theta),
       y: (parsed.peaks ?? []).map((p) => p.intensity),
@@ -158,7 +147,7 @@ function getXRDTraces(
       text: peakLabels(
         parsed,
         (parsed.peaks ?? []).map((p) => p.two_theta),
-        opts.peakLabel
+        config.peakLabel
       ),
       textposition: 'top center',
       hovertemplate: '%{customdata}<br>I = %{y:.1f}<extra></extra>',
@@ -191,7 +180,7 @@ function getXRDTraces(
   return traces;
 }
 
-function getUVVisTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData[] {
+function getUVVisTraces(parsed: SpectrumParsedData, config: FigureConfig): PlotData[] {
   if (parsed.spectrum_type !== 'uvvis') return [];
   const traces: PlotData[] = [
     {
@@ -200,10 +189,14 @@ function getUVVisTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData
       type: 'scatter',
       mode: 'lines',
       name: 'Absorbance',
-      line: { color: opts.lineColor, width: opts.lineWidth }
+      line: {
+        color: config.traces[0]?.color ?? '#1f4e9c',
+        width: config.traces[0]?.lineWidth ?? 1.5,
+        dash: config.traces[0]?.lineStyle ?? 'solid'
+      }
     }
   ];
-  if ((parsed.peaks?.length ?? 0) > 0) {
+  if (config.showPeaks && (parsed.peaks?.length ?? 0) > 0) {
     traces.push({
       x: (parsed.peaks ?? []).map((p) => p.wavelength_nm),
       y: (parsed.peaks ?? []).map((p) => p.absorbance),
@@ -219,7 +212,7 @@ function getUVVisTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData
       text: peakLabels(
         parsed,
         (parsed.peaks ?? []).map((p) => p.wavelength_nm),
-        opts.peakLabel
+        config.peakLabel
       ),
       textposition: 'top center',
       hovertemplate: '%{customdata}<extra></extra>',
@@ -231,7 +224,7 @@ function getUVVisTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData
   return traces;
 }
 
-function getRamanTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData[] {
+function getRamanTraces(parsed: SpectrumParsedData, config: FigureConfig): PlotData[] {
   if (parsed.spectrum_type !== 'raman') return [];
   const traces: PlotData[] = [
     {
@@ -240,10 +233,14 @@ function getRamanTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData
       type: 'scatter',
       mode: 'lines',
       name: 'Raman',
-      line: { color: opts.lineColor, width: opts.lineWidth }
+      line: {
+        color: config.traces[0]?.color ?? '#1f4e9c',
+        width: config.traces[0]?.lineWidth ?? 1.5,
+        dash: config.traces[0]?.lineStyle ?? 'solid'
+      }
     }
   ];
-  if ((parsed.peaks?.length ?? 0) > 0) {
+  if (config.showPeaks && (parsed.peaks?.length ?? 0) > 0) {
     traces.push({
       x: (parsed.peaks ?? []).map((p) => p.shift_cm1),
       y: (parsed.peaks ?? []).map((p) => p.intensity),
@@ -259,7 +256,7 @@ function getRamanTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData
       text: peakLabels(
         parsed,
         (parsed.peaks ?? []).map((p) => p.shift_cm1),
-        opts.peakLabel
+        config.peakLabel
       ),
       textposition: 'top center',
       hovertemplate: '%{customdata}<br>I = %{y:.1f}<extra></extra>',
@@ -271,7 +268,7 @@ function getRamanTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData
   return traces;
 }
 
-function getFTIRTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData[] {
+function getFTIRTraces(parsed: SpectrumParsedData, config: FigureConfig): PlotData[] {
   if (parsed.spectrum_type !== 'ftir') return [];
   const traces: PlotData[] = [
     {
@@ -280,10 +277,14 @@ function getFTIRTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData[
       type: 'scatter',
       mode: 'lines',
       name: parsed.y_mode === 'transmittance' ? 'Transmittance' : 'Absorbance',
-      line: { color: opts.lineColor, width: opts.lineWidth }
+      line: {
+        color: config.traces[0]?.color ?? '#1f4e9c',
+        width: config.traces[0]?.lineWidth ?? 1.5,
+        dash: config.traces[0]?.lineStyle ?? 'solid'
+      }
     }
   ];
-  if ((parsed.peaks?.length ?? 0) > 0) {
+  if (config.showPeaks && (parsed.peaks?.length ?? 0) > 0) {
     // Marker y values: convert absorbance back to %T scale if needed for visual position
     const yValues =
       parsed.y_mode === 'transmittance'
@@ -304,7 +305,7 @@ function getFTIRTraces(parsed: SpectrumParsedData, opts: PlotOptions): PlotData[
       text: peakLabels(
         parsed,
         (parsed.peaks ?? []).map((p) => p.wavenumber_cm1),
-        opts.peakLabel
+        config.peakLabel
       ),
       textposition: 'top center',
       hovertemplate: '%{customdata}<extra></extra>',
@@ -367,22 +368,7 @@ function getLayoutConfig(parsed: SpectrumParsedData): ChartLayout {
   };
 }
 
-export function SpectrumChart({ parsed, measurementId, referenceCards = [] }: SpectrumChartProps) {
-  // R202-customize: plot options state. Must be declared before any early
-  // return to satisfy the React Rules of Hooks.
-  const cfgDefaults = useMemo(() => getLayoutConfig(parsed), [parsed]);
-  const [opts, setOpts] = useState<PlotOptions>({
-    lineColor: LINE_COLOR,
-    lineWidth: 1.5,
-    reverseX: cfgDefaults.reverseX ?? false,
-    showGrid: true,
-    showLegend: true,
-    peakLabel: 'number'
-  });
-  // R203-export: hold the Plotly graph div so Quick export (client-side) can
-  // call Plotly.downloadImage on it for SVG/PNG.
-  const gdRef = useRef<HTMLElement | null>(null);
-
+export function SpectrumChart({ parsed, config, referenceCards = [] }: SpectrumChartProps) {
   // Defensive: missing curve data — uvvis_drs has reflectance_curve, not spectrum_curve
   if (parsed.spectrum_type === 'uvvis_drs') {
     return <div className='text-sm text-muted-foreground'>DRS rendered separately</div>;
@@ -393,295 +379,84 @@ export function SpectrumChart({ parsed, measurementId, referenceCards = [] }: Sp
   let traces: PlotData[] = [];
   // Reference cards only apply to XRD
   const refCards = parsed.spectrum_type === 'xrd' ? referenceCards : [];
-  if (parsed.spectrum_type === 'xrd') traces = getXRDTraces(parsed, opts, refCards);
-  else if (parsed.spectrum_type === 'uvvis') traces = getUVVisTraces(parsed, opts);
-  else if (parsed.spectrum_type === 'raman') traces = getRamanTraces(parsed, opts);
-  else if (parsed.spectrum_type === 'ftir') traces = getFTIRTraces(parsed, opts);
+  if (parsed.spectrum_type === 'xrd') traces = getXRDTraces(parsed, config, refCards);
+  else if (parsed.spectrum_type === 'uvvis') traces = getUVVisTraces(parsed, config);
+  else if (parsed.spectrum_type === 'raman') traces = getRamanTraces(parsed, config);
+  else if (parsed.spectrum_type === 'ftir') traces = getFTIRTraces(parsed, config);
 
-  const cfg = cfgDefaults;
-  const xRange = opts.reverseX ? (cfg.xRange.toReversed() as [number, number]) : cfg.xRange;
-  // FTIR functional-group labels are only available for FTIR data.
-  const canLabelGroups = parsed.spectrum_type === 'ftir';
+  const cfg = getLayoutConfig(parsed);
+  // Axis range: config overrides (min/max) take precedence, else default, with
+  // reverse applied last.
+  const baseRange: [number, number] = [config.xMin ?? cfg.xRange[0], config.xMax ?? cfg.xRange[1]];
+  const xRange = config.reverseX ? ([baseRange[1], baseRange[0]] as [number, number]) : baseRange;
+  const yRange: [number, number] | undefined =
+    config.yMin !== null && config.yMax !== null ? [config.yMin, config.yMax] : undefined;
 
-  return (
-    <div className='space-y-2'>
-      <div className='flex items-center justify-end gap-2'>
-        <ExportMenu gdRef={gdRef} parsed={parsed} measurementId={measurementId} />
-        <PlotCustomizePanel opts={opts} onChange={setOpts} canLabelGroups={canLabelGroups} />
-      </div>
-      <Plot
-        onInitialized={(_fig, graphDiv) => {
-          gdRef.current = graphDiv as unknown as HTMLElement;
-        }}
-        onUpdate={(_fig, graphDiv) => {
-          gdRef.current = graphDiv as unknown as HTMLElement;
-        }}
-        data={traces}
-        layout={{
-          autosize: true,
-          height: 420,
-          margin: { l: 60, r: 30, t: 40, b: 50 },
-          title: { text: cfg.title, font: { size: 14 } },
-          xaxis: {
-            title: { text: cfg.xAxis },
-            range: xRange,
-            showgrid: opts.showGrid,
-            gridcolor: 'hsl(var(--border))'
-          },
-          yaxis: {
-            title: { text: cfg.yAxis },
-            showgrid: opts.showGrid,
-            gridcolor: 'hsl(var(--border))'
-          },
-          paper_bgcolor: 'transparent',
-          plot_bgcolor: 'transparent',
-          font: { family: 'inherit', size: 12 },
-          showlegend: opts.showLegend,
-          legend: { orientation: 'h', y: -0.2 },
-          hovermode: 'closest'
-        }}
-        config={{
-          displaylogo: false,
-          responsive: true,
-          modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d']
-        }}
-        useResizeHandler
-        style={{ width: '100%', height: '100%' }}
-      />
-    </div>
-  );
-}
-
-interface PlotCustomizePanelProps {
-  opts: PlotOptions;
-  onChange: (next: PlotOptions) => void;
-  canLabelGroups: boolean;
-}
-
-function PlotCustomizePanel({ opts, onChange, canLabelGroups }: PlotCustomizePanelProps) {
-  const set = <K extends keyof PlotOptions>(key: K, value: PlotOptions[K]) =>
-    onChange({ ...opts, [key]: value });
+  // react-plotly.js uses Plotly.react() for updates, which can keep a stale
+  // layout (legend slot, axis domain) when only layout props change — the
+  // preview looks wrong until the modal is reopened. Bumping `revision` on every
+  // config change forces a full relayout; `datarevision` does the same for the
+  // traces (colour/width/style/peaks). Cheap string identity over the config.
+  const revision = JSON.stringify(config);
+  // Toggles that change the plot AREA (legend slot, mirrored frame, grid, axis
+  // direction) are the ones Plotly.react() handles unreliably — remount on those
+  // only (not on text/number edits) so the preview is always correct without a
+  // modal reopen. Cheap: this string changes a handful of times, not per char.
+  const layoutKey = `${config.showLegend}-${config.closedFrame}-${config.showGrid}-${config.reverseX}`;
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button type='button' variant='outline' size='sm'>
-          <Icons.adjustments className='mr-1.5 size-4' />
-          Customize plot
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align='end' className='w-72 space-y-4'>
-        <div className='space-y-1.5'>
-          <Label className='text-xs text-muted-foreground'>Line color</Label>
-          <div className='flex gap-2'>
-            {LINE_COLOR_CHOICES.map((c) => (
-              <button
-                key={c}
-                type='button'
-                aria-label={`Line color ${c}`}
-                onClick={() => set('lineColor', c)}
-                className='size-6 rounded-full border-2 transition'
-                style={{
-                  backgroundColor: c,
-                  borderColor: opts.lineColor === c ? 'hsl(var(--ring))' : 'transparent'
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className='space-y-1.5'>
-          <Label className='text-xs text-muted-foreground'>
-            Line width ({opts.lineWidth.toFixed(1)})
-          </Label>
-          <Slider
-            min={0.5}
-            max={3}
-            step={0.5}
-            value={[opts.lineWidth]}
-            onValueChange={(v) => set('lineWidth', v[0] ?? 1.5)}
-          />
-        </div>
-
-        <div className='space-y-1.5'>
-          <Label className='text-xs text-muted-foreground'>Peak labels</Label>
-          <ToggleGroup
-            type='single'
-            value={opts.peakLabel}
-            onValueChange={(v) => v && set('peakLabel', v as PeakLabelMode)}
-            className='justify-start'
-          >
-            <ToggleGroupItem value='none' size='sm'>
-              Off
-            </ToggleGroupItem>
-            <ToggleGroupItem value='number' size='sm'>
-              1, 2, 3
-            </ToggleGroupItem>
-            {canLabelGroups && (
-              <ToggleGroupItem value='group' size='sm'>
-                Groups
-              </ToggleGroupItem>
-            )}
-          </ToggleGroup>
-        </div>
-
-        <div className='flex items-center justify-between'>
-          <Label htmlFor='reverse-x' className='text-xs text-muted-foreground'>
-            Reverse X axis
-          </Label>
-          <Switch
-            id='reverse-x'
-            checked={opts.reverseX}
-            onCheckedChange={(v) => set('reverseX', v)}
-          />
-        </div>
-        <div className='flex items-center justify-between'>
-          <Label htmlFor='show-grid' className='text-xs text-muted-foreground'>
-            Grid
-          </Label>
-          <Switch
-            id='show-grid'
-            checked={opts.showGrid}
-            onCheckedChange={(v) => set('showGrid', v)}
-          />
-        </div>
-        <div className='flex items-center justify-between'>
-          <Label htmlFor='show-legend' className='text-xs text-muted-foreground'>
-            Legend
-          </Label>
-          <Switch
-            id='show-legend'
-            checked={opts.showLegend}
-            onCheckedChange={(v) => set('showLegend', v)}
-          />
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-interface ExportMenuProps {
-  gdRef: React.RefObject<HTMLElement | null>;
-  parsed: SpectrumParsedData;
-  measurementId?: string;
-}
-
-const PUBLISHERS: Array<{ key: string; label: string }> = [
-  { key: 'nature', label: 'Nature (89 mm)' },
-  { key: 'acs', label: 'ACS (82.6 mm)' },
-  { key: 'elsevier', label: 'Elsevier (90 mm)' },
-  { key: 'rsc', label: 'RSC (83 mm)' }
-];
-
-// Peak x-values per spectrum type, to forward to the worker for peak markers.
-function peakXValues(parsed: SpectrumParsedData): Array<Record<string, number>> {
-  if (!('peaks' in parsed) || !parsed.peaks) return [];
-  return parsed.peaks as unknown as Array<Record<string, number>>;
-}
-
-// R203/R204-export: client-side quick export (Plotly, for drafts/slides) plus a
-// publication path that calls the matplotlib worker for exact-journal-spec files.
-function ExportMenu({ gdRef, parsed, measurementId }: ExportMenuProps) {
-  const filenameBase = `spectrum_${parsed.spectrum_type}`;
-  const [busy, setBusy] = useState<string | null>(null);
-
-  const quickDownload = async (format: 'svg' | 'png') => {
-    const gd = gdRef.current;
-    if (!gd) return;
-    // Import the pre-built bundle (the same one react-plotly.js uses) rather
-    // than the 'plotly.js' entry, which pulls WebGL source deps (glslify) that
-    // break the Turbopack client build. The dist bundle ships no .d.ts.
-    // @ts-expect-error -- plotly.js/dist/plotly has no type declarations
-    const mod = (await import('plotly.js/dist/plotly')) as {
-      default: {
-        downloadImage: (
-          gd: HTMLElement,
-          opts: { format: string; filename: string; width?: number; height?: number }
-        ) => Promise<string>;
-      };
-    };
-    const Plotly = mod.default;
-    const px = format === 'png' ? { width: 2400, height: 1488 } : { width: 1000, height: 620 };
-    await Plotly.downloadImage(gd, {
-      format,
-      filename: filenameBase,
-      ...px
-    });
-  };
-
-  // Publication export: POST curve+peaks to the worker (via app route, which
-  // adds the Cloud Run ID token) and download the returned matplotlib file.
-  const publicationDownload = async (publisher: string) => {
-    if (!measurementId || !('spectrum_curve' in parsed) || !parsed.spectrum_curve?.x) return;
-    const curve = parsed.spectrum_curve;
-    setBusy(publisher);
-    try {
-      const user = getFirebaseAuth().currentUser;
-      if (!user) return;
-      const token = await user.getIdToken();
-      const res = await fetch(`/api/measurements/${measurementId}/render-figure`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+    <Plot
+      key={layoutKey}
+      data={traces}
+      revision={revision.length}
+      layout={{
+        autosize: true,
+        height: 420,
+        datarevision: revision,
+        margin: { l: 60, r: 30, t: 40, b: 50 },
+        title: { text: config.figureTitle ?? cfg.title, font: { size: 14 } },
+        xaxis: {
+          title: { text: config.xTitle ?? cfg.xAxis },
+          range: xRange,
+          showgrid: config.showGrid,
+          gridcolor: 'hsl(var(--border))',
+          // Axis frame is independent of the grid: turning off the grid must
+          // never remove the axis lines. mirror:true closes the top/right frame
+          // (the boxed-axes convention for scientific figures); zeroline off so
+          // the data line isn't dragged toward a spurious y=0 baseline.
+          showline: true,
+          linecolor: 'hsl(var(--foreground))',
+          linewidth: 1,
+          mirror: config.closedFrame,
+          zeroline: false,
+          ticks: 'outside'
         },
-        body: JSON.stringify({
-          spectrum_type: parsed.spectrum_type,
-          curve: { x: curve.x, y: curve.y },
-          peaks: peakXValues(parsed),
-          publisher,
-          column: 'single',
-          fmt: 'pdf'
-        })
-      });
-      if (!res.ok) {
-        toast.error('Publication export failed', {
-          description: `${res.status}: ${(await res.text()).slice(0, 120)}`
-        });
-        return;
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${filenameBase}_${publisher}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Publication export error', { description: String(err).slice(0, 120) });
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type='button' variant='outline' size='sm'>
-          <Icons.download className='mr-1.5 size-4' />
-          Export
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-60'>
-        <DropdownMenuLabel className='text-muted-foreground text-xs'>
-          Quick export (for drafts/slides)
-        </DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => quickDownload('svg')}>SVG (vector)</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => quickDownload('png')}>PNG (3× raster)</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className='text-muted-foreground text-xs'>
-          Publication PDF (single column)
-        </DropdownMenuLabel>
-        {PUBLISHERS.map((p) => (
-          <DropdownMenuItem
-            key={p.key}
-            disabled={!measurementId || busy !== null}
-            onClick={() => publicationDownload(p.key)}
-          >
-            {busy === p.key ? 'Rendering…' : p.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+        yaxis: {
+          title: { text: config.yTitle ?? cfg.yAxis },
+          range: yRange,
+          showgrid: config.showGrid,
+          gridcolor: 'hsl(var(--border))',
+          showline: true,
+          linecolor: 'hsl(var(--foreground))',
+          linewidth: 1,
+          mirror: config.closedFrame,
+          zeroline: false,
+          ticks: 'outside'
+        },
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { family: 'inherit', size: 12 },
+        showlegend: config.showLegend,
+        legend: { orientation: 'h', y: -0.2 },
+        hovermode: 'closest'
+      }}
+      config={{
+        displaylogo: false,
+        responsive: true,
+        modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d']
+      }}
+      useResizeHandler
+      style={{ width: '100%', height: '100%' }}
+    />
   );
 }

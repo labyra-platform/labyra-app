@@ -159,6 +159,7 @@ export function SpectrumAnalysisSection({ spectrumId, status }: SpectrumAnalysis
         parsed.spectrum_type === 'ftir') && (
         <SpectrumChart
           parsed={parsed}
+          measurementId={spectrumId}
           // R163-4c-2-overlay: filter XRD-only for chart overlay
           referenceCards={activeCards
             .filter((c) => c.spectrumType === 'xrd')

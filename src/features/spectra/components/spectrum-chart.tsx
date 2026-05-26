@@ -9,6 +9,7 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { FTIRPeak, SpectrumParsedData } from '@/types/spectra-analysis';
 
 const Plot = dynamic(() => import('react-plotly.js'), {
@@ -73,6 +75,7 @@ interface ReferenceCardOverlay {
 
 interface SpectrumChartProps {
   parsed: SpectrumParsedData;
+  measurementId?: string;
   referenceCards?: ReferenceCardOverlay[];
 }
 
@@ -364,7 +367,7 @@ function getLayoutConfig(parsed: SpectrumParsedData): ChartLayout {
   };
 }
 
-export function SpectrumChart({ parsed, referenceCards = [] }: SpectrumChartProps) {
+export function SpectrumChart({ parsed, measurementId, referenceCards = [] }: SpectrumChartProps) {
   // R202-customize: plot options state. Must be declared before any early
   // return to satisfy the React Rules of Hooks.
   const cfgDefaults = useMemo(() => getLayoutConfig(parsed), [parsed]);
@@ -403,7 +406,7 @@ export function SpectrumChart({ parsed, referenceCards = [] }: SpectrumChartProp
   return (
     <div className='space-y-2'>
       <div className='flex items-center justify-end gap-2'>
-        <ExportMenu gdRef={gdRef} parsed={parsed} />
+        <ExportMenu gdRef={gdRef} parsed={parsed} measurementId={measurementId} />
         <PlotCustomizePanel opts={opts} onChange={setOpts} canLabelGroups={canLabelGroups} />
       </div>
       <Plot
@@ -560,13 +563,27 @@ function PlotCustomizePanel({ opts, onChange, canLabelGroups }: PlotCustomizePan
 interface ExportMenuProps {
   gdRef: React.RefObject<HTMLElement | null>;
   parsed: SpectrumParsedData;
+  measurementId?: string;
 }
 
-// R203-export: client-side quick export via Plotly.downloadImage (SVG/PNG) for
-// drafts and slides. Publication-grade export (matplotlib worker, exact journal
-// specs) is offered separately once the worker render route is wired.
-function ExportMenu({ gdRef, parsed }: ExportMenuProps) {
+const PUBLISHERS: Array<{ key: string; label: string }> = [
+  { key: 'nature', label: 'Nature (89 mm)' },
+  { key: 'acs', label: 'ACS (82.6 mm)' },
+  { key: 'elsevier', label: 'Elsevier (90 mm)' },
+  { key: 'rsc', label: 'RSC (83 mm)' }
+];
+
+// Peak x-values per spectrum type, to forward to the worker for peak markers.
+function peakXValues(parsed: SpectrumParsedData): Array<Record<string, number>> {
+  if (!('peaks' in parsed) || !parsed.peaks) return [];
+  return parsed.peaks as unknown as Array<Record<string, number>>;
+}
+
+// R203/R204-export: client-side quick export (Plotly, for drafts/slides) plus a
+// publication path that calls the matplotlib worker for exact-journal-spec files.
+function ExportMenu({ gdRef, parsed, measurementId }: ExportMenuProps) {
   const filenameBase = `spectrum_${parsed.spectrum_type}`;
+  const [busy, setBusy] = useState<string | null>(null);
 
   const quickDownload = async (format: 'svg' | 'png') => {
     const gd = gdRef.current;
@@ -592,6 +609,51 @@ function ExportMenu({ gdRef, parsed }: ExportMenuProps) {
     });
   };
 
+  // Publication export: POST curve+peaks to the worker (via app route, which
+  // adds the Cloud Run ID token) and download the returned matplotlib file.
+  const publicationDownload = async (publisher: string) => {
+    if (!measurementId || !('spectrum_curve' in parsed) || !parsed.spectrum_curve?.x) return;
+    const curve = parsed.spectrum_curve;
+    setBusy(publisher);
+    try {
+      const user = getFirebaseAuth().currentUser;
+      if (!user) return;
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/measurements/${measurementId}/render-figure`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          spectrum_type: parsed.spectrum_type,
+          curve: { x: curve.x, y: curve.y },
+          peaks: peakXValues(parsed),
+          publisher,
+          column: 'single',
+          fmt: 'pdf'
+        })
+      });
+      if (!res.ok) {
+        toast.error('Publication export failed', {
+          description: `${res.status}: ${(await res.text()).slice(0, 120)}`
+        });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filenameBase}_${publisher}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Publication export error', { description: String(err).slice(0, 120) });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -600,7 +662,7 @@ function ExportMenu({ gdRef, parsed }: ExportMenuProps) {
           Export
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-56'>
+      <DropdownMenuContent align='end' className='w-60'>
         <DropdownMenuLabel className='text-muted-foreground text-xs'>
           Quick export (for drafts/slides)
         </DropdownMenuLabel>
@@ -608,11 +670,17 @@ function ExportMenu({ gdRef, parsed }: ExportMenuProps) {
         <DropdownMenuItem onClick={() => quickDownload('png')}>PNG (3× raster)</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className='text-muted-foreground text-xs'>
-          Publication (exact journal specs)
+          Publication PDF (single column)
         </DropdownMenuLabel>
-        <DropdownMenuItem disabled className='text-xs'>
-          Nature / ACS / Elsevier / RSC — coming soon
-        </DropdownMenuItem>
+        {PUBLISHERS.map((p) => (
+          <DropdownMenuItem
+            key={p.key}
+            disabled={!measurementId || busy !== null}
+            onClick={() => publicationDownload(p.key)}
+          >
+            {busy === p.key ? 'Rendering…' : p.label}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

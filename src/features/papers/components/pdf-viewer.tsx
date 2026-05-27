@@ -184,6 +184,15 @@ export function PdfViewer({ paperId, embedded = false }: { paperId: string; embe
     return available * zoom;
   }, [containerWidth, zoom]);
 
+  // R225: virtualization window. Rendering all N pages (each with text +
+  // annotation layers) is the dominant performance cost — 20-66 live PDF.js
+  // canvases lag scroll badly. Only render pages within ±VIRTUAL_BUFFER of the
+  // current page; everything else is a same-size placeholder so scroll height
+  // (and thus scroll position / page jumps) stays exact. A4 aspect ≈ 1.414.
+  const VIRTUAL_BUFFER = 2;
+  const PAGE_ASPECT = Math.SQRT2;
+  const placeholderHeight = pageWidth * PAGE_ASPECT;
+
   // Document load callback
   const onDocumentLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
     setNumPages(n);
@@ -494,25 +503,38 @@ export function PdfViewer({ paperId, embedded = false }: { paperId: string; embe
                 </Alert>
               }
             >
-              {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
-                <div key={pageNum} data-page-index={pageNum} className='mb-4 flex justify-center'>
-                  <Page
-                    pageNumber={pageNum}
-                    width={pageWidth}
-                    renderTextLayer
-                    renderAnnotationLayer
-                    className='shadow-md'
-                    loading={
+              {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => {
+                const inWindow = Math.abs(pageNum - currentPage) <= VIRTUAL_BUFFER;
+                return (
+                  <div key={pageNum} data-page-index={pageNum} className='mb-4 flex justify-center'>
+                    {inWindow ? (
+                      <Page
+                        pageNumber={pageNum}
+                        width={pageWidth}
+                        renderTextLayer
+                        renderAnnotationLayer
+                        className='shadow-md'
+                        loading={
+                          <div
+                            className='flex items-center justify-center bg-card'
+                            style={{ width: pageWidth, height: placeholderHeight }}
+                          >
+                            <IconLoader2 className='size-5 animate-spin text-muted-foreground' />
+                          </div>
+                        }
+                      />
+                    ) : (
+                      // R225: out-of-window placeholder — same footprint, no canvas.
                       <div
-                        className='flex items-center justify-center bg-card'
-                        style={{ width: pageWidth, height: pageWidth * 1.41 }}
+                        className='flex items-center justify-center bg-card/50 shadow-md'
+                        style={{ width: pageWidth, height: placeholderHeight }}
                       >
-                        <IconLoader2 className='size-5 animate-spin text-muted-foreground' />
+                        <span className='text-xs text-muted-foreground'>{pageNum}</span>
                       </div>
-                    }
-                  />
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </Document>
           </div>
         )}

@@ -18,13 +18,7 @@
  *     its container width, so the page re-fits cleanly with no extra logic and no
  *     ResizeObserver feedback loop.
  */
-import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconExternalLink,
-  IconInfoCircle,
-  IconQuote
-} from '@tabler/icons-react';
+import { IconChevronRight, IconExternalLink, IconInfoCircle, IconQuote } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
@@ -61,7 +55,7 @@ export function PaperReadView({ paperId }: { paperId: string }) {
   }, [panelOpen]);
 
   return (
-    <div className='flex h-[calc(100vh-4rem)] w-full overflow-hidden'>
+    <div className='flex h-[calc(100vh-4rem)] min-h-0 w-full overflow-hidden'>
       {/* LEFT: PDF — flexes to fill remaining space */}
       <div className='min-w-0 flex-1'>
         <PdfViewer paperId={paperId} embedded />
@@ -75,23 +69,26 @@ export function PaperReadView({ paperId }: { paperId: string }) {
         title={panelOpen ? t('panelCollapse') : t('panelExpand')}
         className='group relative flex w-6 shrink-0 items-center justify-center border-l bg-muted/40 transition-colors hover:bg-muted'
       >
-        <span className='flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-all group-hover:scale-110 group-hover:border-primary group-hover:text-primary'>
-          {panelOpen ? (
-            <IconChevronRight className='size-3.5' />
-          ) : (
-            <IconChevronLeft className='size-3.5' />
-          )}
+        <span className='flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-all duration-200 group-hover:scale-110 group-hover:border-primary group-hover:text-primary'>
+          <IconChevronRight
+            className={cn('size-3.5 transition-transform duration-300', !panelOpen && 'rotate-180')}
+          />
         </span>
       </button>
 
-      {/* RIGHT: metadata panel — collapsible (width transition) */}
+      {/* RIGHT: metadata panel — collapsible (width + fade transition) */}
       <aside
         className={cn(
           'shrink-0 overflow-hidden border-l bg-background transition-[width] duration-300 ease-out',
-          panelOpen ? 'w-[28rem] max-w-[42vw]' : 'w-0 border-l-0'
+          panelOpen ? 'w-[24rem]' : 'w-0 border-l-0'
         )}
       >
-        <div className='flex h-full w-[28rem] max-w-[42vw] flex-col'>
+        <div
+          className={cn(
+            'flex h-full w-[24rem] flex-col transition-opacity duration-200',
+            panelOpen ? 'opacity-100 delay-100' : 'opacity-0'
+          )}
+        >
           {/* Panel tabs */}
           <div className='flex shrink-0 items-center gap-1 border-b px-2'>
             <PanelTabButton

@@ -399,7 +399,10 @@
     "axisMaterials": "Materials",
     "axisSynthesis": "Synthesis",
     "axisCharacterization": "Characterization",
-    "axisMeta": "Type"
+    "axisMeta": "Type",
+    "panelCollapse": "Collapse panel",
+    "panelExpand": "Expand panel",
+    "tabInfo": "Info"
   },
   "materials": {
     "title": "Materials",

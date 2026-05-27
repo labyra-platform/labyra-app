@@ -89,7 +89,7 @@ async function fetchSignedUrl(paperId: string): Promise<SignedUrlResponse> {
   return (await res.json()) as SignedUrlResponse;
 }
 
-export function PdfViewer({ paperId }: { paperId: string }) {
+export function PdfViewer({ paperId, embedded = false }: { paperId: string; embedded?: boolean }) {
   const t = useTranslations('papers');
   const params = useParams();
   const locale = params.locale as string;
@@ -310,15 +310,22 @@ export function PdfViewer({ paperId }: { paperId: string }) {
       ref={containerRef}
       className={cn(
         'flex flex-col bg-muted/20 w-full min-w-0 max-w-full overflow-hidden',
-        isFullscreen ? 'h-screen' : 'h-[calc(100vh-4rem)]'
+        isFullscreen ? 'h-screen' : embedded ? 'h-full' : 'h-[calc(100vh-4rem)]'
       )}
     >
       {/* Toolbar */}
       <header className='flex items-center gap-1.5 border-b bg-background px-3 py-2 sm:gap-2 sm:px-4'>
         <Button asChild variant='ghost' size='sm'>
-          <Link href={`/${locale}/dashboard/papers/${paperId}`} aria-label={t('backToDetail')}>
+          <Link
+            href={
+              embedded ? `/${locale}/dashboard/papers` : `/${locale}/dashboard/papers/${paperId}`
+            }
+            aria-label={embedded ? t('backToList') : t('backToDetail')}
+          >
             <IconArrowLeft className='size-4' />
-            <span className='hidden sm:inline'>{t('backToDetail')}</span>
+            <span className='hidden sm:inline'>
+              {embedded ? t('backToList') : t('backToDetail')}
+            </span>
           </Link>
         </Button>
 

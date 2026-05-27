@@ -28,9 +28,12 @@ export const ALL_CONFIDENCES: ReadonlyArray<CitationConfidence> = [
 ];
 
 export function createDefaultFilter(): CitationFilterValue {
+  // R224b: default to the most trustworthy view — DOI-verified citations that are
+  // already in the lab's library. The user can widen to manual/title-match/
+  // unverified as needed. Aligns with Trust > Coverage.
   return {
-    confidences: new Set(ALL_CONFIDENCES),
-    inLibraryOnly: false
+    confidences: new Set<CitationConfidence>(['doi-exact']),
+    inLibraryOnly: true
   };
 }
 

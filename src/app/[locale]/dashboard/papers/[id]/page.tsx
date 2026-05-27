@@ -1,18 +1,18 @@
 import { getTranslations } from 'next-intl/server';
-import PageContainer from '@/components/layout/page-container';
-import { PaperDetail } from '@/features/papers/components/paper-detail';
+import { PaperReadView } from '@/features/papers/components/paper-read-view';
 
+/**
+ * Paper page — R224: split reading view (PDF + collapsible metadata panel),
+ * replacing the old separate detail page. The old /view route still works as a
+ * standalone full-PDF fallback.
+ */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const t = await getTranslations('papers');
   const { id } = await params;
   return { title: `${t('detailPageTitle')} — ${id.slice(0, 8)}` };
 }
 
-export default async function PaperDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PaperPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return (
-    <PageContainer>
-      <PaperDetail paperId={id} />
-    </PageContainer>
-  );
+  return <PaperReadView paperId={id} />;
 }

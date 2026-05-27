@@ -399,7 +399,10 @@
     "axisMaterials": "Vật liệu",
     "axisSynthesis": "Tổng hợp",
     "axisCharacterization": "Đặc trưng",
-    "axisMeta": "Loại"
+    "axisMeta": "Loại",
+    "panelCollapse": "Thu gọn bảng",
+    "panelExpand": "Mở rộng bảng",
+    "tabInfo": "Thông tin"
   },
   "materials": {
     "title": "Vật liệu",

@@ -54,11 +54,14 @@ export async function runIndexStep(input: IndexStepInput): Promise<number> {
       text: chunk.text.slice(0, 1000),
       pagesJson: JSON.stringify(chunk.pages),
       section: chunk.section,
+      // AI-9 fix: paper metadata fields may be undefined (incomplete extraction).
+      // `paper.authors.length` crashes on undefined; Pinecone also rejects
+      // undefined metadata values — provide concrete fallbacks for all.
       paperTitle: paper.title || 'Untitled',
       // Pinecone metadata: string[] must be non-empty
-      paperAuthors: paper.authors.length > 0 ? paper.authors : ['unknown'],
-      paperYear: paper.year,
-      paperDoi: paper.doi,
+      paperAuthors: (paper.authors?.length ?? 0) > 0 ? paper.authors : ['unknown'],
+      paperYear: paper.year ?? 0,
+      paperDoi: paper.doi ?? '',
       // ADR-034 TEAM-5: group scope (mirrors worker index.py).
       groupId: paper.groupId
     }

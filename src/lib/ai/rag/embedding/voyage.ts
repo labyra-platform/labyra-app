@@ -54,9 +54,26 @@ export async function voyageEmbed(
   }
 
   const data: EmbedApiResponse = await res.json();
-  const embeddings = (data.data ?? [])
-    .map((d) => d.embedding ?? [])
-    .filter((e): e is number[] => e.length > 0);
+  // AI-5 fix: keep 1:1 alignment with `texts`. The pipeline (embed-step) maps
+  // embeddings[j] -> chunks[j] by index, so filtering out empty embeddings would
+  // both trip `embedding_count_mismatch` AND misalign the survivors. Voyage
+  // returns an `index` per item — place each embedding at its input position.
+  const embeddings: number[][] = Array.from({ length: texts.length }, () => []);
+  for (const d of data.data ?? []) {
+    const idx = typeof d.index === 'number' ? d.index : -1;
+    if (idx >= 0 && idx < texts.length && d.embedding && d.embedding.length > 0) {
+      embeddings[idx] = d.embedding;
+    }
+  }
+  // Surface a real provider error instead of silently returning short/empty rows:
+  // any text that got no usable embedding (wrong dim or missing) is a hard fail.
+  const missing = embeddings.findIndex((e) => e.length !== VOYAGE_EMBED_DIM);
+  if (texts.length > 0 && missing !== -1) {
+    throw new Error(
+      `Voyage embed returned no/short embedding for input index ${missing} ` +
+        `(expected dim ${VOYAGE_EMBED_DIM}); aborting to preserve index alignment.`
+    );
+  }
   const totalTokens = data.usage?.total_tokens ?? 0;
   return { embeddings, totalTokens };
 }

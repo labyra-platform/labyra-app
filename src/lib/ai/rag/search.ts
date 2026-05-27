@@ -67,15 +67,19 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
 
   // Vector retrieval (always available)
   const vectorStore = getVectorStore();
-  // Merge user filter with section exclusion
-  const mergedFilter: Record<string, unknown> = {
-    ...req.filter,
-    section: { $nin: EXCLUDED_SECTIONS }
-  };
+  // Merge user filter with section exclusion.
+  // AI-7 fix: a spread `{ ...req.filter, section: {...} }` silently overwrites a
+  // caller-provided `section` key. Build the constraint list and combine with $and
+  // so every clause (user filter, section exclusion, group scope) always applies.
+  const filterClauses: Record<string, unknown>[] = [{ section: { $nin: EXCLUDED_SECTIONS } }];
+  if (req.filter && Object.keys(req.filter).length > 0) {
+    filterClauses.push(req.filter);
+  }
   // ADR-034 TEAM-5: group scope. Privileged viewers see all groups.
   if (!req.isPrivileged && req.viewerGroupId !== undefined) {
-    mergedFilter.groupId = { $in: [req.viewerGroupId, 'lab-shared'] };
+    filterClauses.push({ groupId: { $in: [req.viewerGroupId, 'lab-shared'] } });
   }
+  const mergedFilter: Record<string, unknown> = { $and: filterClauses };
 
   const vectorMatches = await vectorStore.query(
     req.tenantId,
@@ -166,6 +170,17 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
     .map((f) => candidates.get(f.id))
     .filter((c): c is HitCandidate => c !== undefined);
 
+  // AI-6 fix: if fusion produced no usable candidates, skip rerank entirely —
+  // reranking an empty document list then indexing by result index crashes.
+  if (fusedCandidates.length === 0) {
+    return {
+      hits: [],
+      cost: { embed: embedCost, rerank: 0, total: embedCost },
+      tokensUsed: { embed: embedTokens, rerank: 0 },
+      latencyMs: Date.now() - startedAt
+    };
+  }
+
   const rerankProvider = getRerankProvider();
   const rerankResult = await rerankProvider.rerank({
     query: req.query,
@@ -175,31 +190,48 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   _mark('rerank');
 
   // ─── STEP 5: Build hits with full metadata ──────────────────────
-  const hits: SearchHit[] = await Promise.all(
-    rerankResult.results.map(async (r) => {
-      const cand = fusedCandidates[r.index];
-      const meta = cand.metadata as PaperChunkMetadata;
-      let pages: number[] = [];
-      try {
-        pages = meta.pagesJson ? JSON.parse(meta.pagesJson) : [];
-      } catch {
-        pages = [];
-      }
-      return {
-        paperId: cand.paperId,
-        chunkIdx: cand.chunkIdx,
-        text: cand.text,
-        pages,
-        section: meta.section ?? '',
-        paperTitle: meta.paperTitle ?? '',
-        paperAuthors: meta.paperAuthors ?? [],
-        paperYear: meta.paperYear ?? 0,
-        paperDoi: meta.paperDoi ?? '',
-        score: r.relevanceScore,
-        vectorScore: cand.vectorScore ?? 0
-      };
-    })
-  );
+  const hits: SearchHit[] = (
+    await Promise.all(
+      rerankResult.results.map(async (r) => {
+        // AI-6 fix: rerank may return an index ≥ fusedCandidates.length (provider
+        // quirk / topN mismatch). Guard before access or `cand.metadata` crashes.
+        const cand = fusedCandidates[r.index];
+        if (!cand) {
+          // eslint-disable-next-line no-console -- diagnostic for OOB rerank index
+          console.warn(
+            `[rag/search] rerank index ${r.index} out of bounds (have ${fusedCandidates.length}); skipping`
+          );
+          return null;
+        }
+        const meta = cand.metadata as PaperChunkMetadata;
+        let pages: number[] = [];
+        try {
+          pages = meta.pagesJson ? JSON.parse(meta.pagesJson) : [];
+        } catch {
+          // AI-20 fix: don't swallow silently — a malformed pagesJson hides a
+          // bad index write; log so it can be traced.
+          // eslint-disable-next-line no-console -- diagnostic for bad metadata
+          console.warn(
+            `[rag/search] failed to parse pagesJson for paper ${cand.paperId} chunk ${cand.chunkIdx}`
+          );
+          pages = [];
+        }
+        return {
+          paperId: cand.paperId,
+          chunkIdx: cand.chunkIdx,
+          text: cand.text,
+          pages,
+          section: meta.section ?? '',
+          paperTitle: meta.paperTitle ?? '',
+          paperAuthors: meta.paperAuthors ?? [],
+          paperYear: meta.paperYear ?? 0,
+          paperDoi: meta.paperDoi ?? '',
+          score: r.relevanceScore,
+          vectorScore: cand.vectorScore ?? 0
+        };
+      })
+    )
+  ).filter((h): h is SearchHit => h !== null);
 
   // R188-4 phase1 (T-7): emit per-step timing for Phase 2 bottleneck analysis.
   // Filter Vercel logs by event=search_timing. Remove after root cause fixed.

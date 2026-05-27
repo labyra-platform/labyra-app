@@ -1,5 +1,5 @@
 import { NotificationCenter } from '@/features/notifications/components/notification-center';
-import { Breadcrumbs } from '../breadcrumbs';
+import { BreadcrumbsConditional } from './breadcrumbs-conditional';
 import SearchInput from '../search-input';
 import { ThemeModeToggle } from '../themes/theme-mode-toggle';
 import { Separator } from '../ui/separator';
@@ -11,7 +11,7 @@ export default function Header() {
       <div className='flex items-center gap-2 px-4'>
         <SidebarTrigger className='-ml-1' />
         <Separator orientation='vertical' className='mr-2 h-4' />
-        <Breadcrumbs />
+        <BreadcrumbsConditional />
       </div>
       <div className='flex items-center gap-2 px-4'>
         <div className='hidden md:flex'>

@@ -92,6 +92,13 @@ export function PaperTabsBar({ locale }: { locale: string }) {
               tabIndex={0}
               aria-selected={active}
               onClick={() => goToTab(tab.paperId)}
+              onAuxClick={(e) => {
+                // Middle-click (wheel button) closes the tab, like a browser.
+                if (e.button === 1) {
+                  e.preventDefault();
+                  handleClose(e, tab.paperId);
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();

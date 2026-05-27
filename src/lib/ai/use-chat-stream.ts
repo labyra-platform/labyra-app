@@ -205,6 +205,14 @@ export function useChatStream(): UseChatStreamResult {
             try {
               event = JSON.parse(json) as ChatStreamEventV2;
             } catch {
+              // AI-4: buffer already keeps incomplete trailing lines (split on
+              // '\n\n', pop the remainder), so a line reaching here is a COMPLETE
+              // SSE frame. A parse failure means genuinely malformed data — don't
+              // swallow it silently (that looks like a frozen assistant with no
+              // trace). Log for diagnosis; continue so one bad frame doesn't kill
+              // the rest of the stream. isStreaming is reset in `finally`.
+              // eslint-disable-next-line no-console -- diagnostic for malformed SSE frame
+              console.warn('[chat-stream] dropped malformed SSE frame:', json.slice(0, 200));
               continue;
             }
 

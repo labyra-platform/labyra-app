@@ -110,7 +110,7 @@ export function CitationModal({ source, onClose }: CitationModalProps) {
           <div className='mb-3 flex items-center gap-2 text-xs text-muted-foreground'>
             <span className='inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-400 font-medium'>
               <span className='size-1.5 rounded-full bg-emerald-500' />
-              Relevance {(source.score * 100).toFixed(0)}%
+              Relevance {source.score != null ? `${(source.score * 100).toFixed(0)}%` : '—'}
             </span>
           </div>
           <div className='prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed'>

@@ -17,6 +17,31 @@ interface ToolCallProps {
   isError?: boolean;
 }
 
+// AI-10: tool results can contain circular refs (e.g. graph nodes) or be huge.
+// JSON.stringify throws on circular structures → crashes the whole message render.
+// Guard with a circular-safe replacer + a size cap.
+const MAX_JSON_CHARS = 20_000;
+function safeStringify(value: unknown, indent?: number): string {
+  const seen = new WeakSet<object>();
+  try {
+    const out = JSON.stringify(
+      value,
+      (_key, val) => {
+        if (typeof val === 'object' && val !== null) {
+          if (seen.has(val)) return '[Circular]';
+          seen.add(val);
+        }
+        return val;
+      },
+      indent
+    );
+    if (out === undefined) return String(value);
+    return out.length > MAX_JSON_CHARS ? `${out.slice(0, MAX_JSON_CHARS)}… (truncated)` : out;
+  } catch {
+    return '[unserializable]';
+  }
+}
+
 export function ToolCallBlock({ name, input, result, isError }: ToolCallProps) {
   const t = useTranslations('ai');
   const [expanded, setExpanded] = useState(false);
@@ -39,7 +64,7 @@ export function ToolCallBlock({ name, input, result, isError }: ToolCallProps) {
         <span className='text-muted-foreground flex-1 truncate'>
           {Object.keys(input).length > 0
             ? Object.entries(input)
-                .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+                .map(([k, v]) => `${k}: ${safeStringify(v)}`)
                 .join(', ')
             : t('toolNoArgs')}
         </span>
@@ -58,7 +83,7 @@ export function ToolCallBlock({ name, input, result, isError }: ToolCallProps) {
               {t('toolInput')}
             </div>
             <pre className='whitespace-pre-wrap break-words font-mono text-[11px]'>
-              {JSON.stringify(input, null, 2)}
+              {safeStringify(input, 2)}
             </pre>
           </div>
           {hasResult && (
@@ -67,7 +92,7 @@ export function ToolCallBlock({ name, input, result, isError }: ToolCallProps) {
                 {isError ? t('toolError') : t('toolResult')}
               </div>
               <pre className='whitespace-pre-wrap break-words font-mono text-[11px]'>
-                {JSON.stringify(result, null, 2)}
+                {safeStringify(result, 2)}
               </pre>
             </div>
           )}

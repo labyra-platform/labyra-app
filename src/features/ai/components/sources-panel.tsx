@@ -99,7 +99,7 @@ export function SourcesPanel({
                     )}
                   </div>
                   <span className='shrink-0 text-xs text-muted-foreground'>
-                    {(s.score * 100).toFixed(0)}%
+                    {s.score != null ? `${(s.score * 100).toFixed(0)}%` : '—'}
                   </span>
                 </div>
               </li>

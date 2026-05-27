@@ -9,7 +9,6 @@
 
 import {
   IconArrowsSort,
-  IconCheck,
   IconExternalLink,
   IconFileText,
   IconLayoutList,
@@ -20,7 +19,7 @@ import {
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   createEmptyPaperFilter,
   type PaperFilterValue,
@@ -87,13 +86,6 @@ function formatAuthors(authors: string[] | undefined): string | null {
   if (!first) return null;
   return authors.length > 1 ? `${first} et al.` : first;
 }
-
-// R222d: view density options. Each is a list layout differing by info density;
-// kept as data so the trigger icon and the menu render from one source.
-const VIEW_OPTIONS: { mode: ViewMode; labelKey: string; icon: ReactNode }[] = [
-  { mode: 'compact', labelKey: 'viewCompact', icon: <IconLayoutList className='size-4' /> },
-  { mode: 'comfortable', labelKey: 'viewComfortable', icon: <IconLayoutRows className='size-4' /> }
-];
 
 export function PaperList() {
   const t = useTranslations('papers');
@@ -224,27 +216,21 @@ export function PaperList() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type='button'
-                aria-label={t('viewDensity')}
-                title={t('viewDensity')}
-                className='inline-flex items-center rounded-md border p-1.5 hover:bg-muted/50'
-              >
-                {VIEW_OPTIONS.find((o) => o.mode === view)?.icon}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
-              {VIEW_OPTIONS.map((o) => (
-                <DropdownMenuItem key={o.mode} onClick={() => setView(o.mode)} className='gap-2'>
-                  {o.icon}
-                  <span className='flex-1'>{t(o.labelKey)}</span>
-                  {view === o.mode && <IconCheck className='size-4' />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* R223c: only 2 modes → single toggle button (1 click) instead of a
+              dropdown (2 clicks). Icon shows the mode you'll switch TO. */}
+          <button
+            type='button'
+            onClick={() => setView((v) => (v === 'compact' ? 'comfortable' : 'compact'))}
+            aria-label={view === 'compact' ? t('viewComfortable') : t('viewCompact')}
+            title={view === 'compact' ? t('viewComfortable') : t('viewCompact')}
+            className='inline-flex items-center rounded-md border p-1.5 hover:bg-muted/50'
+          >
+            {view === 'compact' ? (
+              <IconLayoutRows className='size-3.5' />
+            ) : (
+              <IconLayoutList className='size-3.5' />
+            )}
+          </button>
         </div>
       </div>
 

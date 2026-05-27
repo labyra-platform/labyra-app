@@ -383,7 +383,16 @@
     "resetZoom": "Reset zoom",
     "fullscreen": "Fullscreen",
     "filtersButton": "Filters",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "sortRecent": "Recent",
+    "sortYear": "Year",
+    "sortTitle": "Title",
+    "sortDomain": "Domain",
+    "viewCompact": "Compact",
+    "viewComfortable": "Comfortable",
+    "viewDensity": "View density",
+    "paperCount": "{count, plural, =0 {0 papers} one {1 paper} other {# papers}}",
+    "metadataPending": "Metadata pending"
   },
   "materials": {
     "title": "Materials",

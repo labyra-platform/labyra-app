@@ -383,7 +383,16 @@
     "resetZoom": "Đặt lại",
     "fullscreen": "Toàn màn hình",
     "filtersButton": "Bộ lọc",
-    "clearAll": "Xoá tất cả"
+    "clearAll": "Xoá tất cả",
+    "sortRecent": "Mới nhất",
+    "sortYear": "Năm",
+    "sortTitle": "Tiêu đề",
+    "sortDomain": "Lĩnh vực",
+    "viewCompact": "Gọn",
+    "viewComfortable": "Thoáng",
+    "viewDensity": "Mật độ hiển thị",
+    "paperCount": "{count, plural, =0 {0 bài báo} other {# bài báo}}",
+    "metadataPending": "Đang lấy thông tin"
   },
   "materials": {
     "title": "Vật liệu",

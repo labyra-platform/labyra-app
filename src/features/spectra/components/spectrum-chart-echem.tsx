@@ -8,6 +8,7 @@
  */
 
 import dynamic from 'next/dynamic';
+import { useMemo, useState } from 'react';
 
 import {
   type FigureConfig,
@@ -19,6 +20,7 @@ import type {
   EISParsedData,
   LSVParsedData,
   PECJVParsedData,
+  PECMottSchottkyParsedData,
   TafelParsedData
 } from '@/types/spectra-analysis-echem';
 
@@ -325,6 +327,172 @@ export function EISChart({ parsed, config }: { parsed: EISParsedData; config?: F
       useResizeHandler
       style={{ width: '100%', height: '100%' }}
     />
+  );
+}
+
+// ============================================================
+// PEC Mott-Schottky — 1/C² vs E with linear fit + Range Selector
+// ------------------------------------------------------------
+// The worker returns the processed mott_schottky_curve (1/C² vs E) plus the
+// auto-suggested linear region. Like Tafel, the user can drag to select a
+// potential window and the slope/intercept refit instantly client-side on that
+// SAME curve — no re-derivation of carrier density (that needs eps_r and lives
+// in Re-analyze). The drag fit shows slope + R² so the scientist can judge the
+// linear region by eye (Hankin JMCA 2019 best practice).
+// ============================================================
+export function getMottSchottkyTraceDescriptors(): TraceDescriptor[] {
+  return [{ id: 'ms', label: '1/C² vs E', defaultColor: PRIMARY }];
+}
+
+function olsFit(x: number[], y: number[]): { slope: number; intercept: number; r2: number } | null {
+  const n = x.length;
+  if (n < 2) return null;
+  const mx = x.reduce((s, v) => s + v, 0) / n;
+  const my = y.reduce((s, v) => s + v, 0) / n;
+  let sxx = 0;
+  let sxy = 0;
+  let syy = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = x[i] - mx;
+    const dy = y[i] - my;
+    sxx += dx * dx;
+    sxy += dx * dy;
+    syy += dy * dy;
+  }
+  if (sxx === 0) return null;
+  const slope = sxy / sxx;
+  const intercept = my - slope * mx;
+  const r2 = syy === 0 ? 0 : (sxy * sxy) / (sxx * syy);
+  return { slope, intercept, r2 };
+}
+
+export function MottSchottkyChart({
+  parsed,
+  config
+}: {
+  parsed: PECMottSchottkyParsedData;
+  config?: FigureConfig;
+}) {
+  const curve = parsed.mott_schottky_curve;
+  const a = parsed.analysis;
+  // Selected potential window for the client-side range fit. Defaults to the
+  // worker's auto-suggested fit range so the chart opens on the right region.
+  const [range, setRange] = useState<[number, number] | null>(
+    a.fit_range_V ? [a.fit_range_V[0], a.fit_range_V[1]] : null
+  );
+
+  const fit = useMemo(() => {
+    if (!curve?.x?.length || !range) return null;
+    const xs: number[] = [];
+    const ys: number[] = [];
+    for (let i = 0; i < curve.x.length; i++) {
+      if (curve.x[i] >= range[0] && curve.x[i] <= range[1]) {
+        xs.push(curve.x[i]);
+        ys.push(curve.y[i]);
+      }
+    }
+    return olsFit(xs, ys);
+  }, [curve, range]);
+
+  if (!curve?.x?.length) {
+    return <div className='text-sm text-muted-foreground'>No data</div>;
+  }
+
+  const cfg = config?.traces.find((t) => t.id === 'ms');
+  const f = frame(config);
+  const traces: Array<Record<string, unknown>> = [];
+
+  if (cfg?.visible ?? true) {
+    traces.push({
+      x: curve.x,
+      y: curve.y,
+      type: 'scatter',
+      mode: 'markers',
+      name: cfg?.label ?? '1/C² vs E',
+      marker: { color: cfg?.color ?? PRIMARY, size: 6 }
+    });
+  }
+
+  // Fit line over the full x-span, drawn from the current selection's slope.
+  if (fit) {
+    const xMin = Math.min(...curve.x);
+    const xMax = Math.max(...curve.x);
+    traces.push({
+      x: [xMin, xMax],
+      y: [fit.intercept + fit.slope * xMin, fit.intercept + fit.slope * xMax],
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Linear fit',
+      line: { color: FIT, width: 2, dash: 'dash' }
+    });
+    // Flat-band marker: x-intercept of the fitted line (1/C² = 0).
+    const xInt = -fit.intercept / fit.slope;
+    traces.push({
+      x: [xInt],
+      y: [0],
+      type: 'scatter',
+      mode: 'markers+text',
+      name: 'E_fb',
+      marker: { color: SECONDARY, size: 9, symbol: 'x' },
+      text: ['E_fb'],
+      textposition: 'top center'
+    });
+  }
+
+  return (
+    <div className='space-y-2'>
+      <Plot
+        key={f.key}
+        data={traces}
+        revision={f.rev.length}
+        layout={{
+          ...BASE_LAYOUT,
+          datarevision: f.rev,
+          dragmode: 'select',
+          selectdirection: 'h',
+          title: { text: config?.figureTitle ?? 'Mott-Schottky', font: { size: 14 } },
+          xaxis: axis(
+            config?.xTitle ?? `Potential (V vs ${parsed.conditions.reference ?? 'ref'})`,
+            f.showGrid,
+            f.closedFrame,
+            f.ticksInside
+          ),
+          yaxis: axis(config?.yTitle ?? '1/C² (cm⁴ F⁻²)', f.showGrid, false, f.ticksInside),
+          showlegend: f.showLegend
+        }}
+        config={{ displaylogo: false, responsive: true }}
+        onSelected={(ev: { range?: { x?: number[] } }) => {
+          if (ev?.range?.x && ev.range.x.length === 2) {
+            setRange([Math.min(...ev.range.x), Math.max(...ev.range.x)]);
+          }
+        }}
+        useResizeHandler
+        style={{ width: '100%', height: '100%' }}
+      />
+      <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground'>
+        <span>
+          Drag to select the linear region.{' '}
+          {range ? `Fit: ${range[0].toFixed(2)}–${range[1].toFixed(2)} V` : 'No selection'}
+        </span>
+        {fit ? (
+          <>
+            <span>
+              slope ={' '}
+              <span className='tabular-nums text-foreground'>{fit.slope.toExponential(3)}</span>
+            </span>
+            <span>
+              R² = <span className='tabular-nums text-foreground'>{fit.r2.toFixed(4)}</span>
+            </span>
+            <span>
+              E<sub>fb</sub> ≈{' '}
+              <span className='tabular-nums text-foreground'>
+                {(-fit.intercept / fit.slope).toFixed(3)} V
+              </span>
+            </span>
+          </>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

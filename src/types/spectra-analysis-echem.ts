@@ -181,9 +181,53 @@ export interface PECJVParsedData {
   y_unit: string;
 }
 
+// ============================================================
+// PEC Mott-Schottky — semiconductor flat-band, carrier density, type
+// ============================================================
+
+export interface PECMottSchottkyAnalysis {
+  carrier_type: string; // 'n-type' | 'p-type'
+  flat_band_V_vs_ref: number;
+  flat_band_V_vs_rhe?: number;
+  x_intercept_V: number;
+  slope_cm4_F2_V: number;
+  fit_r2: number;
+  fit_range_V: [number, number];
+  fit_range_idx: [number, number];
+  fit_n_points: number;
+  donor_density_cm3?: number;
+  acceptor_density_cm3?: number;
+  depletion_width_nm?: number | null;
+}
+
+export interface PECMottSchottkyParsedData {
+  spectrum_type: 'pec_mott_schottky';
+  peaks: [];
+  spectrum_curve: SpectrumCurve; // E (V) vs 1/C² (downsampled, for display)
+  mott_schottky_curve: SpectrumCurve; // full-resolution E vs 1/C² for client range fit
+  analysis: PECMottSchottkyAnalysis;
+  conditions: {
+    eps_r: number | null;
+    reference: string | null;
+    pH: number | null;
+    area_cm2: number | null;
+    temperature_k: number;
+  };
+  notes: string[];
+  quick_stats: {
+    rowCount: number;
+    xRange: [number, number];
+    yRange: [number, number];
+    peakCount: number;
+  };
+  x_unit: string;
+  y_unit: string;
+}
+
 export type EchemParsedData =
   | TafelParsedData
   | LSVParsedData
   | CVParsedData
   | EISParsedData
-  | PECJVParsedData;
+  | PECJVParsedData
+  | PECMottSchottkyParsedData;

@@ -13,6 +13,7 @@ import type {
   EISParsedData,
   LSVParsedData,
   PECJVParsedData,
+  PECMottSchottkyParsedData,
   TafelParsedData
 } from '@/types/spectra-analysis-echem';
 
@@ -157,11 +158,46 @@ export function PECJVMetrics({ parsed }: { parsed: PECJVParsedData }) {
   );
 }
 
+export function MottSchottkyMetrics({ parsed }: { parsed: PECMottSchottkyParsedData }) {
+  const a = parsed.analysis;
+  const density = a.donor_density_cm3 ?? a.acceptor_density_cm3;
+  const densityLabel = a.carrier_type === 'p-type' ? 'Acceptor density N_A' : 'Donor density N_D';
+  return (
+    <Shell title='Mott-Schottky (semiconductor)'>
+      <Metric label='Carrier type' value={a.carrier_type || '—'} />
+      <Metric
+        label={densityLabel}
+        value={density != null ? `${density.toExponential(2)}` : '—'}
+        unit={density != null ? 'cm⁻³' : undefined}
+      />
+      <Metric label='Flat-band (vs ref)' value={fmt(a.flat_band_V_vs_ref, 3)} unit='V' />
+      {a.flat_band_V_vs_rhe != null ? (
+        <Metric label='Flat-band (vs RHE)' value={fmt(a.flat_band_V_vs_rhe, 3)} unit='V' />
+      ) : null}
+      {a.depletion_width_nm != null ? (
+        <Metric label='Depletion width' value={fmt(a.depletion_width_nm, 2)} unit='nm' />
+      ) : null}
+      <Metric label='Fit R²' value={fmt(a.fit_r2, 4)} />
+      <Metric
+        label='Fit window'
+        value={`${fmt(a.fit_range_V[0], 2)} … ${fmt(a.fit_range_V[1], 2)}`}
+        unit='V'
+      />
+    </Shell>
+  );
+}
+
 /** Dispatch the right metrics block for an electrochemistry measurement. */
 export function EchemMetrics({
   parsed
 }: {
-  parsed: TafelParsedData | LSVParsedData | CVParsedData | EISParsedData | PECJVParsedData;
+  parsed:
+    | TafelParsedData
+    | LSVParsedData
+    | CVParsedData
+    | EISParsedData
+    | PECJVParsedData
+    | PECMottSchottkyParsedData;
 }) {
   switch (parsed.spectrum_type) {
     case 'tafel':
@@ -174,6 +210,8 @@ export function EchemMetrics({
       return <EISMetrics parsed={parsed} />;
     case 'pec_jv':
       return <PECJVMetrics parsed={parsed} />;
+    case 'pec_mott_schottky':
+      return <MottSchottkyMetrics parsed={parsed} />;
     default:
       return null;
   }

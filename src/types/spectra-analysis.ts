@@ -1,5 +1,4 @@
 /**
-
  * AnalysisResult types — mirror worker schema.
  * @phase R160-spectra-3c-hotfix
  */
@@ -17,6 +16,7 @@ import type {
   EISParsedData,
   LSVParsedData,
   PECJVParsedData,
+  PECMottSchottkyParsedData,
   TafelParsedData
 } from '@/types/spectra-analysis-echem';
 
@@ -364,7 +364,8 @@ export type SpectrumParsedData =
   | LSVParsedData
   | CVParsedData
   | EISParsedData
-  | PECJVParsedData;
+  | PECJVParsedData
+  | PECMottSchottkyParsedData;
 
 export type SpectrumAIOutput =
   | XRDAIOutput

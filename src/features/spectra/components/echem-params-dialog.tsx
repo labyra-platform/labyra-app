@@ -34,7 +34,7 @@ import { Switch } from '@/components/ui/switch';
 import { Icons } from '@/components/icons';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 
-type EchemType = 'tafel' | 'lsv' | 'cv' | 'eis';
+type EchemType = 'tafel' | 'lsv' | 'cv' | 'eis' | 'pec_jv' | 'pec_mott_schottky';
 
 const REFERENCE_ELECTRODES = [
   { value: 'ag/agcl', label: 'Ag/AgCl (sat. KCl)' },
@@ -53,6 +53,9 @@ export interface EchemParams {
   irCorrected?: boolean;
   scanRate?: number;
   nElectrons?: number;
+  dielectricConstant?: number;
+  lightPower?: number;
+  appliedBias?: number;
 }
 
 interface Props {
@@ -85,14 +88,17 @@ export function EchemParamsDialog({
   const [irCorrected, setIrCorrected] = useState(initial?.irCorrected ?? false);
   const [scanRate, setScanRate] = useState(initial?.scanRate?.toString() ?? '');
   const [nElectrons, setNElectrons] = useState(initial?.nElectrons?.toString() ?? '');
+  const [dielectric, setDielectric] = useState(initial?.dielectricConstant?.toString() ?? '');
   const [submitting, setSubmitting] = useState(false);
 
   // Which conditions matter for which technique.
+  const isMottSchottky = spectrumType === 'pec_mott_schottky';
   const showReaction = spectrumType === 'lsv' || spectrumType === 'tafel';
-  const showRefPh = spectrumType === 'lsv' || spectrumType === 'tafel';
+  const showRefPh = spectrumType === 'lsv' || spectrumType === 'tafel' || isMottSchottky;
   const showIr = spectrumType === 'lsv' || spectrumType === 'tafel';
   const showScanRate = spectrumType === 'cv';
   const showNElectrons = spectrumType === 'cv' || spectrumType === 'eis';
+  const showDielectric = isMottSchottky;
 
   async function handleSubmit(): Promise<void> {
     setSubmitting(true);
@@ -107,7 +113,8 @@ export function EchemParamsDialog({
         reaction: reaction || undefined,
         irCorrected,
         scanRate: numOrUndef(scanRate),
-        nElectrons: numOrUndef(nElectrons)
+        nElectrons: numOrUndef(nElectrons),
+        dielectricConstant: numOrUndef(dielectric)
       };
       const res = await fetch(`/api/measurements/${measurementId}/reanalyze`, {
         method: 'POST',
@@ -233,6 +240,24 @@ export function EchemParamsDialog({
                 value={nElectrons}
                 onChange={(e) => setNElectrons(e.target.value)}
               />
+            </div>
+          ) : null}
+
+          {showDielectric ? (
+            <div className='space-y-1.5'>
+              <Label htmlFor='eps'>Dielectric constant (εᵣ)</Label>
+              <Input
+                id='eps'
+                type='number'
+                inputMode='decimal'
+                placeholder='WO₃ ≈ 38–80 (material-specific)'
+                value={dielectric}
+                onChange={(e) => setDielectric(e.target.value)}
+              />
+              <p className='text-xs text-muted-foreground'>
+                Required for carrier density N_D. No universal value — anisotropic and
+                phase-dependent (h-WO₃ vs m-WO₃). Without it, only flat-band is reported.
+              </p>
             </div>
           ) : null}
         </div>

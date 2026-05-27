@@ -28,8 +28,10 @@ import {
   getCvTraceDescriptors,
   getEisTraceDescriptors,
   getLsvTraceDescriptors,
+  getMottSchottkyTraceDescriptors,
   getTafelTraceDescriptors,
   LSVChart,
+  MottSchottkyChart,
   PECJVChart,
   getPecJvTraceDescriptors
 } from '@/features/spectra/components/spectrum-chart-echem';
@@ -305,6 +307,18 @@ export function getFigureDefinitions(
           capabilities: { peaks: false, secondaryAxis: false },
           defaultReverseX: false,
           render: (config) => <PECJVChart parsed={parsed} config={config} />
+        }
+      ];
+
+    case 'pec_mott_schottky':
+      return [
+        {
+          key: 'main',
+          label: 'Mott-Schottky',
+          descriptors: getMottSchottkyTraceDescriptors(),
+          capabilities: { peaks: false, secondaryAxis: false },
+          defaultReverseX: false,
+          render: (config) => <MottSchottkyChart parsed={parsed} config={config} />
         }
       ];
 

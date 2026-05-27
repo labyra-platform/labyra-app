@@ -8,7 +8,6 @@
 //   domain chip click-to-filter, conditional status badge, sort + density toggle.
 
 import {
-  IconAlignLeft,
   IconArrowsSort,
   IconCheck,
   IconExternalLink,
@@ -79,7 +78,7 @@ function toEpochMs(value: FirestoreTimestampLike | undefined | null): number {
 }
 
 type SortKey = 'recent' | 'year_desc' | 'title_asc' | 'domain';
-type ViewMode = 'compact' | 'comfortable' | 'detailed';
+type ViewMode = 'compact' | 'comfortable';
 
 /** Format the author line the way researchers recognize papers: "Zhang et al." */
 function formatAuthors(authors: string[] | undefined): string | null {
@@ -93,8 +92,7 @@ function formatAuthors(authors: string[] | undefined): string | null {
 // kept as data so the trigger icon and the menu render from one source.
 const VIEW_OPTIONS: { mode: ViewMode; labelKey: string; icon: ReactNode }[] = [
   { mode: 'compact', labelKey: 'viewCompact', icon: <IconLayoutList className='size-4' /> },
-  { mode: 'comfortable', labelKey: 'viewComfortable', icon: <IconLayoutRows className='size-4' /> },
-  { mode: 'detailed', labelKey: 'viewDetailed', icon: <IconAlignLeft className='size-4' /> }
+  { mode: 'comfortable', labelKey: 'viewComfortable', icon: <IconLayoutRows className='size-4' /> }
 ];
 
 export function PaperList() {
@@ -383,13 +381,6 @@ function PaperRow({
               </button>
             )}
           </div>
-          {/* R222d: detailed view adds a 2-line abstract snippet for at-a-glance
-              triage without opening each paper. Only when abstract is populated. */}
-          {view === 'detailed' && paper.abstract && (
-            <p className='mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground'>
-              {paper.abstract}
-            </p>
-          )}
         </div>
         {/* R222 #5: status badge only when it carries signal (not 'indexed'). */}
         {badgeClass && (

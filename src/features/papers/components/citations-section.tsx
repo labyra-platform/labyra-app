@@ -10,9 +10,14 @@ import { useTranslations } from 'next-intl';
  *   - Summary stats from _stats/citations doc
  *   - Filter UI (R166-6b-2): toggle confidence levels + inLibraryOnly
  *
+ * R223b: whole section is collapsible (74 citations is long, especially in the
+ * narrow right panel of the split reader). Header shows total; expand to reveal
+ * filter + cards. Per-list show-more (COLLAPSED_LIMIT) still applies inside.
+ *
  * @phase R166-6b-1 base, R166-6b-2 filter, R166-6b-2-hotfix2 hook-order fix
  */
 import { useMemo, useState } from 'react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   useCitationsBySource,
   useCitationsByTargetPaperId,
@@ -50,6 +55,7 @@ export function CitationsSection({ paperId }: { paperId: string }) {
 
   const [outExpanded, setOutExpanded] = useState(false);
   const [inExpanded, setInExpanded] = useState(false);
+  const [sectionOpen, setSectionOpen] = useState(true); // R223b: whole-section collapse
   // R166-6b-2: filter state — default = all confidences ON, inLibraryOnly OFF
   const [filter, setFilter] = useState<CitationFilterValue>(() => createDefaultFilter());
 
@@ -90,89 +96,42 @@ export function CitationsSection({ paperId }: { paperId: string }) {
   const inVisible = inExpanded ? inFiltered : inFiltered.slice(0, COLLAPSED_LIMIT);
 
   return (
-    <section className='space-y-3'>
-      <h2 className='text-sm font-medium text-muted-foreground uppercase tracking-wide'>
+    <Collapsible open={sectionOpen} onOpenChange={setSectionOpen} className='space-y-3'>
+      <CollapsibleTrigger className='flex w-full items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground'>
+        <IconChevronRight
+          className={cn('size-3.5 transition-transform', sectionOpen && 'rotate-90')}
+          aria-hidden
+        />
         {t('citations')}
-      </h2>
-
-      {/* R166-6b-2: filter (applies to both Out + In) */}
-      {(outCitations.length > 0 || inCitations.length > 0) && (
-        <CitationFilter value={filter} onChange={setFilter} />
-      )}
-
-      {/* Outbound — papers this paper cites */}
-      <div className='border rounded-lg p-4 space-y-3'>
-        <div className='flex items-center justify-between'>
-          <h3 className='text-sm font-medium'>
-            {t('citationsOutTitle', { count: outCount })}
-            {filterActive && outFiltered.length !== outCitations.length && (
-              <span className='text-muted-foreground font-normal ml-1'>
-                {t('filteredCount', { count: outFiltered.length })}
-              </span>
-            )}
-          </h3>
-        </div>
-
-        {outLoading ? (
-          <div className='flex items-center gap-2 text-muted-foreground text-sm py-2'>
-            <IconLoader2 className='size-4 animate-spin' />
-            {t('loadingCitations')}
-          </div>
-        ) : outCitations.length === 0 ? (
-          <div className='text-muted-foreground text-sm py-2'>{t('citationsOutEmpty')}</div>
-        ) : outFiltered.length === 0 ? (
-          <div className='text-muted-foreground text-sm py-2 flex items-center gap-2'>
-            <span>{t('noFilterMatches')}</span>
-            <button
-              type='button'
-              onClick={() => setFilter(createDefaultFilter())}
-              className='underline hover:text-foreground'
-            >
-              {t('clearFilter')}
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className='space-y-2'>
-              {outVisible.map((c) => (
-                <CitationCard key={c.id} citation={c} />
-              ))}
-            </div>
-            {outFiltered.length > COLLAPSED_LIMIT && (
-              <button
-                onClick={() => setOutExpanded((v) => !v)}
-                className='inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
-              >
-                {outExpanded ? (
-                  <IconChevronDown className='size-3' aria-hidden />
-                ) : (
-                  <IconChevronRight className='size-3' aria-hidden />
-                )}
-                {outExpanded ? t('showLess') : t('showAllCitations', { count: outFiltered.length })}
-              </button>
-            )}
-          </>
+        <span className='font-normal normal-case'>({outCount + inCount})</span>
+      </CollapsibleTrigger>
+      <CollapsibleContent className='space-y-3'>
+        {/* R166-6b-2: filter (applies to both Out + In) */}
+        {(outCitations.length > 0 || inCitations.length > 0) && (
+          <CitationFilter value={filter} onChange={setFilter} />
         )}
-      </div>
 
-      {/* Inbound — papers citing this paper */}
-      {inCount > 0 && (
+        {/* Outbound — papers this paper cites */}
         <div className='border rounded-lg p-4 space-y-3'>
-          <h3 className='text-sm font-medium'>
-            {t('citationsInTitle', { count: inCount })}
-            {filterActive && inFiltered.length !== inCitations.length && (
-              <span className='text-muted-foreground font-normal ml-1'>
-                {t('filteredCount', { count: inFiltered.length })}
-              </span>
-            )}
-          </h3>
+          <div className='flex items-center justify-between'>
+            <h3 className='text-sm font-medium'>
+              {t('citationsOutTitle', { count: outCount })}
+              {filterActive && outFiltered.length !== outCitations.length && (
+                <span className='text-muted-foreground font-normal ml-1'>
+                  {t('filteredCount', { count: outFiltered.length })}
+                </span>
+              )}
+            </h3>
+          </div>
 
-          {inLoading ? (
+          {outLoading ? (
             <div className='flex items-center gap-2 text-muted-foreground text-sm py-2'>
               <IconLoader2 className='size-4 animate-spin' />
               {t('loadingCitations')}
             </div>
-          ) : inFiltered.length === 0 ? (
+          ) : outCitations.length === 0 ? (
+            <div className='text-muted-foreground text-sm py-2'>{t('citationsOutEmpty')}</div>
+          ) : outFiltered.length === 0 ? (
             <div className='text-muted-foreground text-sm py-2 flex items-center gap-2'>
               <span>{t('noFilterMatches')}</span>
               <button
@@ -186,30 +145,87 @@ export function CitationsSection({ paperId }: { paperId: string }) {
           ) : (
             <>
               <div className='space-y-2'>
-                {inVisible.map((c) => (
+                {outVisible.map((c) => (
                   <CitationCard key={c.id} citation={c} />
                 ))}
               </div>
-              {inFiltered.length > COLLAPSED_LIMIT && (
+              {outFiltered.length > COLLAPSED_LIMIT && (
                 <button
-                  onClick={() => setInExpanded((v) => !v)}
-                  className={cn(
-                    'inline-flex items-center gap-1 text-xs',
-                    'text-muted-foreground hover:text-foreground'
-                  )}
+                  onClick={() => setOutExpanded((v) => !v)}
+                  className='inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
                 >
-                  {inExpanded ? (
+                  {outExpanded ? (
                     <IconChevronDown className='size-3' aria-hidden />
                   ) : (
                     <IconChevronRight className='size-3' aria-hidden />
                   )}
-                  {inExpanded ? t('showLess') : t('showAllCitations', { count: inFiltered.length })}
+                  {outExpanded
+                    ? t('showLess')
+                    : t('showAllCitations', { count: outFiltered.length })}
                 </button>
               )}
             </>
           )}
         </div>
-      )}
-    </section>
+
+        {/* Inbound — papers citing this paper */}
+        {inCount > 0 && (
+          <div className='border rounded-lg p-4 space-y-3'>
+            <h3 className='text-sm font-medium'>
+              {t('citationsInTitle', { count: inCount })}
+              {filterActive && inFiltered.length !== inCitations.length && (
+                <span className='text-muted-foreground font-normal ml-1'>
+                  {t('filteredCount', { count: inFiltered.length })}
+                </span>
+              )}
+            </h3>
+
+            {inLoading ? (
+              <div className='flex items-center gap-2 text-muted-foreground text-sm py-2'>
+                <IconLoader2 className='size-4 animate-spin' />
+                {t('loadingCitations')}
+              </div>
+            ) : inFiltered.length === 0 ? (
+              <div className='text-muted-foreground text-sm py-2 flex items-center gap-2'>
+                <span>{t('noFilterMatches')}</span>
+                <button
+                  type='button'
+                  onClick={() => setFilter(createDefaultFilter())}
+                  className='underline hover:text-foreground'
+                >
+                  {t('clearFilter')}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className='space-y-2'>
+                  {inVisible.map((c) => (
+                    <CitationCard key={c.id} citation={c} />
+                  ))}
+                </div>
+                {inFiltered.length > COLLAPSED_LIMIT && (
+                  <button
+                    onClick={() => setInExpanded((v) => !v)}
+                    className={cn(
+                      'inline-flex items-center gap-1 text-xs',
+                      'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {inExpanded ? (
+                      <IconChevronDown className='size-3' aria-hidden />
+                    ) : (
+                      <IconChevronRight className='size-3' aria-hidden />
+                    )}
+                    {inExpanded
+                      ? t('showLess')
+                      : t('showAllCitations', { count: inFiltered.length })}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

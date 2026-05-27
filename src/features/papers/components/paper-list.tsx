@@ -276,6 +276,7 @@ function PaperRow({
   const t = useTranslations('papers');
   const router = useRouter();
   const openTab = usePaperTabsStore((s) => s.openTab);
+  const isOpenInTab = usePaperTabsStore((s) => s.tabs.some((tab) => tab.paperId === paper.id));
   const authorLine = formatAuthors(paper.authors);
   const journal = paper.journalShort || paper.journal || null;
   const badgeClass = STATUS_BADGE[paper.status];
@@ -328,6 +329,17 @@ function PaperRow({
             >
               {paper.title || t('untitled')}
             </Link>
+            {/* R227c: subtle "open in a tab" marker so the user knows this paper
+                already has a reading session (clicking returns to it). */}
+            {isOpenInTab && (
+              <span
+                className='ml-2 inline-flex items-center gap-1 align-middle rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary'
+                title={t('openInTab')}
+              >
+                <span className='size-1.5 rounded-full bg-primary' aria-hidden />
+                {t('openInTab')}
+              </span>
+            )}
           </h3>
           <div className='mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground'>
             {metaParts.length > 0 ? (

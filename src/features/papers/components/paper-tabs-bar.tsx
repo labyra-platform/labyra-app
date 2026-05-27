@@ -14,18 +14,30 @@
  * State is entirely in usePaperTabsStore; this component is a pure view.
  */
 import { IconFileText, IconLayoutGrid, IconX } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 
+/** Active paperId from /<locale>/dashboard/papers/<id>[/view]; null on the list. */
+function paperIdFromPath(pathname: string): string | null {
+  const m = pathname.match(/\/dashboard\/papers\/([^/]+)(?:\/view)?\/?$/);
+  if (!m || m[1] === 'upload') return null;
+  return m[1];
+}
+
 export function PaperTabsBar({ locale }: { locale: string }) {
   const t = useTranslations('papers');
   const router = useRouter();
+  const pathname = usePathname() ?? '';
   const tabs = usePaperTabsStore((s) => s.tabs);
-  const activeTabId = usePaperTabsStore((s) => s.activeTabId);
   const setActive = usePaperTabsStore((s) => s.setActive);
   const closeTab = usePaperTabsStore((s) => s.closeTab);
+
+  // R227c: which tab is active comes from the URL, not the store — so the list
+  // route shows the "Papers" parent as active and no child highlighted.
+  const routePaperId = paperIdFromPath(pathname);
+  const onList = routePaperId === null;
 
   const goToTab = (paperId: string) => {
     setActive(paperId);
@@ -34,10 +46,9 @@ export function PaperTabsBar({ locale }: { locale: string }) {
 
   const handleClose = (e: React.MouseEvent, paperId: string) => {
     e.stopPropagation();
-    const wasActive = activeTabId === paperId;
+    const wasActive = routePaperId === paperId;
     closeTab(paperId);
     if (wasActive) {
-      // After close, the store picks the next active tab; navigate to it (or list).
       const next = usePaperTabsStore.getState().activeTabId;
       router.push(next ? `/${locale}/dashboard/papers/${next}` : `/${locale}/dashboard/papers`);
     }
@@ -45,11 +56,17 @@ export function PaperTabsBar({ locale }: { locale: string }) {
 
   return (
     <div className='flex h-11 w-full items-stretch gap-1 border-b bg-muted/30 px-2'>
-      {/* PARENT anchor — "Papers", larger + heavier, returns to list */}
+      {/* PARENT anchor — "Papers". Active (lifted) when on the list route. */}
       <button
         type='button'
         onClick={() => router.push(`/${locale}/dashboard/papers`)}
-        className='my-1.5 inline-flex items-center gap-2 rounded-md px-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted'
+        aria-current={onList ? 'page' : undefined}
+        className={cn(
+          'my-1.5 inline-flex items-center gap-2 rounded-md border-b-2 px-3 text-sm font-semibold transition-colors',
+          onList
+            ? 'border-primary bg-background text-foreground shadow-sm'
+            : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
+        )}
         aria-label={t('backToList')}
       >
         <IconLayoutGrid className='size-4' />
@@ -63,8 +80,8 @@ export function PaperTabsBar({ locale }: { locale: string }) {
           open. Thin vertical separators between inactive tabs give them edges. */}
       <div className='flex min-w-0 flex-1 items-stretch overflow-x-auto'>
         {tabs.map((tab, i) => {
-          const active = tab.paperId === activeTabId;
-          const prevActive = i > 0 && tabs[i - 1].paperId === activeTabId;
+          const active = tab.paperId === routePaperId;
+          const prevActive = i > 0 && tabs[i - 1].paperId === routePaperId;
           return (
             <div
               key={tab.paperId}

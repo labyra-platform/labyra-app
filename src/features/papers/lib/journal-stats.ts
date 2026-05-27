@@ -70,3 +70,19 @@ export function aggregateYearRange(papers: Paper[]): YearRange | null {
   if (max === 0) return null;
   return { min, max };
 }
+
+/**
+ * R229: count papers per domain slug (primary domain + subtopics), so the
+ * filter can show how many papers each domain chip would match. A paper counts
+ * once per distinct slug it carries.
+ */
+export function aggregateDomainCounts(papers: Paper[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const p of papers) {
+    const slugs = new Set<string>();
+    if (p.domain && p.domain !== 'unknown') slugs.add(p.domain);
+    if (p.subtopics) for (const s of p.subtopics) slugs.add(s);
+    for (const s of slugs) counts.set(s, (counts.get(s) ?? 0) + 1);
+  }
+  return counts;
+}

@@ -404,7 +404,12 @@
     "panelExpand": "Expand panel",
     "tabInfo": "Info",
     "papersTitle": "Papers",
-    "closeTab": "Close tab"
+    "closeTab": "Close tab",
+    "filterShowMoreN": "Show {count, plural, one {# more} other {# more}}",
+    "filterShowLess": "Show less",
+    "filterMatchedCount": "· {matched}/{total}",
+    "filterYearLastN": "Last {count}y",
+    "openInTab": "Open"
   },
   "materials": {
     "title": "Materials",

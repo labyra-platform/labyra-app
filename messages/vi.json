@@ -404,7 +404,12 @@
     "panelExpand": "Mở rộng bảng",
     "tabInfo": "Thông tin",
     "papersTitle": "Tài liệu",
-    "closeTab": "Đóng tab"
+    "closeTab": "Đóng tab",
+    "filterShowMoreN": "Xem thêm {count, plural, other {#}}",
+    "filterShowLess": "Thu gọn",
+    "filterMatchedCount": "· {matched}/{total}",
+    "filterYearLastN": "{count} năm gần",
+    "openInTab": "Đang mở"
   },
   "materials": {
     "title": "Vật liệu",

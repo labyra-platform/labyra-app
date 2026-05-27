@@ -42,6 +42,7 @@ export function createEmptyDomainFilter(): DomainFilterValue {
   return { selected: new Set() };
 }
 import {
+  aggregateDomainCounts,
   aggregateJournalStats,
   aggregateYearRange,
   type JournalStats
@@ -106,9 +107,20 @@ interface Props {
 export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }: Props) {
   const t = useTranslations('papers');
   const [journalSearch, setJournalSearch] = useState('');
+  const [showAllJournals, setShowAllJournals] = useState(false); // R229
 
   const journalStats = useMemo(() => aggregateJournalStats(papers), [papers]);
   const yearRange = useMemo(() => aggregateYearRange(papers), [papers]);
+  const domainCounts = useMemo(() => aggregateDomainCounts(papers), [papers]); // R229
+  const currentYear = new Date().getFullYear(); // R229 year presets
+
+  // R229: live count of papers matching the CURRENT filter, shown so the user
+  // sees the impact before closing the popover. Recomputed only when filter or
+  // papers change.
+  const matchedCount = useMemo(
+    () => papers.reduce((n, p) => (paperPassesFilter(p, value) ? n + 1 : n), 0),
+    [papers, value]
+  );
 
   const filteredJournals = useMemo(() => {
     const q = journalSearch.trim().toLowerCase();
@@ -117,6 +129,16 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
       (j) => j.name.toLowerCase().includes(q) || j.short.toLowerCase().includes(q)
     );
   }, [journalStats, journalSearch]);
+
+  // R229: cap the journal list (sorted by count desc) until "show more". When
+  // searching, show all matches regardless.
+  const JOURNAL_LIMIT = 8;
+  const isJournalSearching = journalSearch.trim().length > 0;
+  const visibleJournals =
+    isJournalSearching || showAllJournals
+      ? filteredJournals
+      : filteredJournals.slice(0, JOURNAL_LIMIT);
+  const hiddenJournalCount = filteredJournals.length - visibleJournals.length;
 
   // ---- counts ----
   const activeCount =
@@ -219,6 +241,10 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                   <div className='flex items-center gap-1.5 text-sm font-medium'>
                     <IconFilter className='size-4 text-muted-foreground' aria-hidden />
                     {t('filtersButton')}
+                    {/* R229: live matched count so the impact is visible here */}
+                    <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                      {t('filterMatchedCount', { matched: matchedCount, total: papers.length })}
+                    </span>
                   </div>
                   <button
                     type='button'
@@ -246,6 +272,33 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                           {t('filterClear')}
                         </button>
                       )}
+                    </div>
+                    {/* R229: quick presets — last N years up to now. */}
+                    <div className='flex flex-wrap gap-1.5'>
+                      {[3, 5, 10].map((n) => {
+                        const from = currentYear - n + 1;
+                        const presetActive = value.yearMin === from && value.yearMax === null;
+                        return (
+                          <button
+                            key={n}
+                            type='button'
+                            onClick={() =>
+                              presetActive
+                                ? clearYear()
+                                : onChange({ ...value, yearMin: from, yearMax: null })
+                            }
+                            aria-pressed={presetActive}
+                            className={cn(
+                              'rounded-md border px-2 py-1 text-xs transition-colors',
+                              presetActive
+                                ? 'border-primary/40 bg-primary/10 text-primary'
+                                : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+                            )}
+                          >
+                            {t('filterYearLastN', { count: n })}
+                          </button>
+                        );
+                      })}
                     </div>
                     <div className='flex items-center gap-2'>
                       <Input
@@ -310,7 +363,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                       />
                     )}
                     <div className='flex flex-wrap gap-1.5'>
-                      {filteredJournals.map((j: JournalStats) => {
+                      {visibleJournals.map((j: JournalStats) => {
                         const active = value.journals.has(j.name);
                         return (
                           <button
@@ -331,12 +384,24 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                           </button>
                         );
                       })}
-                      {filteredJournals.length === 0 && (
+                      {visibleJournals.length === 0 && (
                         <span className='text-xs text-muted-foreground'>
                           {t('filterJournalNoMatch')}
                         </span>
                       )}
                     </div>
+                    {/* R229: show more / less when the list is capped */}
+                    {!isJournalSearching && (hiddenJournalCount > 0 || showAllJournals) && (
+                      <button
+                        type='button'
+                        onClick={() => setShowAllJournals((v) => !v)}
+                        className='text-xs text-muted-foreground hover:text-foreground'
+                      >
+                        {showAllJournals
+                          ? t('filterShowLess')
+                          : t('filterShowMoreN', { count: hiddenJournalCount })}
+                      </button>
+                    )}
                   </section>
                 )}
 
@@ -372,6 +437,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                           <div className='flex flex-wrap gap-1.5 pb-2'>
                             {visible.map((slug) => {
                               const active = value.domain.selected.has(slug);
+                              const count = domainCounts.get(slug) ?? 0;
                               return (
                                 <button
                                   key={slug}
@@ -379,13 +445,16 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                                   onClick={() => toggleDomain(slug)}
                                   aria-pressed={active}
                                   className={cn(
-                                    'inline-flex items-center rounded-md border px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                    'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                                     active
                                       ? AXIS_COLOR[axis]
                                       : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
                                   )}
                                 >
                                   {t(`domain.${slug}`)}
+                                  {count > 0 && (
+                                    <span className='tabular-nums opacity-60'>{count}</span>
+                                  )}
                                 </button>
                               );
                             })}

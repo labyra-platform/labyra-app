@@ -4,8 +4,17 @@
 // R178-3: + domain filter chips
 // @r178-3-applied
 // @r179-2-hotfix1-applied — full filter panel (year + journal + domain)
+// R222: research-first card redesign — authors/year/journal over chunks/MB,
+//   domain chip click-to-filter, conditional status badge, sort + density toggle.
 
-import { IconFileText, IconLoader2, IconUpload } from '@tabler/icons-react';
+import {
+  IconArrowsSort,
+  IconFileText,
+  IconLayoutList,
+  IconLayoutRows,
+  IconLoader2,
+  IconUpload
+} from '@tabler/icons-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -18,12 +27,22 @@ import {
 } from '@/features/papers/components/paper-filter-panel';
 import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal-info-card';
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
+import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { searchPapers } from '@/features/papers/lib/title-search';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
-import type { PaperStatus } from '@/types/papers';
+import type { Paper, PaperStatus } from '@/types/papers';
 
-const STATUS_COLORS: Record<PaperStatus, string> = {
+// R222: only surface the status badge when it carries signal. 'indexed' is the
+// default expected state — showing it on 100% of cards is pure noise, so it is
+// intentionally absent here. Failed/processing/cancelled DO need attention.
+const STATUS_BADGE: Partial<Record<PaperStatus, string>> = {
   queued: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
   ocr: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
   chunking: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
@@ -31,10 +50,10 @@ const STATUS_COLORS: Record<PaperStatus, string> = {
   embedding: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
   indexing: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
   extracting_citations: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
-  indexed: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   failed: 'bg-destructive/10 text-destructive',
   cancelling: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   cancelled: 'bg-muted text-muted-foreground'
+  // 'indexed' deliberately omitted — see comment above.
 };
 
 type FirestoreTimestampLike =
@@ -56,16 +75,14 @@ function toEpochMs(value: FirestoreTimestampLike | undefined | null): number {
   return sec * 1000 + Math.floor(nano / 1_000_000);
 }
 
-function formatDate(value: FirestoreTimestampLike | undefined | null): string {
-  const ms = toEpochMs(value);
-  if (!ms) return '—';
-  return new Date(ms).toLocaleDateString();
-}
+type SortKey = 'recent' | 'year_desc' | 'title_asc' | 'domain';
 
-function formatBytes(b: number): string {
-  if (b < 1024) return `${b} B`;
-  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
-  return `${(b / 1024 / 1024).toFixed(1)} MB`;
+/** Format the author line the way researchers recognize papers: "Zhang et al." */
+function formatAuthors(authors: string[] | undefined): string | null {
+  if (!authors || authors.length === 0) return null;
+  const first = authors[0]?.trim();
+  if (!first) return null;
+  return authors.length > 1 ? `${first} et al.` : first;
 }
 
 export function PaperList() {
@@ -74,6 +91,8 @@ export function PaperList() {
   const locale = params.locale as string;
   const { papers, loading } = usePapers();
   const [filter, setFilter] = useState<PaperFilterValue>(() => createEmptyPaperFilter());
+  const [sort, setSort] = useState<SortKey>('recent');
+  const [dense, setDense] = useState(true); // R222 #1: compact by default → 15-20/screen
 
   const visibleSlugs = useMemo(() => {
     const s = new Set<string>();
@@ -88,10 +107,26 @@ export function PaperList() {
 
   const filteredPapers = useMemo(() => {
     // R179-7c: fuzzy title search BEFORE field filters (intersection)
-    // @r179-7-applied
     const titleMatched = filter.titleQuery ? searchPapers(papers, filter.titleQuery) : papers;
-    return titleMatched.filter((p) => paperPassesFilter(p, filter));
-  }, [papers, filter]);
+    const passed = titleMatched.filter((p) => paperPassesFilter(p, filter));
+    // R222: client-side sort (data already in memory; no extra query).
+    const sorted = [...passed];
+    switch (sort) {
+      case 'year_desc':
+        sorted.sort((a, b) => (b.year || 0) - (a.year || 0));
+        break;
+      case 'title_asc':
+        sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        break;
+      case 'domain':
+        sorted.sort((a, b) => (a.domain || 'zzz').localeCompare(b.domain || 'zzz'));
+        break;
+      default:
+        sorted.sort((a, b) => toEpochMs(b.uploadedAt) - toEpochMs(a.uploadedAt));
+        break;
+    }
+    return sorted;
+  }, [papers, filter, sort]);
 
   if (loading) {
     return (
@@ -126,18 +161,75 @@ export function PaperList() {
     filter.yearMin !== null ||
     filter.yearMax !== null ||
     filter.titleQuery.trim().length > 0;
-  const showFilterUI = papers.length > 0;
+
+  const SORT_LABELS: Record<SortKey, string> = {
+    recent: t('sortRecent'),
+    year_desc: t('sortYear'),
+    title_asc: t('sortTitle'),
+    domain: t('sortDomain')
+  };
+
+  /** R222 #4: clicking a domain chip toggles it into the domain filter. */
+  const toggleDomainFilter = (slug: string) => {
+    setFilter((prev) => {
+      const selected = new Set(prev.domain.selected);
+      if (selected.has(slug)) selected.delete(slug);
+      else selected.add(slug);
+      return { ...prev, domain: { ...prev.domain, selected } };
+    });
+  };
 
   return (
     <div className='space-y-3'>
-      {showFilterUI && (
-        <PaperFilterPanel
-          value={filter}
-          onChange={setFilter}
-          papers={papers}
-          visibleDomainSlugs={visibleSlugs}
-        />
-      )}
+      <PaperFilterPanel
+        value={filter}
+        onChange={setFilter}
+        papers={papers}
+        visibleDomainSlugs={visibleSlugs}
+      />
+
+      {/* R222: toolbar — sort + density toggle */}
+      <div className='flex items-center justify-between gap-2'>
+        <p className='text-xs text-muted-foreground'>
+          {hasFilter
+            ? t('filterShowing', { shown: filteredPapers.length, total: papers.length })
+            : t('paperCount', { count: papers.length })}
+        </p>
+        <div className='flex items-center gap-1.5'>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type='button'
+                className='inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted/50'
+              >
+                <IconArrowsSort className='size-3.5' />
+                {SORT_LABELS[sort]}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                <DropdownMenuItem key={k} onClick={() => setSort(k)}>
+                  {SORT_LABELS[k]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button
+            type='button'
+            onClick={() => setDense((d) => !d)}
+            aria-label={dense ? t('viewComfortable') : t('viewCompact')}
+            title={dense ? t('viewComfortable') : t('viewCompact')}
+            className='inline-flex items-center rounded-md border p-1.5 hover:bg-muted/50'
+          >
+            {dense ? (
+              <IconLayoutRows className='size-3.5' />
+            ) : (
+              <IconLayoutList className='size-3.5' />
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* @r179-2-hotfix1-applied: show info card when filter narrowed to 1 journal */}
       {filter.journals.size === 1 &&
         (() => {
@@ -146,66 +238,101 @@ export function PaperList() {
           return stats ? <PaperJournalInfoCard stats={stats} /> : null;
         })()}
 
-      {hasFilter && (
-        <p className='text-xs text-muted-foreground'>
-          {t('filterShowing', {
-            shown: filteredPapers.length,
-            total: papers.length
-          })}
-        </p>
-      )}
-
       {filteredPapers.length === 0 ? (
         <p className='text-center py-8 text-sm text-muted-foreground'>{t('filterNoMatches')}</p>
       ) : (
-        <div className='space-y-2'>
+        <div className={cn(dense ? 'divide-y rounded-lg border' : 'space-y-2')}>
           {filteredPapers.map((paper) => (
-            <Link
+            <PaperRow
               key={paper.id}
-              href={`/${locale}/dashboard/papers/${paper.id}`}
-              aria-label={paper.title || t('untitled')}
-              className='block border rounded-lg p-4 hover:bg-muted/50 transition-colors'
-            >
-              <div className='flex items-start justify-between gap-4'>
-                <div className='flex-1 min-w-0'>
-                  <h3 className='font-medium truncate'>{paper.title || t('untitled')}</h3>
-                  <div className='flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground'>
-                    <span>{formatDate(paper.uploadedAt)}</span>
-                    <span>·</span>
-                    <span>{formatBytes(paper.fileSize)}</span>
-                    {paper.pageCount > 0 && (
-                      <>
-                        <span>·</span>
-                        <span>{t('nPages', { count: paper.pageCount })}</span>
-                      </>
-                    )}
-                    {paper.chunkCount > 0 && (
-                      <>
-                        <span>·</span>
-                        <span>{t('nChunks', { count: paper.chunkCount })}</span>
-                      </>
-                    )}
-                    {paper.domain && paper.domain !== 'unknown' && (
-                      <>
-                        <span>·</span>
-                        <span className='text-foreground/70'>{t(`domain.${paper.domain}`)}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <span
-                  className={cn(
-                    'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
-                    STATUS_COLORS[paper.status]
-                  )}
-                >
-                  {t(`status.${paper.status}`)}
-                </span>
-              </div>
-            </Link>
+              paper={paper}
+              locale={locale}
+              dense={dense}
+              onDomainClick={toggleDomainFilter}
+            />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function PaperRow({
+  paper,
+  locale,
+  dense,
+  onDomainClick
+}: {
+  paper: Paper;
+  locale: string;
+  dense: boolean;
+  onDomainClick: (slug: string) => void;
+}) {
+  const t = useTranslations('papers');
+  const authorLine = formatAuthors(paper.authors);
+  const journal = paper.journalShort || paper.journal || null;
+  const badgeClass = STATUS_BADGE[paper.status];
+  const domainAxis = paper.domain ? getAxis(paper.domain) : null;
+
+  // R222 #2/#3: research metadata (authors · year · journal) replaces the
+  // RAG-internal metadata (chunks/MB). A researcher recognizes a paper by
+  // "Zhang et al. 2024, Nature" — not by "24 chunks, 7.2 MB".
+  const metaParts: string[] = [];
+  if (authorLine) metaParts.push(authorLine);
+  if (paper.year) metaParts.push(String(paper.year));
+  if (journal) metaParts.push(journal);
+
+  return (
+    <Link
+      href={`/${locale}/dashboard/papers/${paper.id}`}
+      aria-label={paper.title || t('untitled')}
+      className={cn(
+        'group block transition-colors hover:bg-muted/50',
+        dense ? 'px-4 py-2.5' : 'rounded-lg border p-4'
+      )}
+    >
+      <div className='flex items-start justify-between gap-3'>
+        <div className='min-w-0 flex-1'>
+          <h3 className={cn('truncate font-medium', dense ? 'text-sm' : 'text-base')}>
+            {paper.title || t('untitled')}
+          </h3>
+          <div className='mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground'>
+            {metaParts.length > 0 ? (
+              <span className='truncate'>{metaParts.join(' · ')}</span>
+            ) : (
+              <span className='italic'>{t('metadataPending')}</span>
+            )}
+            {/* R222 #4: domain as a clickable color chip, not grey tail text. */}
+            {paper.domain && paper.domain !== 'unknown' && domainAxis && (
+              <button
+                type='button'
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDomainClick(paper.domain!);
+                }}
+                className={cn(
+                  'inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium leading-none transition-opacity hover:opacity-80',
+                  AXIS_COLOR[domainAxis]
+                )}
+              >
+                {t(`domain.${paper.domain}`)}
+              </button>
+            )}
+          </div>
+        </div>
+        {/* R222 #5: status badge only when it carries signal (not 'indexed'). */}
+        {badgeClass && (
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
+              badgeClass
+            )}
+          >
+            {t(`status.${paper.status}`)}
+          </span>
+        )}
+      </div>
+    </Link>
   );
 }

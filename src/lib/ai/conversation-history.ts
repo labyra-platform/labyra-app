@@ -61,7 +61,15 @@ export async function loadConversationHistory(
     budgeted.unshift(recent[i]);
     charCount += msgChars;
   }
-  const capped = budgeted;
+  let capped = budgeted;
+
+  // AI-2 fix (failure mode 1): char-budget truncation walks from the end, so the
+  // oldest retained message can be an assistant turn. Anthropic rejects a history
+  // that starts with role:'assistant' (400 "first message must use the user role").
+  // Drop any leading assistant messages — the current user query is appended later.
+  while (capped.length > 0 && capped[0].role === 'assistant') {
+    capped = capped.slice(1);
+  }
 
   // Rebuild as LLMMessage array
   const messages: LLMMessage[] = [];
@@ -69,8 +77,13 @@ export async function loadConversationHistory(
     if (m.role === 'user') {
       messages.push({ role: 'user', content: m.content });
     } else if (m.role === 'assistant') {
+      // AI-2 fix (failure mode 2): only reconstruct tool_use/tool_result pairs for
+      // tool calls that actually completed (result defined). An incomplete write or
+      // mid-pipeline crash can leave toolCalls with undefined result; emitting a
+      // tool_use with no valid paired tool_result → Anthropic 400 INVALID_ARGUMENT.
+      const completedCalls = (m.toolCalls ?? []).filter((tc) => tc.result !== undefined);
       // Assistant message reconstruction
-      if (m.toolCalls && m.toolCalls.length > 0) {
+      if (completedCalls.length > 0) {
         // Has tools — need [text, tool_use blocks] then a user [tool_result] turn
         type AssistantBlock =
           | { type: 'text'; text: string }
@@ -85,7 +98,7 @@ export async function loadConversationHistory(
         if (m.content && m.content.trim().length > 0) {
           assistantBlocks.push({ type: 'text', text: m.content });
         }
-        for (const tc of m.toolCalls) {
+        for (const tc of completedCalls) {
           assistantBlocks.push({
             type: 'tool_use',
             id: tc.id,
@@ -96,7 +109,7 @@ export async function loadConversationHistory(
             ...(tc.thoughtSignature ? { thoughtSignature: tc.thoughtSignature } : {})
           });
         }
-        const toolResultBlocks = m.toolCalls.map((tc) => ({
+        const toolResultBlocks = completedCalls.map((tc) => ({
           type: 'tool_result' as const,
           tool_use_id: tc.id,
           content:
@@ -113,10 +126,11 @@ export async function loadConversationHistory(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           content: toolResultBlocks as any
         });
-      } else {
-        // Plain text assistant message
+      } else if (m.content && m.content.trim().length > 0) {
+        // Plain text assistant message (or one whose tool calls never completed).
         messages.push({ role: 'assistant', content: m.content });
       }
+      // else: assistant turn with neither text nor completed tools → skip entirely.
     }
   }
 

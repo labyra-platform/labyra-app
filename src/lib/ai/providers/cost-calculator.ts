@@ -123,14 +123,28 @@ export function calculateCost(
 ): AiCostBreakdown {
   const pricing = PRICING[model];
   if (!pricing) {
+    // AI-3 fix: a renamed/GA'd model id missing from PRICING used to return $0,
+    // which silently disables cost-guard (estimatedCost > limit always false) and
+    // under-reports spend. This already happened once (see R190-1 note above: T0
+    // billed $0 for ~2 weeks). Fall back to the most expensive tier so the guard
+    // still trips and spend is over- (not under-) estimated. Loud-log for ops.
     // eslint-disable-next-line no-console -- audit log for unknown model
-    console.warn(`[cost-calculator] unknown model: ${model}, returning 0 cost`);
+    console.error(
+      `[cost-calculator] unknown model: ${model} — falling back to claude-opus-4-7 pricing (conservative). Add this model to PRICING.`
+    );
+    const fallback = PRICING['claude-opus-4-7'];
+    const inflation = fallback.tokenizerInflation ?? 1.0;
+    const usd =
+      ((inputTokens * inflation) / 1_000_000) * fallback.inputPerM +
+      ((outputTokens * inflation) / 1_000_000) * fallback.outputPerM +
+      ((cacheReadTokens * inflation) / 1_000_000) * fallback.cacheReadPerM +
+      ((cacheWriteTokens * inflation) / 1_000_000) * fallback.cacheWritePerM;
     return {
       inputTokens,
       outputTokens,
       cacheReadTokens,
       cacheWriteTokens,
-      usd: 0
+      usd: Number(usd.toFixed(6))
     };
   }
 

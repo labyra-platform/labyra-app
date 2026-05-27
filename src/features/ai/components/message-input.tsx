@@ -92,7 +92,10 @@ export function MessageInput({
   };
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // IME guard: Vietnamese (Telex/VNI) + CJK users press Enter to confirm a
+    // diacritic/character composition. Without isComposing, that Enter submits
+    // mid-word. nativeEvent.isComposing is true during active composition.
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSend();
     }

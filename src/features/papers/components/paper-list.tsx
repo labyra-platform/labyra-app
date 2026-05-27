@@ -9,6 +9,7 @@
 
 import {
   IconArrowsSort,
+  IconExternalLink,
   IconFileText,
   IconLayoutList,
   IconLayoutRows,
@@ -16,7 +17,7 @@ import {
   IconUpload
 } from '@tabler/icons-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import {
@@ -269,10 +270,12 @@ function PaperRow({
   onDomainClick: (slug: string) => void;
 }) {
   const t = useTranslations('papers');
+  const router = useRouter();
   const authorLine = formatAuthors(paper.authors);
   const journal = paper.journalShort || paper.journal || null;
   const badgeClass = STATUS_BADGE[paper.status];
   const domainAxis = paper.domain ? getAxis(paper.domain) : null;
+  const href = `/${locale}/dashboard/papers/${paper.id}`;
 
   // R222 #2/#3: research metadata (authors · year · journal) replaces the
   // RAG-internal metadata (chunks/MB). A researcher recognizes a paper by
@@ -282,25 +285,64 @@ function PaperRow({
   if (paper.year) metaParts.push(String(paper.year));
   if (journal) metaParts.push(journal);
 
+  // R222b: the row is NOT a <Link> wrapper — it would nest the DOI <a> inside an
+  // anchor (invalid HTML, hydration warnings, unpredictable clicks). Instead the
+  // row navigates via router on click, the title is a real <Link> (keyboard +
+  // middle-click open-in-new-tab), and DOI is a standalone external <a>.
+  const goToDetail = () => router.push(href);
+
   return (
-    <Link
-      href={`/${locale}/dashboard/papers/${paper.id}`}
+    <div
+      role='link'
+      tabIndex={0}
+      onClick={goToDetail}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          goToDetail();
+        }
+      }}
       aria-label={paper.title || t('untitled')}
       className={cn(
-        'group block transition-colors hover:bg-muted/50',
+        'group block cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         dense ? 'px-4 py-2.5' : 'rounded-lg border p-4'
       )}
     >
       <div className='flex items-start justify-between gap-3'>
         <div className='min-w-0 flex-1'>
           <h3 className={cn('truncate font-medium', dense ? 'text-sm' : 'text-base')}>
-            {paper.title || t('untitled')}
+            <Link
+              href={href}
+              onClick={(e) => e.stopPropagation()}
+              className='hover:underline focus-visible:underline focus-visible:outline-none'
+            >
+              {paper.title || t('untitled')}
+            </Link>
           </h3>
           <div className='mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground'>
             {metaParts.length > 0 ? (
               <span className='truncate'>{metaParts.join(' · ')}</span>
             ) : (
               <span className='italic'>{t('metadataPending')}</span>
+            )}
+            {/* R222b: DOI link (Cách A) — opens publisher in a new tab. stopPropagation
+                so clicking DOI does NOT also open the in-app paper detail. The
+                external-link icon + "DOI" text make it explicit this leaves the app. */}
+            {paper.doi && (
+              <>
+                <span aria-hidden>·</span>
+                <a
+                  href={`https://doi.org/${paper.doi}`}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  onClick={(e) => e.stopPropagation()}
+                  className='inline-flex items-center gap-0.5 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline'
+                  aria-label={`DOI: ${paper.doi}`}
+                >
+                  DOI
+                  <IconExternalLink className='size-3' aria-hidden />
+                </a>
+              </>
             )}
             {/* R222 #4: domain as a clickable color chip, not grey tail text. */}
             {paper.domain && paper.domain !== 'unknown' && domainAxis && (
@@ -333,6 +375,6 @@ function PaperRow({
           </span>
         )}
       </div>
-    </Link>
+    </div>
   );
 }

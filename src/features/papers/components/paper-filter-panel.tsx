@@ -208,6 +208,24 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
           <PopoverContent align='end' className='w-[clamp(20rem,90vw,26rem)] p-0'>
             <ScrollArea className='max-h-[min(70vh,32rem)]'>
               <div className='space-y-4 p-4'>
+                {/* R222b: panel header — Clear all lives here (not on the outer
+                    bar) so the bar stays fixed = no layout shift. Disabled when
+                    nothing is active; it's inside the popover so toggling its
+                    state never reflows the page. */}
+                <div className='flex items-center justify-between border-b pb-2'>
+                  <div className='flex items-center gap-1.5 text-sm font-medium'>
+                    <IconFilter className='size-4 text-muted-foreground' aria-hidden />
+                    {t('filtersButton')}
+                  </div>
+                  <button
+                    type='button'
+                    onClick={clearAll}
+                    disabled={!hasAny}
+                    className='text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground'
+                  >
+                    {t('clearAll')}
+                  </button>
+                </div>
                 {/* Year range */}
                 {yearRange && (
                   <section className='space-y-2'>
@@ -378,16 +396,6 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
             </ScrollArea>
           </PopoverContent>
         </Popover>
-
-        {hasAny && (
-          <Button
-            variant='ghost'
-            onClick={clearAll}
-            className='text-muted-foreground hover:text-foreground'
-          >
-            {t('clearAll')}
-          </Button>
-        )}
       </div>
 
       {/* ---- Active filter chips ---- */}

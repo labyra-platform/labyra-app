@@ -42,5 +42,20 @@ export async function executeToolCalls(
   calls: ToolCall[],
   context: ToolContext
 ): Promise<ToolResult[]> {
-  return Promise.all(calls.map((c) => executeToolCall(c, context)));
+  // AI-11: executeToolCall catches its own errors, but a rejection escaping it
+  // (e.g. a synchronous throw before the try, or an unhandled async path) would
+  // make Promise.all reject and kill every parallel tool. allSettled isolates
+  // each call so one failure can't take down the batch.
+  const settled = await Promise.allSettled(calls.map((c) => executeToolCall(c, context)));
+  return settled.map((s, i) => {
+    if (s.status === 'fulfilled') return s.value;
+    const msg = s.reason instanceof Error ? s.reason.message : 'tool_dispatch_error';
+    console.error(`[tool ${calls[i].name}] rejected:`, s.reason);
+    return {
+      toolCallId: calls[i].id,
+      toolName: calls[i].name,
+      result: { error: msg },
+      isError: true
+    };
+  });
 }

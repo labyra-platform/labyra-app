@@ -124,7 +124,21 @@ export async function checkCostGuard(
     };
   }
 
-  const featureCap = limits.perFeature[feature];
+  // AI-14: a FeatureKind absent from limits.perFeature previously skipped the
+  // per-feature gate entirely (undefined cap → no check) → unbounded spend on
+  // that feature until the daily/monthly total trips. Apply a conservative
+  // default (the daily total cap) for unmapped features so a new/unmapped
+  // feature can't silently outspend its intended budget, and log it so the
+  // missing entry gets added to COST_LIMITS.
+  const mappedCap = limits.perFeature[feature];
+  let featureCap = mappedCap;
+  if (mappedCap === undefined) {
+    // eslint-disable-next-line no-console -- ops signal: feature missing a cap
+    console.warn(
+      `[cost-guard] feature "${feature}" has no per-feature cap; defaulting to daily total $${limits.daily.total}. Add it to COST_LIMITS.perFeature.`
+    );
+    featureCap = limits.daily.total;
+  }
   if (featureCap !== undefined) {
     const featureCurrent = await getDailyFeatureSpend(tenantId, feature);
     if (featureCurrent + estimatedCost > featureCap) {

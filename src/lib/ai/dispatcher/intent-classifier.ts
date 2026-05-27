@@ -192,10 +192,15 @@ function parseClassifierResponse(text: string): ClassifierJsonResponse | null {
 /**
  * R169-2: Production tiers from intent classifier are 1|2|3.
  * Tier 0 is the classifier itself (this function).
- * Tier 4|5 are reserved for future writer/auditor flows (R170+).
+ * AI-13 fix: the classifier prompt (see JSON schema "tier": 1|2|3|4 and the
+ * "Tier 4 (Writer)" description) explicitly allows the LLM to output tier 4.
+ * normalizeTier previously rejected 4 → LLM-classified T4 silently fell back to
+ * tier 2 (only the keyword-override path reached T4). Accept 4; defaultFeature
+ * already maps it to paper_writing. Tier 5 (audit) stays reserved — not a
+ * classifier output.
  */
 function normalizeTier(value: number): AiTier | null {
-  if (value === 1 || value === 2 || value === 3) return value;
+  if (value === 1 || value === 2 || value === 3 || value === 4) return value as AiTier;
   return null;
 }
 

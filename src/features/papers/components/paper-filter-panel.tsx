@@ -51,7 +51,6 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { Paper } from '@/types/papers';
 
@@ -205,8 +204,12 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
               <IconChevronDown className='size-3.5 opacity-60' aria-hidden />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align='end' className='w-[clamp(20rem,90vw,26rem)] p-0'>
-            <ScrollArea className='max-h-[min(70vh,32rem)]'>
+          <PopoverContent
+            align='end'
+            collisionPadding={16}
+            className='w-[clamp(20rem,90vw,26rem)] overflow-hidden p-0'
+          >
+            <div className='max-h-[min(75vh,36rem)] overflow-y-auto'>
               <div className='space-y-4 p-4'>
                 {/* R222b: panel header — Clear all lives here (not on the outer
                     bar) so the bar stays fixed = no layout shift. Disabled when
@@ -393,7 +396,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                   })}
                 </section>
               </div>
-            </ScrollArea>
+            </div>
           </PopoverContent>
         </Popover>
       </div>

@@ -9,6 +9,7 @@
 
 import {
   IconArrowsSort,
+  IconCheck,
   IconExternalLink,
   IconFileText,
   IconLayoutList,
@@ -215,19 +216,34 @@ export function PaperList() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
-            type='button'
-            onClick={() => setDense((d) => !d)}
-            aria-label={dense ? t('viewComfortable') : t('viewCompact')}
-            title={dense ? t('viewComfortable') : t('viewCompact')}
-            className='inline-flex items-center rounded-md border p-1.5 hover:bg-muted/50'
-          >
-            {dense ? (
-              <IconLayoutRows className='size-3.5' />
-            ) : (
-              <IconLayoutList className='size-3.5' />
-            )}
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type='button'
+                aria-label={t('viewDensity')}
+                title={t('viewDensity')}
+                className='inline-flex items-center rounded-md border p-1.5 hover:bg-muted/50'
+              >
+                {dense ? (
+                  <IconLayoutList className='size-3.5' />
+                ) : (
+                  <IconLayoutRows className='size-3.5' />
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              <DropdownMenuItem onClick={() => setDense(true)} className='gap-2'>
+                <IconLayoutList className='size-4' />
+                <span className='flex-1'>{t('viewCompact')}</span>
+                {dense && <IconCheck className='size-4' />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDense(false)} className='gap-2'>
+                <IconLayoutRows className='size-4' />
+                <span className='flex-1'>{t('viewComfortable')}</span>
+                {!dense && <IconCheck className='size-4' />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

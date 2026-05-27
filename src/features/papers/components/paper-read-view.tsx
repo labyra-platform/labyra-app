@@ -22,13 +22,12 @@ import { IconChevronRight, IconExternalLink, IconInfoCircle, IconQuote } from '@
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
+import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
 import type { Paper } from '@/types/papers';
 import { CitationsSection } from './citations-section';
 import { PdfViewer } from './pdf-viewer';
-
-type PanelTab = 'info' | 'citations';
 
 function formatAuthors(authors: string[] | undefined): string | null {
   if (!authors || authors.length === 0) return null;
@@ -37,28 +36,71 @@ function formatAuthors(authors: string[] | undefined): string | null {
   return authors.length > 3 ? `${first} et al.` : authors.join(', ');
 }
 
-export function PaperReadView({ paperId }: { paperId: string }) {
+export function PaperReadView({ paperId, active = true }: { paperId: string; active?: boolean }) {
   const t = useTranslations('papers');
   const { paper, loading } = usePaper(paperId);
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [tab, setTab] = useState<PanelTab>('info');
 
-  // R224: after the panel finishes its width transition, tell PdfViewer to
-  // re-measure (it listens on window.resize). Delay > CSS transition duration.
+  // R226: per-tab durable state lives in the store, not here. This component is
+  // a view: it reads the tab's saved page/zoom/panelTab and reports changes
+  // back, so unmounting the tab (to free react-pdf) never loses state.
+  const tabState = usePaperTabsStore((s) => s.getTab(paperId));
+  const openTab = usePaperTabsStore((s) => s.openTab);
+  const updatePdfState = usePaperTabsStore((s) => s.updatePdfState);
+  const setPanelTab = usePaperTabsStore((s) => s.setPanelTab);
+  const setTitle = usePaperTabsStore((s) => s.setTitle);
+
+  // Ensure a tab exists for this paper (covers deep-link / direct nav).
+  useEffect(() => {
+    if (!tabState) openTab(paperId);
+  }, [paperId, tabState, openTab]);
+
+  // Keep the tab label in sync with the loaded paper title.
+  useEffect(() => {
+    if (paper?.title && tabState && tabState.title !== paper.title) {
+      setTitle(paperId, paper.title);
+    }
+  }, [paper?.title, tabState, paperId, setTitle]);
+
+  const panelTab = tabState?.activePanelTab ?? 'info';
+  const savedPage = tabState?.pdf.page ?? 1;
+  const savedZoom = tabState?.pdf.zoom ?? 1;
+
+  const [panelOpen, setPanelOpen] = useState(false);
+
   const togglePanel = useCallback(() => {
     setPanelOpen((v) => !v);
   }, []);
 
+  // R224: after the panel finishes its width transition, tell PdfViewer to
+  // re-measure (it listens on window.resize). Delay > CSS transition duration.
   useEffect(() => {
     const id = setTimeout(() => window.dispatchEvent(new Event('resize')), 320);
     return () => clearTimeout(id);
   }, [panelOpen]);
 
+  const handlePageChange = useCallback(
+    (page: number) => updatePdfState(paperId, { page }),
+    [paperId, updatePdfState]
+  );
+  const handleZoomChange = useCallback(
+    (zoom: number) => updatePdfState(paperId, { zoom }),
+    [paperId, updatePdfState]
+  );
+
   return (
-    <div className='flex h-[calc(100vh-4rem)] min-h-0 w-full overflow-hidden'>
+    <div className='flex h-full min-h-0 w-full overflow-hidden'>
       {/* LEFT: PDF — flexes to fill remaining space */}
       <div className='min-w-0 flex-1'>
-        <PdfViewer paperId={paperId} embedded />
+        <PdfViewer
+          key={paperId}
+          paperId={paperId}
+          embedded
+          active={active}
+          initialPage={savedPage}
+          initialZoom={savedZoom}
+          onPageChange={handlePageChange}
+          onZoomChange={handleZoomChange}
+        />
       </div>
 
       {/* Collapse handle — always visible at the panel's left edge */}
@@ -92,14 +134,14 @@ export function PaperReadView({ paperId }: { paperId: string }) {
           {/* Panel tabs */}
           <div className='flex shrink-0 items-center gap-1 border-b px-2'>
             <PanelTabButton
-              active={tab === 'info'}
-              onClick={() => setTab('info')}
+              active={panelTab === 'info'}
+              onClick={() => setPanelTab(paperId, 'info')}
               icon={<IconInfoCircle className='size-3.5' />}
               label={t('tabInfo')}
             />
             <PanelTabButton
-              active={tab === 'citations'}
-              onClick={() => setTab('citations')}
+              active={panelTab === 'citations'}
+              onClick={() => setPanelTab(paperId, 'citations')}
               icon={<IconQuote className='size-3.5' />}
               label={t('citations')}
             />
@@ -111,10 +153,10 @@ export function PaperReadView({ paperId }: { paperId: string }) {
               <p className='text-sm text-muted-foreground'>{t('loading')}</p>
             ) : !paper ? (
               <p className='text-sm text-muted-foreground'>{t('paperNotFound')}</p>
-            ) : tab === 'info' ? (
-              <InfoTab paper={paper} />
-            ) : (
+            ) : panelTab === 'citations' ? (
               <CitationsSection paperId={paperId} />
+            ) : (
+              <InfoTab paper={paper} />
             )}
           </div>
         </div>

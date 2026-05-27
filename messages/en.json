@@ -402,7 +402,9 @@
     "axisMeta": "Type",
     "panelCollapse": "Collapse panel",
     "panelExpand": "Expand panel",
-    "tabInfo": "Info"
+    "tabInfo": "Info",
+    "papersTitle": "Papers",
+    "closeTab": "Close tab"
   },
   "materials": {
     "title": "Materials",

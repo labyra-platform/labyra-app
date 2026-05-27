@@ -30,6 +30,7 @@ import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { searchPapers } from '@/features/papers/lib/title-search';
+import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -274,6 +275,7 @@ function PaperRow({
 }) {
   const t = useTranslations('papers');
   const router = useRouter();
+  const openTab = usePaperTabsStore((s) => s.openTab);
   const authorLine = formatAuthors(paper.authors);
   const journal = paper.journalShort || paper.journal || null;
   const badgeClass = STATUS_BADGE[paper.status];
@@ -294,7 +296,10 @@ function PaperRow({
   // anchor (invalid HTML, hydration warnings, unpredictable clicks). Instead the
   // row navigates via router on click, the title is a real <Link> (keyboard +
   // middle-click open-in-new-tab), and DOI is a standalone external <a>.
-  const goToDetail = () => router.push(href);
+  const goToDetail = () => {
+    openTab(paper.id, paper.title || undefined);
+    router.push(href);
+  };
 
   return (
     <div

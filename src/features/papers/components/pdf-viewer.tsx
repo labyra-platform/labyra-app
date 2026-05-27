@@ -89,7 +89,27 @@ async function fetchSignedUrl(paperId: string): Promise<SignedUrlResponse> {
   return (await res.json()) as SignedUrlResponse;
 }
 
-export function PdfViewer({ paperId, embedded = false }: { paperId: string; embedded?: boolean }) {
+export function PdfViewer({
+  paperId,
+  embedded = false,
+  initialPage,
+  initialZoom,
+  onPageChange,
+  onZoomChange,
+  active = true
+}: {
+  paperId: string;
+  embedded?: boolean;
+  /** R226: restore viewport when a tab is re-mounted. */
+  initialPage?: number;
+  initialZoom?: number;
+  onPageChange?: (page: number) => void;
+  onZoomChange?: (zoom: number) => void;
+  /** R227b: true when this tab is the visible one. A hidden (display:none) tab
+   *  loses its scroll position; when it becomes visible again we re-scroll to
+   *  the current page so it doesn't jump to the last page. */
+  active?: boolean;
+}) {
   const t = useTranslations('papers');
   const params = useParams();
   const locale = params.locale as string;
@@ -98,8 +118,8 @@ export function PdfViewer({ paperId, embedded = false }: { paperId: string; embe
   const [signed, setSigned] = useState<SignedUrlResponse | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [zoom, setZoom] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage ?? 1);
+  const [zoom, setZoom] = useState(initialZoom ?? 1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
 
@@ -107,6 +127,11 @@ export function PdfViewer({ paperId, embedded = false }: { paperId: string; embe
   const pagesContainerRef = useRef<HTMLDivElement | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(800);
+  // R226b: gate reporting page/zoom to the store until the saved page has been
+  // restored. Without this, when a tab re-mounts the freshly-loaded PDF briefly
+  // sits at page 1, the IntersectionObserver reports 1, and that overwrites the
+  // saved page in the store before we scroll to it — losing the reading position.
+  const restoredRef = useRef(false);
 
   // Configure PDF.js worker
   useEffect(() => {
@@ -194,10 +219,58 @@ export function PdfViewer({ paperId, embedded = false }: { paperId: string; embe
   const placeholderHeight = pageWidth * PAGE_ASPECT;
 
   // Document load callback
-  const onDocumentLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
-    setNumPages(n);
-    setCurrentPage(1);
-  }, []);
+  const onDocumentLoadSuccess = useCallback(
+    ({ numPages: n }: { numPages: number }) => {
+      setNumPages(n);
+      // R226: restore the tab's saved page (clamped) instead of forcing page 1.
+      const target = Math.min(Math.max(1, initialPage ?? 1), n);
+      setCurrentPage(target);
+      if (target > 1) {
+        // Wait for pages to mount before scrolling to the restored page.
+        setTimeout(() => {
+          const el = pagesContainerRef.current;
+          el?.querySelector<HTMLElement>(`[data-page-index="${target}"]`)?.scrollIntoView();
+          // Restore done — from now on, scrolling reports to the store.
+          restoredRef.current = true;
+        }, 150);
+      } else {
+        restoredRef.current = true;
+      }
+    },
+    [initialPage]
+  );
+
+  // R226: report viewport changes to the parent (tab store), but only AFTER the
+  // saved page is restored (restoredRef) so the restore itself isn't clobbered.
+  useEffect(() => {
+    if (restoredRef.current) onPageChange?.(currentPage);
+  }, [currentPage, onPageChange]);
+  useEffect(() => {
+    if (restoredRef.current) onZoomChange?.(zoom);
+  }, [zoom, onZoomChange]);
+
+  // R227b: a hidden (display:none) tab loses its scroll offset. When this tab
+  // becomes visible again, re-scroll to the page it was on. Without this, the
+  // restored layout makes the IntersectionObserver fire for whatever page now
+  // sits in the (reset) viewport — typically the last/near-last page — and the
+  // view jumps there. We briefly gate reporting so that transient jump doesn't
+  // overwrite the saved page.
+  useEffect(() => {
+    if (!active || !numPages || !pdfReady) return;
+    const el = pagesContainerRef.current;
+    if (!el) return;
+    restoredRef.current = false;
+    const id = setTimeout(() => {
+      const target = el.querySelector<HTMLElement>(`[data-page-index="${currentPage}"]`);
+      target?.scrollIntoView({ block: 'start' });
+      setTimeout(() => {
+        restoredRef.current = true;
+      }, 120);
+    }, 50);
+    return () => clearTimeout(id);
+    // Only re-run when the tab's visibility flips; currentPage is read live.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, numPages, pdfReady]);
 
   // Page intersection observer → update currentPage as user scrolls
   // Deps only on numPages (functional setState avoids currentPage dep loop)

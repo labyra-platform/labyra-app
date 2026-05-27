@@ -19,6 +19,7 @@ import { getHybridTokenizer } from './hybrid-tokenizer';
 interface CachedEntry {
   encoder: BM25Encoder;
   loadedAt: number;
+  corpusSize: number;
 }
 
 type GlobalCache = {
@@ -35,6 +36,16 @@ function getCache(): Map<string, CachedEntry> {
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h
 const COLD_START_MIN_PAPERS = 3;
+
+/**
+ * AI-16: invalidate a tenant's cached BM25 encoder. Call after a paper finishes
+ * indexing so newly-added documents become searchable immediately instead of
+ * waiting up to CACHE_TTL_MS (1h) for the cache to expire and refit. Without
+ * this, papers indexed within the TTL window are vector-only until expiry.
+ */
+export function invalidateBM25(tenantId: string): void {
+  getCache().delete(tenantId);
+}
 
 /**
  * Get fitted BM25 encoder for tenant. Lazy load from Firestore,
@@ -58,7 +69,7 @@ export async function getBM25ForTenant(tenantId: string): Promise<BM25Encoder | 
     }
     const encoder = new BM25Encoder(getHybridTokenizer());
     await encoder.fit(corpus);
-    cache.set(tenantId, { encoder, loadedAt: Date.now() });
+    cache.set(tenantId, { encoder, loadedAt: Date.now(), corpusSize: corpus.length });
     return encoder;
   }
 
@@ -115,7 +126,7 @@ export async function refitTenant(tenantId: string): Promise<BM25Encoder | null>
   });
 
   const cache = getCache();
-  cache.set(tenantId, { encoder, loadedAt: Date.now() });
+  cache.set(tenantId, { encoder, loadedAt: Date.now(), corpusSize: corpus.length });
 
   // eslint-disable-next-line no-console -- structured logging for audit
   console.log(

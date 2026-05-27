@@ -61,7 +61,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         { status: 400 }
       );
     }
-    if (rawPaperIds.length > MAX_PAPERS_PER_CONVERSATION) {
+    // AI-18: dedupe FIRST, then length-check the deduped array. Checking
+    // rawPaperIds.length before dedup wrongly rejects a valid ≤10 unique
+    // selection that happens to contain client-side duplicates (raw length > 10).
+    const paperIds = Array.from(
+      new Set(rawPaperIds.filter((p): p is string => typeof p === 'string' && p.length > 0))
+    );
+    if (paperIds.length > MAX_PAPERS_PER_CONVERSATION) {
       return NextResponse.json(
         {
           error: {
@@ -72,11 +78,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         { status: 400 }
       );
     }
-
-    // Dedupe + filter to strings
-    const paperIds = Array.from(
-      new Set(rawPaperIds.filter((p): p is string => typeof p === 'string' && p.length > 0))
-    );
 
     const db = getAdminFirestoreService();
     const convRef = db.doc(`tenants/${tenantId}/aiConversations/${conversationId}`);

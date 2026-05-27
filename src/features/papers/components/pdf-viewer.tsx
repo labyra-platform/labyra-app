@@ -142,12 +142,13 @@ export function PdfViewer({ paperId }: { paperId: string }) {
 
   useEffect(() => {
     if (!signed) return;
+    // AI-17: when the URL is already near/past expiry, msUntilRefresh can be ≤ 0.
+    // Calling loadSignedUrl() immediately then updating `signed` re-runs this
+    // effect, and if the refreshed URL is also near expiry (or the fetch is slow)
+    // it busy-loops. Always wait at least a short floor so refresh is throttled.
     const msUntilRefresh = signed.expiresAt - Date.now() - REFRESH_BEFORE_EXPIRY_MS;
-    if (msUntilRefresh <= 0) {
-      loadSignedUrl();
-      return;
-    }
-    refreshTimer.current = setTimeout(loadSignedUrl, msUntilRefresh);
+    const delay = Math.max(5_000, msUntilRefresh);
+    refreshTimer.current = setTimeout(loadSignedUrl, delay);
     return () => {
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
     };

@@ -51,9 +51,13 @@ export function reciprocalRankFusion(lists: RankedItem[][], k: number = DEFAULT_
     }
   }
 
-  return Array.from(itemScores.entries())
-    .map(([id, { score, ranks }]) => ({ id, score, sourceRanks: ranks }))
-    .toSorted((a, b) => b.score - a.score);
+  return (
+    Array.from(itemScores.entries())
+      .map(([id, { score, ranks }]) => ({ id, score, sourceRanks: ranks }))
+      // AI-19: tie-break by id so equal-score items have a stable, deterministic
+      // order across runs (Map iteration order alone is not a reliable contract).
+      .toSorted((a, b) => b.score - a.score || a.id.localeCompare(b.id))
+  );
 }
 
 /**

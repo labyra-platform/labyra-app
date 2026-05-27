@@ -5,6 +5,7 @@
 import 'server-only';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getVectorStore } from '@/lib/ai/rag/vector-store';
+import { invalidateBM25 } from '@/lib/ai/rag/sparse/bm25-manager';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { Paper, PaperChunkDoc } from '@/types/papers';
 import type { EmbeddedChunk } from './embed-step';
@@ -68,6 +69,11 @@ export async function runIndexStep(input: IndexStepInput): Promise<number> {
   }));
 
   await vectorStore.upsert(tenantId, vectors);
+
+  // AI-16: drop the cached BM25 encoder so the next search refits on the corpus
+  // including this newly-indexed paper, instead of waiting up to the 1h cache TTL
+  // (during which the new paper would be vector-only / absent from BM25).
+  invalidateBM25(tenantId);
 
   return chunks.length;
 }

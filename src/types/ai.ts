@@ -167,6 +167,7 @@ export type ChatStreamEventV2 =
       isError: boolean;
     }
   | { type: 'reflection_start'; round: number }
+  | { type: 'reset_draft' }
   | {
       type: 'reflection_round_complete';
       round: number;

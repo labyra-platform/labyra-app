@@ -47,10 +47,21 @@ type _StreamCallback = (event: ProviderEvent) => void;
 
 interface RunOptions {
   userMessage: string;
-  /** Called with text_delta events from the FINAL round only (live streaming UX) */
+  /**
+   * Called with text_delta events from EVERY round for live streaming UX.
+   * AI-12: paired with onResetDraft — the UI clears the visible draft when a new
+   * round begins, then this re-fills it live, so the user sees each round render
+   * fresh instead of round N+1 text appending onto round N (flicker/garble).
+   */
   onFinalDelta?: (delta: string) => void;
   /** Called when reflection moves to next round */
   onRoundStart?: (round: number) => void;
+  /**
+   * AI-12: signals the UI to clear the in-progress assistant draft because a new
+   * reflection round is about to stream. Fires before rounds 2..N (not round 1,
+   * which streams into the initial empty message).
+   */
+  onResetDraft?: () => void;
   /** Called after each round completes */
   onRoundComplete?: (round: ReflectionRound) => void;
 }
@@ -60,7 +71,7 @@ interface RunOptions {
  * Stops early if critic finds response sufficient.
  */
 export async function runReflection(opts: RunOptions): Promise<ReflectionResult> {
-  const { userMessage, onFinalDelta, onRoundStart, onRoundComplete } = opts;
+  const { userMessage, onFinalDelta, onResetDraft, onRoundStart, onRoundComplete } = opts;
   const { provider, config } = selectProvider(3);
   const startedAt = Date.now();
 
@@ -84,7 +95,11 @@ export async function runReflection(opts: RunOptions): Promise<ReflectionResult>
     let responseText = '';
     let responseCost = emptyCost();
     const responseStarted = Date.now();
-    const _isFinalRound = i === MAX_REFLECTION_ROUNDS;
+
+    // AI-12: clear the visible draft before rounds 2..N so each round's stream
+    // replaces (not appends onto) the previous round's text. Round 1 streams
+    // into the initially-empty assistant message, so no reset needed there.
+    if (i > 1) onResetDraft?.();
 
     try {
       for await (const event of provider.streamChat({
@@ -98,7 +113,8 @@ export async function runReflection(opts: RunOptions): Promise<ReflectionResult>
       })) {
         if (event.type === 'text_delta') {
           responseText += event.delta;
-          // Stream final round to UI for live UX; earlier rounds buffered silently
+          // AI-12: stream every round live; onResetDraft (above) clears the
+          // draft between rounds so the user sees each revision render cleanly.
           if (onFinalDelta) onFinalDelta(event.delta);
         } else if (event.type === 'message_complete') {
           responseCost = event.usage;

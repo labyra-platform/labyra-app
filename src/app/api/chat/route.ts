@@ -528,6 +528,13 @@ export async function POST(request: Request) {
             onRoundStart: (round) => {
               send({ type: 'reflection_start', round });
             },
+            onResetDraft: () => {
+              // AI-12: a new reflection round is about to stream — clear the
+              // accumulated draft both server-side (fullText) and on the client
+              // so round N+1 replaces round N instead of appending onto it.
+              fullText = '';
+              send({ type: 'reset_draft' });
+            },
             onFinalDelta: (delta) => {
               fullText += delta;
               send({ type: 'text_delta', delta });

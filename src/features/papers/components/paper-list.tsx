@@ -8,6 +8,7 @@
 //   domain chip click-to-filter, conditional status badge, sort + density toggle.
 
 import {
+  IconAlignLeft,
   IconArrowsSort,
   IconCheck,
   IconExternalLink,
@@ -20,7 +21,7 @@ import {
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import {
   createEmptyPaperFilter,
   type PaperFilterValue,
@@ -78,6 +79,7 @@ function toEpochMs(value: FirestoreTimestampLike | undefined | null): number {
 }
 
 type SortKey = 'recent' | 'year_desc' | 'title_asc' | 'domain';
+type ViewMode = 'compact' | 'comfortable' | 'detailed';
 
 /** Format the author line the way researchers recognize papers: "Zhang et al." */
 function formatAuthors(authors: string[] | undefined): string | null {
@@ -87,6 +89,14 @@ function formatAuthors(authors: string[] | undefined): string | null {
   return authors.length > 1 ? `${first} et al.` : first;
 }
 
+// R222d: view density options. Each is a list layout differing by info density;
+// kept as data so the trigger icon and the menu render from one source.
+const VIEW_OPTIONS: { mode: ViewMode; labelKey: string; icon: ReactNode }[] = [
+  { mode: 'compact', labelKey: 'viewCompact', icon: <IconLayoutList className='size-4' /> },
+  { mode: 'comfortable', labelKey: 'viewComfortable', icon: <IconLayoutRows className='size-4' /> },
+  { mode: 'detailed', labelKey: 'viewDetailed', icon: <IconAlignLeft className='size-4' /> }
+];
+
 export function PaperList() {
   const t = useTranslations('papers');
   const params = useParams();
@@ -94,7 +104,7 @@ export function PaperList() {
   const { papers, loading } = usePapers();
   const [filter, setFilter] = useState<PaperFilterValue>(() => createEmptyPaperFilter());
   const [sort, setSort] = useState<SortKey>('recent');
-  const [dense, setDense] = useState(true); // R222 #1: compact by default → 15-20/screen
+  const [view, setView] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen
 
   const visibleSlugs = useMemo(() => {
     const s = new Set<string>();
@@ -224,24 +234,17 @@ export function PaperList() {
                 title={t('viewDensity')}
                 className='inline-flex items-center rounded-md border p-1.5 hover:bg-muted/50'
               >
-                {dense ? (
-                  <IconLayoutList className='size-3.5' />
-                ) : (
-                  <IconLayoutRows className='size-3.5' />
-                )}
+                {VIEW_OPTIONS.find((o) => o.mode === view)?.icon}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end'>
-              <DropdownMenuItem onClick={() => setDense(true)} className='gap-2'>
-                <IconLayoutList className='size-4' />
-                <span className='flex-1'>{t('viewCompact')}</span>
-                {dense && <IconCheck className='size-4' />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDense(false)} className='gap-2'>
-                <IconLayoutRows className='size-4' />
-                <span className='flex-1'>{t('viewComfortable')}</span>
-                {!dense && <IconCheck className='size-4' />}
-              </DropdownMenuItem>
+              {VIEW_OPTIONS.map((o) => (
+                <DropdownMenuItem key={o.mode} onClick={() => setView(o.mode)} className='gap-2'>
+                  {o.icon}
+                  <span className='flex-1'>{t(o.labelKey)}</span>
+                  {view === o.mode && <IconCheck className='size-4' />}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -258,13 +261,13 @@ export function PaperList() {
       {filteredPapers.length === 0 ? (
         <p className='text-center py-8 text-sm text-muted-foreground'>{t('filterNoMatches')}</p>
       ) : (
-        <div className={cn(dense ? 'divide-y rounded-lg border' : 'space-y-2')}>
+        <div className={cn(view === 'comfortable' ? 'space-y-2' : 'divide-y rounded-lg border')}>
           {filteredPapers.map((paper) => (
             <PaperRow
               key={paper.id}
               paper={paper}
               locale={locale}
-              dense={dense}
+              view={view}
               onDomainClick={toggleDomainFilter}
             />
           ))}
@@ -277,12 +280,12 @@ export function PaperList() {
 function PaperRow({
   paper,
   locale,
-  dense,
+  view,
   onDomainClick
 }: {
   paper: Paper;
   locale: string;
-  dense: boolean;
+  view: ViewMode;
   onDomainClick: (slug: string) => void;
 }) {
   const t = useTranslations('papers');
@@ -292,6 +295,8 @@ function PaperRow({
   const badgeClass = STATUS_BADGE[paper.status];
   const domainAxis = paper.domain ? getAxis(paper.domain) : null;
   const href = `/${locale}/dashboard/papers/${paper.id}`;
+  const isCard = view === 'comfortable';
+  const isCompact = view === 'compact';
 
   // R222 #2/#3: research metadata (authors · year · journal) replaces the
   // RAG-internal metadata (chunks/MB). A researcher recognizes a paper by
@@ -321,12 +326,12 @@ function PaperRow({
       aria-label={paper.title || t('untitled')}
       className={cn(
         'group block cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        dense ? 'px-4 py-2.5' : 'rounded-lg border p-4'
+        isCard ? 'rounded-lg border p-4' : 'px-4 py-2.5'
       )}
     >
       <div className='flex items-start justify-between gap-3'>
         <div className='min-w-0 flex-1'>
-          <h3 className={cn('truncate font-medium', dense ? 'text-sm' : 'text-base')}>
+          <h3 className={cn('truncate font-medium', isCompact ? 'text-sm' : 'text-base')}>
             <Link
               href={href}
               onClick={(e) => e.stopPropagation()}
@@ -378,6 +383,13 @@ function PaperRow({
               </button>
             )}
           </div>
+          {/* R222d: detailed view adds a 2-line abstract snippet for at-a-glance
+              triage without opening each paper. Only when abstract is populated. */}
+          {view === 'detailed' && paper.abstract && (
+            <p className='mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground'>
+              {paper.abstract}
+            </p>
+          )}
         </div>
         {/* R222 #5: status badge only when it carries signal (not 'indexed'). */}
         {badgeClass && (

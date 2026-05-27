@@ -392,7 +392,8 @@
     "viewComfortable": "Thoáng",
     "viewDensity": "Mật độ hiển thị",
     "paperCount": "{count, plural, =0 {0 bài báo} other {# bài báo}}",
-    "metadataPending": "Đang lấy thông tin"
+    "metadataPending": "Đang lấy thông tin",
+    "viewDetailed": "Chi tiết"
   },
   "materials": {
     "title": "Vật liệu",

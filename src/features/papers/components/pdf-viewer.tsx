@@ -161,9 +161,16 @@ export function PdfViewer({
     }
   }, [paperId]);
 
+  // R227d: with all tabs kept mounted (workspace), fetching every tab's signed
+  // URL on mount fires many parallel requests → rate_limited. Only fetch once a
+  // tab has actually been shown at least once. Tabs already visited keep their
+  // URL, so switching back stays instant; never-opened tabs wait their turn.
+  const hasActivatedRef = useRef(false);
+  if (active) hasActivatedRef.current = true;
+
   useEffect(() => {
-    loadSignedUrl();
-  }, [loadSignedUrl]);
+    if (hasActivatedRef.current && !signed) loadSignedUrl();
+  }, [active, signed, loadSignedUrl]);
 
   useEffect(() => {
     if (!signed) return;

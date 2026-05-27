@@ -41,6 +41,9 @@ export function PaperTabsBar({ locale }: { locale: string }) {
 
   const goToTab = (paperId: string) => {
     setActive(paperId);
+    // R227d: don't push a duplicate history entry when we're already on this
+    // paper — repeated clicks would otherwise stack the back-history.
+    if (routePaperId === paperId) return;
     router.push(`/${locale}/dashboard/papers/${paperId}`);
   };
 

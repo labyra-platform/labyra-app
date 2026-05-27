@@ -393,7 +393,13 @@
     "viewDensity": "View density",
     "paperCount": "{count, plural, =0 {0 papers} one {1 paper} other {# papers}}",
     "metadataPending": "Metadata pending",
-    "viewDetailed": "Detailed"
+    "viewDetailed": "Detailed",
+    "abstract": "Abstract",
+    "axisApplication": "Application",
+    "axisMaterials": "Materials",
+    "axisSynthesis": "Synthesis",
+    "axisCharacterization": "Characterization",
+    "axisMeta": "Type"
   },
   "materials": {
     "title": "Materials",

@@ -43,16 +43,14 @@ export function PaperReadView({ paperId, active = true }: { paperId: string; act
   // R226: per-tab durable state lives in the store, not here. This component is
   // a view: it reads the tab's saved page/zoom/panelTab and reports changes
   // back, so unmounting the tab (to free react-pdf) never loses state.
+  // R232c: don't openTab here — PaperTabSync at the route already ensures the
+  // tab exists exactly once. Calling openTab on every `!tabState` was a hidden
+  // loop with the new architecture: closing the active tab makes tabState
+  // undefined for a render before navigation finishes, which re-opened it.
   const tabState = usePaperTabsStore((s) => s.getTab(paperId));
-  const openTab = usePaperTabsStore((s) => s.openTab);
   const updatePdfState = usePaperTabsStore((s) => s.updatePdfState);
   const setPanelTab = usePaperTabsStore((s) => s.setPanelTab);
   const setTitle = usePaperTabsStore((s) => s.setTitle);
-
-  // Ensure a tab exists for this paper (covers deep-link / direct nav).
-  useEffect(() => {
-    if (!tabState) openTab(paperId);
-  }, [paperId, tabState, openTab]);
 
   // Keep the tab label in sync with the loaded paper title.
   useEffect(() => {

@@ -55,9 +55,30 @@ export interface PaperTab {
   title?: string;
   pdf: TabPdfState;
   activePanelTab: PanelTab;
+  /** R230: id of the tab group this tab belongs to, or null/undefined if loose. */
+  groupId?: string | null;
   ai?: TabAiState;
   translation?: TabTranslationState;
   selection?: TabSelectionState;
+}
+
+/** R230: Edge-style tab group color tokens (key stored, mapped to classes in UI). */
+export type TabGroupColor = 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'gray';
+export const TAB_GROUP_COLORS: readonly TabGroupColor[] = [
+  'blue',
+  'green',
+  'amber',
+  'red',
+  'purple',
+  'gray'
+];
+
+/** R230: a named, colored, collapsible group of tabs. */
+export interface TabGroup {
+  id: string;
+  name: string;
+  color: TabGroupColor;
+  collapsed: boolean;
 }
 
 const DEFAULT_PDF: TabPdfState = { page: 1, zoom: 1, scrollTop: 0 };
@@ -74,6 +95,8 @@ interface PaperTabsState {
   activeTabId: string | null;
   /** Recency order of paperIds (most-recent last) for LRU eviction. */
   recency: string[];
+  /** R230: tab groups. */
+  groups: TabGroup[];
 
   openTab: (paperId: string, title?: string) => void;
   closeTab: (paperId: string) => void;
@@ -83,6 +106,33 @@ interface PaperTabsState {
   setPanelTab: (paperId: string, panelTab: PanelTab) => void;
   reorderTabs: (fromId: string, toId: string) => void;
   getTab: (paperId: string) => PaperTab | undefined;
+
+  // R231: in-memory signed-URL cache (NOT persisted — URLs are short-lived and
+  // sensitive). Lets re-opening a paper in the same session skip the
+  // sign-API round-trip when the cached URL is still valid.
+  signedUrls: Record<string, { url: string; expiresAt: number }>;
+  getSignedUrl: (paperId: string) => { url: string; expiresAt: number } | null;
+  setSignedUrl: (paperId: string, url: string, expiresAt: number) => void;
+
+  // R230 group actions
+  createGroup: (paperIds: string[], name?: string, color?: TabGroupColor) => string;
+  renameGroup: (groupId: string, name: string) => void;
+  setGroupColor: (groupId: string, color: TabGroupColor) => void;
+  toggleGroupCollapsed: (groupId: string) => void;
+  addTabToGroup: (paperId: string, groupId: string) => void;
+  removeTabFromGroup: (paperId: string) => void;
+  closeGroup: (groupId: string) => void;
+  ungroup: (groupId: string) => void;
+}
+
+function genId(): string {
+  return `g_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/** Drop groups that no longer contain any tab (called after tab/group mutations). */
+function pruneGroups(groups: TabGroup[], tabs: PaperTab[]): TabGroup[] {
+  const used = new Set(tabs.map((t) => t.groupId).filter(Boolean));
+  return groups.filter((g) => used.has(g.id));
 }
 
 function bumpRecency(recency: string[], paperId: string): string[] {
@@ -95,6 +145,8 @@ export const usePaperTabsStore = create<PaperTabsState>()(
       tabs: [],
       activeTabId: null,
       recency: [],
+      groups: [],
+      signedUrls: {},
 
       openTab: (paperId, title) =>
         set((state) => {
@@ -141,7 +193,7 @@ export const usePaperTabsStore = create<PaperTabsState>()(
               tabs[Math.min(idx, tabs.length - 1)]?.paperId ??
               null;
           }
-          return { tabs, recency, activeTabId };
+          return { tabs, recency, activeTabId, groups: pruneGroups(state.groups, tabs) };
         }),
 
       setActive: (paperId) =>
@@ -180,7 +232,94 @@ export const usePaperTabsStore = create<PaperTabsState>()(
           return { tabs };
         }),
 
-      getTab: (paperId) => get().tabs.find((t) => t.paperId === paperId)
+      getTab: (paperId) => get().tabs.find((t) => t.paperId === paperId),
+
+      // ---- R231 signed-URL cache ----
+      getSignedUrl: (paperId) => {
+        const entry = get().signedUrls[paperId];
+        if (!entry) return null;
+        // Treat as stale 30s before actual expiry so we never hand back a URL
+        // that dies mid-load.
+        if (entry.expiresAt - Date.now() < 30_000) return null;
+        return entry;
+      },
+      setSignedUrl: (paperId, url, expiresAt) =>
+        set((state) => ({
+          signedUrls: { ...state.signedUrls, [paperId]: { url, expiresAt } }
+        })),
+
+      // ---- R230 group actions ----
+      createGroup: (paperIds, name, color) => {
+        const id = genId();
+        set((state) => {
+          const group: TabGroup = {
+            id,
+            name: name ?? '',
+            color: color ?? TAB_GROUP_COLORS[state.groups.length % TAB_GROUP_COLORS.length],
+            collapsed: false
+          };
+          const ids = new Set(paperIds);
+          const tabs = state.tabs.map((t) => (ids.has(t.paperId) ? { ...t, groupId: id } : t));
+          return { groups: [...state.groups, group], tabs };
+        });
+        return id;
+      },
+
+      renameGroup: (groupId, name) =>
+        set((state) => ({
+          groups: state.groups.map((g) => (g.id === groupId ? { ...g, name } : g))
+        })),
+
+      setGroupColor: (groupId, color) =>
+        set((state) => ({
+          groups: state.groups.map((g) => (g.id === groupId ? { ...g, color } : g))
+        })),
+
+      toggleGroupCollapsed: (groupId) =>
+        set((state) => ({
+          groups: state.groups.map((g) =>
+            g.id === groupId ? { ...g, collapsed: !g.collapsed } : g
+          )
+        })),
+
+      addTabToGroup: (paperId, groupId) =>
+        set((state) => ({
+          tabs: state.tabs.map((t) => (t.paperId === paperId ? { ...t, groupId } : t))
+        })),
+
+      removeTabFromGroup: (paperId) =>
+        set((state) => {
+          const tabs = state.tabs.map((t) => (t.paperId === paperId ? { ...t, groupId: null } : t));
+          return { tabs, groups: pruneGroups(state.groups, tabs) };
+        }),
+
+      closeGroup: (groupId) =>
+        set((state) => {
+          const tabs = state.tabs.filter((t) => t.groupId !== groupId);
+          const removed = new Set(
+            state.tabs.filter((t) => t.groupId === groupId).map((t) => t.paperId)
+          );
+          const recency = state.recency.filter((id) => !removed.has(id));
+          let activeTabId = state.activeTabId;
+          if (activeTabId && removed.has(activeTabId)) {
+            activeTabId =
+              recency.toReversed().find((id) => tabs.some((t) => t.paperId === id)) ??
+              tabs[0]?.paperId ??
+              null;
+          }
+          return {
+            tabs,
+            recency,
+            activeTabId,
+            groups: state.groups.filter((g) => g.id !== groupId)
+          };
+        }),
+
+      ungroup: (groupId) =>
+        set((state) => ({
+          tabs: state.tabs.map((t) => (t.groupId === groupId ? { ...t, groupId: null } : t)),
+          groups: state.groups.filter((g) => g.id !== groupId)
+        }))
     }),
     {
       name: 'labyra-paper-tabs',
@@ -202,10 +341,12 @@ export const usePaperTabsStore = create<PaperTabsState>()(
           paperId: t.paperId,
           title: t.title,
           pdf: t.pdf,
-          activePanelTab: t.activePanelTab
+          activePanelTab: t.activePanelTab,
+          groupId: t.groupId ?? null
         })),
         activeTabId: state.activeTabId,
-        recency: state.recency
+        recency: state.recency,
+        groups: state.groups
       })
     }
   )

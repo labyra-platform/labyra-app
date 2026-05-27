@@ -45,6 +45,8 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
+import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -60,7 +62,13 @@ interface SignedUrlResponse {
   expiresAt: number;
 }
 
-const REFRESH_BEFORE_EXPIRY_MS = 60_000;
+// R231/R232: PDF.js document options. cMap + standardFonts enable correct
+// rendering of embedded/CJK fonts; loaded from the bundled pdfjs-dist assets.
+const PDF_OPTIONS = {
+  cMapUrl: '/pdf-worker/cmaps/',
+  cMapPacked: true,
+  standardFontDataUrl: '/pdf-worker/standard_fonts/'
+} as const;
 const ZOOM_STEP = 0.15;
 const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 4;
@@ -117,6 +125,10 @@ export function PdfViewer({
 
   const [signed, setSigned] = useState<SignedUrlResponse | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
+  // R232: PDF binary. The reader mounts only the active tab, so re-opening a
+  // tab pulls the already-downloaded bytes from the module-level LRU cache
+  // (pdf-cache) instead of re-fetching from GCS. react-pdf gets file={{data}}.
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(initialPage ?? 1);
   const [zoom, setZoom] = useState(initialZoom ?? 1);
@@ -125,7 +137,6 @@ export function PdfViewer({
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesContainerRef = useRef<HTMLDivElement | null>(null);
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(800);
   // R226b: gate reporting page/zoom to the store until the saved page has been
   // restored. Without this, when a tab re-mounts the freshly-loaded PDF briefly
@@ -150,41 +161,51 @@ export function PdfViewer({
     };
   }, []);
 
-  // Signed URL load + auto-refresh
-  const loadSignedUrl = useCallback(async () => {
+  // R232: load the PDF bytes (cache-first). Re-opening a visited tab reads the
+  // ArrayBuffer from the module LRU cache — no network. First open fetches the
+  // signed URL, downloads the bytes once, then caches them. We keep the bytes
+  // (not the URL) so there's no expiry/refresh timer to run in the background.
+  const loadPdf = useCallback(async () => {
     try {
       setUrlError(null);
-      const result = await fetchSignedUrl(paperId);
-      setSigned(result);
+      const cachedBytes = getCachedPdf(paperId);
+      if (cachedBytes) {
+        // R232a/f: hand the component a fresh slice. PDF.js transfers (detaches)
+        // whatever ArrayBuffer it receives. If we kept the cache's master and
+        // memoized fileSource on its reference, re-opening would hand PDF.js
+        // the SAME (already-detached) slice from the previous mount. Slicing
+        // here makes pdfData a brand-new buffer per load, so the cache master
+        // stays intact for next time AND the fileSource memo recomputes.
+        setPdfData(cachedBytes.slice(0));
+        return;
+      }
+      // Need a URL to download from. Reuse a still-valid cached URL (R231).
+      let url = usePaperTabsStore.getState().getSignedUrl(paperId)?.url;
+      if (!url) {
+        const result = await fetchSignedUrl(paperId);
+        usePaperTabsStore.getState().setSignedUrl(paperId, result.url, result.expiresAt);
+        setSigned(result);
+        url = result.url;
+      }
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`pdf_fetch_${res.status}`);
+      const buf = await res.arrayBuffer();
+      // Cache the master, give react-pdf its own slice (see above).
+      setCachedPdf(paperId, buf);
+      setPdfData(buf.slice(0));
     } catch (e) {
       setUrlError(e instanceof Error ? e.message : 'fetch_failed');
     }
   }, [paperId]);
 
-  // R227d: with all tabs kept mounted (workspace), fetching every tab's signed
-  // URL on mount fires many parallel requests → rate_limited. Only fetch once a
-  // tab has actually been shown at least once. Tabs already visited keep their
-  // URL, so switching back stays instant; never-opened tabs wait their turn.
+  // R227d: the reader mounts only the active tab (R232), but keep the
+  // gate — load the bytes once this tab is shown.
   const hasActivatedRef = useRef(false);
   if (active) hasActivatedRef.current = true;
 
   useEffect(() => {
-    if (hasActivatedRef.current && !signed) loadSignedUrl();
-  }, [active, signed, loadSignedUrl]);
-
-  useEffect(() => {
-    if (!signed) return;
-    // AI-17: when the URL is already near/past expiry, msUntilRefresh can be ≤ 0.
-    // Calling loadSignedUrl() immediately then updating `signed` re-runs this
-    // effect, and if the refreshed URL is also near expiry (or the fetch is slow)
-    // it busy-loops. Always wait at least a short floor so refresh is throttled.
-    const msUntilRefresh = signed.expiresAt - Date.now() - REFRESH_BEFORE_EXPIRY_MS;
-    const delay = Math.max(5_000, msUntilRefresh);
-    refreshTimer.current = setTimeout(loadSignedUrl, delay);
-    return () => {
-      if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    };
-  }, [signed, loadSignedUrl]);
+    if (hasActivatedRef.current && !pdfData) loadPdf();
+  }, [active, pdfData, loadPdf]);
 
   // R181-6: Track container width via window resize, NOT ResizeObserver.
   // ResizeObserver fires on internal page renders → feedback loop on zoom.
@@ -392,7 +413,10 @@ export function PdfViewer({
   const displayTitle = useMemo(() => paper?.title || t('untitled'), [paper?.title, t]);
 
   // PDF file source — useMemo to avoid Document re-mount loop
-  const fileSource = useMemo(() => (signed?.url ? { url: signed.url } : null), [signed?.url]);
+  // R232f: pdfData is already a per-load slice (loadPdf above), so the memo
+  // just wraps it. Each load → new pdfData reference → new fileSource → PDF.js
+  // gets a fresh, not-yet-detached buffer; the cache's master is never touched.
+  const fileSource = useMemo(() => (pdfData ? { data: pdfData } : null), [pdfData]);
 
   return (
     <div
@@ -525,7 +549,7 @@ export function PdfViewer({
           )}
         </Button>
 
-        {/* Download */}
+        {/* Download — uses the signed URL (kept for this) if available. */}
         {signed?.url && (
           <Button asChild variant='outline' size='sm'>
             <a href={signed.url} download rel='noopener noreferrer' aria-label={t('download')}>
@@ -549,7 +573,7 @@ export function PdfViewer({
               <AlertTitle>{t('pdfLoadFailed')}</AlertTitle>
               <AlertDescription className='mt-2 space-y-3'>
                 <p className='text-sm'>{urlError}</p>
-                <Button variant='outline' size='sm' onClick={loadSignedUrl}>
+                <Button variant='outline' size='sm' onClick={loadPdf}>
                   <IconRefresh className='mr-1 size-3.5' />
                   {t('retry')}
                 </Button>
@@ -558,7 +582,7 @@ export function PdfViewer({
           </div>
         )}
 
-        {!urlError && (!signed || !pdfReady) && (
+        {!urlError && (!pdfData || !pdfReady) && (
           <div className='flex h-full justify-center py-4'>
             <Skeleton
               className='w-full max-w-2xl rounded-md'
@@ -567,10 +591,11 @@ export function PdfViewer({
           </div>
         )}
 
-        {!urlError && signed && pdfReady && fileSource && (
+        {!urlError && pdfReady && fileSource && (
           <div className='py-4'>
             <Document
               file={fileSource}
+              options={PDF_OPTIONS}
               onLoadSuccess={onDocumentLoadSuccess}
               loading={
                 <div className='flex h-32 items-center justify-center'>

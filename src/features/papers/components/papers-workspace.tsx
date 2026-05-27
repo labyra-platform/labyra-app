@@ -67,19 +67,18 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
             reader is showing so list scroll state is preserved when you return. */}
         <div className={cn('h-full min-h-0 overflow-auto', onReader && 'hidden')}>{children}</div>
 
-        {/* (b) readers — one per open tab, all mounted, only active visible. */}
-        {tabs.map((tab) => {
-          const isActive = onReader && tab.paperId === routePaperId;
-          return (
-            <div
-              key={tab.paperId}
-              className={cn('absolute inset-0', isActive ? 'block' : 'hidden')}
-              aria-hidden={!isActive}
-            >
-              <PaperReadView paperId={tab.paperId} active={isActive} />
-            </div>
-          );
-        })}
+        {/* (b) reader — R232: only the ACTIVE tab is mounted. Previously every
+            open tab kept a live react-pdf instance (display:none), which piled
+            up ~1.4k DOM nodes each → 8.4k nodes / 16 MB / multi-minute load with
+            6 tabs. Now one reader lives at a time; switching unmounts the old
+            one. Re-opening stays fast because the PDF bytes are kept in the
+            module LRU cache (pdf-cache) and per-tab page/zoom/scroll in the
+            store — so a remount skips the network and restores position. */}
+        {onReader && routePaperId && (
+          <div className='absolute inset-0'>
+            <PaperReadView key={routePaperId} paperId={routePaperId} active />
+          </div>
+        )}
       </div>
     </div>
   );

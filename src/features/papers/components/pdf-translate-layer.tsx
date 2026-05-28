@@ -99,21 +99,81 @@ function stripFormatting(raw: string): string {
   return raw.replace(/<\/?(sub|sup|b|i)>/gi, '');
 }
 
+/** Crop the page's rendered canvas to `rect` (overlay-pixel space) and return a
+ *  PNG data string (base64, no prefix) + a blankness flag. Returns null if no
+ *  canvas is found. Blank detection uses luma standard deviation: a near-uniform
+ *  crop (empty margin, solid fill) is "blank" and not worth sending to vision. */
+function cropCanvasRegion(
+  host: HTMLElement,
+  overlayBox: DOMRect,
+  rect: Rect
+): { base64: string; blank: boolean } | null {
+  const pageCanvas = host.querySelector<HTMLCanvasElement>('canvas');
+  if (!pageCanvas) return null;
+  const scaleX = pageCanvas.width / overlayBox.width;
+  const scaleY = pageCanvas.height / overlayBox.height;
+  const sx = Math.max(0, Math.round(rect.x * scaleX));
+  const sy = Math.max(0, Math.round(rect.y * scaleY));
+  const sw = Math.min(pageCanvas.width - sx, Math.round(rect.w * scaleX));
+  const sh = Math.min(pageCanvas.height - sy, Math.round(rect.h * scaleY));
+  if (sw < 4 || sh < 4) return null;
+
+  const out = document.createElement('canvas');
+  out.width = sw;
+  out.height = sh;
+  const ctx = out.getContext('2d');
+  if (!ctx) return null;
+  ctx.drawImage(pageCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+
+  // Blankness via luma stddev on a downsampled read.
+  let blank = true;
+  try {
+    const data = ctx.getImageData(0, 0, sw, sh).data;
+    let sum = 0;
+    let sumSq = 0;
+    let n = 0;
+    for (let i = 0; i < data.length; i += 4 * 16) {
+      const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      sum += luma;
+      sumSq += luma * luma;
+      n++;
+    }
+    if (n > 0) {
+      const mean = sum / n;
+      const variance = sumSq / n - mean * mean;
+      blank = Math.sqrt(Math.max(0, variance)) < 6; // near-uniform → blank
+    }
+  } catch {
+    blank = false; // tainted canvas etc. — let the server decide
+  }
+
+  const base64 = out.toDataURL('image/png').split(',')[1] ?? '';
+  return { base64, blank };
+}
+
 export function PdfTranslateLayer({
   width,
   height,
+  pageNumber,
   active,
   targetLabel,
-  onTranslate
+  onTranslate,
+  onTranslateImage
 }: {
   width: number;
   height: number;
+  pageNumber: number;
   active: boolean;
   /** Display label of the target language, shown in the panel header. */
   targetLabel: string;
-  /** Returns the translated text (throws on failure). Calls onChunk with the
-   *  growing partial as it streams in. */
+  /** Translate selected text (streams). */
   onTranslate: (text: string, onChunk?: (partial: string) => void) => Promise<string>;
+  /** OCR + translate a cropped figure region (base64 PNG + a stable region hash). */
+  onTranslateImage: (
+    base64: string,
+    regionHash: string,
+    onChunk?: (partial: string) => void
+  ) => Promise<string>;
 }) {
   const layerRef = useRef<HTMLDivElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -160,11 +220,35 @@ export function PdfTranslateLayer({
     const host = layer?.parentElement;
     if (!layer || !host) return;
     const text = textInRect(host, layer.getBoundingClientRect(), rect);
+    setPanelOffset({ dx: 0, dy: 0 });
+
+    // No text layer in the region → treat it as a figure: crop the canvas and
+    // OCR+translate it with vision. Skip near-blank crops to avoid wasting a call.
     if (!text) {
-      setBox({ rect, text: '', status: 'error', translation: '' });
+      const crop = cropCanvasRegion(host, layer.getBoundingClientRect(), rect);
+      if (!crop || crop.blank || !crop.base64) {
+        setBox({ rect, text: '', status: 'error', translation: '' });
+        return;
+      }
+      const regionHash = `${pageNumber}:${Math.round(rect.x)}:${Math.round(rect.y)}:${Math.round(
+        rect.w
+      )}:${Math.round(rect.h)}`;
+      setBox({ rect, text: '', status: 'loading', translation: '' });
+      try {
+        const translation = await onTranslateImage(crop.base64, regionHash, (partial) => {
+          setBox({ rect, text: '', status: 'done', translation: partial });
+        });
+        if (!translation || translation === '[NO_TEXT]') {
+          setBox({ rect, text: '', status: 'error', translation: '' });
+        } else {
+          setBox({ rect, text: '', status: 'done', translation });
+        }
+      } catch {
+        setBox({ rect, text: '', status: 'error', translation: '' });
+      }
       return;
     }
-    setPanelOffset({ dx: 0, dy: 0 });
+
     setBox({ rect, text, status: 'loading', translation: '' });
     try {
       const translation = await onTranslate(text, (partial) => {

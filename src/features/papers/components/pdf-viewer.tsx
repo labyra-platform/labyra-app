@@ -470,20 +470,24 @@ export function PdfViewer({
     [tenantId, paperId]
   );
 
-  // R237af: client session cache — drag the same passage again in this session
-  // and the translation returns instantly (0ms, no network). Persists for the
-  // viewer's lifetime; the Firestore cache in the route handles durability.
+  // R237af: client session cache — drag the same passage/figure again in this
+  // session and the translation returns instantly (0ms, no network). Persists
+  // for the viewer's lifetime; the Firestore cache in the route is durable.
   const translateCacheRef = useRef<Map<string, string>>(new Map());
 
-  const handleTranslate = useCallback(
-    async (text: string, onChunk?: (partial: string) => void): Promise<string> => {
-      const key = `${targetLang}\u0000${text}`;
-      const hit = translateCacheRef.current.get(key);
+  // Shared: POST a translate body, read the cached-JSON or streamed text-plain
+  // response, push partials via onChunk, and cache the final under `cacheKey`.
+  const runTranslate = useCallback(
+    async (
+      cacheKey: string,
+      body: Record<string, unknown>,
+      onChunk?: (partial: string) => void
+    ): Promise<string> => {
+      const hit = translateCacheRef.current.get(cacheKey);
       if (hit !== undefined) {
         onChunk?.(hit);
         return hit;
       }
-
       const { getFirebaseAuth } = await import('@/lib/firebase/client');
       const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('Not signed in');
@@ -491,19 +495,17 @@ export function PdfViewer({
       const res = await fetch(`/api/papers/${paperId}/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ text, targetLang })
+        body: JSON.stringify({ ...body, targetLang })
       });
       if (!res.ok) throw new Error('translate_failed');
 
-      // Cache hits come back as JSON; live translations stream as text/plain.
-      const isStream = res.headers.get('X-Translate-Stream') === '1';
-      if (!isStream) {
+      // Cache hits return JSON; live translations stream as text/plain.
+      if (res.headers.get('X-Translate-Stream') !== '1') {
         const data = (await res.json()) as { translation: string };
-        translateCacheRef.current.set(key, data.translation);
+        translateCacheRef.current.set(cacheKey, data.translation);
         onChunk?.(data.translation);
         return data.translation;
       }
-
       const reader = res.body?.getReader();
       if (!reader) throw new Error('translate_failed');
       const decoder = new TextDecoder();
@@ -515,10 +517,26 @@ export function PdfViewer({
         onChunk?.(full);
       }
       full = full.trim();
-      translateCacheRef.current.set(key, full);
+      translateCacheRef.current.set(cacheKey, full);
       return full;
     },
     [paperId, targetLang]
+  );
+
+  const handleTranslate = useCallback(
+    (text: string, onChunk?: (partial: string) => void) =>
+      runTranslate(`${targetLang}\u0000${text}`, { text }, onChunk),
+    [runTranslate, targetLang]
+  );
+
+  const handleTranslateImage = useCallback(
+    (base64: string, regionHash: string, onChunk?: (partial: string) => void) =>
+      runTranslate(
+        `${targetLang}\u0000img\u0000${regionHash}`,
+        { image: base64, imageHash: `${paperId}:${regionHash}` },
+        onChunk
+      ),
+    [runTranslate, targetLang, paperId]
   );
 
   // C4b: undo removes the most recently created drawing (by createdAt).
@@ -824,7 +842,7 @@ export function PdfViewer({
             <input
               type='text'
               inputMode='numeric'
-              value={pageInput}
+              value={mounted ? pageInput : '1'}
               onChange={(e) => setPageInput(e.target.value.replace(/[^0-9]/g, ''))}
               onFocus={(e) => e.target.select()}
               onBlur={commitPageInput}
@@ -859,7 +877,7 @@ export function PdfViewer({
             size='icon'
             className='size-7'
             onClick={zoomOut}
-            disabled={zoom <= ZOOM_MIN}
+            disabled={mounted && zoom <= ZOOM_MIN}
             aria-label={t('zoomOut')}
             title={t('zoomOut')}
           >
@@ -871,14 +889,14 @@ export function PdfViewer({
             className='min-w-[3rem] rounded px-1.5 py-1 text-xs hover:bg-muted'
             title={t('resetZoom')}
           >
-            {Math.round(zoom * 100)}%
+            {Math.round((mounted ? zoom : 1) * 100)}%
           </button>
           <Button
             variant='ghost'
             size='icon'
             className='size-7'
             onClick={zoomIn}
-            disabled={zoom >= ZOOM_MAX}
+            disabled={mounted && zoom >= ZOOM_MAX}
             aria-label={t('zoomIn')}
             title={t('zoomIn')}
           >
@@ -1240,12 +1258,14 @@ export function PdfViewer({
                             <PdfTranslateLayer
                               width={pageWidth}
                               height={pageWidth * pageAspects[pageNum]}
+                              pageNumber={pageNum}
                               active={translateMode}
                               targetLabel={
                                 TRANSLATE_LANGS.find((l) => l.code === targetLang)?.label ??
                                 targetLang
                               }
                               onTranslate={handleTranslate}
+                              onTranslateImage={handleTranslateImage}
                             />
                           )}
                         </div>

@@ -23,6 +23,7 @@ import type { AiTier } from '@/types/ai';
 
 const TIER: AiTier = 2;
 const MAX_CHARS = 6000;
+const MAX_IMAGE_B64 = 4_000_000; // ~3MB PNG base64 — a cropped region, not a page
 
 const LANG_NAME: Record<string, string> = {
   vi: 'Vietnamese',
@@ -39,7 +40,11 @@ function jsonError(status: number, error: string, extra: Record<string, unknown>
 }
 
 interface TranslateBody {
-  text: string;
+  text?: string;
+  /** Base64 PNG of a region with no text layer (figure) — OCR + translate. */
+  image?: string;
+  /** Stable hash of the image region (paperId+page+rect) for caching. */
+  imageHash?: string;
   targetLang: string;
 }
 
@@ -70,16 +75,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return jsonError(400, 'invalid_json');
   }
   const text = (body.text ?? '').trim();
+  const image = body.image ?? '';
+  const isImage = image.length > 0;
   const targetLang = body.targetLang ?? 'vi';
-  if (!text) return jsonError(400, 'empty_text');
-  if (text.length > MAX_CHARS) return jsonError(413, 'text_too_long', { max: MAX_CHARS });
+  if (!isImage && !text) return jsonError(400, 'empty_text');
+  if (!isImage && text.length > MAX_CHARS) {
+    return jsonError(413, 'text_too_long', { max: MAX_CHARS });
+  }
+  if (isImage && image.length > MAX_IMAGE_B64) {
+    return jsonError(413, 'image_too_large', { max: MAX_IMAGE_B64 });
+  }
   const targetName = LANG_NAME[targetLang] ?? 'Vietnamese';
 
-  // ─── Cache lookup (tenant-scoped content hash) ────────────────
-  // Key = sha256(text + '\u0000' + lang). Scoped under the tenant so a private
-  // upload's translations never leak across tenants; within a tenant a shared
-  // paper's passages are reused. A hit skips the model entirely (and cost guard).
-  const hash = createHash('sha256').update(`${text}\u0000${targetLang}`).digest('hex').slice(0, 32);
+  // ─── Cache lookup (tenant-scoped) ─────────────────────────────
+  // Text mode: key = sha256(text + lang). Image mode: key from the client's
+  // region hash (paperId+page+rect) + lang, so re-dragging the same figure hits
+  // cache without re-running vision. Tenant-scoped — private uploads never leak
+  // across tenants; shared within a tenant. A hit skips the model + cost guard.
+  const cacheSeed = isImage ? `img\u0000${body.imageHash ?? image.slice(0, 256)}` : text;
+  const hash = createHash('sha256')
+    .update(`${cacheSeed}\u0000${targetLang}`)
+    .digest('hex')
+    .slice(0, 32);
   const db = getAdminFirestoreService();
   const cacheRef = db.doc(`tenants/${tenantId}/_translations/${hash}`);
   try {
@@ -128,13 +145,31 @@ Example (English→Vietnamese):
   Out: "H<sub>2</sub>O<sub>2</sub> và IrCl<sub>3</sub>·xH<sub>2</sub>O (96,0%) được mua từ Aladdin Ltd."
 
 Output ONLY the translation — no notes, no preamble, no quotes. If the text is
-already in ${targetName}, return it unchanged (still apply the formatting tags).`;
+already in ${targetName}, return it unchanged (still apply the formatting tags).${
+    isImage
+      ? `
+
+IMAGE MODE: the user's message is an image cropped from a figure. First read ALL
+the text visible in it (labels, captions, axis titles, annotations) in reading
+order, then translate it following every rule above. If a label is a formula or
+acronym, keep it verbatim. Ignore purely graphical content with no text. If the
+image contains no readable text, output exactly: [NO_TEXT]`
+      : ''
+  }`;
+
+  // Message content: plain text, or the cropped image for OCR+translate.
+  const userContent = isImage
+    ? [
+        { type: 'image' as const, mimeType: 'image/png', data: image },
+        { type: 'text' as const, text: `Translate the text in this image into ${targetName}.` }
+      ]
+    : text;
 
   const started = Date.now();
   // Output can be much longer than input (Vietnamese/CJK expand; the model also
   // re-emits all the kept-verbatim formulae). Budget generously so long passages
   // aren't cut off; Flash supports large outputs and we only pay for what's used.
-  const estInTokens = Math.ceil(text.length / 3);
+  const estInTokens = isImage ? 1500 : Math.ceil(text.length / 3);
   const maxTokens = Math.min(16384, Math.max(2048, estInTokens * 4 + 1024));
 
   // R237ag: stream the translation so the reader sees text appear within
@@ -152,7 +187,7 @@ already in ${targetName}, return it unchanged (still apply the formatting tags).
           maxTokens,
           temperature: 0.2,
           system: [{ text: system, cache: false }],
-          messages: [{ role: 'user', content: text }]
+          messages: [{ role: 'user', content: userContent }]
         })) {
           if (event.type === 'text_delta') {
             full += event.delta;
@@ -179,9 +214,10 @@ already in ${targetName}, return it unchanged (still apply the formatting tags).
         return;
       }
       const translation = full.trim();
-      // Only cache a complete translation — never persist a truncated one, so a
-      // re-translation can get the full text instead of replaying the cut-off.
-      if (translation && !truncated) {
+      // Don't cache: truncated output, or an image with no readable text. A
+      // re-try then re-runs cleanly instead of replaying a bad result.
+      const noText = translation === '[NO_TEXT]' || translation === '';
+      if (translation && !truncated && !noText) {
         void cacheRef
           .set({ translation, targetLang, paperId, createdAt: Date.now() })
           .catch(() => {});

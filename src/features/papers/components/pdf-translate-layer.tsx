@@ -13,7 +13,7 @@
  * view); nothing is persisted, so no normalization is required here.
  */
 
-import { IconLoader2, IconX } from '@tabler/icons-react';
+import { IconLanguage, IconLoader2, IconX } from '@tabler/icons-react';
 import { useRef, useState } from 'react';
 
 interface Rect {
@@ -58,11 +58,14 @@ export function PdfTranslateLayer({
   width,
   height,
   active,
+  targetLabel,
   onTranslate
 }: {
   width: number;
   height: number;
   active: boolean;
+  /** Display label of the target language, shown in the panel header. */
+  targetLabel: string;
   /** Returns the translated text (throws on failure). */
   onTranslate: (text: string) => Promise<string>;
 }) {
@@ -146,20 +149,21 @@ export function PdfTranslateLayer({
       {box && (
         <>
           <div
-            className='pointer-events-none absolute rounded-sm border border-dashed border-muted-foreground/50'
+            className='pointer-events-none absolute rounded-sm border-2 border-dashed border-primary/60'
             style={{ left: box.rect.x, top: box.rect.y, width: box.rect.w, height: box.rect.h }}
           />
           <div
-            className='absolute z-10 overflow-hidden rounded-md border bg-popover shadow-lg'
+            className='absolute z-10 overflow-hidden rounded-md border-2 border-primary/70 bg-popover shadow-xl ring-1 ring-black/5'
             style={{
               left: box.rect.x,
               top: box.rect.y + box.rect.h + 6,
               width: Math.max(box.rect.w, 220)
             }}
           >
-            <div className='flex items-center justify-between border-b bg-muted/40 px-2 py-1'>
-              <span className='text-[11px] font-medium uppercase tracking-wide text-muted-foreground'>
-                Translation
+            <div className='flex items-center justify-between border-b-2 border-primary/30 bg-primary/10 px-2 py-1'>
+              <span className='flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-primary'>
+                <IconLanguage className='size-3.5' />
+                {targetLabel}
               </span>
               <button
                 type='button'
@@ -170,7 +174,7 @@ export function PdfTranslateLayer({
                 <IconX className='size-3.5' />
               </button>
             </div>
-            <div className='max-h-64 overflow-y-auto px-3 py-2 text-sm leading-relaxed'>
+            <div className='max-h-64 overflow-y-auto px-3 py-2 text-sm leading-relaxed text-foreground'>
               {box.status === 'loading' && (
                 <span className='flex items-center gap-2 text-muted-foreground'>
                   <IconLoader2 className='size-4 animate-spin' />

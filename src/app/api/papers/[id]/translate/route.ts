@@ -87,11 +87,15 @@ Keep equations and numbers unchanged. Output ONLY the translation — no notes, 
 no quotes. If the text is already in ${targetName}, return it unchanged.`;
 
   const started = Date.now();
+  // Vietnamese/CJK output can be ~2-3x the input tokens; scale the cap to the
+  // selection length so long passages aren't cut off mid-sentence.
+  const estInTokens = Math.ceil(text.length / 3);
+  const maxTokens = Math.min(8192, Math.max(1024, estInTokens * 3 + 512));
   let result;
   try {
     result = await provider.complete({
       model: config.model,
-      maxTokens: 2048,
+      maxTokens,
       temperature: 0.2,
       system: [{ text: system, cache: false }],
       messages: [{ role: 'user', content: text }]

@@ -1180,6 +1180,10 @@ export function PdfViewer({
                               width={pageWidth}
                               height={pageWidth * pageAspects[pageNum]}
                               active={translateMode}
+                              targetLabel={
+                                TRANSLATE_LANGS.find((l) => l.code === targetLang)?.label ??
+                                targetLang
+                              }
                               onTranslate={handleTranslate}
                             />
                           )}

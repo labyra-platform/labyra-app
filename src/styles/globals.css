@@ -2,6 +2,11 @@
 
 @import 'tw-animate-css';
 
+/* KaTeX styles — used by the Papers translation panel to render LaTeX inside
+ * <math>…</math> tags. Loaded globally so any view that shows translated
+ * equations gets the proper math fonts and layout. */
+@import 'katex/dist/katex.min.css';
+
 @custom-variant dark (&:is(.dark *));
 
 @import './theme.css';

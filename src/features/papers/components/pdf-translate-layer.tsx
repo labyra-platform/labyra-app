@@ -14,6 +14,7 @@
  */
 
 import { IconCheck, IconCopy, IconGripVertical, IconLoader2, IconX } from '@tabler/icons-react';
+import { renderToString as renderKatex } from 'katex';
 import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -91,17 +92,56 @@ function localPoint(e: React.PointerEvent): { x: number; y: number } {
   return { x: e.clientX - b.left, y: e.clientY - b.top };
 }
 
-/** Allow ONLY <sub>/<sup>/<b>/<i>/<math> from the model output. Everything is
- *  HTML-escaped first, then those tags (open/close, no attributes) are
- *  restored. <math> wraps LaTeX; the panel styles it monospace + tinted. */
+/** Render the model output safely.
+ *
+ *  Pipeline:
+ *  (1) Extract every <math>…</math> block, render its LaTeX with KaTeX (trust:
+ *      false → output is safe, no \input/\href escape hatches). Replace each
+ *      block with a placeholder.
+ *  (2) HTML-escape what remains (defang any other tags/scripts/attributes).
+ *  (3) Re-enable the whitelisted formatting tags <sub>/<sup>/<b>/<i> by
+ *      un-escaping their angle brackets.
+ *  (4) Swap placeholders for the KaTeX-rendered HTML.
+ *
+ *  Order matters: we trust KaTeX's own HTML but nothing else from the model. */
 function sanitizeFormatting(raw: string): string {
-  const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return escaped.replace(/&lt;(\/?)(sub|sup|b|i|math)&gt;/gi, '<$1$2>');
+  const placeholders: string[] = [];
+  // \u0001 isn't a character LaTeX or prose will contain, so it's a safe sentinel.
+  const sentinel = '\u0001';
+  const extracted = raw.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
+    let html = '';
+    try {
+      html = renderKatex(latex.trim(), {
+        throwOnError: false,
+        displayMode: false,
+        output: 'html',
+        strict: 'ignore',
+        trust: false
+      });
+    } catch {
+      // KaTeX failed even with throwOnError:false — fall back to monospace text.
+      html = `<code class="font-mono">${latex
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')}</code>`;
+    }
+    const idx = placeholders.push(html) - 1;
+    return `${sentinel}M${idx}${sentinel}`;
+  });
+
+  const escaped = extracted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const whitelisted = escaped.replace(/&lt;(\/?)(sub|sup|b|i)&gt;/gi, '<$1$2>');
+  return whitelisted.replace(
+    new RegExp(`${sentinel}M(\\d+)${sentinel}`, 'g'),
+    (_, n: string) => placeholders[Number.parseInt(n, 10)] ?? ''
+  );
 }
 
 /** Strip the formatting tags to get plain text (for the copy button). */
 function stripFormatting(raw: string): string {
-  return raw.replace(/<\/?(sub|sup|b|i|math)>/gi, '');
+  return raw
+    .replace(/<math>([\s\S]*?)<\/math>/gi, '$1') // keep raw LaTeX so a copy is editable
+    .replace(/<\/?(sub|sup|b|i)>/gi, '');
 }
 
 /** Crop the page's rendered canvas to `rect` (overlay-pixel space) and return a
@@ -379,11 +419,13 @@ export function PdfTranslateLayer({
                     '[&_sup]:align-super [&_sup]:text-[0.75em]',
                     '[&_b]:font-semibold [&_b]:text-foreground',
                     '[&_i]:italic',
-                    '[&_math]:inline-block [&_math]:rounded [&_math]:bg-muted [&_math]:px-1.5 [&_math]:py-0.5',
-                    '[&_math]:font-mono [&_math]:text-[0.9em] [&_math]:text-foreground'
+                    // KaTeX brings its own typography for .katex; we just give
+                    // it room to breathe inside our prose flow.
+                    '[&_.katex]:mx-0.5 [&_.katex]:text-[1em]'
                   )}
-                  // Safe: sanitizeFormatting escapes everything, then re-enables
-                  // only sub/sup/b/i/math (no attributes, no other tags).
+                  // Safe: <math> blocks are pre-rendered by KaTeX
+                  // (trust:false, no \href/\input); the rest is HTML-escaped and
+                  // only sub/sup/b/i tags are re-enabled with no attributes.
                   dangerouslySetInnerHTML={{ __html: sanitizeFormatting(box.translation) }}
                 />
               )}

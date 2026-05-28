@@ -75,10 +75,10 @@ export interface DrawingAnnotation extends AnnotationBase {
 
 export type Annotation = HighlightAnnotation | DrawingAnnotation;
 
-/** Shape written on create (id/timestamps added by the service). */
+/** Shape written on create (id/timestamps/owner/path added by the service). */
 export type NewAnnotation =
-  | Omit<HighlightAnnotation, 'id' | 'createdAt' | 'updatedAt' | 'tenantId' | 'userId'>
-  | Omit<DrawingAnnotation, 'id' | 'createdAt' | 'updatedAt' | 'tenantId' | 'userId'>;
+  | Omit<HighlightAnnotation, 'id' | 'createdAt' | 'updatedAt' | 'tenantId' | 'userId' | 'paperId'>
+  | Omit<DrawingAnnotation, 'id' | 'createdAt' | 'updatedAt' | 'tenantId' | 'userId' | 'paperId'>;
 
 export const ANNOTATION_COLORS: readonly AnnotationColor[] = [
   'yellow',

@@ -32,7 +32,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconDownload,
-  IconLayoutSidebar,
   IconLoader2,
   IconMinus,
   IconPlus,
@@ -45,7 +44,15 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
+import { PdfHighlightLayer } from '@/features/papers/components/pdf-highlight-layer';
 import { PdfNavSidebar } from '@/features/papers/components/pdf-nav-sidebar';
+import {
+  createAnnotation,
+  deleteAnnotation,
+  subscribeAnnotations
+} from '@/lib/firestore/queries/annotations';
+import { useTenantId } from '@/lib/auth/use-claims';
+import type { AnnotationColor, HighlightAnnotation, NormRect } from '@/types/annotations';
 import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { usePaper } from '@/lib/firestore/queries/papers';
@@ -68,6 +75,31 @@ interface PdfDocLike {
   getOutline: () => Promise<unknown[] | null>;
   getDestination: (id: string) => Promise<unknown[] | null>;
   getPageIndex: (ref: object) => Promise<number>;
+}
+
+/** Table-of-contents glyph (bulleted list) for the nav-sidebar toggle. Distinct
+ *  from the panel collapse handle, which previously shared the sidebar icon. */
+function TocIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns='http://www.w3.org/2000/svg'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth={1.8}
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      className={className}
+      aria-hidden
+    >
+      <circle cx='5' cy='6' r='1.5' fill='currentColor' stroke='none' />
+      <path d='M9 6h11' />
+      <circle cx='5' cy='12' r='1.5' fill='currentColor' stroke='none' />
+      <path d='M9 12h11' />
+      <circle cx='9' cy='18' r='1.5' fill='currentColor' stroke='none' />
+      <path d='M13 18h7' />
+    </svg>
+  );
 }
 
 // R231/R232: PDF.js document options. cMap + standardFonts enable correct
@@ -160,6 +192,9 @@ export function PdfViewer({
   // R237n: live PDF proxy (for the nav sidebar's outline/thumbnails) + toggle.
   const [pdfProxy, setPdfProxy] = useState<PdfDocLike | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // C3b: private highlights for this paper (current user), live-subscribed.
+  const tenantId = useTenantId();
+  const [highlights, setHighlights] = useState<HighlightAnnotation[]>([]);
   const [pdfReady, setPdfReady] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -323,8 +358,32 @@ export function PdfViewer({
     [initialPage, initialScrollTop]
   );
 
-  // R226: report viewport changes to the parent (tab store), but only AFTER the
-  // saved page is restored (restoredRef) so the restore itself isn't clobbered.
+  // C3b: live-subscribe to this user's highlights for the paper.
+  useEffect(() => {
+    if (!tenantId || !paperId) return;
+    const unsub = subscribeAnnotations(tenantId, paperId, (anns) => {
+      setHighlights(anns.filter((a): a is HighlightAnnotation => a.kind === 'highlight'));
+    });
+    return unsub;
+  }, [tenantId, paperId]);
+
+  const handleCreateHighlight = useCallback(
+    (rects: NormRect[], text: string, color: AnnotationColor) => {
+      if (!tenantId) return;
+      createAnnotation(tenantId, paperId, { kind: 'highlight', rects, text, color }).catch(() => {
+        // surfaced via UI later; swallow for now so a failed write doesn't crash
+      });
+    },
+    [tenantId, paperId]
+  );
+
+  const handleDeleteHighlight = useCallback(
+    (id: string) => {
+      if (!tenantId) return;
+      deleteAnnotation(tenantId, paperId, id).catch(() => {});
+    },
+    [tenantId, paperId]
+  );
   useEffect(() => {
     if (restoredRef.current) onPageChange?.(currentPage);
   }, [currentPage, onPageChange]);
@@ -527,7 +586,7 @@ export function PdfViewer({
           aria-label={t('navToggle')}
           title={t('navToggle')}
         >
-          <IconLayoutSidebar className='size-4' />
+          <TocIcon className='size-4' />
         </Button>
 
         <div className='min-w-0 flex-1 max-w-md'>
@@ -758,31 +817,43 @@ export function PdfViewer({
                       className='mb-4 flex justify-center'
                     >
                       {inWindow ? (
-                        <Page
-                          pageNumber={pageNum}
-                          width={pageWidth}
-                          rotate={rotation}
-                          renderTextLayer
-                          renderAnnotationLayer
-                          className='shadow-md'
-                          onLoadSuccess={(page) => {
-                            // R235: store the UNROTATED aspect (h/w at rotation 0);
-                            // aspectFor() inverts it for 90/270 placeholders.
-                            const vp = page.getViewport({ scale: 1 });
-                            const aspect = vp.height / vp.width;
-                            setPageAspects((prev) =>
-                              prev[pageNum] === aspect ? prev : { ...prev, [pageNum]: aspect }
-                            );
-                          }}
-                          loading={
-                            <div
-                              className='flex items-center justify-center bg-card'
-                              style={{ width: pageWidth, height: heightForPage(pageNum) }}
-                            >
-                              <IconLoader2 className='size-5 animate-spin text-muted-foreground' />
-                            </div>
-                          }
-                        />
+                        <div className='relative shadow-md' style={{ width: pageWidth }}>
+                          <Page
+                            pageNumber={pageNum}
+                            width={pageWidth}
+                            rotate={rotation}
+                            renderTextLayer
+                            renderAnnotationLayer
+                            onLoadSuccess={(page) => {
+                              // R235: store the UNROTATED aspect (h/w at rotation 0);
+                              // aspectFor() inverts it for 90/270 placeholders.
+                              const vp = page.getViewport({ scale: 1 });
+                              const aspect = vp.height / vp.width;
+                              setPageAspects((prev) =>
+                                prev[pageNum] === aspect ? prev : { ...prev, [pageNum]: aspect }
+                              );
+                            }}
+                            loading={
+                              <div
+                                className='flex items-center justify-center bg-card'
+                                style={{ width: pageWidth, height: heightForPage(pageNum) }}
+                              >
+                                <IconLoader2 className='size-5 animate-spin text-muted-foreground' />
+                              </div>
+                            }
+                          />
+                          {/* C3b: highlight overlay — only at rotation 0 (see layer). */}
+                          {rotation === 0 && pageAspects[pageNum] && (
+                            <PdfHighlightLayer
+                              pageNumber={pageNum}
+                              width={pageWidth}
+                              height={pageWidth * pageAspects[pageNum]}
+                              highlights={highlights}
+                              onCreate={handleCreateHighlight}
+                              onDelete={handleDeleteHighlight}
+                            />
+                          )}
+                        </div>
                       ) : (
                         // R225: out-of-window placeholder — same footprint, no canvas.
                         // R235: height từ aspect thật -> không nhảy khi page vào window.

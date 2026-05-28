@@ -86,6 +86,19 @@ function localPoint(e: React.PointerEvent): { x: number; y: number } {
   return { x: e.clientX - b.left, y: e.clientY - b.top };
 }
 
+/** Allow ONLY <sub>/<sup>/<b>/<i> from the model output. Everything is HTML-
+ *  escaped first, then those four tags (open/close, no attributes) are restored.
+ *  This neutralizes scripts/attributes/other tags — safe for innerHTML. */
+function sanitizeFormatting(raw: string): string {
+  const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return escaped.replace(/&lt;(\/?)(sub|sup|b|i)&gt;/gi, '<$1$2>');
+}
+
+/** Strip the formatting tags to get plain text (for the copy button). */
+function stripFormatting(raw: string): string {
+  return raw.replace(/<\/?(sub|sup|b|i)>/gi, '');
+}
+
 export function PdfTranslateLayer({
   width,
   height,
@@ -113,8 +126,11 @@ export function PdfTranslateLayer({
   const panelDragRef = useRef<{ px: number; py: number; dx: number; dy: number } | null>(null);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    // Require Ctrl/Cmd held so normal reading clicks aren't hijacked.
-    if (!active || !(e.ctrlKey || e.metaKey)) return;
+    // Right mouse button (button 2) starts a selection — left clicks/scrolling
+    // stay free for normal reading. Touch (pointerType 'touch') also allowed.
+    if (!active) return;
+    const isRight = e.button === 2 || e.pointerType === 'touch';
+    if (!isRight) return;
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const p = localPoint(e);
@@ -198,6 +214,7 @@ export function PdfTranslateLayer({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onContextMenu={(e) => e.preventDefault()}
       // a11y: this is a drawing-style capture surface, not a control.
       // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
       role='presentation'
@@ -243,7 +260,9 @@ export function PdfTranslateLayer({
                     type='button'
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => {
-                      navigator.clipboard?.writeText(box.translation).catch(() => {});
+                      navigator.clipboard
+                        ?.writeText(stripFormatting(box.translation))
+                        .catch(() => {});
                       setCopied(true);
                       window.setTimeout(() => setCopied(false), 1200);
                     }}
@@ -278,7 +297,14 @@ export function PdfTranslateLayer({
               {box.status === 'error' && (
                 <span className='text-destructive'>Translation failed. Try again.</span>
               )}
-              {box.status === 'done' && <p className='whitespace-pre-wrap'>{box.translation}</p>}
+              {box.status === 'done' && (
+                <p
+                  className='whitespace-pre-wrap [&_sub]:align-sub [&_sub]:text-[0.75em] [&_sup]:align-super [&_sup]:text-[0.75em]'
+                  // Safe: sanitizeFormatting escapes everything, then re-enables
+                  // only <sub>/<sup>/<b>/<i> (no attributes, no other tags).
+                  dangerouslySetInnerHTML={{ __html: sanitizeFormatting(box.translation) }}
+                />
+              )}
             </div>
           </div>
         </>

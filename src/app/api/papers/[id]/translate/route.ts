@@ -113,16 +113,22 @@ DO NOT TRANSLATE (keep verbatim, do not transliterate or localize):
 - Acronyms / abbreviations: TBA, BQ, DMPO, CB, TMB, AR, PBS, XRD, FTIR, DFT.
 - Units and quantities: cm⁻¹, eV, wt%, 30 wt%, 97.0%, 10 mL, 0 °C.
 - Element/compound names written as formulae stay as formulae.
-Keep equations, numbers, and citation markers unchanged. Preserve subscripts/
-superscripts exactly. Translate ONLY the prose connecting these terms.
+Keep equations, numbers, and citation markers unchanged. Translate ONLY the prose
+connecting these terms.
+
+FORMATTING — mark up the output with these tags ONLY (no other HTML):
+- <sub>…</sub> for subscripts (e.g. H<sub>2</sub>O<sub>2</sub>, IrCl<sub>3</sub>).
+- <sup>…</sup> for superscripts (e.g. cm<sup>-1</sup>, O<sub>2</sub><sup>•-</sup>).
+- <b>…</b> for bold and <i>…</i> for italic where the source emphasises text.
+Do not use any other tags, attributes, or Markdown. Reproduce chemical formulae
+with proper <sub>/<sup> so they render correctly.
 
 Example (English→Vietnamese):
-  In: "The NaOH (96.0%) and IrCl₃·xH₂O were purchased from Aladdin Ltd."
-  Out: "NaOH (96,0%) và IrCl₃·xH₂O được mua từ Aladdin Ltd."
-(Note: NaOH and IrCl₃·xH₂O are unchanged; only the surrounding prose is translated.)
+  In: "The H2O2 and IrCl3·xH2O (96.0%) were purchased from Aladdin Ltd."
+  Out: "H<sub>2</sub>O<sub>2</sub> và IrCl<sub>3</sub>·xH<sub>2</sub>O (96,0%) được mua từ Aladdin Ltd."
 
 Output ONLY the translation — no notes, no preamble, no quotes. If the text is
-already in ${targetName}, return it unchanged.`;
+already in ${targetName}, return it unchanged (still apply the formatting tags).`;
 
   const started = Date.now();
   // Output can be much longer than input (Vietnamese/CJK expand; the model also

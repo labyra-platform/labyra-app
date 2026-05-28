@@ -14,10 +14,17 @@
  * @phase R237am
  */
 
-import { IconAlertCircle, IconArrowRight, IconLoader2, IconSparkles } from '@tabler/icons-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import {
+  IconAlertCircle,
+  IconArrowUp,
+  IconCheck,
+  IconCopy,
+  IconLoader2,
+  IconSparkles
+} from '@tabler/icons-react';
 import { renderToString as renderKatex } from 'katex';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { copyPapersRich } from '@/features/papers/lib/copy-rich';
 import { cn } from '@/lib/utils';
 import {
   ASK_META_SENTINEL,
@@ -26,33 +33,65 @@ import {
   type AskStreamMeta
 } from '@/features/papers/ask/types';
 
-/** Allow ONLY <sub>/<sup>/<b>/<i>/<math> from the model output. Same pipeline
- *  as the translation panel: extract math blocks → KaTeX render → escape
- *  everything else → re-enable the four inline tags. Citation brackets like
- *  "[2]" are turned into <button> after sanitization so the click handlers
- *  can dispatch onCitationClick without losing isolation. */
+/** Heuristic: does this content actually look like LaTeX math? KaTeX warns
+ *  loudly (and renders garbled output) when given Vietnamese prose like "với".
+ *  We only invoke KaTeX when there's a real math signal (backslash command,
+ *  caret, underscore, brace, equality, operator), otherwise fall back to a
+ *  plain inline span. This makes the panel robust to a model that occasionally
+ *  wraps prose in <math> by accident. */
+function looksLikeMath(s: string): boolean {
+  // Quick ASCII signal — if it's pure ASCII it's most likely real LaTeX.
+  // eslint-disable-next-line no-control-regex
+  if (/^[\x00-\x7F\s]*$/.test(s) && /[\\^_{}=]/.test(s)) return true;
+  // Vietnamese characters are a strong "this is prose" signal.
+  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀ-Ỹ]/.test(s)) {
+    return false;
+  }
+  // Mixed-but-no-Vietnamese: require at least one math command.
+  return /\\[a-zA-Z]+|[\^_{}]/.test(s);
+}
+
+/** Render one <math> block. Either real KaTeX (math-like input) or an inline
+ *  fallback span (prose accidentally wrapped). Always safe HTML. */
+function renderMathBlock(latex: string): string {
+  const trimmed = latex.trim();
+  if (!looksLikeMath(trimmed)) {
+    return `<span class="text-foreground">${trimmed
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')}</span>`;
+  }
+  try {
+    return renderKatex(trimmed, {
+      throwOnError: false,
+      displayMode: false,
+      output: 'html',
+      strict: 'ignore',
+      trust: false
+    });
+  } catch {
+    return `<code class="font-mono">${trimmed.replace(/</g, '&lt;')}</code>`;
+  }
+}
+/** Sanitize + render the assistant answer for safe HTML output.
+ *
+ *  Pipeline:
+ *  (1) Extract every <math> block, render via renderMathBlock (KaTeX if it
+ *      looks like math, plain inline span otherwise). Replace with a sentinel.
+ *  (2) HTML-escape the rest.
+ *  (3) Re-enable the whitelisted inline tags <sub>/<sup>/<b>/<i>.
+ *  (4) Turn citation brackets [n] into clickable buttons.
+ *  (5) Swap sentinels back for the rendered math HTML. */
 function renderAnswerHtml(answer: string): string {
   const placeholders: string[] = [];
   const sentinel = '\u0001';
   const withMath = answer.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
-    let html = '';
-    try {
-      html = renderKatex(latex.trim(), {
-        throwOnError: false,
-        displayMode: false,
-        output: 'html',
-        strict: 'ignore',
-        trust: false
-      });
-    } catch {
-      html = `<code class="font-mono">${latex.replace(/</g, '&lt;')}</code>`;
-    }
-    const idx = placeholders.push(html) - 1;
+    const idx = placeholders.push(renderMathBlock(latex)) - 1;
     return `${sentinel}M${idx}${sentinel}`;
   });
   const escaped = withMath.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const whitelisted = escaped.replace(/&lt;(\/?)(sub|sup|b|i)&gt;/gi, '<$1$2>');
-  // Citation brackets: \[1\] → <button data-cite="1">[1]</button>
+  // Citation brackets: [1] → <button data-cite="1">[1]</button>
   const cited = whitelisted.replace(
     /\[(\d{1,2})\]/g,
     (_, n: string) => `<button type="button" data-cite="${n}" class="ask-cite-btn">[${n}]</button>`
@@ -125,6 +164,15 @@ export function AskAiTab({
     const el = scrollerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  // Auto-grow the textarea up to a max — same behaviour as the AI Assistant
+  // composer so the input shape is consistent across the app.
+  useEffect(() => {
+    const ta = inputRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
+  }, [input]);
 
   // Citation chip click — buttons are rendered via dangerouslySetInnerHTML so
   // we delegate to a single container listener. The button carries data-cite=n
@@ -268,13 +316,14 @@ export function AskAiTab({
 
       {/* Pinned selection preview */}
       {pinnedSelection && (
-        <div className='border-t border-border bg-muted/40 px-3 py-2'>
-          <div className='mb-1 flex items-center justify-between text-[10.5px] uppercase tracking-wide text-muted-foreground'>
+        <div className='mx-3 mt-2 rounded-md border-l-2 border-primary/60 bg-muted/40 px-2.5 py-1.5'>
+          <div className='mb-0.5 flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground'>
             <span>Đoạn đã chọn từ paper</span>
             <button
               type='button'
               onClick={() => onClearSelection?.()}
               className='hover:text-foreground'
+              aria-label='Bỏ đoạn đã chọn'
             >
               Bỏ
             </button>
@@ -283,36 +332,51 @@ export function AskAiTab({
         </div>
       )}
 
-      {/* Input */}
-      <div className='shrink-0 border-t border-border bg-background p-3'>
-        <div className='relative'>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKey}
-            placeholder='Hãy hỏi tôi bất cứ điều gì về paper này…'
-            aria-label='Câu hỏi cho AI'
-            rows={2}
-            className='w-full resize-none rounded-md border border-input bg-background px-3 py-2 pr-10 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none'
-            disabled={busy}
-          />
-          <Button
-            size='icon'
-            className='absolute bottom-2 right-2 size-7'
-            onClick={send}
-            disabled={busy || !input.trim()}
-            aria-label='Gửi câu hỏi'
-            title='Gửi (Enter)'
-          >
-            {busy ? (
-              <IconLoader2 className='size-3.5 animate-spin' />
-            ) : (
-              <IconArrowRight className='size-3.5' />
-            )}
-          </Button>
+      {/* Composer — same shape as the AI Assistant message-input: rounded-2xl
+       *  container with an auto-grow textarea and a circular send button. The
+       *  send button is muted when empty and primary when there's text. */}
+      <div className='shrink-0 px-3 pb-3 pt-2'>
+        <div
+          className={cn(
+            'rounded-2xl border bg-background transition-colors',
+            busy && 'opacity-60',
+            'border-input focus-within:border-primary'
+          )}
+        >
+          <div className='flex items-end gap-1.5 p-1.5'>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKey}
+              placeholder='Hãy hỏi tôi bất cứ điều gì về paper này…'
+              aria-label='Câu hỏi cho AI'
+              rows={1}
+              disabled={busy}
+              className='max-h-[200px] min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed'
+            />
+            <button
+              type='button'
+              onClick={send}
+              disabled={busy || !input.trim()}
+              aria-label='Gửi câu hỏi'
+              title='Gửi (Enter)'
+              className={cn(
+                'flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
+                busy || !input.trim()
+                  ? 'bg-muted text-muted-foreground'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+              )}
+            >
+              {busy ? (
+                <IconLoader2 className='size-4 animate-spin' />
+              ) : (
+                <IconArrowUp className='size-4' />
+              )}
+            </button>
+          </div>
         </div>
-        <p className='mt-1.5 text-[10.5px] text-muted-foreground'>
+        <p className='mt-1.5 px-1 text-[10.5px] text-muted-foreground'>
           Câu trả lời chỉ dựa vào nội dung paper. Nếu không tìm thấy, tôi sẽ nói &quot;không tìm
           thấy&quot;.
         </p>
@@ -362,8 +426,15 @@ function AssistantBubble({
   onAnswerClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
   const html = useMemo(() => renderAnswerHtml(message.content), [message.content]);
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(() => {
+    if (!message.content) return;
+    void copyPapersRich(message.content);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  }, [message.content]);
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='group flex flex-col gap-2'>
       <div className='flex max-w-full flex-col gap-1'>
         <div
           // The answer is dangerously-set because we control the HTML pipeline:
@@ -399,11 +470,26 @@ function AssistantBubble({
               : '<span class="inline-flex items-center gap-1"><span class="ask-dot">●</span> Đang tìm trong paper…</span>'
           }}
         />
-        {(message.trustScore !== undefined || message.noAnswer) && (
-          <div className='mt-1'>
+        <div className='mt-1 flex items-center gap-2'>
+          {(message.trustScore !== undefined || message.noAnswer) && (
             <TrustChip score={message.trustScore ?? 0} noAnswer={message.noAnswer ?? false} />
-          </div>
-        )}
+          )}
+          {message.content && (
+            <button
+              type='button'
+              onClick={handleCopy}
+              className='ml-auto inline-flex items-center gap-1 rounded p-1 text-[10.5px] text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100'
+              aria-label='Copy answer'
+              title='Copy (giữ định dạng cho Word)'
+            >
+              {copied ? (
+                <IconCheck className='size-3.5 text-primary' />
+              ) : (
+                <IconCopy className='size-3.5' />
+              )}
+            </button>
+          )}
+        </div>
       </div>
       {message.citations && message.citations.length > 0 && (
         <CitationList citations={message.citations} />

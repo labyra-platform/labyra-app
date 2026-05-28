@@ -16,6 +16,7 @@
 import { IconCheck, IconCopy, IconGripVertical, IconLoader2, IconX } from '@tabler/icons-react';
 import { renderToString as renderKatex } from 'katex';
 import { useRef, useState } from 'react';
+import { copyPapersRich } from '@/features/papers/lib/copy-rich';
 import { cn } from '@/lib/utils';
 
 interface Rect {
@@ -104,26 +105,47 @@ function localPoint(e: React.PointerEvent): { x: number; y: number } {
  *  (4) Swap placeholders for the KaTeX-rendered HTML.
  *
  *  Order matters: we trust KaTeX's own HTML but nothing else from the model. */
+/** Heuristic: does this content actually look like LaTeX math? KaTeX warns
+ *  loudly when given Vietnamese prose; we only invoke it when there's a real
+ *  math signal. */
+function looksLikeMath(s: string): boolean {
+  // eslint-disable-next-line no-control-regex
+  if (/^[\x00-\x7F\s]*$/.test(s) && /[\\^_{}=]/.test(s)) return true;
+  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀ-Ỹ]/.test(s)) {
+    return false;
+  }
+  return /\\[a-zA-Z]+|[\^_{}]/.test(s);
+}
+
 function sanitizeFormatting(raw: string): string {
   const placeholders: string[] = [];
   // \u0001 isn't a character LaTeX or prose will contain, so it's a safe sentinel.
   const sentinel = '\u0001';
   const extracted = raw.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
-    let html = '';
-    try {
-      html = renderKatex(latex.trim(), {
-        throwOnError: false,
-        displayMode: false,
-        output: 'html',
-        strict: 'ignore',
-        trust: false
-      });
-    } catch {
-      // KaTeX failed even with throwOnError:false — fall back to monospace text.
-      html = `<code class="font-mono">${latex
+    const trimmed = latex.trim();
+    let html: string;
+    if (!looksLikeMath(trimmed)) {
+      // Model occasionally wraps prose VN in <math>. Render as plain inline
+      // text instead of letting KaTeX butcher accented characters.
+      html = `<span class="text-foreground">${trimmed
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')}</code>`;
+        .replace(/>/g, '&gt;')}</span>`;
+    } else {
+      try {
+        html = renderKatex(trimmed, {
+          throwOnError: false,
+          displayMode: false,
+          output: 'html',
+          strict: 'ignore',
+          trust: false
+        });
+      } catch {
+        html = `<code class="font-mono">${trimmed
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')}</code>`;
+      }
     }
     const idx = placeholders.push(html) - 1;
     return `${sentinel}M${idx}${sentinel}`;
@@ -135,13 +157,6 @@ function sanitizeFormatting(raw: string): string {
     new RegExp(`${sentinel}M(\\d+)${sentinel}`, 'g'),
     (_, n: string) => placeholders[Number.parseInt(n, 10)] ?? ''
   );
-}
-
-/** Strip the formatting tags to get plain text (for the copy button). */
-function stripFormatting(raw: string): string {
-  return raw
-    .replace(/<math>([\s\S]*?)<\/math>/gi, '$1') // keep raw LaTeX so a copy is editable
-    .replace(/<\/?(sub|sup|b|i)>/gi, '');
 }
 
 /** Crop the page's rendered canvas to `rect` (overlay-pixel space) and return a
@@ -374,9 +389,7 @@ export function PdfTranslateLayer({
                     type='button'
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => {
-                      navigator.clipboard
-                        ?.writeText(stripFormatting(box.translation))
-                        .catch(() => {});
+                      void copyPapersRich(box.translation);
                       setCopied(true);
                       window.setTimeout(() => setCopied(false), 1200);
                     }}

@@ -231,7 +231,7 @@ FORMATTING — mark up the output with these tags ONLY (no other HTML, no Markdo
 - Combined sub+sup (a radical with charge): write BOTH, e.g. ·O<sub>2</sub><sup>−</sup>, ClO<sub>4</sub><sup>−</sup>. Never lose one of them.
 - <b>…</b> for bold where the source uses bold (section labels like ABSTRACT, KEYWORDS, HIGHLIGHTS; emphasised words).
 - <i>…</i> for italic (species names, mathematical variables, emphasis).
-- <math>…</math> wraps LaTeX for any equation, fraction, integral, or summation. Inside this tag, use standard LaTeX (\\frac, \\int, \\sum, \\sqrt, ^, _). DO NOT translate equation contents — copy the math verbatim.
+- <math>…</math> wraps LaTeX for any equation, fraction, integral, or summation. Inside this tag, use standard LaTeX (\\frac, \\int, \\sum, \\sqrt, ^, _) — ASCII only. DO NOT translate equation contents. DO NOT put Vietnamese or any prose words inside <math>; it is for formulae only.
 
 STRUCTURE — preserve the input layout:
 - Keep paragraph breaks: a blank line in the input → a blank line in the output (use two newlines).

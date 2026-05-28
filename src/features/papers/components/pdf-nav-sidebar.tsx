@@ -14,7 +14,7 @@
  * import the viewer uses, at a small fixed width — cheap, and only the open
  * sidebar mounts them.
  */
-import { IconList, IconPhoto } from '@tabler/icons-react';
+import { IconChevronRight, IconList, IconPhoto } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -39,11 +39,12 @@ interface OutlineNode {
   items: OutlineNode[];
 }
 
-/** A flattened outline entry with its resolved 1-based page (or null). */
-interface FlatOutline {
+/** An outline node with its resolved 1-based page (or null) and a stable id. */
+interface OutlineItem {
+  id: string;
   title: string;
   page: number | null;
-  depth: number;
+  children: OutlineItem[];
 }
 
 async function resolvePage(pdf: PdfProxy, dest: string | unknown[] | null): Promise<number | null> {
@@ -58,16 +59,31 @@ async function resolvePage(pdf: PdfProxy, dest: string | unknown[] | null): Prom
   }
 }
 
-async function flattenOutline(
+async function buildOutlineTree(
   pdf: PdfProxy,
   nodes: OutlineNode[],
-  depth: number,
-  out: FlatOutline[]
-): Promise<void> {
-  for (const n of nodes) {
-    out.push({ title: n.title, page: await resolvePage(pdf, n.dest), depth });
-    if (n.items?.length) await flattenOutline(pdf, n.items, depth + 1, out);
+  prefix: string
+): Promise<OutlineItem[]> {
+  const out: OutlineItem[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    const id = `${prefix}${i}`;
+    const page = await resolvePage(pdf, n.dest);
+    const children = n.items?.length ? await buildOutlineTree(pdf, n.items, `${id}-`) : [];
+    out.push({ id, title: n.title, page, children });
   }
+  return out;
+}
+
+/** Ids of every node that has children — used to expand all by default. */
+function collectExpandable(items: OutlineItem[], acc: Set<string>): Set<string> {
+  for (const it of items) {
+    if (it.children.length) {
+      acc.add(it.id);
+      collectExpandable(it.children, acc);
+    }
+  }
+  return acc;
 }
 
 type Tab = 'thumbnails' | 'outline';
@@ -89,8 +105,10 @@ export function PdfNavSidebar({
 }) {
   const t = useTranslations('papers');
   const [tab, setTab] = useState<Tab>('thumbnails');
-  const [outline, setOutline] = useState<FlatOutline[] | null>(null);
+  const [outline, setOutline] = useState<OutlineItem[] | null>(null);
   const [outlineLoading, setOutlineLoading] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Resolve the outline once the pdf proxy is ready.
   useEffect(() => {
@@ -105,9 +123,11 @@ export function PdfNavSidebar({
           if (!cancelled) setOutline([]);
           return;
         }
-        const flat: FlatOutline[] = [];
-        await flattenOutline(pdf, nodes, 0, flat);
-        if (!cancelled) setOutline(flat);
+        const tree = await buildOutlineTree(pdf, nodes, '');
+        if (!cancelled) {
+          setOutline(tree);
+          setExpanded(collectExpandable(tree, new Set())); // expand all by default
+        }
       })
       .catch(() => {
         if (!cancelled) setOutline([]);
@@ -119,6 +139,14 @@ export function PdfNavSidebar({
       cancelled = true;
     };
   }, [pdf]);
+
+  const toggleExpand = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   return (
     <aside className='flex h-full w-56 shrink-0 flex-col border-r bg-muted/20'>
@@ -175,8 +203,13 @@ export function PdfNavSidebar({
           <OutlinePanel
             outline={outline}
             loading={outlineLoading}
-            currentPage={currentPage}
-            onJump={onJump}
+            expanded={expanded}
+            selectedId={selectedId}
+            onToggle={toggleExpand}
+            onSelect={(item) => {
+              setSelectedId(item.id);
+              if (item.page) onJump(item.page);
+            }}
             emptyLabel={t('navOutlineEmpty')}
           />
         )}
@@ -216,14 +249,18 @@ function SidebarTabButton({
 function OutlinePanel({
   outline,
   loading,
-  currentPage,
-  onJump,
+  expanded,
+  selectedId,
+  onToggle,
+  onSelect,
   emptyLabel
 }: {
-  outline: FlatOutline[] | null;
+  outline: OutlineItem[] | null;
   loading: boolean;
-  currentPage: number;
-  onJump: (page: number) => void;
+  expanded: Set<string>;
+  selectedId: string | null;
+  onToggle: (id: string) => void;
+  onSelect: (item: OutlineItem) => void;
   emptyLabel: string;
 }) {
   if (loading || outline === null) {
@@ -234,23 +271,94 @@ function OutlinePanel({
   }
   return (
     <ul className='flex flex-col'>
-      {outline.map((item, i) => (
-        <li key={`${item.title}-${i}`}>
-          <button
-            type='button'
-            disabled={item.page === null}
-            onClick={() => item.page && onJump(item.page)}
-            className={cn(
-              'w-full rounded px-2 py-1 text-left text-xs transition-colors',
-              item.page === null ? 'cursor-default text-muted-foreground/60' : 'hover:bg-muted',
-              item.page === currentPage && 'bg-muted font-medium text-foreground'
-            )}
-            style={{ paddingLeft: `${0.5 + item.depth * 0.75}rem` }}
-          >
-            <span className='line-clamp-2'>{item.title}</span>
-          </button>
-        </li>
+      {outline.map((item) => (
+        <OutlineRow
+          key={item.id}
+          item={item}
+          depth={0}
+          expanded={expanded}
+          selectedId={selectedId}
+          onToggle={onToggle}
+          onSelect={onSelect}
+        />
       ))}
     </ul>
+  );
+}
+
+function OutlineRow({
+  item,
+  depth,
+  expanded,
+  selectedId,
+  onToggle,
+  onSelect
+}: {
+  item: OutlineItem;
+  depth: number;
+  expanded: Set<string>;
+  selectedId: string | null;
+  onToggle: (id: string) => void;
+  onSelect: (item: OutlineItem) => void;
+}) {
+  const hasChildren = item.children.length > 0;
+  const isOpen = expanded.has(item.id);
+  const isSelected = selectedId === item.id;
+  // Triangle sits in a fixed-width gutter; rows without children align via an
+  // empty gutter so titles share a clean left edge at each depth (Edge-style).
+  return (
+    <li>
+      <div
+        className={cn(
+          'flex items-start rounded transition-colors',
+          isSelected ? 'bg-muted' : 'hover:bg-muted/60'
+        )}
+        style={{ paddingLeft: `${depth * 0.85}rem` }}
+      >
+        <button
+          type='button'
+          aria-label={isOpen ? 'collapse' : 'expand'}
+          onClick={() => hasChildren && onToggle(item.id)}
+          tabIndex={hasChildren ? 0 : -1}
+          className={cn(
+            'mt-0.5 flex size-5 shrink-0 items-center justify-center text-muted-foreground',
+            hasChildren ? 'hover:text-foreground' : 'invisible'
+          )}
+        >
+          <IconChevronRight
+            className={cn('size-3.5 transition-transform', isOpen && 'rotate-90')}
+          />
+        </button>
+        <button
+          type='button'
+          disabled={item.page === null}
+          onClick={() => onSelect(item)}
+          className={cn(
+            'flex-1 py-1 pr-2 text-left text-xs transition-colors',
+            item.page === null
+              ? 'cursor-default text-muted-foreground/60'
+              : 'hover:text-foreground',
+            isSelected ? 'font-medium text-foreground' : 'text-foreground/80'
+          )}
+        >
+          <span className='line-clamp-2'>{item.title}</span>
+        </button>
+      </div>
+      {hasChildren && isOpen && (
+        <ul className='flex flex-col'>
+          {item.children.map((child) => (
+            <OutlineRow
+              key={child.id}
+              item={child}
+              depth={depth + 1}
+              expanded={expanded}
+              selectedId={selectedId}
+              onToggle={onToggle}
+              onSelect={onSelect}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
   );
 }

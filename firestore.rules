@@ -164,6 +164,24 @@ service cloud.firestore {
           allow read: if belongsToTenant(tenantId) || isSuperAdmin();
           allow write: if false;
         }
+
+        // C3a: PRIVATE per-user PDF annotations (highlights, drawings). Personal
+        // reading marks, NOT shared scientific data — a tenant member reads and
+        // writes ONLY their own (doc.userId == auth.uid). Coordinates are stored
+        // normalized (0-1 per page) so they survive zoom/rotate/other devices.
+        // Group-sharing is intentionally out of scope here (decided private).
+        match /annotations/{annotationId} {
+          allow read: if belongsToTenant(tenantId)
+            && resource.data.userId == request.auth.uid;
+          allow create: if belongsToTenant(tenantId)
+            && request.resource.data.userId == request.auth.uid
+            && request.resource.data.tenantId == tenantId;
+          allow update: if belongsToTenant(tenantId)
+            && resource.data.userId == request.auth.uid
+            && request.resource.data.userId == request.auth.uid;
+          allow delete: if belongsToTenant(tenantId)
+            && resource.data.userId == request.auth.uid;
+        }
       }
 
       // AI provenance — audit trail of every model call. Read by

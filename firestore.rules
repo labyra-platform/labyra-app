@@ -182,6 +182,16 @@ service cloud.firestore {
           allow delete: if belongsToTenant(tenantId)
             && resource.data.userId == request.auth.uid;
         }
+
+        // R237am: PRIVATE per-user Ask AI history — one Q&A thread per paper per
+        // user. Read by the owner (so the chat re-opens with prior turns), but
+        // ONLY the /api/papers/{id}/ask route writes (Admin SDK), to keep cost
+        // accounting honest and stop a client forging assistant messages.
+        match /qa/{messageId} {
+          allow read: if belongsToTenant(tenantId)
+            && resource.data.userId == request.auth.uid;
+          allow write: if false;
+        }
       }
 
       // AI provenance — audit trail of every model call. Read by

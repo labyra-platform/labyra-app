@@ -199,7 +199,8 @@ export function PdfViewer({
   onPageChange,
   onZoomChange,
   onScrollChange,
-  active = true
+  active = true,
+  jumpRequest
 }: {
   paperId: string;
   embedded?: boolean;
@@ -216,6 +217,10 @@ export function PdfViewer({
    *  loses its scroll position; when it becomes visible again we re-scroll to
    *  the current page so it doesn't jump to the last page. */
   active?: boolean;
+  /** R237am: external request to scroll to a specific page (e.g. from an Ask AI
+   *  citation chip). Change the nonce to re-trigger even if the page is the
+   *  same one the user is already on. */
+  jumpRequest?: { page: number; nonce: number };
 }) {
   const t = useTranslations('papers');
   const { paper, loading: paperLoading } = usePaper(paperId);
@@ -681,6 +686,15 @@ export function PdfViewer({
     const pageOffsetInScroll = el.scrollTop + (targetTop - containerTop);
     el.scrollTop = pageOffsetInScroll + yRatio * target.offsetHeight - 8;
   }, []);
+
+  // R237am: respond to runtime jump requests (e.g. an Ask AI citation chip).
+  // Tracking the nonce — not just the page — means clicking the same chip twice
+  // re-jumps (handy when the user has scrolled away between clicks).
+  useEffect(() => {
+    if (!jumpRequest) return;
+    setCurrentPage(jumpRequest.page);
+    requestAnimationFrame(() => scrollToPageAt(jumpRequest.page));
+  }, [jumpRequest, scrollToPageAt]);
 
   const goPrev = useCallback(() => {
     setCurrentPage((prev) => {

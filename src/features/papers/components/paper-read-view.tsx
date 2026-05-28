@@ -18,7 +18,13 @@
  *     its container width, so the page re-fits cleanly with no extra logic and no
  *     ResizeObserver feedback loop.
  */
-import { IconChevronRight, IconExternalLink, IconInfoCircle, IconQuote } from '@tabler/icons-react';
+import {
+  IconChevronRight,
+  IconExternalLink,
+  IconInfoCircle,
+  IconQuote,
+  IconSparkles
+} from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
@@ -26,6 +32,7 @@ import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
 import type { Paper } from '@/types/papers';
+import { AskAiTab } from './ask-ai-tab';
 import { CitationsSection } from './citations-section';
 import { PdfViewer } from './pdf-viewer';
 
@@ -73,9 +80,28 @@ export function PaperReadView({ paperId, active = true }: { paperId: string; act
 
   const [panelOpen, setPanelOpen] = useState(false);
 
+  // R237am: bus for Ask AI citation jumps. Bumping `nonce` forces the PdfViewer
+  // useEffect to re-fire even when the page is the same one we last jumped to.
+  const [jumpRequest, setJumpRequest] = useState<{ page: number; nonce: number } | undefined>(
+    undefined
+  );
+  const handleJumpToPage = useCallback((page: number) => {
+    setJumpRequest({ page, nonce: Date.now() });
+  }, []);
+
   const togglePanel = useCallback(() => {
     setPanelOpen((v) => !v);
   }, []);
+
+  // Switching tabs while the panel is closed: open it. Otherwise clicking the
+  // Ask AI label on a collapsed panel does nothing visible.
+  const switchPanelTab = useCallback(
+    (next: 'info' | 'citations' | 'ai') => {
+      setPanelTab(paperId, next);
+      setPanelOpen(true);
+    },
+    [paperId, setPanelTab]
+  );
 
   // R224: after the panel finishes its width transition, tell PdfViewer to
   // re-measure (it listens on window.resize). Delay > CSS transition duration.
@@ -112,6 +138,7 @@ export function PaperReadView({ paperId, active = true }: { paperId: string; act
           onPageChange={handlePageChange}
           onZoomChange={handleZoomChange}
           onScrollChange={handleScrollChange}
+          jumpRequest={jumpRequest}
         />
       </div>
 
@@ -147,30 +174,46 @@ export function PaperReadView({ paperId, active = true }: { paperId: string; act
           <div className='flex shrink-0 items-center gap-1 border-b px-2'>
             <PanelTabButton
               active={panelTab === 'info'}
-              onClick={() => setPanelTab(paperId, 'info')}
+              onClick={() => switchPanelTab('info')}
               icon={<IconInfoCircle className='size-3.5' />}
               label={t('tabInfo')}
             />
             <PanelTabButton
               active={panelTab === 'citations'}
-              onClick={() => setPanelTab(paperId, 'citations')}
+              onClick={() => switchPanelTab('citations')}
               icon={<IconQuote className='size-3.5' />}
               label={t('citations')}
             />
+            <PanelTabButton
+              active={panelTab === 'ai'}
+              onClick={() => setPanelTab(paperId, 'ai')}
+              icon={<IconSparkles className='size-3.5' />}
+              label='Ask AI'
+            />
           </div>
 
-          {/* Panel body — scrolls independently of the PDF */}
-          <div className='min-h-0 flex-1 overflow-y-auto p-4'>
-            {loading ? (
-              <p className='text-sm text-muted-foreground'>{t('loading')}</p>
-            ) : !paper ? (
-              <p className='text-sm text-muted-foreground'>{t('paperNotFound')}</p>
-            ) : panelTab === 'citations' ? (
-              <CitationsSection paperId={paperId} />
+          {/* Panel body — scrolls independently of the PDF. Ask AI manages its
+           *  own layout (full-height chat with sticky input) so it bypasses
+           *  the standard padding wrapper. */}
+          {panelTab === 'ai' ? (
+            paper ? (
+              <AskAiTab paperId={paperId} onJumpToPage={handleJumpToPage} />
             ) : (
-              <InfoTab paper={paper} />
-            )}
-          </div>
+              <div className='p-4 text-sm text-muted-foreground'>{t('loading')}</div>
+            )
+          ) : (
+            <div className='min-h-0 flex-1 overflow-y-auto p-4'>
+              {loading ? (
+                <p className='text-sm text-muted-foreground'>{t('loading')}</p>
+              ) : !paper ? (
+                <p className='text-sm text-muted-foreground'>{t('paperNotFound')}</p>
+              ) : panelTab === 'citations' ? (
+                <CitationsSection paperId={paperId} />
+              ) : (
+                <InfoTab paper={paper} />
+              )}
+            </div>
+          )}
         </div>
       </aside>
     </div>

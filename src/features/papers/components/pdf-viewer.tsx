@@ -470,8 +470,20 @@ export function PdfViewer({
     [tenantId, paperId]
   );
 
+  // R237af: client session cache — drag the same passage again in this session
+  // and the translation returns instantly (0ms, no network). Persists for the
+  // viewer's lifetime; the Firestore cache in the route handles durability.
+  const translateCacheRef = useRef<Map<string, string>>(new Map());
+
   const handleTranslate = useCallback(
-    async (text: string): Promise<string> => {
+    async (text: string, onChunk?: (partial: string) => void): Promise<string> => {
+      const key = `${targetLang}\u0000${text}`;
+      const hit = translateCacheRef.current.get(key);
+      if (hit !== undefined) {
+        onChunk?.(hit);
+        return hit;
+      }
+
       const { getFirebaseAuth } = await import('@/lib/firebase/client');
       const user = getFirebaseAuth().currentUser;
       if (!user) throw new Error('Not signed in');
@@ -482,8 +494,29 @@ export function PdfViewer({
         body: JSON.stringify({ text, targetLang })
       });
       if (!res.ok) throw new Error('translate_failed');
-      const data = (await res.json()) as { translation: string };
-      return data.translation;
+
+      // Cache hits come back as JSON; live translations stream as text/plain.
+      const isStream = res.headers.get('X-Translate-Stream') === '1';
+      if (!isStream) {
+        const data = (await res.json()) as { translation: string };
+        translateCacheRef.current.set(key, data.translation);
+        onChunk?.(data.translation);
+        return data.translation;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error('translate_failed');
+      const decoder = new TextDecoder();
+      let full = '';
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        full += decoder.decode(value, { stream: true });
+        onChunk?.(full);
+      }
+      full = full.trim();
+      translateCacheRef.current.set(key, full);
+      return full;
     },
     [paperId, targetLang]
   );

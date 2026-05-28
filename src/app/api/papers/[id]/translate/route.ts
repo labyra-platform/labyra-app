@@ -10,13 +10,14 @@
  * read, so this is not a bulk-extraction endpoint — we cap the input length.
  */
 
+import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { estimateCost } from '@/lib/ai/cost/estimator';
 import { recordCost } from '@/lib/ai/cost/telemetry';
 import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
 import { selectProvider } from '@/lib/ai/providers';
 import { getTenantIdFromToken } from '@/lib/auth/token';
-import { getAdminAuthService } from '@/lib/firebase/admin';
+import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiTier } from '@/types/ai';
 
@@ -74,6 +75,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (text.length > MAX_CHARS) return jsonError(413, 'text_too_long', { max: MAX_CHARS });
   const targetName = LANG_NAME[targetLang] ?? 'Vietnamese';
 
+  // ─── Cache lookup (tenant-scoped content hash) ────────────────
+  // Key = sha256(text + '\u0000' + lang). Scoped under the tenant so a private
+  // upload's translations never leak across tenants; within a tenant a shared
+  // paper's passages are reused. A hit skips the model entirely (and cost guard).
+  const hash = createHash('sha256').update(`${text}\u0000${targetLang}`).digest('hex').slice(0, 32);
+  const db = getAdminFirestoreService();
+  const cacheRef = db.doc(`tenants/${tenantId}/_translations/${hash}`);
+  try {
+    const snap = await cacheRef.get();
+    if (snap.exists) {
+      const cached = snap.data() as { translation?: string } | undefined;
+      if (cached?.translation) {
+        return NextResponse.json({
+          paperId,
+          targetLang,
+          translation: cached.translation,
+          cached: true
+        });
+      }
+    }
+  } catch {
+    // cache read failure is non-fatal — fall through to a live translation
+  }
+
   // ─── Cost guard (estimate before spending) ────────────────────
   const estimated = estimateCost(TIER, 'translate');
   const guard = await checkCostGuard(tenantId, TIER, 'translate', estimated);
@@ -100,38 +125,70 @@ Output ONLY the translation — no notes, no preamble, no quotes. If the text is
 already in ${targetName}, return it unchanged.`;
 
   const started = Date.now();
-  // Vietnamese/CJK output can be ~2-3x the input tokens; scale the cap to the
-  // selection length so long passages aren't cut off mid-sentence.
+  // Output can be much longer than input (Vietnamese/CJK expand; the model also
+  // re-emits all the kept-verbatim formulae). Budget generously so long passages
+  // aren't cut off; Flash supports large outputs and we only pay for what's used.
   const estInTokens = Math.ceil(text.length / 3);
-  const maxTokens = Math.min(8192, Math.max(1024, estInTokens * 3 + 512));
-  let result;
-  try {
-    result = await provider.complete({
-      model: config.model,
-      maxTokens,
-      temperature: 0.2,
-      system: [{ text: system, cache: false }],
-      messages: [{ role: 'user', content: text }]
-    });
-  } catch {
-    return jsonError(502, 'translation_failed');
-  }
+  const maxTokens = Math.min(16384, Math.max(2048, estInTokens * 4 + 1024));
 
-  // ─── Record cost (best-effort) ────────────────────────────────
-  void recordCost({
-    tenantId,
-    tier: TIER,
-    capability: 'rag-balanced',
-    feature: 'translate',
-    costUsd: result.usage.usd,
-    inputTokens: result.usage.inputTokens,
-    outputTokens: result.usage.outputTokens,
-    latencyMs: Date.now() - started
-  }).catch(() => {});
+  // R237ag: stream the translation so the reader sees text appear within
+  // ~300ms (time-to-first-token) instead of waiting for the whole passage.
+  // Plain-text stream; cache hits above returned JSON, so the client tells them
+  // apart by Content-Type. On completion we persist to cache + record cost.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let full = '';
+      let truncated = false;
+      try {
+        for await (const event of provider.streamChat({
+          model: config.model,
+          maxTokens,
+          temperature: 0.2,
+          system: [{ text: system, cache: false }],
+          messages: [{ role: 'user', content: text }]
+        })) {
+          if (event.type === 'text_delta') {
+            full += event.delta;
+            controller.enqueue(encoder.encode(event.delta));
+          } else if (event.type === 'message_complete') {
+            if (event.stopReason === 'max_tokens') truncated = true;
+            void recordCost({
+              tenantId,
+              tier: TIER,
+              capability: 'rag-balanced',
+              feature: 'translate',
+              costUsd: event.usage.usd,
+              inputTokens: event.usage.inputTokens,
+              outputTokens: event.usage.outputTokens,
+              latencyMs: Date.now() - started
+            }).catch(() => {});
+          } else if (event.type === 'error') {
+            controller.error(new Error(event.message));
+            return;
+          }
+        }
+      } catch {
+        controller.error(new Error('translation_failed'));
+        return;
+      }
+      const translation = full.trim();
+      // Only cache a complete translation — never persist a truncated one, so a
+      // re-translation can get the full text instead of replaying the cut-off.
+      if (translation && !truncated) {
+        void cacheRef
+          .set({ translation, targetLang, paperId, createdAt: Date.now() })
+          .catch(() => {});
+      }
+      controller.close();
+    }
+  });
 
-  return NextResponse.json({
-    paperId,
-    targetLang,
-    translation: result.text.trim()
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Translate-Stream': '1'
+    }
   });
 }

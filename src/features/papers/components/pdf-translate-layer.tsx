@@ -13,7 +13,7 @@
  * view); nothing is persisted, so no normalization is required here.
  */
 
-import { IconGripVertical, IconLoader2, IconX } from '@tabler/icons-react';
+import { IconCheck, IconCopy, IconGripVertical, IconLoader2, IconX } from '@tabler/icons-react';
 import { useRef, useState } from 'react';
 
 interface Rect {
@@ -98,13 +98,15 @@ export function PdfTranslateLayer({
   active: boolean;
   /** Display label of the target language, shown in the panel header. */
   targetLabel: string;
-  /** Returns the translated text (throws on failure). */
-  onTranslate: (text: string) => Promise<string>;
+  /** Returns the translated text (throws on failure). Calls onChunk with the
+   *  growing partial as it streams in. */
+  onTranslate: (text: string, onChunk?: (partial: string) => void) => Promise<string>;
 }) {
   const layerRef = useRef<HTMLDivElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const [dragRect, setDragRect] = useState<Rect | null>(null);
   const [box, setBox] = useState<ActiveBox | null>(null);
+  const [copied, setCopied] = useState(false);
   // R237ae: the result panel can be dragged anywhere (to avoid covering text).
   // Offset is relative to its default position just below the selected region.
   const [panelOffset, setPanelOffset] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
@@ -149,7 +151,11 @@ export function PdfTranslateLayer({
     setPanelOffset({ dx: 0, dy: 0 });
     setBox({ rect, text, status: 'loading', translation: '' });
     try {
-      const translation = await onTranslate(text);
+      const translation = await onTranslate(text, (partial) => {
+        // Show text as it streams; flip to 'done' on first chunk so the panel
+        // switches from the spinner to live text.
+        setBox({ rect, text, status: 'done', translation: partial });
+      });
       setBox({ rect, text, status: 'done', translation });
     } catch {
       setBox({ rect, text, status: 'error', translation: '' });
@@ -231,15 +237,36 @@ export function PdfTranslateLayer({
                 <IconGripVertical className='size-3.5 opacity-70' />
                 {targetLabel}
               </span>
-              <button
-                type='button'
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setBox(null)}
-                className='rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground'
-                aria-label='Close translation'
-              >
-                <IconX className='size-3.5' />
-              </button>
+              <div className='flex items-center gap-0.5'>
+                {box.status === 'done' && box.translation && (
+                  <button
+                    type='button'
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => {
+                      navigator.clipboard?.writeText(box.translation).catch(() => {});
+                      setCopied(true);
+                      window.setTimeout(() => setCopied(false), 1200);
+                    }}
+                    className='rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground'
+                    aria-label='Copy translation'
+                  >
+                    {copied ? (
+                      <IconCheck className='size-3.5 text-primary' />
+                    ) : (
+                      <IconCopy className='size-3.5' />
+                    )}
+                  </button>
+                )}
+                <button
+                  type='button'
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setBox(null)}
+                  className='rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  aria-label='Close translation'
+                >
+                  <IconX className='size-3.5' />
+                </button>
+              </div>
             </div>
             <div className='max-h-64 overflow-y-auto px-3 py-2 text-sm leading-relaxed text-foreground'>
               {box.status === 'loading' && (

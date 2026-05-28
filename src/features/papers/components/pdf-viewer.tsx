@@ -523,19 +523,24 @@ export function PdfViewer({
     [paperId, targetLang]
   );
 
-  const handleTranslate = useCallback(
-    (text: string, onChunk?: (partial: string) => void) =>
-      runTranslate(`${targetLang}\u0000${text}`, { text }, onChunk),
-    [runTranslate, targetLang]
-  );
-
-  const handleTranslateImage = useCallback(
-    (base64: string, regionHash: string, onChunk?: (partial: string) => void) =>
-      runTranslate(
-        `${targetLang}\u0000img\u0000${regionHash}`,
-        { image: base64, imageHash: `${paperId}:${regionHash}` },
+  const handleTranslateRegion = useCallback(
+    async (
+      payload: { text: string; image: string | null; regionHash: string },
+      onChunk?: (partial: string) => void
+    ): Promise<string> => {
+      // Client session cache key combines the text content AND the region hash
+      // so the same drag (or the same paragraph re-encountered) is instant.
+      const cacheKey = `${targetLang}\u0000${payload.regionHash}\u0000${payload.text}`;
+      return runTranslate(
+        cacheKey,
+        {
+          text: payload.text || undefined,
+          image: payload.image || undefined,
+          imageHash: payload.image ? `${paperId}:${payload.regionHash}` : undefined
+        },
         onChunk
-      ),
+      );
+    },
     [runTranslate, targetLang, paperId]
   );
 
@@ -1264,8 +1269,7 @@ export function PdfViewer({
                                 TRANSLATE_LANGS.find((l) => l.code === targetLang)?.label ??
                                 targetLang
                               }
-                              onTranslate={handleTranslate}
-                              onTranslateImage={handleTranslateImage}
+                              onTranslateRegion={handleTranslateRegion}
                             />
                           )}
                         </div>

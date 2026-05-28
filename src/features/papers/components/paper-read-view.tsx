@@ -59,10 +59,17 @@ export function PaperReadView({ paperId, active = true }: { paperId: string; act
     }
   }, [paper?.title, tabState, paperId, setTitle]);
 
-  const panelTab = tabState?.activePanelTab ?? 'info';
-  const savedPage = tabState?.pdf.page ?? 1;
-  const savedZoom = tabState?.pdf.zoom ?? 1;
-  const savedScrollTop = tabState?.pdf.scrollTop ?? 0;
+  // R237ak: tabState comes from a persisted Zustand store (localStorage), which
+  // SSR can't see → server renders defaults, client hydrates the persisted value
+  // → className mismatches. Use a mounted flag and treat tabState as "not yet
+  // available" during SSR / first paint to keep markup identical on both sides.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const effectiveTabState = mounted ? tabState : undefined;
+  const panelTab = effectiveTabState?.activePanelTab ?? 'info';
+  const savedPage = effectiveTabState?.pdf.page ?? 1;
+  const savedZoom = effectiveTabState?.pdf.zoom ?? 1;
+  const savedScrollTop = effectiveTabState?.pdf.scrollTop ?? 0;
 
   const [panelOpen, setPanelOpen] = useState(false);
 

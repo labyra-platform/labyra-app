@@ -40,7 +40,8 @@ export const COST_LIMITS: Record<TenantTier, CostLimits> = {
       spectrum_analysis: 0.3,
       paper_writing: 0.1,
       theory: 0.2,
-      lab_ops: 0.1
+      lab_ops: 0.1,
+      translate: 0.1 // ~150 full-page drags/day
     }
   },
   starter: {
@@ -50,7 +51,8 @@ export const COST_LIMITS: Record<TenantTier, CostLimits> = {
       spectrum_analysis: 1.0,
       paper_writing: 0.5,
       theory: 0.5,
-      lab_ops: 0.5
+      lab_ops: 0.5,
+      translate: 0.5
     }
   },
   pro: {
@@ -60,7 +62,8 @@ export const COST_LIMITS: Record<TenantTier, CostLimits> = {
       spectrum_analysis: 3.0,
       paper_writing: 1.5,
       theory: 1.5,
-      lab_ops: 1.0
+      lab_ops: 1.0,
+      translate: 2.0
     }
   },
   enterprise: {

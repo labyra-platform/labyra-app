@@ -15,6 +15,7 @@
 
 import { IconCheck, IconCopy, IconGripVertical, IconLoader2, IconX } from '@tabler/icons-react';
 import { useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface Rect {
   x: number;
@@ -54,29 +55,33 @@ function textInRect(host: HTMLElement, overlayBox: DOMRect, rect: Rect): string 
     }
   }
   if (hits.length === 0) return '';
-  // Reading order: top then left.
   hits.sort((a, b) => (Math.abs(a.top - b.top) > 4 ? a.top - b.top : a.left - b.left));
 
   let out = hits[0].text;
   for (let i = 1; i < hits.length; i++) {
     const prev = hits[i - 1];
     const cur = hits[i];
-    const sameLine = Math.abs(cur.top - prev.top) <= Math.max(prev.h, cur.h) * 0.6;
+    const verticalGap = cur.top - prev.top;
+    const lineH = Math.max(prev.h, cur.h);
+    const sameLine = Math.abs(verticalGap) <= lineH * 0.6;
     if (!sameLine) {
-      out += '\n';
+      // A jump larger than ~1.6× line height looks like a paragraph break.
+      // 0.6× < gap < 1.6× = a normal soft line wrap.
+      out += verticalGap > lineH * 1.6 ? '\n\n' : '\n';
     } else {
       const gap = cur.left - prev.right;
-      // Space only for a genuine word gap (~> a quarter of the line height).
       out += gap > prev.h * 0.25 ? ' ' : '';
     }
     out += cur.text;
   }
-  // Collapse hyphenation at line breaks (e.g. "rea-\ngent" → "reagent") and
-  // turn remaining newlines into spaces for a clean prose paragraph.
+  // De-hyphenate soft line wraps ("rea-\ngent" → "reagent"); collapse single
+  // newlines (line wraps) to spaces but KEEP \n\n (paragraph breaks); also
+  // preserve bullet markers at line start (• ● - 1. (a)).
   return out
-    .replace(/-\n/g, '')
-    .replace(/\n/g, ' ')
+    .replace(/-\n(?!\n)/g, '')
+    .replace(/(?<!\n)\n(?!\n)/g, ' ')
     .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n\n */g, '\n\n')
     .trim();
 }
 
@@ -86,17 +91,17 @@ function localPoint(e: React.PointerEvent): { x: number; y: number } {
   return { x: e.clientX - b.left, y: e.clientY - b.top };
 }
 
-/** Allow ONLY <sub>/<sup>/<b>/<i> from the model output. Everything is HTML-
- *  escaped first, then those four tags (open/close, no attributes) are restored.
- *  This neutralizes scripts/attributes/other tags — safe for innerHTML. */
+/** Allow ONLY <sub>/<sup>/<b>/<i>/<math> from the model output. Everything is
+ *  HTML-escaped first, then those tags (open/close, no attributes) are
+ *  restored. <math> wraps LaTeX; the panel styles it monospace + tinted. */
 function sanitizeFormatting(raw: string): string {
   const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return escaped.replace(/&lt;(\/?)(sub|sup|b|i)&gt;/gi, '<$1$2>');
+  return escaped.replace(/&lt;(\/?)(sub|sup|b|i|math)&gt;/gi, '<$1$2>');
 }
 
 /** Strip the formatting tags to get plain text (for the copy button). */
 function stripFormatting(raw: string): string {
-  return raw.replace(/<\/?(sub|sup|b|i)>/gi, '');
+  return raw.replace(/<\/?(sub|sup|b|i|math)>/gi, '');
 }
 
 /** Crop the page's rendered canvas to `rect` (overlay-pixel space) and return a
@@ -157,21 +162,17 @@ export function PdfTranslateLayer({
   pageNumber,
   active,
   targetLabel,
-  onTranslate,
-  onTranslateImage
+  onTranslateRegion
 }: {
   width: number;
   height: number;
   pageNumber: number;
   active: boolean;
-  /** Display label of the target language, shown in the panel header. */
   targetLabel: string;
-  /** Translate selected text (streams). */
-  onTranslate: (text: string, onChunk?: (partial: string) => void) => Promise<string>;
-  /** OCR + translate a cropped figure region (base64 PNG + a stable region hash). */
-  onTranslateImage: (
-    base64: string,
-    regionHash: string,
+  /** One-shot: send any combination of text + cropped image, with a stable
+   *  region hash for caching. Server picks mode (text/image/dual). */
+  onTranslateRegion: (
+    payload: { text: string; image: string | null; regionHash: string },
     onChunk?: (partial: string) => void
   ) => Promise<string>;
 }) {
@@ -222,41 +223,30 @@ export function PdfTranslateLayer({
     const text = textInRect(host, layer.getBoundingClientRect(), rect);
     setPanelOffset({ dx: 0, dy: 0 });
 
-    // No text layer in the region → treat it as a figure: crop the canvas and
-    // OCR+translate it with vision. Skip near-blank crops to avoid wasting a call.
-    if (!text) {
-      const crop = cropCanvasRegion(host, layer.getBoundingClientRect(), rect);
-      if (!crop || crop.blank || !crop.base64) {
-        setBox({ rect, text: '', status: 'error', translation: '' });
-        return;
-      }
-      const regionHash = `${pageNumber}:${Math.round(rect.x)}:${Math.round(rect.y)}:${Math.round(
-        rect.w
-      )}:${Math.round(rect.h)}`;
-      setBox({ rect, text: '', status: 'loading', translation: '' });
-      try {
-        const translation = await onTranslateImage(crop.base64, regionHash, (partial) => {
-          setBox({ rect, text: '', status: 'done', translation: partial });
-        });
-        if (!translation || translation === '[NO_TEXT]') {
-          setBox({ rect, text: '', status: 'error', translation: '' });
-        } else {
-          setBox({ rect, text: '', status: 'done', translation });
-        }
-      } catch {
-        setBox({ rect, text: '', status: 'error', translation: '' });
-      }
+    // Crop the page canvas for the region. We send the image alongside the text
+    // (dual mode) so the model can recover equations / sub-superscripts the PDF
+    // text layer mangled. Pure-figure regions (no text) become image-only mode.
+    const crop = cropCanvasRegion(host, layer.getBoundingClientRect(), rect);
+    if (!text && (!crop || crop.blank || !crop.base64)) {
+      // No text AND no usable image (blank region) → nothing to translate.
+      setBox({ rect, text: '', status: 'error', translation: '' });
       return;
     }
+    const regionHash = `${pageNumber}:${Math.round(rect.x)}:${Math.round(rect.y)}:${Math.round(
+      rect.w
+    )}:${Math.round(rect.h)}`;
+    const image = crop && !crop.blank ? crop.base64 : null;
 
     setBox({ rect, text, status: 'loading', translation: '' });
     try {
-      const translation = await onTranslate(text, (partial) => {
-        // Show text as it streams; flip to 'done' on first chunk so the panel
-        // switches from the spinner to live text.
+      const translation = await onTranslateRegion({ text, image, regionHash }, (partial) => {
         setBox({ rect, text, status: 'done', translation: partial });
       });
-      setBox({ rect, text, status: 'done', translation });
+      if (!translation || translation === '[NO_TEXT]') {
+        setBox({ rect, text, status: 'error', translation: '' });
+      } else {
+        setBox({ rect, text, status: 'done', translation });
+      }
     } catch {
       setBox({ rect, text, status: 'error', translation: '' });
     }
@@ -382,10 +372,18 @@ export function PdfTranslateLayer({
                 <span className='text-destructive'>Translation failed. Try again.</span>
               )}
               {box.status === 'done' && (
-                <p
-                  className='whitespace-pre-wrap [&_sub]:align-sub [&_sub]:text-[0.75em] [&_sup]:align-super [&_sup]:text-[0.75em]'
+                <div
+                  className={cn(
+                    'whitespace-pre-wrap',
+                    '[&_sub]:align-sub [&_sub]:text-[0.75em]',
+                    '[&_sup]:align-super [&_sup]:text-[0.75em]',
+                    '[&_b]:font-semibold [&_b]:text-foreground',
+                    '[&_i]:italic',
+                    '[&_math]:inline-block [&_math]:rounded [&_math]:bg-muted [&_math]:px-1.5 [&_math]:py-0.5',
+                    '[&_math]:font-mono [&_math]:text-[0.9em] [&_math]:text-foreground'
+                  )}
                   // Safe: sanitizeFormatting escapes everything, then re-enables
-                  // only <sub>/<sup>/<b>/<i> (no attributes, no other tags).
+                  // only sub/sup/b/i/math (no attributes, no other tags).
                   dangerouslySetInnerHTML={{ __html: sanitizeFormatting(box.translation) }}
                 />
               )}

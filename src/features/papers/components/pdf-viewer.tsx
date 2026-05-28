@@ -27,17 +27,18 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
  */
 import {
   IconAlertCircle,
+  IconArrowBackUp,
   IconArrowsMaximize,
   IconArrowsMinimize,
   IconChevronLeft,
   IconChevronRight,
   IconDownload,
+  IconEraser,
   IconLoader2,
   IconMinus,
   IconPencil,
   IconPlus,
-  IconRefresh,
-  IconRotateClockwise
+  IconRefresh
 } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -119,6 +120,26 @@ function TocIcon({ className }: { className?: string }) {
       <path d='M9 12h11' />
       <circle cx='9' cy='18' r='1.5' fill='currentColor' stroke='none' />
       <path d='M13 18h7' />
+    </svg>
+  );
+}
+
+/** Rotate glyph (circular arrow). Replaces the Tabler rotate icon (R237w). */
+function RotateIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns='http://www.w3.org/2000/svg'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth={1.5}
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      className={className}
+      aria-hidden
+    >
+      <path d='M21 12a9 9 0 1 1-3.3-6.95' />
+      <path d='M21 4v4h-4' />
     </svg>
   );
 }
@@ -219,6 +240,7 @@ export function PdfViewer({
   // C4: freehand drawing. drawMode toggles pointer capture; while on, text
   // selection (highlight) is suppressed so the two tools don't fight.
   const [drawMode, setDrawMode] = useState(false);
+  const [drawTool, setDrawTool] = useState<'pen' | 'eraser'>('pen');
   const [drawColor, setDrawColor] = useState<AnnotationColor>('pink');
   const [drawings, setDrawings] = useState<DrawingAnnotation[]>([]);
   const DRAW_PEN_WIDTH = 0.004; // fraction of page width (~2-3px at typical zoom)
@@ -416,6 +438,21 @@ export function PdfViewer({
     },
     [tenantId, paperId]
   );
+
+  const handleDeleteDrawing = useCallback(
+    (id: string) => {
+      if (!tenantId) return;
+      deleteAnnotation(tenantId, paperId, id).catch(() => {});
+    },
+    [tenantId, paperId]
+  );
+
+  // C4b: undo removes the most recently created drawing (by createdAt).
+  const handleUndoDrawing = useCallback(() => {
+    if (!tenantId || drawings.length === 0) return;
+    const last = drawings.toSorted((a, b) => b.createdAt - a.createdAt)[0];
+    if (last) deleteAnnotation(tenantId, paperId, last.id).catch(() => {});
+  }, [tenantId, paperId, drawings]);
 
   const handleDeleteHighlight = useCallback(
     (id: string) => {
@@ -676,22 +713,9 @@ export function PdfViewer({
           >
             <IconChevronLeft className='size-4' />
           </Button>
-          <input
-            type='number'
-            min={1}
-            max={numPages || 1}
-            value={currentPage}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              if (v >= 1 && v <= numPages) {
-                setCurrentPage(v);
-                scrollToPage(v);
-              }
-            }}
-            className='w-14 rounded border px-1.5 py-0.5 text-center text-sm'
-            aria-label={t('currentPage')}
-          />
-          <span className='text-xs text-muted-foreground'>/ {numPages || '—'}</span>
+          <span className='min-w-[3rem] text-center text-xs tabular-nums text-muted-foreground'>
+            {currentPage} / {numPages || '—'}
+          </span>
           <Button
             variant='ghost'
             size='icon'
@@ -748,7 +772,7 @@ export function PdfViewer({
           aria-label={t('rotateClockwise')}
           title={t('rotateClockwise')}
         >
-          <IconRotateClockwise className='size-4' />
+          <RotateIcon className='size-4' />
         </Button>
 
         {/* Draw (C4) — only meaningful at rotation 0 */}
@@ -766,20 +790,70 @@ export function PdfViewer({
         </Button>
         {drawMode && (
           <div className='flex items-center gap-1'>
-            {DRAW_COLORS.map((c) => (
-              <button
-                key={c}
-                type='button'
-                onClick={() => setDrawColor(c)}
-                className={cn(
-                  'size-5 rounded-full border transition-transform hover:scale-110',
-                  drawColor === c ? 'border-foreground' : 'border-black/10'
-                )}
-                style={{ backgroundColor: DRAW_SWATCH[c] }}
-                aria-label={`Pen ${c}`}
-                aria-pressed={drawColor === c}
-              />
-            ))}
+            {/* Pen with a hover color palette + a top color indicator line. */}
+            <div className='group relative'>
+              <Button
+                variant={drawTool === 'pen' ? 'secondary' : 'ghost'}
+                size='icon'
+                className='relative size-7 overflow-hidden'
+                onClick={() => setDrawTool('pen')}
+                aria-pressed={drawTool === 'pen'}
+                aria-label={t('drawPen')}
+                title={t('drawPen')}
+              >
+                <IconPencil className='size-4' />
+                {/* color indicator at the top edge */}
+                <span
+                  className='absolute inset-x-1 top-0 h-[3px] rounded-b-sm'
+                  style={{ backgroundColor: DRAW_SWATCH[drawColor] }}
+                  aria-hidden
+                />
+              </Button>
+              {/* Hover palette — only meaningful in pen mode. */}
+              <div className='absolute left-1/2 top-full z-50 hidden -translate-x-1/2 pt-1 group-hover:block'>
+                <div className='flex items-center gap-1.5 rounded-full border bg-popover px-2 py-1.5 shadow-lg'>
+                  {DRAW_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type='button'
+                      onClick={() => {
+                        setDrawColor(c);
+                        setDrawTool('pen');
+                      }}
+                      className={cn(
+                        'size-5 rounded-full border transition-transform hover:scale-110',
+                        drawColor === c ? 'border-foreground' : 'border-black/10'
+                      )}
+                      style={{ backgroundColor: DRAW_SWATCH[c] }}
+                      aria-label={`Pen ${c}`}
+                      aria-pressed={drawColor === c}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <Button
+              variant={drawTool === 'eraser' ? 'secondary' : 'ghost'}
+              size='icon'
+              className='size-7'
+              onClick={() => setDrawTool('eraser')}
+              aria-pressed={drawTool === 'eraser'}
+              aria-label={t('drawEraser')}
+              title={t('drawEraser')}
+            >
+              <IconEraser className='size-4' />
+            </Button>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='size-7'
+              onClick={handleUndoDrawing}
+              disabled={drawings.length === 0}
+              aria-label={t('drawUndo')}
+              title={t('drawUndo')}
+            >
+              <IconArrowBackUp className='size-4' />
+            </Button>
           </div>
         )}
 
@@ -956,11 +1030,13 @@ export function PdfViewer({
                               height={pageWidth * pageAspects[pageNum]}
                               drawings={drawings}
                               active={drawMode}
+                              tool={drawTool}
                               color={drawColor}
                               penWidth={DRAW_PEN_WIDTH}
                               onCreateStroke={(points, w, c) =>
                                 handleCreateStroke(points, w, c, pageNum)
                               }
+                              onEraseStroke={handleDeleteDrawing}
                             />
                           )}
                         </div>

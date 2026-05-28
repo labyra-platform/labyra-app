@@ -33,25 +33,68 @@ function pointerToNorm(e: React.PointerEvent): NormPoint {
   };
 }
 
+/** Squared distance from point p to segment ab (all in normalized space). */
+function distSqToSegment(p: NormPoint, a: NormPoint, b: NormPoint): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 === 0 ? 0 : ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = a.x + t * dx;
+  const cy = a.y + t * dy;
+  return (p.x - cx) ** 2 + (p.y - cy) ** 2;
+}
+
+/** Find the id of the drawing whose stroke (on this page) passes closest to p,
+ *  within `tol` (normalized distance). null if none is close enough. */
+function hitTestDrawing(
+  drawings: DrawingAnnotation[],
+  pageNumber: number,
+  p: NormPoint,
+  tol: number
+): string | null {
+  const tol2 = tol * tol;
+  let bestId: string | null = null;
+  let best = tol2;
+  for (const d of drawings) {
+    for (const s of d.strokes) {
+      if (s.page !== pageNumber) continue;
+      for (let i = 1; i < s.points.length; i++) {
+        const dist = distSqToSegment(p, s.points[i - 1], s.points[i]);
+        if (dist < best) {
+          best = dist;
+          bestId = d.id;
+        }
+      }
+    }
+  }
+  return bestId;
+}
+
 export function PdfDrawLayer({
   pageNumber,
   width,
   height,
   drawings,
   active,
+  tool,
   color,
   penWidth,
-  onCreateStroke
+  onCreateStroke,
+  onEraseStroke
 }: {
   pageNumber: number;
   width: number;
   height: number;
   drawings: DrawingAnnotation[];
   active: boolean;
+  /** 'pen' draws new strokes; 'eraser' deletes the drawing under the pointer. */
+  tool: 'pen' | 'eraser';
   color: AnnotationColor;
   /** Pen width as a fraction of page width (matches stored stroke width). */
   penWidth: number;
   onCreateStroke: (points: NormPoint[], width: number, color: AnnotationColor) => void;
+  onEraseStroke: (annotationId: string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
@@ -93,16 +136,32 @@ export function PdfDrawLayer({
   }, [drawings, width, height, pageNumber, color, penWidth]);
 
   const toNorm = pointerToNorm;
+  const ERASE_TOL = 0.012; // normalized hit radius (~1.2% of page)
+
+  const eraseAt = (e: React.PointerEvent) => {
+    const id = hitTestDrawing(drawings, pageNumber, toNorm(e), ERASE_TOL);
+    if (id) onEraseStroke(id);
+  };
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (!active) return;
+    if (tool === 'eraser') {
+      eraseAt(e);
+      return;
+    }
     (e.currentTarget as HTMLCanvasElement).setPointerCapture(e.pointerId);
     drawingRef.current = true;
     currentRef.current = [toNorm(e)];
     repaint(currentRef.current);
   };
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!active || !drawingRef.current) return;
+    if (!active) return;
+    if (tool === 'eraser') {
+      // Erase on drag too (only while a button is held).
+      if (e.buttons === 1) eraseAt(e);
+      return;
+    }
+    if (!drawingRef.current) return;
     currentRef.current.push(toNorm(e));
     repaint(currentRef.current);
   };
@@ -127,8 +186,11 @@ export function PdfDrawLayer({
       style={{
         width,
         height,
+        // react-pdf's text layer sits above the canvas and would swallow pointer
+        // events; lift the draw layer above it while active so strokes register.
+        zIndex: active ? 30 : 1,
         pointerEvents: active ? 'auto' : 'none',
-        cursor: active ? 'crosshair' : 'default',
+        cursor: active ? (tool === 'eraser' ? 'cell' : 'crosshair') : 'default',
         touchAction: active ? 'none' : 'auto'
       }}
       onPointerDown={onPointerDown}

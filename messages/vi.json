@@ -432,7 +432,10 @@
     "navThumbnails": "Ảnh thu nhỏ",
     "navOutline": "Mục lục",
     "navOutlineEmpty": "Tài liệu không có mục lục",
-    "draw": "Vẽ"
+    "draw": "Vẽ",
+    "drawPen": "Bút",
+    "drawEraser": "Tẩy",
+    "drawUndo": "Hoàn tác"
   },
   "materials": {
     "title": "Vật liệu",

@@ -432,7 +432,10 @@
     "navThumbnails": "Thumbnails",
     "navOutline": "Outline",
     "navOutlineEmpty": "No outline in this document",
-    "draw": "Draw"
+    "draw": "Draw",
+    "drawPen": "Pen",
+    "drawEraser": "Eraser",
+    "drawUndo": "Undo"
   },
   "materials": {
     "title": "Materials",

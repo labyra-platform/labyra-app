@@ -608,11 +608,36 @@ export function PdfViewer({
         )}
 
         {!urlError && (!pdfData || !pdfReady) && (
-          <div className='flex h-full justify-center py-4'>
-            <Skeleton
-              className='w-full max-w-2xl rounded-md'
+          <div className='flex justify-center py-4'>
+            {/* R235b: page-shaped skeleton — mô phỏng layout 1 trang paper
+                (title + authors + paragraphs) trên nền giấy trắng, thay ô xám
+                phẳng. Aspect 1/1.414 giữ CLS thấp khi PDF thật render vào. */}
+            <div
+              className='w-full max-w-2xl rounded-md bg-white p-[8%] shadow-md dark:bg-neutral-100'
               style={{ aspectRatio: '1 / 1.414' }}
-            />
+            >
+              <Skeleton className='mb-4 h-6 w-3/4 bg-neutral-200' />
+              <Skeleton className='mb-6 h-3 w-1/2 bg-neutral-200' />
+              <div className='space-y-2.5'>
+                {Array.from({ length: 12 }, (_, i) => (
+                  <Skeleton
+                    key={i}
+                    className='h-2.5 bg-neutral-200'
+                    style={{ width: `${[100, 96, 98, 90, 100, 94, 88, 100, 97, 70, 100, 85][i]}%` }}
+                  />
+                ))}
+              </div>
+              <Skeleton className='mt-6 mb-3 h-3 w-2/5 bg-neutral-200' />
+              <div className='space-y-2.5'>
+                {Array.from({ length: 6 }, (_, i) => (
+                  <Skeleton
+                    key={i}
+                    className='h-2.5 bg-neutral-200'
+                    style={{ width: `${[100, 92, 98, 86, 100, 60][i]}%` }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

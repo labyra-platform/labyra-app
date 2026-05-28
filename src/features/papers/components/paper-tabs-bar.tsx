@@ -329,10 +329,14 @@ function TabItem({
             }
           }}
           className={cn(
-            'group relative my-1.5 flex min-w-[7rem] max-w-[16rem] flex-1 cursor-pointer items-center gap-1.5 rounded-md border-b-2 px-2.5 text-xs transition-colors',
+            // R235b: mỗi tab là 1 thẻ có viền + nền riêng -> ranh giới rõ ràng
+            // giữa các tab (trước đây border-b-2 + transparent làm chúng dính
+            // thành 1 khối). Active: nền sáng + viền primary trái. Inactive:
+            // nền mờ + viền mảnh.
+            'group relative my-1.5 flex min-w-[7rem] max-w-[16rem] flex-1 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors',
             active
-              ? 'border-primary bg-background font-medium text-foreground shadow-sm'
-              : 'border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+              ? 'border-l-2 border-l-primary border-border bg-background font-medium text-foreground shadow-sm'
+              : 'border-border/60 bg-background/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
           )}
         >
           <IconFileText className='size-3.5 shrink-0 opacity-70' />

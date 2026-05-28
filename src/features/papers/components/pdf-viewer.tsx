@@ -34,6 +34,7 @@ import {
   IconDownload,
   IconLoader2,
   IconMinus,
+  IconPencil,
   IconPlus,
   IconRefresh,
   IconRotateClockwise
@@ -45,6 +46,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
 import { PdfHighlightLayer } from '@/features/papers/components/pdf-highlight-layer';
+import { PdfDrawLayer } from '@/features/papers/components/pdf-draw-layer';
 import { PdfNavSidebar } from '@/features/papers/components/pdf-nav-sidebar';
 import {
   createAnnotation,
@@ -52,7 +54,13 @@ import {
   subscribeAnnotations
 } from '@/lib/firestore/queries/annotations';
 import { useTenantId } from '@/lib/auth/use-claims';
-import type { AnnotationColor, HighlightAnnotation, NormRect } from '@/types/annotations';
+import type {
+  AnnotationColor,
+  DrawingAnnotation,
+  HighlightAnnotation,
+  NormPoint,
+  NormRect
+} from '@/types/annotations';
 import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { usePaper } from '@/lib/firestore/queries/papers';
@@ -79,6 +87,16 @@ interface PdfDocLike {
     getViewport: (params: { scale: number }) => { width: number; height: number };
   }>;
 }
+
+/** Pen palette for Draw mode (C4). Swatch = solid stroke preview color. */
+const DRAW_COLORS: readonly AnnotationColor[] = ['pink', 'blue', 'green', 'orange', 'yellow'];
+const DRAW_SWATCH: Record<AnnotationColor, string> = {
+  pink: '#D81B60',
+  blue: '#2962FF',
+  green: '#00A152',
+  orange: '#F4511E',
+  yellow: '#F5B400'
+};
 
 /** Table-of-contents glyph (bulleted list) for the nav-sidebar toggle. Distinct
  *  from the panel collapse handle, which previously shared the sidebar icon. */
@@ -198,6 +216,12 @@ export function PdfViewer({
   // C3b: private highlights for this paper (current user), live-subscribed.
   const tenantId = useTenantId();
   const [highlights, setHighlights] = useState<HighlightAnnotation[]>([]);
+  // C4: freehand drawing. drawMode toggles pointer capture; while on, text
+  // selection (highlight) is suppressed so the two tools don't fight.
+  const [drawMode, setDrawMode] = useState(false);
+  const [drawColor, setDrawColor] = useState<AnnotationColor>('pink');
+  const [drawings, setDrawings] = useState<DrawingAnnotation[]>([]);
+  const DRAW_PEN_WIDTH = 0.004; // fraction of page width (~2-3px at typical zoom)
   const [pdfReady, setPdfReady] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -361,11 +385,12 @@ export function PdfViewer({
     [initialPage, initialScrollTop]
   );
 
-  // C3b: live-subscribe to this user's highlights for the paper.
+  // C3b/C4: live-subscribe to this user's annotations for the paper, split by kind.
   useEffect(() => {
     if (!tenantId || !paperId) return;
     const unsub = subscribeAnnotations(tenantId, paperId, (anns) => {
       setHighlights(anns.filter((a): a is HighlightAnnotation => a.kind === 'highlight'));
+      setDrawings(anns.filter((a): a is DrawingAnnotation => a.kind === 'drawing'));
     });
     return unsub;
   }, [tenantId, paperId]);
@@ -376,6 +401,18 @@ export function PdfViewer({
       createAnnotation(tenantId, paperId, { kind: 'highlight', rects, text, color }).catch(() => {
         // surfaced via UI later; swallow for now so a failed write doesn't crash
       });
+    },
+    [tenantId, paperId]
+  );
+
+  const handleCreateStroke = useCallback(
+    (points: NormPoint[], strokeWidth: number, color: AnnotationColor, pageNumber: number) => {
+      if (!tenantId) return;
+      createAnnotation(tenantId, paperId, {
+        kind: 'drawing',
+        color,
+        strokes: [{ page: pageNumber, points, width: strokeWidth }]
+      }).catch(() => {});
     },
     [tenantId, paperId]
   );
@@ -714,6 +751,38 @@ export function PdfViewer({
           <IconRotateClockwise className='size-4' />
         </Button>
 
+        {/* Draw (C4) — only meaningful at rotation 0 */}
+        <Button
+          variant={drawMode ? 'secondary' : 'ghost'}
+          size='icon'
+          className='size-7'
+          onClick={() => setDrawMode((d) => !d)}
+          disabled={rotation !== 0}
+          aria-pressed={drawMode}
+          aria-label={t('draw')}
+          title={t('draw')}
+        >
+          <IconPencil className='size-4' />
+        </Button>
+        {drawMode && (
+          <div className='flex items-center gap-1'>
+            {DRAW_COLORS.map((c) => (
+              <button
+                key={c}
+                type='button'
+                onClick={() => setDrawColor(c)}
+                className={cn(
+                  'size-5 rounded-full border transition-transform hover:scale-110',
+                  drawColor === c ? 'border-foreground' : 'border-black/10'
+                )}
+                style={{ backgroundColor: DRAW_SWATCH[c] }}
+                aria-label={`Pen ${c}`}
+                aria-pressed={drawColor === c}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Fullscreen */}
         <Button
           variant='ghost'
@@ -866,8 +935,9 @@ export function PdfViewer({
                               </div>
                             }
                           />
-                          {/* C3b: highlight overlay — only at rotation 0 (see layer). */}
-                          {rotation === 0 && pageAspects[pageNum] && (
+                          {/* C3b: highlight overlay — at rotation 0, when NOT
+                              drawing (so the two tools don't fight for pointer). */}
+                          {rotation === 0 && !drawMode && pageAspects[pageNum] && (
                             <PdfHighlightLayer
                               pageNumber={pageNum}
                               width={pageWidth}
@@ -875,6 +945,22 @@ export function PdfViewer({
                               highlights={highlights}
                               onCreate={handleCreateHighlight}
                               onDelete={handleDeleteHighlight}
+                            />
+                          )}
+                          {/* C4: drawing overlay — renders saved strokes always
+                              (rotation 0); captures pointer only while drawMode. */}
+                          {rotation === 0 && pageAspects[pageNum] && (
+                            <PdfDrawLayer
+                              pageNumber={pageNum}
+                              width={pageWidth}
+                              height={pageWidth * pageAspects[pageNum]}
+                              drawings={drawings}
+                              active={drawMode}
+                              color={drawColor}
+                              penWidth={DRAW_PEN_WIDTH}
+                              onCreateStroke={(points, w, c) =>
+                                handleCreateStroke(points, w, c, pageNum)
+                              }
                             />
                           )}
                         </div>

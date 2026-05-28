@@ -431,7 +431,8 @@
     "navToggle": "Toggle navigation",
     "navThumbnails": "Thumbnails",
     "navOutline": "Outline",
-    "navOutlineEmpty": "No outline in this document"
+    "navOutlineEmpty": "No outline in this document",
+    "draw": "Draw"
   },
   "materials": {
     "title": "Materials",

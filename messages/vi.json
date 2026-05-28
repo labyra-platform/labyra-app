@@ -431,7 +431,8 @@
     "navToggle": "Bật/tắt điều hướng",
     "navThumbnails": "Ảnh thu nhỏ",
     "navOutline": "Mục lục",
-    "navOutlineEmpty": "Tài liệu không có mục lục"
+    "navOutlineEmpty": "Tài liệu không có mục lục",
+    "draw": "Vẽ"
   },
   "materials": {
     "title": "Vật liệu",

@@ -16,7 +16,12 @@ import type { TabGroupColor } from '@/features/papers/stores/paper-tabs-store';
 import type { CSSProperties } from 'react';
 
 export interface TabGroupChipStyle {
+  /** Outline chip (legacy, kept for the colour-picker swatches). */
   chip: CSSProperties;
+  /** R237b: Edge-style solid chip — saturated fill, white text. */
+  solidChip: CSSProperties;
+  /** R237b: 2px top bar spanning the group (Edge group strip). */
+  bar: CSSProperties;
   band: CSSProperties;
   dot: CSSProperties;
 }
@@ -28,6 +33,11 @@ function chipFor(h: number, s = 75, l = 50): TabGroupChipStyle {
       borderColor: `hsl(${h} ${s}% ${l}% / 0.35)`,
       color: `hsl(${h} ${s}% ${Math.max(l - 5, 35)}%)`
     },
+    solidChip: {
+      backgroundColor: `hsl(${h} ${s}% ${l}%)`,
+      color: 'hsl(0 0% 100%)'
+    },
+    bar: { backgroundColor: `hsl(${h} ${s}% ${l}%)` },
     band: { backgroundColor: `hsl(${h} ${s}% ${l}% / 0.06)` },
     dot: { backgroundColor: `hsl(${h} ${s}% ${l}%)` }
   };
@@ -46,6 +56,11 @@ export const TAB_GROUP_COLOR_STYLES: Record<TabGroupColor, TabGroupChipStyle> = 
       borderColor: 'hsl(var(--border))',
       color: 'hsl(var(--muted-foreground))'
     },
+    solidChip: {
+      backgroundColor: 'hsl(var(--muted-foreground))',
+      color: 'hsl(var(--background))'
+    },
+    bar: { backgroundColor: 'hsl(var(--muted-foreground))' },
     band: { backgroundColor: 'hsl(var(--muted) / 0.5)' },
     dot: { backgroundColor: 'hsl(var(--muted-foreground))' }
   }

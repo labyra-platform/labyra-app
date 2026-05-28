@@ -133,3 +133,55 @@
 .message-appear {
   animation: message-appear 0.28s ease-out;
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   R237b — Edge-style paper reader tabs.
+   The active tab is a "floating sheet": convex top corners, and—crucially—
+   *concave* bottom corners that curve outward into the content surface, so the
+   tab reads as physically attached to the page below it (Edge/Chrome shape).
+
+   We can't do an outward (negative) radius with border-radius alone, so each
+   bottom corner is faked with a small square pseudo-element filled by a
+   radial-gradient: the gradient paints the *outside* of a circle in the tab's
+   own background colour, leaving a quarter-circle "bite" that looks like the
+   sheet flaring into the bar. `--edge-tab-bg` is set inline per tab so the
+   curve always matches the active fill (light/dark + group tint).
+   ────────────────────────────────────────────────────────────────────────── */
+.edge-tab {
+  position: relative;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+/* The two bottom flares. Sit just outside each bottom corner, on the baseline. */
+.edge-tab-active::before,
+.edge-tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: var(--edge-tab-bg, hsl(var(--background)));
+  pointer-events: none;
+}
+.edge-tab-active::before {
+  left: -0.5rem;
+  /* circle centred at the far (outer) corner → keeps the convex bite facing in */
+  -webkit-mask: radial-gradient(circle at 0 0, transparent 0.5rem, #000 0.5rem);
+  mask: radial-gradient(circle at 0 0, transparent 0.5rem, #000 0.5rem);
+}
+.edge-tab-active::after {
+  right: -0.5rem;
+  -webkit-mask: radial-gradient(circle at 100% 0, transparent 0.5rem, #000 0.5rem);
+  mask: radial-gradient(circle at 100% 0, transparent 0.5rem, #000 0.5rem);
+}
+
+/* Vertical separator between inactive tabs: short, vertically centred, and
+   suppressed next to the active tab (Edge hides the seam around the active). */
+.edge-sep {
+  align-self: center;
+  height: 1.25rem;
+  width: 1px;
+  background-color: hsl(var(--border));
+  transition: opacity 0.12s ease;
+}

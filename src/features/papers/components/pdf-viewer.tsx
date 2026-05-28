@@ -33,6 +33,7 @@ import {
   IconChevronRight,
   IconDownload,
   IconEraser,
+  IconLanguage,
   IconLoader2,
   IconMinus,
   IconPencil,
@@ -47,6 +48,7 @@ import { Button } from '@/components/ui/button';
 import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
 import { PdfHighlightLayer } from '@/features/papers/components/pdf-highlight-layer';
 import { PdfDrawLayer } from '@/features/papers/components/pdf-draw-layer';
+import { PdfTranslateLayer } from '@/features/papers/components/pdf-translate-layer';
 import { PdfNavSidebar } from '@/features/papers/components/pdf-nav-sidebar';
 import {
   createAnnotation,
@@ -97,6 +99,16 @@ const DRAW_SWATCH: Record<AnnotationColor, string> = {
   orange: '#F4511E',
   yellow: '#F5B400'
 };
+
+/** Target languages for in-reader translation (C5). */
+const TRANSLATE_LANGS: readonly { code: string; label: string }[] = [
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'en', label: 'English' },
+  { code: 'zh', label: '中文' },
+  { code: 'ja', label: '日本語' },
+  { code: 'ko', label: '한국어' },
+  { code: 'fr', label: 'Français' }
+];
 
 /** Table-of-contents glyph (bulleted list) for the nav-sidebar toggle. Distinct
  *  from the panel collapse handle, which previously shared the sidebar icon. */
@@ -246,6 +258,9 @@ export function PdfViewer({
   const [drawColor, setDrawColor] = useState<AnnotationColor>('pink');
   const [drawings, setDrawings] = useState<DrawingAnnotation[]>([]);
   const DRAW_PEN_WIDTH = 0.004; // fraction of page width (~2-3px at typical zoom)
+  // C5: translate mode + target language. Ctrl+drag a region while on.
+  const [translateMode, setTranslateMode] = useState(false);
+  const [targetLang, setTargetLang] = useState('vi');
   const [pdfReady, setPdfReady] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -447,6 +462,24 @@ export function PdfViewer({
       deleteAnnotation(tenantId, paperId, id).catch(() => {});
     },
     [tenantId, paperId]
+  );
+
+  const handleTranslate = useCallback(
+    async (text: string): Promise<string> => {
+      const { getFirebaseAuth } = await import('@/lib/firebase/client');
+      const user = getFirebaseAuth().currentUser;
+      if (!user) throw new Error('Not signed in');
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/papers/${paperId}/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text, targetLang })
+      });
+      if (!res.ok) throw new Error('translate_failed');
+      const data = (await res.json()) as { translation: string };
+      return data.translation;
+    },
+    [paperId, targetLang]
   );
 
   // C4b: undo removes the most recently created drawing (by createdAt).
@@ -898,6 +931,53 @@ export function PdfViewer({
           </div>
         )}
 
+        {/* Translate (C5) — hover to pick target language (like Draw); active =
+            Ctrl+drag a region to translate. Only at rotation 0. */}
+        <div className='group relative'>
+          <Button
+            variant={translateMode ? 'secondary' : 'ghost'}
+            size='icon'
+            className='relative size-7 overflow-hidden'
+            disabled={rotation !== 0}
+            onClick={() => setTranslateMode((v) => !v)}
+            aria-pressed={translateMode}
+            aria-label={t('translate')}
+            title={t('translate')}
+          >
+            <IconLanguage className='size-4' />
+            {translateMode && (
+              <span
+                className='absolute inset-x-1 bottom-0 truncate text-center text-[8px] font-semibold uppercase leading-none text-primary'
+                aria-hidden
+              >
+                {targetLang}
+              </span>
+            )}
+          </Button>
+          {/* Hover language menu */}
+          <div className='absolute left-1/2 top-full z-50 hidden -translate-x-1/2 pt-1 group-hover:block'>
+            <div className='flex flex-col rounded-md border bg-popover py-1 shadow-lg'>
+              {TRANSLATE_LANGS.map((l) => (
+                <button
+                  key={l.code}
+                  type='button'
+                  onClick={() => {
+                    setTargetLang(l.code);
+                    setTranslateMode(true);
+                  }}
+                  className={cn(
+                    'whitespace-nowrap px-3 py-1 text-left text-xs transition-colors hover:bg-muted',
+                    targetLang === l.code ? 'font-medium text-foreground' : 'text-muted-foreground'
+                  )}
+                  aria-pressed={targetLang === l.code}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Fullscreen */}
         <Button
           variant='ghost'
@@ -1058,16 +1138,19 @@ export function PdfViewer({
                           />
                           {/* C3b: highlight overlay — at rotation 0, when NOT
                               drawing (so the two tools don't fight for pointer). */}
-                          {rotation === 0 && !drawMode && pageAspects[pageNum] && (
-                            <PdfHighlightLayer
-                              pageNumber={pageNum}
-                              width={pageWidth}
-                              height={pageWidth * pageAspects[pageNum]}
-                              highlights={highlights}
-                              onCreate={handleCreateHighlight}
-                              onDelete={handleDeleteHighlight}
-                            />
-                          )}
+                          {rotation === 0 &&
+                            !drawMode &&
+                            !translateMode &&
+                            pageAspects[pageNum] && (
+                              <PdfHighlightLayer
+                                pageNumber={pageNum}
+                                width={pageWidth}
+                                height={pageWidth * pageAspects[pageNum]}
+                                highlights={highlights}
+                                onCreate={handleCreateHighlight}
+                                onDelete={handleDeleteHighlight}
+                              />
+                            )}
                           {/* C4: drawing overlay — renders saved strokes always
                               (rotation 0); captures pointer only while drawMode. */}
                           {rotation === 0 && pageAspects[pageNum] && (
@@ -1076,7 +1159,7 @@ export function PdfViewer({
                               width={pageWidth}
                               height={pageWidth * pageAspects[pageNum]}
                               drawings={drawings}
-                              active={drawMode}
+                              active={drawMode && !translateMode}
                               tool={drawTool}
                               color={drawColor}
                               penWidth={DRAW_PEN_WIDTH}
@@ -1084,6 +1167,15 @@ export function PdfViewer({
                                 handleCreateStroke(points, w, c, pageNum)
                               }
                               onEraseStroke={handleDeleteDrawing}
+                            />
+                          )}
+                          {/* C5: translate overlay — Ctrl+drag a region while on. */}
+                          {rotation === 0 && translateMode && pageAspects[pageNum] && (
+                            <PdfTranslateLayer
+                              width={pageWidth}
+                              height={pageWidth * pageAspects[pageNum]}
+                              active={translateMode}
+                              onTranslate={handleTranslate}
                             />
                           )}
                         </div>

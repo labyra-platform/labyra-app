@@ -17,7 +17,8 @@ export type FeatureKind =
   | 'title_generation'
   | 'intent_classify'
   | 'classify' // R178-3 paper domain classification — @r178-3-applied
-  | 'fact_extraction'; // R193 ADR-035 M2 memory fact extraction
+  | 'fact_extraction' // R193 ADR-035 M2 memory fact extraction
+  | 'translate'; // R237-C5 in-reader passage translation
 
 /** Per-capability stats (R170-3 extended) */
 export interface CapabilityStats {

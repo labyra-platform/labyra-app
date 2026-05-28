@@ -240,6 +240,11 @@ export function PdfViewer({
   // R237z: editable page box. Local string state so the user can type freely;
   // commit on Enter/blur. Kept in sync when currentPage changes elsewhere.
   const [pageInput, setPageInput] = useState(String(initialPage ?? 1));
+  // R237ab: avoid SSR/client hydration mismatch on nav buttons — `disabled`
+  // depends on numPages which is 0 on the server and set after the PDF loads on
+  // the client. Gate disabled state until mounted.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [zoom, setZoom] = useState(initialZoom ?? 1);
   // R237m: document-level rotation in degrees (0/90/180/270), like Edge's
   // rotate button. Applied to every Page; aspect ratios swap at 90/270.
@@ -775,7 +780,7 @@ export function PdfViewer({
             size='icon'
             className='size-7'
             onClick={goPrev}
-            disabled={currentPage <= 1}
+            disabled={mounted && currentPage <= 1}
             aria-label={t('prevPage')}
             title={t('prevPage')}
           >
@@ -805,7 +810,7 @@ export function PdfViewer({
             size='icon'
             className='size-7'
             onClick={goNext}
-            disabled={currentPage >= numPages}
+            disabled={mounted && currentPage >= numPages}
             aria-label={t('nextPage')}
             title={t('nextPage')}
           >
@@ -994,18 +999,18 @@ export function PdfViewer({
           )}
         </Button>
 
-        {/* Download — prefer the signed URL; fall back to the loaded blob so
-            the button never disappears when bytes came from the cache (R237x). */}
+        {/* Download — icon only; prefers the signed URL, falls back to the
+            loaded blob so it never disappears (R237x). */}
         {(signed?.url || fileSource) && (
-          <Button asChild variant='outline' size='sm' className='shrink-0'>
+          <Button asChild variant='ghost' size='icon' className='size-7 shrink-0'>
             <a
               href={signed?.url ?? fileSource ?? '#'}
               download={`${displayTitle || 'paper'}.pdf`}
               rel='noopener noreferrer'
               aria-label={t('download')}
+              title={t('download')}
             >
               <IconDownload className='size-4' />
-              <span className='hidden md:inline'>{t('download')}</span>
             </a>
           </Button>
         )}

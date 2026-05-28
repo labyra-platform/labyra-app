@@ -30,18 +30,16 @@ interface ActiveBox {
   translation: string;
 }
 
-/** Collect text from text-layer spans intersecting `rect` (page-pixel space). */
-function textInRect(layer: HTMLElement, rect: Rect): string {
-  const box = layer.getBoundingClientRect();
-  const spans = layer.querySelectorAll<HTMLElement>('.react-pdf__Page__textContent span, span');
+/** Collect text from text-layer spans intersecting `rect` (page-pixel space).
+ *  `host` is the page wrapper that contains both the react-pdf .textLayer and
+ *  this overlay; the overlay itself has no spans, so we search the wrapper. */
+function textInRect(host: HTMLElement, overlayBox: DOMRect, rect: Rect): string {
+  const spans = host.querySelectorAll<HTMLElement>('.textLayer span');
   const parts: string[] = [];
   for (const span of spans) {
     const r = span.getBoundingClientRect();
-    const sx = r.left - box.left;
-    const sy = r.top - box.top;
-    const cx = sx + r.width / 2;
-    const cy = sy + r.height / 2;
-    // Span counts if its center is inside the drag rectangle.
+    const cx = r.left - overlayBox.left + r.width / 2;
+    const cy = r.top - overlayBox.top + r.height / 2;
     if (cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h) {
       const txt = span.textContent ?? '';
       if (txt.trim()) parts.push(txt);
@@ -102,9 +100,13 @@ export function PdfTranslateLayer({
     setDragRect(null);
     if (!rect || rect.w < 12 || rect.h < 8) return;
     const layer = layerRef.current;
-    if (!layer) return;
-    const text = textInRect(layer, rect);
-    if (!text) return;
+    const host = layer?.parentElement;
+    if (!layer || !host) return;
+    const text = textInRect(host, layer.getBoundingClientRect(), rect);
+    if (!text) {
+      setBox({ rect, text: '', status: 'error', translation: '' });
+      return;
+    }
     setBox({ rect, text, status: 'loading', translation: '' });
     try {
       const translation = await onTranslate(text);

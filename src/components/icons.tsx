@@ -104,6 +104,51 @@ import {
 
 export type Icon = React.ComponentType<IconProps>;
 
+/**
+ * R237a-v2: original PDF file glyph (Zotero-style) — a sheet with a folded
+ * corner and a red "PDF" tab. Hand-drawn SVG (not a trademarked logo) so it's
+ * safe to ship. Inherits size via width/height props; the red label is fixed.
+ */
+function PdfFileIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox='0 0 24 24'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+      className={className}
+      aria-hidden
+    >
+      <path
+        d='M6 2.75h7.5L19.25 8.5v11.75a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3.75a1 1 0 0 1 1-1Z'
+        fill='currentColor'
+        fillOpacity='0.08'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinejoin='round'
+      />
+      <path
+        d='M13.5 2.75V8.5h5.75'
+        fill='none'
+        stroke='currentColor'
+        strokeWidth='1.4'
+        strokeLinejoin='round'
+      />
+      <rect x='3.5' y='12.5' width='11' height='6' rx='1.2' fill='#dc2626' />
+      <text
+        x='9'
+        y='17'
+        textAnchor='middle'
+        fontSize='4.2'
+        fontWeight='700'
+        fill='white'
+        fontFamily='Arial, sans-serif'
+      >
+        PDF
+      </text>
+    </svg>
+  );
+}
+
 export const Icons = {
   // General
   alertCircle: IconAlertCircle,
@@ -245,5 +290,6 @@ export const Icons = {
   bookings: IconCalendarEvent,
   members: IconUsersGroup,
   papers: IconFileDescription,
-  aiAssistant: IconSparkles
+  aiAssistant: IconSparkles,
+  pdfFile: PdfFileIcon
 };

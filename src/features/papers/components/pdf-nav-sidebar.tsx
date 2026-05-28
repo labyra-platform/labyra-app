@@ -32,6 +32,10 @@ interface PdfProxy {
   getOutline: () => Promise<unknown[] | null>;
   getDestination: (id: string) => Promise<unknown[] | null>;
   getPageIndex: (ref: object) => Promise<number>;
+  getPage: (pageNumber: number) => Promise<PdfPageLike>;
+}
+interface PdfPageLike {
+  getViewport: (params: { scale: number }) => { width: number; height: number };
 }
 interface OutlineNode {
   title: string;
@@ -39,21 +43,41 @@ interface OutlineNode {
   items: OutlineNode[];
 }
 
-/** An outline node with its resolved 1-based page (or null) and a stable id. */
+/** An outline node with its resolved 1-based page (or null), a stable id, and
+ *  the vertical position of its target within the page as a fraction from the
+ *  top (0 = page top, 1 = page bottom) so jumps land the header at the top. */
 interface OutlineItem {
   id: string;
   title: string;
   page: number | null;
+  yRatio: number | null;
   children: OutlineItem[];
 }
 
-async function resolvePage(pdf: PdfProxy, dest: string | unknown[] | null): Promise<number | null> {
+async function resolveDest(
+  pdf: PdfProxy,
+  dest: string | unknown[] | null
+): Promise<{ page: number; yRatio: number | null } | null> {
   try {
     const explicit = typeof dest === 'string' ? await pdf.getDestination(dest) : dest;
-    const ref = explicit?.[0];
+    if (!Array.isArray(explicit)) return null;
+    const ref = explicit[0];
     if (!ref || typeof ref !== 'object') return null;
     const idx = await pdf.getPageIndex(ref as object);
-    return idx + 1;
+    const page = idx + 1;
+    // dest = [pageRef, {name}, x, y, zoom]. y (index 3) is in PDF points from
+    // the page BOTTOM. Convert to a fraction from the TOP using page height.
+    const yPt = typeof explicit[3] === 'number' ? (explicit[3] as number) : null;
+    let yRatio: number | null = null;
+    if (yPt !== null) {
+      try {
+        const vp = (await pdf.getPage(page)).getViewport({ scale: 1 });
+        if (vp.height > 0) yRatio = Math.max(0, Math.min(1, (vp.height - yPt) / vp.height));
+      } catch {
+        yRatio = null;
+      }
+    }
+    return { page, yRatio };
   } catch {
     return null;
   }
@@ -68,9 +92,15 @@ async function buildOutlineTree(
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
     const id = `${prefix}${i}`;
-    const page = await resolvePage(pdf, n.dest);
+    const resolved = await resolveDest(pdf, n.dest);
     const children = n.items?.length ? await buildOutlineTree(pdf, n.items, `${id}-`) : [];
-    out.push({ id, title: n.title, page, children });
+    out.push({
+      id,
+      title: n.title,
+      page: resolved?.page ?? null,
+      yRatio: resolved?.yRatio ?? null,
+      children
+    });
   }
   return out;
 }
@@ -101,7 +131,7 @@ export function PdfNavSidebar({
   pdfOptions: object;
   numPages: number;
   currentPage: number;
-  onJump: (page: number) => void;
+  onJump: (page: number, yRatio?: number | null) => void;
 }) {
   const t = useTranslations('papers');
   const [tab, setTab] = useState<Tab>('thumbnails');
@@ -208,7 +238,7 @@ export function PdfNavSidebar({
             onToggle={toggleExpand}
             onSelect={(item) => {
               setSelectedId(item.id);
-              if (item.page) onJump(item.page);
+              if (item.page) onJump(item.page, item.yRatio);
             }}
             emptyLabel={t('navOutlineEmpty')}
           />

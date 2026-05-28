@@ -75,6 +75,9 @@ interface PdfDocLike {
   getOutline: () => Promise<unknown[] | null>;
   getDestination: (id: string) => Promise<unknown[] | null>;
   getPageIndex: (ref: object) => Promise<number>;
+  getPage: (pageNumber: number) => Promise<{
+    getViewport: (params: { scale: number }) => { width: number; height: number };
+  }>;
 }
 
 /** Table-of-contents glyph (bulleted list) for the nav-sidebar toggle. Distinct
@@ -474,6 +477,25 @@ export function PdfViewer({
     if (target) target.scrollIntoView({ behavior: 'auto', block: 'start' });
   }, []);
 
+  // R237t: jump so a destination INSIDE a page lands near the top of the
+  // viewport (Edge/Adobe behaviour). yRatio is 0..1 from the page top; when null
+  // we fall back to the page top. Uses scroll math (not scrollIntoView) so the
+  // offset within the page is honored even when several headers share a page.
+  const scrollToPageAt = useCallback((pageNum: number, yRatio?: number | null) => {
+    const el = pagesContainerRef.current;
+    if (!el) return;
+    const target = el.querySelector<HTMLElement>(`[data-page-index="${pageNum}"]`);
+    if (!target) return;
+    if (yRatio == null) {
+      target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      return;
+    }
+    const containerTop = el.getBoundingClientRect().top;
+    const targetTop = target.getBoundingClientRect().top;
+    const pageOffsetInScroll = el.scrollTop + (targetTop - containerTop);
+    el.scrollTop = pageOffsetInScroll + yRatio * target.offsetHeight - 8;
+  }, []);
+
   const goPrev = useCallback(() => {
     setCurrentPage((prev) => {
       if (prev > 1) {
@@ -728,9 +750,11 @@ export function PdfViewer({
             pdfOptions={PDF_OPTIONS}
             numPages={numPages}
             currentPage={currentPage}
-            onJump={(p) => {
+            onJump={(p, yRatio) => {
               setCurrentPage(p);
-              scrollToPage(p);
+              // Wait a frame so the target page is mounted (virtualization)
+              // before measuring its offset for the precise scroll.
+              requestAnimationFrame(() => scrollToPageAt(p, yRatio));
             }}
           />
         )}

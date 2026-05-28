@@ -225,6 +225,9 @@ export function PdfViewer({
   const [pageAspects, setPageAspects] = useState<Record<number, number>>({});
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(initialPage ?? 1);
+  // R237z: editable page box. Local string state so the user can type freely;
+  // commit on Enter/blur. Kept in sync when currentPage changes elsewhere.
+  const [pageInput, setPageInput] = useState(String(initialPage ?? 1));
   const [zoom, setZoom] = useState(initialZoom ?? 1);
   // R237m: document-level rotation in degrees (0/90/180/270), like Edge's
   // rotate button. Applied to every Page; aspect ratios swap at 90/270.
@@ -482,23 +485,24 @@ export function PdfViewer({
   }, [zoom, onZoomChange]);
 
   // R237o: report the exact scroll offset to the store as the user scrolls
-  // (after restore). Light rAF throttle. This is what lets re-opening a tab
-  // land on the precise position, not just the top of a page.
+  // R237z: persist scroll position only AFTER scrolling settles (debounce), not
+  // every frame. Writing the store on each rAF re-rendered subscribers mid-scroll
+  // and made the scrollbar lag behind the wheel. The browser scrolls natively;
+  // we just record the final offset ~160ms after the last scroll event.
   useEffect(() => {
     const el = pagesContainerRef.current;
     if (!el) return;
-    let raf = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
         if (restoredRef.current) onScrollChange?.(el.scrollTop);
-      });
+      }, 160);
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       el.removeEventListener('scroll', onScroll);
-      if (raf) cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
     };
   }, [onScrollChange, pdfReady]);
 
@@ -602,6 +606,24 @@ export function PdfViewer({
       return prev;
     });
   }, [numPages, scrollToPage]);
+
+  // Reflect the live page into the editable box (scroll, prev/next, TOC jumps).
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
+
+  // Commit a typed page number: clamp to [1, numPages], jump, or revert if NaN.
+  const commitPageInput = useCallback(() => {
+    const n = Number.parseInt(pageInput, 10);
+    if (Number.isNaN(n)) {
+      setPageInput(String(currentPage));
+      return;
+    }
+    const target = Math.max(1, Math.min(numPages || 1, n));
+    setCurrentPage(target);
+    scrollToPage(target);
+    setPageInput(String(target));
+  }, [pageInput, currentPage, numPages, scrollToPage]);
 
   const zoomIn = useCallback(() => {
     setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
@@ -726,9 +748,25 @@ export function PdfViewer({
           >
             <IconChevronLeft className='size-4' />
           </Button>
-          <span className='min-w-[3rem] text-center text-xs tabular-nums text-muted-foreground'>
-            {currentPage} / {numPages || '—'}
-          </span>
+          <div className='flex items-center gap-1 text-xs text-muted-foreground'>
+            <input
+              type='text'
+              inputMode='numeric'
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onFocus={(e) => e.target.select()}
+              onBlur={commitPageInput}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  commitPageInput();
+                  e.currentTarget.blur();
+                }
+              }}
+              className='w-10 rounded border bg-background px-1 py-0.5 text-center tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-ring'
+              aria-label={t('currentPage')}
+            />
+            <span>/ {numPages || '—'}</span>
+          </div>
           <Button
             variant='ghost'
             size='icon'

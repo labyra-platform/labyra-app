@@ -14,7 +14,7 @@ import {
  * @phase R160-ai-5b-1
  */
 import { useEffect, useState } from 'react';
-import { useTenantId } from '@/lib/auth/use-claims';
+import { useGroupId, useTenantId } from '@/lib/auth/use-claims';
 import { getFirebaseFirestore as db } from '@/lib/firebase/client';
 import type { MonthlyUsage, Paper } from '@/types/papers';
 
@@ -26,6 +26,7 @@ function paperFromSnapshot(snap: DocumentSnapshot): Paper | null {
 /** Realtime listener for all papers in current tenant, sorted by uploadedAt desc. */
 export function usePapers() {
   const tenantId = useTenantId();
+  const groupId = useGroupId();
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,6 +41,16 @@ export function usePapers() {
           snap.docs
             .map((d) => ({ ...d.data(), id: d.id }) as Paper)
             .filter((p) => !p.lifecycleStatus || p.lifecycleStatus === 'active')
+            // ADR-034 TEAM-4: group-scoped KB isolation. A user sees papers in
+            // their own group plus tenant-wide shared papers ('lab-shared').
+            // Papers missing groupId (pre-migration) are treated as shared so
+            // they never vanish before the backfill runs.
+            .filter(
+              (p) =>
+                !p.groupId ||
+                p.groupId === 'lab-shared' ||
+                (groupId !== null && p.groupId === groupId)
+            )
         );
         setLoading(false);
       },
@@ -49,7 +60,7 @@ export function usePapers() {
       }
     );
     return () => unsub();
-  }, [tenantId]);
+  }, [tenantId, groupId]);
 
   return { papers, loading };
 }

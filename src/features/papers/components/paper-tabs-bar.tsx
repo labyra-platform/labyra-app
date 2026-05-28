@@ -56,6 +56,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger
 } from '@/components/ui/context-menu';
+import { Icons } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { TAB_GROUP_COLOR_STYLES } from '@/features/papers/lib/tab-group-colors';
 import {
@@ -65,43 +66,6 @@ import {
   usePaperTabsStore
 } from '@/features/papers/stores/paper-tabs-store';
 import { cn } from '@/lib/utils';
-
-/**
- * PdfFileIcon — a document glyph with a red "PDF" wordmark (Tabler
- * `file-type-pdf` geometry). The sheet outline inherits `currentColor` so it
- * sits calmly in the tab's text colour, while the PDF letters keep a fixed
- * brand red (#E2574C) for instant recognition — the same restraint Zotero and
- * Mendeley use. Not the Adobe logo (avoids trademark).
- *
- * TODO(icons): promote to `Icons.pdfFile` in src/components/icons.tsx once that
- * entry lands on main; this local copy keeps the tab bar self-contained for now.
- */
-function PdfFileIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns='http://www.w3.org/2000/svg'
-      viewBox='0 0 24 24'
-      fill='none'
-      stroke='currentColor'
-      strokeWidth={1.5}
-      strokeLinecap='round'
-      strokeLinejoin='round'
-      className={className}
-      aria-hidden
-    >
-      {/* sheet + folded corner — currentColor */}
-      <path d='M14 3v4a1 1 0 0 0 1 1h4' />
-      <path d='M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4' />
-      {/* "PDF" letters — fixed brand red */}
-      <g stroke='#E2574C'>
-        <path d='M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6' />
-        <path d='M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z' />
-        <path d='M17 18h2' />
-        <path d='M20 15h-3v6' />
-      </g>
-    </svg>
-  );
-}
 
 /** Active paperId from /<locale>/dashboard/papers/<id>[/view]; null on the list. */
 function paperIdFromPath(pathname: string): string | null {
@@ -513,7 +477,7 @@ function TabItem({
           )}
           style={style}
         >
-          <PdfFileIcon className='size-4 shrink-0' />
+          <Icons.pdfFile className='size-4 shrink-0' />
           <span className='min-w-0 truncate'>{tab.title || t('untitled')}</span>
           <button
             type='button'

@@ -478,15 +478,14 @@ function TabItem({
           style={style}
         >
           <Icons.pdfFile className='size-4 shrink-0' />
-          <span className='min-w-0 truncate'>{tab.title || t('untitled')}</span>
+          <span className='min-w-0 flex-1 truncate'>{tab.title || t('untitled')}</span>
           <button
             type='button'
             onClick={(e) => onClose(e, tab.paperId)}
             aria-label={t('closeTab')}
             className={cn(
-              // No ml-auto: the X sits right after the (truncating) title, so on
-              // narrow tabs it stays next to the icon instead of being pinned to
-              // the far edge with a gap.
+              // Title is flex-1 so it fills the gap and the X stays pinned to the
+              // tab's right edge — a short title no longer pulls the X inward.
               'shrink-0 rounded p-0.5 transition-opacity hover:bg-foreground/10',
               active ? 'opacity-70 hover:opacity-100' : 'opacity-0 group-hover:opacity-60'
             )}

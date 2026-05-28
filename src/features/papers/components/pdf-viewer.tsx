@@ -27,7 +27,6 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
  */
 import {
   IconAlertCircle,
-  IconArrowBackUp,
   IconArrowsMaximize,
   IconArrowsMinimize,
   IconChevronLeft,
@@ -454,6 +453,20 @@ export function PdfViewer({
     if (last) deleteAnnotation(tenantId, paperId, last.id).catch(() => {});
   }, [tenantId, paperId, drawings]);
 
+  // R237y: Ctrl/Cmd+Z undoes the last stroke while drawing (replaces the undo
+  // button). Only active in draw mode so it doesn't hijack the shortcut.
+  useEffect(() => {
+    if (!drawMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        handleUndoDrawing();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawMode, handleUndoDrawing]);
+
   const handleDeleteHighlight = useCallback(
     (id: string) => {
       if (!tenantId) return;
@@ -775,63 +788,64 @@ export function PdfViewer({
           <RotateIcon className='size-4' />
         </Button>
 
-        {/* Draw (C4) — only meaningful at rotation 0 */}
-        <Button
-          variant={drawMode ? 'secondary' : 'ghost'}
-          size='icon'
-          className='size-7'
-          onClick={() => setDrawMode((d) => !d)}
-          disabled={rotation !== 0}
-          aria-pressed={drawMode}
-          aria-label={t('draw')}
-          title={t('draw')}
-        >
-          <IconPencil className='size-4' />
-        </Button>
-        {drawMode && (
-          <div className='flex items-center gap-1'>
-            {/* Pen with a hover color palette + a top color indicator line. */}
-            <div className='group relative'>
-              <Button
-                variant={drawTool === 'pen' ? 'secondary' : 'ghost'}
-                size='icon'
-                className='relative size-7 overflow-hidden'
-                onClick={() => setDrawTool('pen')}
-                aria-pressed={drawTool === 'pen'}
-                aria-label={t('drawPen')}
-                title={t('drawPen')}
-              >
-                <IconPencil className='size-4' />
-                {/* color indicator at the top edge */}
-                <span
-                  className='absolute inset-x-1 top-0 h-[3px] rounded-b-sm'
-                  style={{ backgroundColor: DRAW_SWATCH[drawColor] }}
-                  aria-hidden
-                />
-              </Button>
-              {/* Hover palette — only meaningful in pen mode. */}
-              <div className='absolute left-1/2 top-full z-50 hidden -translate-x-1/2 pt-1 group-hover:block'>
-                <div className='flex items-center gap-1.5 rounded-full border bg-popover px-2 py-1.5 shadow-lg'>
-                  {DRAW_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type='button'
-                      onClick={() => {
-                        setDrawColor(c);
-                        setDrawTool('pen');
-                      }}
-                      className={cn(
-                        'size-5 rounded-full border transition-transform hover:scale-110',
-                        drawColor === c ? 'border-foreground' : 'border-black/10'
-                      )}
-                      style={{ backgroundColor: DRAW_SWATCH[c] }}
-                      aria-label={`Pen ${c}`}
-                      aria-pressed={drawColor === c}
-                    />
-                  ))}
-                </div>
+        {/* Draw (C4) — one button: toggles draw mode AND is the pen tool, with a
+            hover color palette + a top color indicator. Only at rotation 0. */}
+        <div className='group relative'>
+          <Button
+            variant={drawMode && drawTool === 'pen' ? 'secondary' : 'ghost'}
+            size='icon'
+            className='relative size-7 overflow-hidden'
+            disabled={rotation !== 0}
+            onClick={() => {
+              if (!drawMode) {
+                setDrawMode(true);
+                setDrawTool('pen');
+              } else if (drawTool !== 'pen') {
+                setDrawTool('pen');
+              } else {
+                setDrawMode(false);
+              }
+            }}
+            aria-pressed={drawMode}
+            aria-label={t('draw')}
+            title={t('draw')}
+          >
+            <IconPencil className='size-4' />
+            {drawMode && (
+              <span
+                className='absolute inset-x-1 top-0 h-[3px] rounded-b-sm'
+                style={{ backgroundColor: DRAW_SWATCH[drawColor] }}
+                aria-hidden
+              />
+            )}
+          </Button>
+          {/* Hover palette (only when drawing). */}
+          {drawMode && (
+            <div className='absolute left-1/2 top-full z-50 hidden -translate-x-1/2 pt-1 group-hover:block'>
+              <div className='flex items-center gap-1.5 rounded-full border bg-popover px-2 py-1.5 shadow-lg'>
+                {DRAW_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type='button'
+                    onClick={() => {
+                      setDrawColor(c);
+                      setDrawTool('pen');
+                    }}
+                    className={cn(
+                      'size-5 rounded-full border transition-transform hover:scale-110',
+                      drawColor === c ? 'border-foreground' : 'border-black/10'
+                    )}
+                    style={{ backgroundColor: DRAW_SWATCH[c] }}
+                    aria-label={`Pen ${c}`}
+                    aria-pressed={drawColor === c}
+                  />
+                ))}
               </div>
             </div>
+          )}
+        </div>
+        {drawMode && (
+          <div className='flex items-center gap-1'>
             <Button
               variant={drawTool === 'eraser' ? 'secondary' : 'ghost'}
               size='icon'
@@ -842,17 +856,6 @@ export function PdfViewer({
               title={t('drawEraser')}
             >
               <IconEraser className='size-4' />
-            </Button>
-            <Button
-              variant='ghost'
-              size='icon'
-              className='size-7'
-              onClick={handleUndoDrawing}
-              disabled={drawings.length === 0}
-              aria-label={t('drawUndo')}
-              title={t('drawUndo')}
-            >
-              <IconArrowBackUp className='size-4' />
             </Button>
           </div>
         )}
@@ -873,10 +876,16 @@ export function PdfViewer({
           )}
         </Button>
 
-        {/* Download — uses the signed URL (kept for this) if available. */}
-        {signed?.url && (
-          <Button asChild variant='outline' size='sm'>
-            <a href={signed.url} download rel='noopener noreferrer' aria-label={t('download')}>
+        {/* Download — prefer the signed URL; fall back to the loaded blob so
+            the button never disappears when bytes came from the cache (R237x). */}
+        {(signed?.url || fileSource) && (
+          <Button asChild variant='outline' size='sm' className='shrink-0'>
+            <a
+              href={signed?.url ?? fileSource ?? '#'}
+              download={`${displayTitle || 'paper'}.pdf`}
+              rel='noopener noreferrer'
+              aria-label={t('download')}
+            >
               <IconDownload className='size-4' />
               <span className='hidden md:inline'>{t('download')}</span>
             </a>

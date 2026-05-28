@@ -62,6 +62,7 @@ export function PaperReadView({ paperId, active = true }: { paperId: string; act
   const panelTab = tabState?.activePanelTab ?? 'info';
   const savedPage = tabState?.pdf.page ?? 1;
   const savedZoom = tabState?.pdf.zoom ?? 1;
+  const savedScrollTop = tabState?.pdf.scrollTop ?? 0;
 
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -84,6 +85,10 @@ export function PaperReadView({ paperId, active = true }: { paperId: string; act
     (zoom: number) => updatePdfState(paperId, { zoom }),
     [paperId, updatePdfState]
   );
+  const handleScrollChange = useCallback(
+    (scrollTop: number) => updatePdfState(paperId, { scrollTop }),
+    [paperId, updatePdfState]
+  );
 
   return (
     <div className='flex h-full min-h-0 w-full overflow-hidden'>
@@ -96,8 +101,10 @@ export function PaperReadView({ paperId, active = true }: { paperId: string; act
           active={active}
           initialPage={savedPage}
           initialZoom={savedZoom}
+          initialScrollTop={savedScrollTop}
           onPageChange={handlePageChange}
           onZoomChange={handleZoomChange}
+          onScrollChange={handleScrollChange}
         />
       </div>
 

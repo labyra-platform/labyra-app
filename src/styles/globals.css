@@ -180,13 +180,11 @@
    suppressed next to the active tab (Edge hides the seam around the active). */
 .edge-sep {
   align-self: center;
-  height: 1.125rem;
+  height: 1.25rem;
   width: 1px;
-  /* ~half the tab height, vertically centred, clearly darker than the strip.
-     NOTE: the design tokens (--foreground, --border) are already complete
-     colours, NOT "H S% L%" tuples — wrapping them in hsl(... / a) yields an
-     invalid value that renders transparent (why the seam vanished). color-mix
-     gives the alpha we want and works in both light and dark mode. */
-  background-color: color-mix(in srgb, var(--foreground) 32%, transparent);
+  /* Uniform regardless of background (the group band tint made the in-group
+     seam look fainter than the outside one). NOTE: design tokens are full
+     colours, not "H S% L%" tuples — use color-mix, never hsl(var(--x)/a). */
+  background-color: color-mix(in srgb, var(--foreground) 38%, transparent);
   transition: opacity 0.12s ease;
 }

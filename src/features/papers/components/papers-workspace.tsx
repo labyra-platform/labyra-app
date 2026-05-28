@@ -18,9 +18,9 @@
  *   - On /papers/[id]: show the matching reader, children (the thin sync page
  *     renders nothing) hidden.
  *
- * Inactive readers are display:none, so their PDFs don't paint, but they remain
- * mounted and ready. Combined with the MAX_TABS cap and per-page virtualization,
- * memory stays bounded.
+ * Only the active reader mounts its PDF (R232 single live reader); inactive
+ * tabs are light metadata. With per-page virtualization and the pdf-cache LRU,
+ * memory stays bounded without capping the number of open tabs (R237l).
  */
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo } from 'react';

@@ -484,7 +484,10 @@ function TabItem({
             onClick={(e) => onClose(e, tab.paperId)}
             aria-label={t('closeTab')}
             className={cn(
-              'ml-auto shrink-0 rounded p-0.5 transition-opacity hover:bg-foreground/10',
+              // No ml-auto: the X sits right after the (truncating) title, so on
+              // narrow tabs it stays next to the icon instead of being pinned to
+              // the far edge with a gap.
+              'shrink-0 rounded p-0.5 transition-opacity hover:bg-foreground/10',
               active ? 'opacity-70 hover:opacity-100' : 'opacity-0 group-hover:opacity-60'
             )}
           >

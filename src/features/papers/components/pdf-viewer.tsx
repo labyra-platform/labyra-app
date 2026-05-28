@@ -32,10 +32,12 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconDownload,
+  IconLayoutSidebar,
   IconLoader2,
   IconMinus,
   IconPlus,
-  IconRefresh
+  IconRefresh,
+  IconRotateClockwise
 } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -43,6 +45,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
+import { PdfNavSidebar } from '@/features/papers/components/pdf-nav-sidebar';
 import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { usePaper } from '@/lib/firestore/queries/papers';
@@ -57,6 +60,14 @@ const Page = dynamic(() => import('react-pdf').then((m) => m.Page), { ssr: false
 interface SignedUrlResponse {
   url: string;
   expiresAt: number;
+}
+
+/** Minimal PDFDocumentProxy surface used here + by the nav sidebar. */
+interface PdfDocLike {
+  numPages: number;
+  getOutline: () => Promise<unknown[] | null>;
+  getDestination: (id: string) => Promise<unknown[] | null>;
+  getPageIndex: (ref: object) => Promise<number>;
 }
 
 // R231/R232: PDF.js document options. cMap + standardFonts enable correct
@@ -99,8 +110,10 @@ export function PdfViewer({
   embedded = false,
   initialPage,
   initialZoom,
+  initialScrollTop,
   onPageChange,
   onZoomChange,
+  onScrollChange,
   active = true
 }: {
   paperId: string;
@@ -108,8 +121,12 @@ export function PdfViewer({
   /** R226: restore viewport when a tab is re-mounted. */
   initialPage?: number;
   initialZoom?: number;
+  /** R237o: exact scroll offset (px) so re-opening a tab restores the precise
+   *  reading position, not just the top of the saved page (Zotero-style). */
+  initialScrollTop?: number;
   onPageChange?: (page: number) => void;
   onZoomChange?: (zoom: number) => void;
+  onScrollChange?: (scrollTop: number) => void;
   /** R227b: true when this tab is the visible one. A hidden (display:none) tab
    *  loses its scroll position; when it becomes visible again we re-scroll to
    *  the current page so it doesn't jump to the last page. */
@@ -136,7 +153,13 @@ export function PdfViewer({
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(initialPage ?? 1);
   const [zoom, setZoom] = useState(initialZoom ?? 1);
+  // R237m: document-level rotation in degrees (0/90/180/270), like Edge's
+  // rotate button. Applied to every Page; aspect ratios swap at 90/270.
+  const [rotation, setRotation] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // R237n: live PDF proxy (for the nav sidebar's outline/thumbnails) + toggle.
+  const [pdfProxy, setPdfProxy] = useState<PdfDocLike | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -258,28 +281,46 @@ export function PdfViewer({
   // tiên đã biết làm default cho page chưa load (đa số PDF đồng nhất size).
   const knownAspects = Object.values(pageAspects);
   const defaultAspect = knownAspects.length > 0 ? knownAspects[0] : PAGE_ASPECT;
-  const heightForPage = (pageNum: number) => pageWidth * (pageAspects[pageNum] ?? defaultAspect);
+  // R237m: at 90°/270° the page is on its side, so the effective aspect (h/w)
+  // inverts. Width stays = pageWidth; height uses the rotated aspect.
+  const rotated90 = rotation % 180 !== 0;
+  const aspectFor = (pageNum: number) => {
+    const a = pageAspects[pageNum] ?? defaultAspect;
+    return rotated90 ? 1 / a : a;
+  };
+  const heightForPage = (pageNum: number) => pageWidth * aspectFor(pageNum);
 
-  // Document load callback
+  // Document load callback. react-pdf hands us a PDFDocumentProxy; we only need
+  // a small subset (PdfDocLike) so we cast for the sidebar + page count.
   const onDocumentLoadSuccess = useCallback(
-    ({ numPages: n }: { numPages: number }) => {
+    (pdf: { numPages: number }) => {
+      const doc = pdf as unknown as PdfDocLike;
+      const n = doc.numPages;
       setNumPages(n);
-      // R226: restore the tab's saved page (clamped) instead of forcing page 1.
+      setPdfProxy(doc);
+      // R237o: restore the exact scroll offset (Zotero-style). Fall back to the
+      // saved page's top when no offset was stored (older tabs / first open).
       const target = Math.min(Math.max(1, initialPage ?? 1), n);
       setCurrentPage(target);
-      if (target > 1) {
-        // Wait for pages to mount before scrolling to the restored page.
-        setTimeout(() => {
-          const el = pagesContainerRef.current;
-          el?.querySelector<HTMLElement>(`[data-page-index="${target}"]`)?.scrollIntoView();
-          // Restore done — from now on, scrolling reports to the store.
-          restoredRef.current = true;
-        }, 150);
+      const restore = () => {
+        const el = pagesContainerRef.current;
+        if (el) {
+          if (initialScrollTop && initialScrollTop > 0) {
+            el.scrollTop = initialScrollTop;
+          } else if (target > 1) {
+            el.querySelector<HTMLElement>(`[data-page-index="${target}"]`)?.scrollIntoView();
+          }
+        }
+        restoredRef.current = true;
+      };
+      if ((initialScrollTop && initialScrollTop > 0) || target > 1) {
+        // Wait for pages to mount before restoring scroll.
+        setTimeout(restore, 150);
       } else {
         restoredRef.current = true;
       }
     },
-    [initialPage]
+    [initialPage, initialScrollTop]
   );
 
   // R226: report viewport changes to the parent (tab store), but only AFTER the
@@ -291,26 +332,51 @@ export function PdfViewer({
     if (restoredRef.current) onZoomChange?.(zoom);
   }, [zoom, onZoomChange]);
 
+  // R237o: report the exact scroll offset to the store as the user scrolls
+  // (after restore). Light rAF throttle. This is what lets re-opening a tab
+  // land on the precise position, not just the top of a page.
+  useEffect(() => {
+    const el = pagesContainerRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (restoredRef.current) onScrollChange?.(el.scrollTop);
+      });
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [onScrollChange, pdfReady]);
+
   // R227b: a hidden (display:none) tab loses its scroll offset. When this tab
-  // becomes visible again, re-scroll to the page it was on. Without this, the
-  // restored layout makes the IntersectionObserver fire for whatever page now
-  // sits in the (reset) viewport — typically the last/near-last page — and the
-  // view jumps there. We briefly gate reporting so that transient jump doesn't
-  // overwrite the saved page.
+  // becomes visible again, restore the exact saved offset (R237o) — falling
+  // back to the current page's top. We briefly gate reporting so the transient
+  // re-layout jump doesn't overwrite the saved position.
   useEffect(() => {
     if (!active || !numPages || !pdfReady) return;
     const el = pagesContainerRef.current;
     if (!el) return;
     restoredRef.current = false;
+    const saved = initialScrollTop ?? 0;
     const id = setTimeout(() => {
-      const target = el.querySelector<HTMLElement>(`[data-page-index="${currentPage}"]`);
-      target?.scrollIntoView({ block: 'start' });
+      if (saved > 0) {
+        el.scrollTop = saved;
+      } else {
+        el.querySelector<HTMLElement>(`[data-page-index="${currentPage}"]`)?.scrollIntoView({
+          block: 'start'
+        });
+      }
       setTimeout(() => {
         restoredRef.current = true;
       }, 120);
     }, 50);
     return () => clearTimeout(id);
-    // Only re-run when the tab's visibility flips; currentPage is read live.
+    // Only re-run when the tab's visibility flips; currentPage/scroll read live.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, numPages, pdfReady]);
 
@@ -346,7 +412,7 @@ export function PdfViewer({
     const el = pagesContainerRef.current;
     if (!el) return;
     const target = el.querySelector<HTMLElement>(`[data-page-index="${pageNum}"]`);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (target) target.scrollIntoView({ behavior: 'auto', block: 'start' });
   }, []);
 
   const goPrev = useCallback(() => {
@@ -377,6 +443,9 @@ export function PdfViewer({
   }, []);
   const resetZoom = useCallback(() => {
     setZoom(1);
+  }, []);
+  const rotateCw = useCallback(() => {
+    setRotation((r) => (r + 90) % 360);
   }, []);
 
   // Fullscreen toggle
@@ -448,9 +517,18 @@ export function PdfViewer({
     >
       {/* Toolbar */}
       <header className='flex items-center gap-1.5 border-b bg-background px-3 py-2 sm:gap-2 sm:px-4'>
-        {/* R237d: back button removed — the paper tab strip ("Papers" anchor +
-            open tabs) owns navigation now, so a separate back link here was
-            redundant and ate toolbar space needed for reader tools. */}
+        {/* R237n: navigation sidebar toggle (thumbnails + outline). */}
+        <Button
+          variant={sidebarOpen ? 'secondary' : 'ghost'}
+          size='icon'
+          className='size-7 shrink-0'
+          onClick={() => setSidebarOpen((o) => !o)}
+          aria-pressed={sidebarOpen}
+          aria-label={t('navToggle')}
+          title={t('navToggle')}
+        >
+          <IconLayoutSidebar className='size-4' />
+        </Button>
 
         <div className='min-w-0 flex-1 max-w-md'>
           <h1 className='truncate text-sm font-medium' title={displayTitle}>
@@ -543,6 +621,18 @@ export function PdfViewer({
           </Button>
         </div>
 
+        {/* Rotate (R237m) */}
+        <Button
+          variant='ghost'
+          size='icon'
+          className='size-7'
+          onClick={rotateCw}
+          aria-label={t('rotateClockwise')}
+          title={t('rotateClockwise')}
+        >
+          <IconRotateClockwise className='size-4' />
+        </Button>
+
         {/* Fullscreen */}
         <Button
           variant='ghost'
@@ -570,123 +660,146 @@ export function PdfViewer({
         )}
       </header>
 
-      {/* Body */}
-      <div
-        ref={pagesContainerRef}
-        className='flex-1 overflow-auto'
-        style={{ scrollbarGutter: 'stable' }}
-      >
-        {urlError && (
-          <div className='mx-auto max-w-2xl p-6'>
-            <Alert variant='destructive'>
-              <IconAlertCircle className='size-4' />
-              <AlertTitle>{t('pdfLoadFailed')}</AlertTitle>
-              <AlertDescription className='mt-2 space-y-3'>
-                <p className='text-sm'>{urlError}</p>
-                <Button variant='outline' size='sm' onClick={loadPdf}>
-                  <IconRefresh className='mr-1 size-3.5' />
-                  {t('retry')}
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </div>
+      {/* Body + optional nav sidebar */}
+      <div className='flex min-h-0 flex-1'>
+        {sidebarOpen && (
+          <PdfNavSidebar
+            pdf={pdfProxy}
+            fileUrl={fileSource}
+            pdfOptions={PDF_OPTIONS}
+            numPages={numPages}
+            currentPage={currentPage}
+            onJump={(p) => {
+              setCurrentPage(p);
+              scrollToPage(p);
+            }}
+          />
         )}
+        <div
+          ref={pagesContainerRef}
+          className='flex-1 overflow-auto'
+          style={{ scrollbarGutter: 'stable' }}
+        >
+          {urlError && (
+            <div className='mx-auto max-w-2xl p-6'>
+              <Alert variant='destructive'>
+                <IconAlertCircle className='size-4' />
+                <AlertTitle>{t('pdfLoadFailed')}</AlertTitle>
+                <AlertDescription className='mt-2 space-y-3'>
+                  <p className='text-sm'>{urlError}</p>
+                  <Button variant='outline' size='sm' onClick={loadPdf}>
+                    <IconRefresh className='mr-1 size-3.5' />
+                    {t('retry')}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
 
-        {!urlError && (!pdfData || !pdfReady) && (
-          <div className='flex justify-center py-4'>
-            {/* R235b: page-shaped skeleton — mô phỏng layout 1 trang paper
+          {!urlError && (!pdfData || !pdfReady) && (
+            <div className='flex justify-center py-4'>
+              {/* R235b: page-shaped skeleton — mô phỏng layout 1 trang paper
                 (title + authors + paragraphs) trên nền giấy trắng, thay ô xám
                 phẳng. Aspect 1/1.414 giữ CLS thấp khi PDF thật render vào. */}
-            <div
-              className='w-full max-w-2xl rounded-md bg-white p-[8%] shadow-md dark:bg-neutral-100'
-              style={{ aspectRatio: '1 / 1.414' }}
-            >
-              <Skeleton className='mb-4 h-6 w-3/4 bg-neutral-200' />
-              <Skeleton className='mb-6 h-3 w-1/2 bg-neutral-200' />
-              <div className='space-y-2.5'>
-                {Array.from({ length: 12 }, (_, i) => (
-                  <Skeleton
-                    key={i}
-                    className='h-2.5 bg-neutral-200'
-                    style={{ width: `${[100, 96, 98, 90, 100, 94, 88, 100, 97, 70, 100, 85][i]}%` }}
-                  />
-                ))}
-              </div>
-              <Skeleton className='mt-6 mb-3 h-3 w-2/5 bg-neutral-200' />
-              <div className='space-y-2.5'>
-                {Array.from({ length: 6 }, (_, i) => (
-                  <Skeleton
-                    key={i}
-                    className='h-2.5 bg-neutral-200'
-                    style={{ width: `${[100, 92, 98, 86, 100, 60][i]}%` }}
-                  />
-                ))}
+              <div
+                className='w-full max-w-2xl rounded-md bg-white p-[8%] shadow-md dark:bg-neutral-100'
+                style={{ aspectRatio: '1 / 1.414' }}
+              >
+                <Skeleton className='mb-4 h-6 w-3/4 bg-neutral-200' />
+                <Skeleton className='mb-6 h-3 w-1/2 bg-neutral-200' />
+                <div className='space-y-2.5'>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <Skeleton
+                      key={i}
+                      className='h-2.5 bg-neutral-200'
+                      style={{
+                        width: `${[100, 96, 98, 90, 100, 94, 88, 100, 97, 70, 100, 85][i]}%`
+                      }}
+                    />
+                  ))}
+                </div>
+                <Skeleton className='mt-6 mb-3 h-3 w-2/5 bg-neutral-200' />
+                <div className='space-y-2.5'>
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <Skeleton
+                      key={i}
+                      className='h-2.5 bg-neutral-200'
+                      style={{ width: `${[100, 92, 98, 86, 100, 60][i]}%` }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {!urlError && pdfReady && fileSource && (
-          <div className='py-4'>
-            <Document
-              file={fileSource}
-              options={PDF_OPTIONS}
-              onLoadSuccess={onDocumentLoadSuccess}
-              loading={
-                <div className='flex h-32 items-center justify-center'>
-                  <IconLoader2 className='size-5 animate-spin' />
-                </div>
-              }
-              error={
-                <Alert variant='destructive' className='mx-auto max-w-2xl'>
-                  <AlertDescription>{t('pdfLoadFailed')}</AlertDescription>
-                </Alert>
-              }
-            >
-              {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => {
-                const inWindow = Math.abs(pageNum - currentPage) <= VIRTUAL_BUFFER;
-                return (
-                  <div key={pageNum} data-page-index={pageNum} className='mb-4 flex justify-center'>
-                    {inWindow ? (
-                      <Page
-                        pageNumber={pageNum}
-                        width={pageWidth}
-                        renderTextLayer
-                        renderAnnotationLayer
-                        className='shadow-md'
-                        onLoadSuccess={(page) => {
-                          // R235: lưu aspect thật (height/width) của page này.
-                          const vp = page.getViewport({ scale: 1 });
-                          const aspect = vp.height / vp.width;
-                          setPageAspects((prev) =>
-                            prev[pageNum] === aspect ? prev : { ...prev, [pageNum]: aspect }
-                          );
-                        }}
-                        loading={
-                          <div
-                            className='flex items-center justify-center bg-card'
-                            style={{ width: pageWidth, height: heightForPage(pageNum) }}
-                          >
-                            <IconLoader2 className='size-5 animate-spin text-muted-foreground' />
-                          </div>
-                        }
-                      />
-                    ) : (
-                      // R225: out-of-window placeholder — same footprint, no canvas.
-                      // R235: height từ aspect thật -> không nhảy khi page vào window.
-                      <div
-                        className='flex items-center justify-center bg-card/50 shadow-md'
-                        style={{ width: pageWidth, height: heightForPage(pageNum) }}
-                      >
-                        <span className='text-xs text-muted-foreground'>{pageNum}</span>
-                      </div>
-                    )}
+          {!urlError && pdfReady && fileSource && (
+            <div className='py-4'>
+              <Document
+                file={fileSource}
+                options={PDF_OPTIONS}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={
+                  <div className='flex h-32 items-center justify-center'>
+                    <IconLoader2 className='size-5 animate-spin' />
                   </div>
-                );
-              })}
-            </Document>
-          </div>
-        )}
+                }
+                error={
+                  <Alert variant='destructive' className='mx-auto max-w-2xl'>
+                    <AlertDescription>{t('pdfLoadFailed')}</AlertDescription>
+                  </Alert>
+                }
+              >
+                {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => {
+                  const inWindow = Math.abs(pageNum - currentPage) <= VIRTUAL_BUFFER;
+                  return (
+                    <div
+                      key={pageNum}
+                      data-page-index={pageNum}
+                      className='mb-4 flex justify-center'
+                    >
+                      {inWindow ? (
+                        <Page
+                          pageNumber={pageNum}
+                          width={pageWidth}
+                          rotate={rotation}
+                          renderTextLayer
+                          renderAnnotationLayer
+                          className='shadow-md'
+                          onLoadSuccess={(page) => {
+                            // R235: store the UNROTATED aspect (h/w at rotation 0);
+                            // aspectFor() inverts it for 90/270 placeholders.
+                            const vp = page.getViewport({ scale: 1 });
+                            const aspect = vp.height / vp.width;
+                            setPageAspects((prev) =>
+                              prev[pageNum] === aspect ? prev : { ...prev, [pageNum]: aspect }
+                            );
+                          }}
+                          loading={
+                            <div
+                              className='flex items-center justify-center bg-card'
+                              style={{ width: pageWidth, height: heightForPage(pageNum) }}
+                            >
+                              <IconLoader2 className='size-5 animate-spin text-muted-foreground' />
+                            </div>
+                          }
+                        />
+                      ) : (
+                        // R225: out-of-window placeholder — same footprint, no canvas.
+                        // R235: height từ aspect thật -> không nhảy khi page vào window.
+                        <div
+                          className='flex items-center justify-center bg-card/50 shadow-md'
+                          style={{ width: pageWidth, height: heightForPage(pageNum) }}
+                        >
+                          <span className='text-xs text-muted-foreground'>{pageNum}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </Document>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

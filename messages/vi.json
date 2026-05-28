@@ -426,7 +426,12 @@
     "tabGroupColor_red": "Đỏ",
     "tabGroupColor_purple": "Tím",
     "tabGroupColor_gray": "Xám",
-    "openSource": "Mở trang nguồn"
+    "openSource": "Mở trang nguồn",
+    "rotateClockwise": "Xoay theo chiều kim đồng hồ",
+    "navToggle": "Bật/tắt điều hướng",
+    "navThumbnails": "Ảnh thu nhỏ",
+    "navOutline": "Mục lục",
+    "navOutlineEmpty": "Tài liệu không có mục lục"
   },
   "materials": {
     "title": "Vật liệu",

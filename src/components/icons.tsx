@@ -114,37 +114,22 @@ function PdfFileIcon({ className }: { className?: string }) {
     <svg
       viewBox='0 0 24 24'
       fill='none'
+      stroke='currentColor'
+      strokeWidth={1.5}
+      strokeLinecap='round'
+      strokeLinejoin='round'
       xmlns='http://www.w3.org/2000/svg'
       className={className}
       aria-hidden
     >
-      <path
-        d='M6 2.75h7.5L19.25 8.5v11.75a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3.75a1 1 0 0 1 1-1Z'
-        fill='currentColor'
-        fillOpacity='0.08'
-        stroke='currentColor'
-        strokeWidth='1.4'
-        strokeLinejoin='round'
-      />
-      <path
-        d='M13.5 2.75V8.5h5.75'
-        fill='none'
-        stroke='currentColor'
-        strokeWidth='1.4'
-        strokeLinejoin='round'
-      />
-      <rect x='3.5' y='12.5' width='11' height='6' rx='1.2' fill='#dc2626' />
-      <text
-        x='9'
-        y='17'
-        textAnchor='middle'
-        fontSize='4.2'
-        fontWeight='700'
-        fill='white'
-        fontFamily='Arial, sans-serif'
-      >
-        PDF
-      </text>
+      <path d='M14 3v4a1 1 0 0 0 1 1h4' />
+      <path d='M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4' />
+      <g stroke='#E2574C'>
+        <path d='M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6' />
+        <path d='M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z' />
+        <path d='M17 18h2' />
+        <path d='M20 15h-3v6' />
+      </g>
     </svg>
   );
 }

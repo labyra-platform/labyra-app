@@ -426,7 +426,12 @@
     "tabGroupColor_red": "Red",
     "tabGroupColor_purple": "Purple",
     "tabGroupColor_gray": "Gray",
-    "openSource": "Open source page"
+    "openSource": "Open source page",
+    "rotateClockwise": "Rotate clockwise",
+    "navToggle": "Toggle navigation",
+    "navThumbnails": "Thumbnails",
+    "navOutline": "Outline",
+    "navOutlineEmpty": "No outline in this document"
   },
   "materials": {
     "title": "Materials",

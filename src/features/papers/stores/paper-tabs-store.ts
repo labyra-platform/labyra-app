@@ -83,17 +83,11 @@ export interface TabGroup {
 
 const DEFAULT_PDF: TabPdfState = { page: 1, zoom: 1, scrollTop: 0 };
 
-/**
- * Max open tabs. Even with inactive tabs unmounted, capping protects against
- * runaway memory and an unusable tab strip. Opening beyond the cap evicts the
- * least-recently-active tab.
- */
-export const MAX_TABS = 8;
-
 interface PaperTabsState {
   tabs: PaperTab[];
   activeTabId: string | null;
-  /** Recency order of paperIds (most-recent last) for LRU eviction. */
+  /** Recency order of paperIds (most-recent last); used to pick the next active
+   *  tab when the active one is closed. */
   recency: string[];
   /** R230: tab groups. */
   groups: TabGroup[];
@@ -174,15 +168,12 @@ export const usePaperTabsStore = create<PaperTabsState>()(
             pdf: { ...DEFAULT_PDF },
             activePanelTab: 'info'
           };
-          let tabs = [...state.tabs, newTab];
-          let recency = bumpRecency(state.recency, paperId);
-          // LRU eviction when over cap (never evict the one we just opened).
-          while (tabs.length > MAX_TABS) {
-            const victim = recency.find((id) => id !== paperId);
-            if (!victim) break;
-            tabs = tabs.filter((t) => t.paperId !== victim);
-            recency = recency.filter((id) => id !== victim);
-          }
+          // R237l: no tab cap. The R232 single-live-reader (only the active tab
+          // mounts PDF.js; inactive tabs are light metadata) removed the memory
+          // pressure that the old MAX_TABS LRU eviction guarded against, so
+          // opening a new paper no longer silently closes an older tab.
+          const tabs = [...state.tabs, newTab];
+          const recency = bumpRecency(state.recency, paperId);
           return { tabs, activeTabId: paperId, recency };
         }),
 

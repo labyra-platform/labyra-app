@@ -32,20 +32,52 @@ interface ActiveBox {
 
 /** Collect text from text-layer spans intersecting `rect` (page-pixel space).
  *  `host` is the page wrapper that contains both the react-pdf .textLayer and
- *  this overlay; the overlay itself has no spans, so we search the wrapper. */
+ *  this overlay; the overlay itself has no spans, so we search the wrapper.
+ *
+ *  Joining is geometric, not naive: PDF.js puts subscripts/superscripts (the
+ *  "3" in IrCl₃) in their own spans placed flush against the preceding span. A
+ *  blind join(' ') turns "IrCl₃" into "IrCl 3". So we only insert a space when
+ *  there's a real horizontal gap between consecutive spans on the same line, and
+ *  a newline when the line changes — formulae stay intact for the model. */
 function textInRect(host: HTMLElement, overlayBox: DOMRect, rect: Rect): string {
   const spans = host.querySelectorAll<HTMLElement>('.textLayer span');
-  const parts: string[] = [];
+  const hits: { text: string; left: number; right: number; top: number; h: number }[] = [];
   for (const span of spans) {
     const r = span.getBoundingClientRect();
     const cx = r.left - overlayBox.left + r.width / 2;
     const cy = r.top - overlayBox.top + r.height / 2;
     if (cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h) {
-      const txt = span.textContent ?? '';
-      if (txt.trim()) parts.push(txt);
+      const text = span.textContent ?? '';
+      if (text.length > 0) {
+        hits.push({ text, left: r.left, right: r.right, top: r.top, h: r.height });
+      }
     }
   }
-  return parts.join(' ').replace(/\s+/g, ' ').trim();
+  if (hits.length === 0) return '';
+  // Reading order: top then left.
+  hits.sort((a, b) => (Math.abs(a.top - b.top) > 4 ? a.top - b.top : a.left - b.left));
+
+  let out = hits[0].text;
+  for (let i = 1; i < hits.length; i++) {
+    const prev = hits[i - 1];
+    const cur = hits[i];
+    const sameLine = Math.abs(cur.top - prev.top) <= Math.max(prev.h, cur.h) * 0.6;
+    if (!sameLine) {
+      out += '\n';
+    } else {
+      const gap = cur.left - prev.right;
+      // Space only for a genuine word gap (~> a quarter of the line height).
+      out += gap > prev.h * 0.25 ? ' ' : '';
+    }
+    out += cur.text;
+  }
+  // Collapse hyphenation at line breaks (e.g. "rea-\ngent" → "reagent") and
+  // turn remaining newlines into spaces for a clean prose paragraph.
+  return out
+    .replace(/-\n/g, '')
+    .replace(/\n/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
 }
 
 /** Pointer position relative to the target element (px). */

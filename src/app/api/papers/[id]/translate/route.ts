@@ -81,10 +81,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   // ─── Translate ────────────────────────────────────────────────
   const { provider, config } = selectProvider(TIER);
-  const system = `You are a scientific translator. Translate the user's text into ${targetName}.
-Preserve technical terms, chemical formulae, units, and symbols exactly (e.g. WO₃, cm⁻¹, eV).
-Keep equations and numbers unchanged. Output ONLY the translation — no notes, no preamble,
-no quotes. If the text is already in ${targetName}, return it unchanged.`;
+  const system = `You translate scientific text into ${targetName} for an expert reader.
+
+DO NOT TRANSLATE (keep verbatim, do not transliterate or localize):
+- Chemical formulae and symbols: NaOH, IrCl₃·xH₂O, K₂TiO(C₂O₄)₂·2H₂O, H₂O₂, WO₃.
+- Acronyms / abbreviations: TBA, BQ, DMPO, CB, TMB, AR, PBS, XRD, FTIR, DFT.
+- Units and quantities: cm⁻¹, eV, wt%, 30 wt%, 97.0%, 10 mL, 0 °C.
+- Element/compound names written as formulae stay as formulae.
+Keep equations, numbers, and citation markers unchanged. Preserve subscripts/
+superscripts exactly. Translate ONLY the prose connecting these terms.
+
+Example (English→Vietnamese):
+  In: "The NaOH (96.0%) and IrCl₃·xH₂O were purchased from Aladdin Ltd."
+  Out: "NaOH (96,0%) và IrCl₃·xH₂O được mua từ Aladdin Ltd."
+(Note: NaOH and IrCl₃·xH₂O are unchanged; only the surrounding prose is translated.)
+
+Output ONLY the translation — no notes, no preamble, no quotes. If the text is
+already in ${targetName}, return it unchanged.`;
 
   const started = Date.now();
   // Vietnamese/CJK output can be ~2-3x the input tokens; scale the cap to the

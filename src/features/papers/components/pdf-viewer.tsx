@@ -262,7 +262,8 @@ export function PdfViewer({
   const [drawTool, setDrawTool] = useState<'pen' | 'eraser'>('pen');
   const [drawColor, setDrawColor] = useState<AnnotationColor>('pink');
   const [drawings, setDrawings] = useState<DrawingAnnotation[]>([]);
-  const DRAW_PEN_WIDTH = 0.004; // fraction of page width (~2-3px at typical zoom)
+  // C4b: pen width as a fraction of page width, slider-controlled (R237ae).
+  const [drawWidth, setDrawWidth] = useState(0.004); // ~2-3px at typical zoom
   // C5: translate mode + target language. Ctrl+drag a region while on.
   const [translateMode, setTranslateMode] = useState(false);
   const [targetLang, setTargetLang] = useState('vi');
@@ -895,27 +896,54 @@ export function PdfViewer({
               />
             )}
           </Button>
-          {/* Hover palette (only when drawing). */}
+          {/* Hover palette (only when drawing): colors + width slider. */}
           {drawMode && (
             <div className='absolute left-1/2 top-full z-50 hidden -translate-x-1/2 pt-1 group-hover:block'>
-              <div className='flex items-center gap-1.5 rounded-full border bg-popover px-2 py-1.5 shadow-lg'>
-                {DRAW_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type='button'
-                    onClick={() => {
-                      setDrawColor(c);
+              <div className='flex flex-col gap-2 rounded-lg border bg-popover px-3 py-2.5 shadow-lg'>
+                <div className='flex items-center gap-1.5'>
+                  {DRAW_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type='button'
+                      onClick={() => {
+                        setDrawColor(c);
+                        setDrawTool('pen');
+                      }}
+                      className={cn(
+                        'size-5 rounded-full border transition-transform hover:scale-110',
+                        drawColor === c ? 'border-foreground' : 'border-black/10'
+                      )}
+                      style={{ backgroundColor: DRAW_SWATCH[c] }}
+                      aria-label={`Pen ${c}`}
+                      aria-pressed={drawColor === c}
+                    />
+                  ))}
+                </div>
+                {/* Width slider with a live size preview dot. */}
+                <div className='flex items-center gap-2'>
+                  <span
+                    className='shrink-0 rounded-full'
+                    style={{
+                      width: Math.max(3, drawWidth * 700),
+                      height: Math.max(3, drawWidth * 700),
+                      backgroundColor: DRAW_SWATCH[drawColor]
+                    }}
+                    aria-hidden
+                  />
+                  <input
+                    type='range'
+                    min={0.0015}
+                    max={0.012}
+                    step={0.0005}
+                    value={drawWidth}
+                    onChange={(e) => {
+                      setDrawWidth(Number(e.target.value));
                       setDrawTool('pen');
                     }}
-                    className={cn(
-                      'size-5 rounded-full border transition-transform hover:scale-110',
-                      drawColor === c ? 'border-foreground' : 'border-black/10'
-                    )}
-                    style={{ backgroundColor: DRAW_SWATCH[c] }}
-                    aria-label={`Pen ${c}`}
-                    aria-pressed={drawColor === c}
+                    className='h-1 w-24 cursor-pointer accent-foreground'
+                    aria-label={t('drawWidth')}
                   />
-                ))}
+                </div>
               </div>
             </div>
           )}
@@ -1167,7 +1195,7 @@ export function PdfViewer({
                               active={drawMode && !translateMode}
                               tool={drawTool}
                               color={drawColor}
-                              penWidth={DRAW_PEN_WIDTH}
+                              penWidth={drawWidth}
                               onCreateStroke={(points, w, c) =>
                                 handleCreateStroke(points, w, c, pageNum)
                               }

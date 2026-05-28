@@ -436,7 +436,8 @@
     "drawPen": "Pen",
     "drawEraser": "Eraser",
     "drawUndo": "Undo",
-    "translate": "Translate"
+    "translate": "Translate",
+    "drawWidth": "Pen width"
   },
   "materials": {
     "title": "Materials",

@@ -436,7 +436,8 @@
     "drawPen": "Bút",
     "drawEraser": "Tẩy",
     "drawUndo": "Hoàn tác",
-    "translate": "Dịch"
+    "translate": "Dịch",
+    "drawWidth": "Độ dày nét"
   },
   "materials": {
     "title": "Vật liệu",

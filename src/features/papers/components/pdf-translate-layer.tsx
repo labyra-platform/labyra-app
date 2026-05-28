@@ -13,7 +13,7 @@
  * view); nothing is persisted, so no normalization is required here.
  */
 
-import { IconLanguage, IconLoader2, IconX } from '@tabler/icons-react';
+import { IconGripVertical, IconLoader2, IconX } from '@tabler/icons-react';
 import { useRef, useState } from 'react';
 
 interface Rect {
@@ -105,6 +105,10 @@ export function PdfTranslateLayer({
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const [dragRect, setDragRect] = useState<Rect | null>(null);
   const [box, setBox] = useState<ActiveBox | null>(null);
+  // R237ae: the result panel can be dragged anywhere (to avoid covering text).
+  // Offset is relative to its default position just below the selected region.
+  const [panelOffset, setPanelOffset] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+  const panelDragRef = useRef<{ px: number; py: number; dx: number; dy: number } | null>(null);
 
   const onPointerDown = (e: React.PointerEvent) => {
     // Require Ctrl/Cmd held so normal reading clicks aren't hijacked.
@@ -142,6 +146,7 @@ export function PdfTranslateLayer({
       setBox({ rect, text: '', status: 'error', translation: '' });
       return;
     }
+    setPanelOffset({ dx: 0, dy: 0 });
     setBox({ rect, text, status: 'loading', translation: '' });
     try {
       const translation = await onTranslate(text);
@@ -149,6 +154,28 @@ export function PdfTranslateLayer({
     } catch {
       setBox({ rect, text, status: 'error', translation: '' });
     }
+  };
+
+  // Panel drag (via its header bar).
+  const onPanelHeaderDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    panelDragRef.current = {
+      px: e.clientX,
+      py: e.clientY,
+      dx: panelOffset.dx,
+      dy: panelOffset.dy
+    };
+  };
+  const onPanelHeaderMove = (e: React.PointerEvent) => {
+    const d = panelDragRef.current;
+    if (!d) return;
+    e.stopPropagation();
+    setPanelOffset({ dx: d.dx + (e.clientX - d.px), dy: d.dy + (e.clientY - d.py) });
+  };
+  const onPanelHeaderUp = (e: React.PointerEvent) => {
+    panelDragRef.current = null;
+    e.stopPropagation();
   };
 
   return (
@@ -187,18 +214,26 @@ export function PdfTranslateLayer({
           <div
             className='absolute z-10 overflow-hidden rounded-md border-2 border-primary/70 bg-popover shadow-xl ring-1 ring-black/5'
             style={{
-              left: box.rect.x,
-              top: box.rect.y + box.rect.h + 6,
+              left: box.rect.x + panelOffset.dx,
+              top: box.rect.y + box.rect.h + 6 + panelOffset.dy,
               width: Math.max(box.rect.w, 220)
             }}
           >
-            <div className='flex items-center justify-between border-b-2 border-primary/30 bg-primary/10 px-2 py-1'>
+            <div
+              className='flex cursor-move touch-none items-center justify-between border-b-2 border-primary/30 bg-primary/10 px-2 py-1 select-none'
+              onPointerDown={onPanelHeaderDown}
+              onPointerMove={onPanelHeaderMove}
+              onPointerUp={onPanelHeaderUp}
+              // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
+              role='presentation'
+            >
               <span className='flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-primary'>
-                <IconLanguage className='size-3.5' />
+                <IconGripVertical className='size-3.5 opacity-70' />
                 {targetLabel}
               </span>
               <button
                 type='button'
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setBox(null)}
                 className='rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground'
                 aria-label='Close translation'

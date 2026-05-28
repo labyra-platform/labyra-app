@@ -105,6 +105,13 @@ interface PaperTabsState {
   updatePdfState: (paperId: string, partial: Partial<TabPdfState>) => void;
   setPanelTab: (paperId: string, panelTab: PanelTab) => void;
   reorderTabs: (fromId: string, toId: string) => void;
+  /**
+   * R177-2 drag: move `fromId` to `toId`'s slot AND adopt the destination's
+   * groupId in one atomic update. This is how Edge handles drag in/out of a
+   * group — position decides membership. `targetGroupId` overrides the inferred
+   * group (used when dropping into the empty tail of a collapsed/edge zone).
+   */
+  moveTab: (fromId: string, toId: string, targetGroupId?: string | null) => void;
   getTab: (paperId: string) => PaperTab | undefined;
 
   // R231: in-memory signed-URL cache (NOT persisted — URLs are short-lived and
@@ -230,6 +237,29 @@ export const usePaperTabsStore = create<PaperTabsState>()(
           const [moved] = tabs.splice(from, 1);
           tabs.splice(to, 0, moved);
           return { tabs };
+        }),
+
+      moveTab: (fromId, toId, targetGroupId) =>
+        set((state) => {
+          const from = state.tabs.findIndex((t) => t.paperId === fromId);
+          const to = state.tabs.findIndex((t) => t.paperId === toId);
+          if (from === -1 || to === -1 || from === to) return state;
+          // arrayMove semantics on the ORIGINAL indices: remove `from`, then
+          // insert at `to` computed against the original positions. dnd-kit's
+          // closestCenter already reports the slot the user is hovering, so
+          // dragging right past a neighbour lands AFTER it (the previous
+          // "insert before" logic always pushed left — R237e fix).
+          const tabs = [...state.tabs];
+          const [moved] = tabs.splice(from, 1);
+          tabs.splice(to, 0, moved);
+          const destGroupId =
+            targetGroupId !== undefined
+              ? targetGroupId
+              : (state.tabs.find((t) => t.paperId === toId)?.groupId ?? null);
+          const finalTabs = tabs.map((t) =>
+            t.paperId === fromId ? { ...t, groupId: destGroupId } : t
+          );
+          return { tabs: finalTabs, groups: pruneGroups(state.groups, finalTabs) };
         }),
 
       getTab: (paperId) => get().tabs.find((t) => t.paperId === paperId),

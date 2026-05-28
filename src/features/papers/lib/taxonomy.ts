@@ -106,12 +106,18 @@ export function domainI18nKey(slug: string): string {
   return `domain.${slug}`;
 }
 
-/** Color tokens per axis (semantic + WCAG AA contrast) */
+/**
+ * Soft-tonal axis colors (R237g). Recipe per the design review: ~12% color
+ * tint background + 800-shade text in the same hue (100/200 in dark mode), no
+ * hard border — the badge reads as a calm pill, not an outline. One hue per
+ * axis so the four conceptually-different chip types stay visually grouped.
+ * Access status ("Open") is NOT styled here — it's a dot + label, kept apart.
+ */
 export const AXIS_COLOR: Record<DomainAxis, string> = {
-  application: 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/40',
-  materials_class: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/40',
-  synthesis: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40',
+  application: 'bg-blue-500/12 text-blue-800 dark:bg-blue-400/15 dark:text-blue-200',
+  materials_class: 'bg-violet-500/12 text-violet-800 dark:bg-violet-400/15 dark:text-violet-200',
+  synthesis: 'bg-amber-500/12 text-amber-800 dark:bg-amber-400/15 dark:text-amber-200',
   characterization:
-    'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40',
-  meta: 'bg-muted text-muted-foreground border-border'
+    'bg-emerald-500/12 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-200',
+  meta: 'bg-muted text-muted-foreground'
 };

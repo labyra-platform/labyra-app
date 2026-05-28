@@ -31,10 +31,21 @@
  * Active state follows the URL (routePaperId), not the store, so the list route
  * shows the "Papers" parent active and no child highlighted.
  */
-import { IconFileText, IconLayoutGrid, IconX } from '@tabler/icons-react';
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useDroppable,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { IconLayoutGrid, IconX } from '@tabler/icons-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { type CSSProperties, useState } from 'react';
+import { type CSSProperties, Fragment, useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -54,6 +65,43 @@ import {
   usePaperTabsStore
 } from '@/features/papers/stores/paper-tabs-store';
 import { cn } from '@/lib/utils';
+
+/**
+ * PdfFileIcon — a document glyph with a red "PDF" wordmark (Tabler
+ * `file-type-pdf` geometry). The sheet outline inherits `currentColor` so it
+ * sits calmly in the tab's text colour, while the PDF letters keep a fixed
+ * brand red (#E2574C) for instant recognition — the same restraint Zotero and
+ * Mendeley use. Not the Adobe logo (avoids trademark).
+ *
+ * TODO(icons): promote to `Icons.pdfFile` in src/components/icons.tsx once that
+ * entry lands on main; this local copy keeps the tab bar self-contained for now.
+ */
+function PdfFileIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns='http://www.w3.org/2000/svg'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth={1.5}
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      className={className}
+      aria-hidden
+    >
+      {/* sheet + folded corner — currentColor */}
+      <path d='M14 3v4a1 1 0 0 0 1 1h4' />
+      <path d='M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4' />
+      {/* "PDF" letters — fixed brand red */}
+      <g stroke='#E2574C'>
+        <path d='M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6' />
+        <path d='M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z' />
+        <path d='M17 18h2' />
+        <path d='M20 15h-3v6' />
+      </g>
+    </svg>
+  );
+}
 
 /** Active paperId from /<locale>/dashboard/papers/<id>[/view]; null on the list. */
 function paperIdFromPath(pathname: string): string | null {
@@ -95,6 +143,31 @@ function TabSep() {
   return <div className='edge-sep z-0 shrink-0' aria-hidden />;
 }
 
+/** Drop-zone id for the empty space after the last tab. Dropping a grouped tab
+ *  here is the way to pull it OUT of a group that has no tab to its right. */
+const LOOSE_TAIL_ID = '__loose-tail__';
+
+/** Flexible droppable filling the strip's trailing space. Highlights subtly
+ *  while a tab hovers it so the "drop to ungroup" affordance is visible. */
+function LooseTail() {
+  const { setNodeRef, isOver } = useDroppable({ id: LOOSE_TAIL_ID });
+  return (
+    <div
+      ref={setNodeRef}
+      aria-hidden
+      className={cn(
+        'h-9 min-w-8 flex-1 self-end rounded-t-md transition-colors',
+        isOver && 'bg-foreground/[0.06]'
+      )}
+    />
+  );
+}
+
+/** Lock dragging to the X axis — tabs only move left/right, never up/down. */
+const restrictToHorizontal: NonNullable<Parameters<typeof DndContext>[0]['modifiers']>[number] = ({
+  transform
+}) => ({ ...transform, y: 0 });
+
 export function PaperTabsBar({ locale }: { locale: string }) {
   const t = useTranslations('papers');
   const router = useRouter();
@@ -111,6 +184,29 @@ export function PaperTabsBar({ locale }: { locale: string }) {
   const toggleGroupCollapsed = usePaperTabsStore((s) => s.toggleGroupCollapsed);
   const closeGroup = usePaperTabsStore((s) => s.closeGroup);
   const ungroup = usePaperTabsStore((s) => s.ungroup);
+  const moveTab = usePaperTabsStore((s) => s.moveTab);
+
+  // R177-2 drag: 6px activation distance so a plain click still opens the tab
+  // (only a deliberate drag starts sorting).
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over) return;
+    const activeId = String(active.id);
+    // Dropping on the tail zone moves the tab to the very end as a LOOSE tab —
+    // the only way to leave a group that has no tab to its right (R237h fix).
+    if (over.id === LOOSE_TAIL_ID) {
+      const last = tabs[tabs.length - 1];
+      if (last && last.paperId !== activeId) moveTab(activeId, last.paperId, null);
+      else if (last && last.paperId === activeId) removeTabFromGroup(activeId);
+      return;
+    }
+    if (activeId === over.id) return;
+    // moveTab adopts the destination tab's group, so dragging across a group
+    // boundary joins/leaves the group exactly like Edge.
+    moveTab(activeId, String(over.id));
+  };
 
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -144,132 +240,39 @@ export function PaperTabsBar({ locale }: { locale: string }) {
   };
 
   const segments = buildSegments(tabs, groups);
+  const sortableIds = tabs.map((tab) => tab.paperId);
 
   return (
-    // h-10 strip; no bottom padding so active tabs can flare into the content.
-    <div className='flex h-10 w-full items-stretch overflow-x-auto border-b bg-muted/40 pt-1.5 pl-2'>
-      {/* PARENT anchor — "Papers". An Edge-style tab; active on the list route. */}
-      <ParentTab
-        active={onList}
-        label={t('papersTitle')}
-        ariaLabel={t('backToList')}
-        onOpen={() => router.push(`/${locale}/dashboard/papers`)}
-      />
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={[restrictToHorizontal]}
+      onDragEnd={onDragEnd}
+    >
+      {/* h-11 strip; tabs aligned to the BOTTOM so the active tab's top edge
+          clears the group bar. No bottom padding so active tabs flare into the
+          content surface below. */}
+      <div className='flex h-11 w-full items-end overflow-hidden border-b bg-muted/40 pl-1'>
+        {/* PARENT anchor — "Papers". A taller Edge-style tab; active on list route. */}
+        <ParentTab
+          active={onList}
+          label={t('papersTitle')}
+          ariaLabel={t('backToList')}
+          onOpen={() => router.push(`/${locale}/dashboard/papers`)}
+        />
 
-      {tabs.length > 0 && !onList && <TabSep />}
+        {tabs.length > 0 && !onList && <TabSep />}
 
-      {segments.map((seg, segIdx) => {
-        if (seg.kind === 'loose') {
-          const isActive = seg.tab.paperId === routePaperId;
-          return (
-            <span key={seg.tab.paperId} className='flex items-stretch'>
-              {segIdx > 0 && <TabSep />}
-              <TabItem
-                tab={seg.tab}
-                active={isActive}
-                groups={groups}
-                t={t}
-                onOpen={goToTab}
-                onClose={handleClose}
-                onNewGroup={(pid) => createGroup([pid])}
-                onAddToGroup={addTabToGroup}
-                onRemoveFromGroup={removeTabFromGroup}
-              />
-            </span>
-          );
-        }
-        const { group, tabs: groupTabs } = seg;
-        const styles = TAB_GROUP_COLOR_STYLES[group.color];
-        const named = group.name.trim().length > 0;
-        return (
-          <div
-            key={group.id}
-            className='relative my-px flex items-stretch rounded-t-md'
-            style={styles.band}
-          >
-            {/* 2px group-colour bar across the whole band (Edge group strip). */}
-            <div
-              className='absolute inset-x-0 top-0 h-0.5 rounded-t-md'
-              style={styles.bar}
-              aria-hidden
-            />
-
-            {/* Group chip — solid colour, white text (Edge style). */}
-            <ContextMenu>
-              <ContextMenuTrigger asChild>
-                <button
-                  type='button'
-                  onClick={() => toggleGroupCollapsed(group.id)}
-                  title={named ? group.name : t('tabGroupUnnamed')}
-                  className='my-1 ml-1 inline-flex shrink-0 items-center gap-1.5 rounded px-2 text-xs font-medium transition-opacity hover:opacity-90 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                  style={styles.solidChip}
-                >
-                  <span className='max-w-[10rem] truncate'>
-                    {named ? group.name : t('tabGroupUnnamed')}
-                  </span>
-                  {/* R232b: count only when unnamed — a named group makes it noise. */}
-                  {!named && <span className='tabular-nums opacity-80'>{groupTabs.length}</span>}
-                </button>
-              </ContextMenuTrigger>
-              <ContextMenuContent className='w-48'>
-                <ContextMenuItem onSelect={() => startRename(group)}>
-                  {t('tabGroupRename')}
-                </ContextMenuItem>
-                <ContextMenuSub>
-                  <ContextMenuSubTrigger>{t('tabGroupColor')}</ContextMenuSubTrigger>
-                  <ContextMenuSubContent>
-                    {TAB_GROUP_COLORS.map((c) => (
-                      <ContextMenuItem key={c} onSelect={() => setGroupColor(group.id, c)}>
-                        <span
-                          className='mr-2 size-3 rounded-full'
-                          style={TAB_GROUP_COLOR_STYLES[c].dot}
-                          aria-hidden
-                        />
-                        {t(`tabGroupColor_${c}`)}
-                      </ContextMenuItem>
-                    ))}
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-                <ContextMenuItem onSelect={() => toggleGroupCollapsed(group.id)}>
-                  {group.collapsed ? t('tabGroupExpand') : t('tabGroupCollapse')}
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                <ContextMenuItem onSelect={() => ungroup(group.id)}>
-                  {t('tabGroupUngroup')}
-                </ContextMenuItem>
-                <ContextMenuItem
-                  onSelect={() => closeGroup(group.id)}
-                  className='text-destructive focus:text-destructive'
-                >
-                  {t('tabGroupCloseAll')}
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
-
-            {/* Inline rename input */}
-            {renaming === group.id && (
-              <Input
-                ref={(el) => el?.focus()}
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onBlur={commitRename}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') commitRename();
-                  if (e.key === 'Escape') setRenaming(null);
-                }}
-                className='my-1 h-7 w-28 text-xs'
-                aria-label={t('tabGroupRename')}
-              />
-            )}
-
-            {/* Group's tabs (hidden when collapsed) */}
-            {!group.collapsed &&
-              groupTabs.map((tab, ti) => (
-                <span key={tab.paperId} className='flex items-stretch'>
-                  {ti > 0 && <TabSep />}
+        <SortableContext items={sortableIds} strategy={horizontalListSortingStrategy}>
+          {segments.map((seg, segIdx) => {
+            if (seg.kind === 'loose') {
+              const isActive = seg.tab.paperId === routePaperId;
+              return (
+                <Fragment key={seg.tab.paperId}>
+                  {segIdx > 0 && <TabSep />}
                   <TabItem
-                    tab={tab}
-                    active={tab.paperId === routePaperId}
+                    tab={seg.tab}
+                    active={isActive}
                     groups={groups}
                     t={t}
                     onOpen={goToTab}
@@ -278,26 +281,135 @@ export function PaperTabsBar({ locale }: { locale: string }) {
                     onAddToGroup={addTabToGroup}
                     onRemoveFromGroup={removeTabFromGroup}
                   />
-                </span>
-              ))}
-          </div>
-        );
-      })}
-    </div>
+                </Fragment>
+              );
+            }
+            const { group, tabs: groupTabs } = seg;
+            const styles = TAB_GROUP_COLOR_STYLES[group.color];
+            const named = group.name.trim().length > 0;
+            return (
+              <div
+                key={group.id}
+                className='relative flex h-10 min-w-0 items-end rounded-t-md'
+                style={styles.band}
+              >
+                {/* 2px group-colour bar across the whole band (Edge group strip). */}
+                <div
+                  className='absolute inset-x-0 top-0 h-0.5 rounded-t-md'
+                  style={styles.bar}
+                  aria-hidden
+                />
+
+                {/* Group chip — solid colour, white text (Edge style). */}
+                <ContextMenu>
+                  <ContextMenuTrigger asChild>
+                    <button
+                      type='button'
+                      onClick={() => toggleGroupCollapsed(group.id)}
+                      title={named ? group.name : t('tabGroupUnnamed')}
+                      className='mx-1 inline-flex h-7 shrink-0 items-center gap-1.5 self-center rounded px-2 text-xs font-medium transition-opacity hover:opacity-90 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                      style={styles.solidChip}
+                    >
+                      <span className='max-w-[10rem] truncate'>
+                        {named ? group.name : t('tabGroupUnnamed')}
+                      </span>
+                      {/* R232b: count only when unnamed — a named group makes it noise. */}
+                      {!named && (
+                        <span className='tabular-nums opacity-80'>{groupTabs.length}</span>
+                      )}
+                    </button>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className='w-48'>
+                    <ContextMenuItem onSelect={() => startRename(group)}>
+                      {t('tabGroupRename')}
+                    </ContextMenuItem>
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>{t('tabGroupColor')}</ContextMenuSubTrigger>
+                      <ContextMenuSubContent>
+                        {TAB_GROUP_COLORS.map((c) => (
+                          <ContextMenuItem key={c} onSelect={() => setGroupColor(group.id, c)}>
+                            <span
+                              className='mr-2 size-3 rounded-full'
+                              style={TAB_GROUP_COLOR_STYLES[c].dot}
+                              aria-hidden
+                            />
+                            {t(`tabGroupColor_${c}`)}
+                          </ContextMenuItem>
+                        ))}
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                    <ContextMenuItem onSelect={() => toggleGroupCollapsed(group.id)}>
+                      {group.collapsed ? t('tabGroupExpand') : t('tabGroupCollapse')}
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onSelect={() => ungroup(group.id)}>
+                      {t('tabGroupUngroup')}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onSelect={() => closeGroup(group.id)}
+                      className='text-destructive focus:text-destructive'
+                    >
+                      {t('tabGroupCloseAll')}
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+
+                {/* Inline rename input */}
+                {renaming === group.id && (
+                  <Input
+                    ref={(el) => el?.focus()}
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={commitRename}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitRename();
+                      if (e.key === 'Escape') setRenaming(null);
+                    }}
+                    className='h-7 w-28 self-center text-xs'
+                    aria-label={t('tabGroupRename')}
+                  />
+                )}
+
+                {/* Group's tabs (hidden when collapsed) */}
+                {!group.collapsed &&
+                  groupTabs.map((tab, ti) => (
+                    <Fragment key={tab.paperId}>
+                      {ti > 0 && <TabSep />}
+                      <TabItem
+                        tab={tab}
+                        active={tab.paperId === routePaperId}
+                        groups={groups}
+                        t={t}
+                        onOpen={goToTab}
+                        onClose={handleClose}
+                        onNewGroup={(pid) => createGroup([pid])}
+                        onAddToGroup={addTabToGroup}
+                        onRemoveFromGroup={removeTabFromGroup}
+                      />
+                    </Fragment>
+                  ))}
+              </div>
+            );
+          })}
+        </SortableContext>
+        <LooseTail />
+      </div>
+    </DndContext>
   );
 }
 
-/** Shared className for an Edge-style sheet tab body. */
+/** Shared className for an Edge-style sheet tab body. h-9 = pdf-tab height. */
 function tabSheetClass(active: boolean) {
   return cn(
-    'edge-tab group relative flex items-center gap-1.5 px-3 text-xs transition-colors',
+    'edge-tab group relative flex h-9 items-center gap-1.5 px-3 text-xs transition-colors',
     active
-      ? 'edge-tab-active z-10 -mb-px bg-background font-medium text-foreground shadow-[0_-1px_3px_hsl(0_0%_0%/0.08)]'
+      ? 'edge-tab-active z-10 -mx-px -mb-px bg-background font-medium text-foreground shadow-[0_-1px_3px_hsl(0_0%_0%/0.08)]'
       : 'z-0 bg-transparent text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground'
   );
 }
 
-/** The "Papers" parent tab — same Edge sheet shape as a paper tab. */
+/** The "Papers" parent tab — same Edge sheet shape, slightly taller, leads back
+ *  to the list. Active on the list route. */
 function ParentTab({
   active,
   label,
@@ -315,8 +427,8 @@ function ParentTab({
       onClick={onOpen}
       aria-current={active ? 'page' : undefined}
       aria-label={ariaLabel}
-      className={cn(tabSheetClass(active), 'shrink-0 font-semibold')}
-      style={active ? ({ '--edge-tab-bg': 'hsl(var(--background))' } as CSSProperties) : undefined}
+      className={cn(tabSheetClass(active), 'h-10 shrink-0 font-semibold')}
+      style={active ? ({ '--edge-tab-bg': 'var(--background)' } as CSSProperties) : undefined}
     >
       <IconLayoutGrid className='size-4 shrink-0' />
       {label}
@@ -347,13 +459,36 @@ function TabItem({
   onRemoveFromGroup: (paperId: string) => void;
 }) {
   const otherGroups = groups.filter((g) => g.id !== tab.groupId);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: tab.paperId
+  });
+  // Merge dnd transform with the active tab's --edge-tab-bg custom property.
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    ...(isDragging ? { opacity: 0.5, zIndex: 50 } : null),
+    ...(active ? ({ '--edge-tab-bg': 'var(--background)' } as CSSProperties) : null)
+  };
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
+          ref={setNodeRef}
+          {...attributes}
+          {...listeners}
           role='tab'
           tabIndex={0}
           aria-selected={active}
+          onMouseDown={(e) => {
+            // Middle-click closes the tab. Handle on mousedown and stop
+            // propagation so the dnd-kit pointer listener never sees it —
+            // auxclick alone is unreliable once drag listeners are attached.
+            if (e.button === 1) {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose(e, tab.paperId);
+            }
+          }}
           onClick={() => onOpen(tab.paperId)}
           onAuxClick={(e) => {
             if (e.button === 1) {
@@ -367,13 +502,19 @@ function TabItem({
               onOpen(tab.paperId);
             }
           }}
-          className={cn(tabSheetClass(active), 'min-w-[8rem] max-w-[15rem] cursor-pointer')}
-          style={
-            active ? ({ '--edge-tab-bg': 'hsl(var(--background))' } as CSSProperties) : undefined
-          }
+          className={cn(
+            tabSheetClass(active),
+            // Edge behaviour: tabs share the row and shrink as more open
+            // (flex-1 + min-w-0 so the title truncates, then disappears). Floor
+            // ~3rem = file icon + close button only. Ceiling 14rem (~2.5x the
+            // "Papers" tab) so one open tab doesn't stretch the whole strip. No
+            // scrollbar — overflow is hidden, tabs just keep shrinking.
+            'min-w-[3rem] max-w-[14rem] flex-1 cursor-pointer touch-none'
+          )}
+          style={style}
         >
-          <IconFileText className='size-3.5 shrink-0 opacity-70' />
-          <span className='truncate'>{tab.title || t('untitled')}</span>
+          <PdfFileIcon className='size-4 shrink-0' />
+          <span className='min-w-0 truncate'>{tab.title || t('untitled')}</span>
           <button
             type='button'
             onClick={(e) => onClose(e, tab.paperId)}

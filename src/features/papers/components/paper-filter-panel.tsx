@@ -289,10 +289,10 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                             }
                             aria-pressed={presetActive}
                             className={cn(
-                              'rounded-md border px-2 py-1 text-xs transition-colors',
+                              'rounded-md px-2 py-1 text-xs transition-colors',
                               presetActive
-                                ? 'border-primary/40 bg-primary/10 text-primary'
-                                : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
                             )}
                           >
                             {t('filterYearLastN', { count: n })}
@@ -373,10 +373,10 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                             aria-pressed={active}
                             title={j.name}
                             className={cn(
-                              'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                              'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                               active
-                                ? 'border-primary/40 bg-primary/10 text-primary'
-                                : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
                             )}
                           >
                             <span className='max-w-[180px] truncate'>{j.short}</span>
@@ -445,10 +445,10 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                                   onClick={() => toggleDomain(slug)}
                                   aria-pressed={active}
                                   className={cn(
-                                    'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                    'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                                     active
                                       ? AXIS_COLOR[axis]
-                                      : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+                                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
                                   )}
                                 >
                                   {t(`domain.${slug}`)}
@@ -508,8 +508,8 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
               <span
                 key={slug}
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium',
-                  axis ? AXIS_COLOR[axis] : 'border-border text-muted-foreground'
+                  'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium',
+                  axis ? AXIS_COLOR[axis] : 'bg-muted text-muted-foreground'
                 )}
               >
                 {t(`domain.${slug}`)}

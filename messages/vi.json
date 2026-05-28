@@ -425,7 +425,8 @@
     "tabGroupColor_amber": "Hổ phách",
     "tabGroupColor_red": "Đỏ",
     "tabGroupColor_purple": "Tím",
-    "tabGroupColor_gray": "Xám"
+    "tabGroupColor_gray": "Xám",
+    "openSource": "Mở trang nguồn"
   },
   "materials": {
     "title": "Vật liệu",

@@ -39,7 +39,7 @@ export function PaperDomainBadge({ primary, subtopics, confidence }: Props) {
       {hasPrimary && primaryAxis && (
         <span
           className={cn(
-            'inline-flex items-center gap-1 rounded border px-2 py-0.5 font-medium',
+            'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium',
             AXIS_COLOR[primaryAxis]
           )}
           aria-label={t('domainPrimaryLabel')}
@@ -55,7 +55,7 @@ export function PaperDomainBadge({ primary, subtopics, confidence }: Props) {
             <span
               key={slug}
               className={cn(
-                'inline-flex items-center rounded border px-1.5 py-0.5',
+                'inline-flex items-center rounded-md px-1.5 py-0.5 font-medium',
                 AXIS_COLOR[axis]
               )}
             >

@@ -170,13 +170,8 @@ export function PaperDetail({ paperId }: { paperId: string }) {
 
   return (
     <div className='max-w-3xl mx-auto space-y-6'>
-      <Link
-        href={`/${locale}/dashboard/papers`}
-        className='inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground'
-      >
-        <IconArrowLeft className='size-3.5' />
-        {t('backToList')}
-      </Link>
+      {/* R237c: "Back to papers" link removed — the tab strip's "Papers"
+          anchor handles list navigation, freeing the reader's vertical space. */}
 
       {/* R223 #4: header now leads with the paper's own identity — authors, year,
           journal, DOI — not file stats (those move to Processing, demoted). */}
@@ -185,7 +180,23 @@ export function PaperDetail({ paperId }: { paperId: string }) {
           <IconFileText className='size-6 mt-1 text-muted-foreground shrink-0' />
           <div className='flex-1 min-w-0'>
             <h1 className='text-xl font-semibold tracking-tight break-words'>
-              {paper.title || t('untitled')}
+              {paper.doi ? (
+                <a
+                  href={`https://doi.org/${paper.doi}`}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='group inline decoration-muted-foreground/40 underline-offset-4 hover:underline'
+                  title={t('openSource')}
+                >
+                  {paper.title || t('untitled')}
+                  <IconExternalLink
+                    className='ml-1 inline size-4 align-baseline text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100'
+                    aria-hidden
+                  />
+                </a>
+              ) : (
+                paper.title || t('untitled')
+              )}
             </h1>
             {metaParts.length > 0 && (
               <p className='text-sm text-muted-foreground mt-1'>

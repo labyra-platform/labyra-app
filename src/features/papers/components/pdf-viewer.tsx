@@ -27,7 +27,6 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
  */
 import {
   IconAlertCircle,
-  IconArrowLeft,
   IconArrowsMaximize,
   IconArrowsMinimize,
   IconChevronLeft,
@@ -39,8 +38,6 @@ import {
   IconRefresh
 } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -119,8 +116,6 @@ export function PdfViewer({
   active?: boolean;
 }) {
   const t = useTranslations('papers');
-  const params = useParams();
-  const locale = params.locale as string;
   const { paper, loading: paperLoading } = usePaper(paperId);
 
   const [signed, setSigned] = useState<SignedUrlResponse | null>(null);
@@ -453,19 +448,9 @@ export function PdfViewer({
     >
       {/* Toolbar */}
       <header className='flex items-center gap-1.5 border-b bg-background px-3 py-2 sm:gap-2 sm:px-4'>
-        <Button asChild variant='ghost' size='sm'>
-          <Link
-            href={
-              embedded ? `/${locale}/dashboard/papers` : `/${locale}/dashboard/papers/${paperId}`
-            }
-            aria-label={embedded ? t('backToList') : t('backToDetail')}
-          >
-            <IconArrowLeft className='size-4' />
-            <span className='hidden sm:inline'>
-              {embedded ? t('backToList') : t('backToDetail')}
-            </span>
-          </Link>
-        </Button>
+        {/* R237d: back button removed — the paper tab strip ("Papers" anchor +
+            open tabs) owns navigation now, so a separate back link here was
+            redundant and ate toolbar space needed for reader tools. */}
 
         <div className='min-w-0 flex-1 max-w-md'>
           <h1 className='truncate text-sm font-medium' title={displayTitle}>

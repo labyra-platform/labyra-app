@@ -425,7 +425,8 @@
     "tabGroupColor_amber": "Amber",
     "tabGroupColor_red": "Red",
     "tabGroupColor_purple": "Purple",
-    "tabGroupColor_gray": "Gray"
+    "tabGroupColor_gray": "Gray",
+    "openSource": "Open source page"
   },
   "materials": {
     "title": "Materials",

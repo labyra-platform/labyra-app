@@ -129,6 +129,15 @@ export function PdfViewer({
   // tab pulls the already-downloaded bytes from the module-level LRU cache
   // (pdf-cache) instead of re-fetching from GCS. react-pdf gets file={{data}}.
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  // R232g: Blob URL cho <Document>. PDF.js KHÔNG detach Blob URL (fetch như
+  // file thường), khác ArrayBuffer raw bị transfer/detach. Hết hẳn lớp
+  // 'detached ArrayBuffer' khi component re-render giữa các lần load.
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  // R235 CLS fix: aspect ratio (height/width) thật của từng page. Placeholder
+  // dùng aspect thật thay vì giả định A4 (SQRT2) -> page render không đổi
+  // height -> hết layout shift. Pages cùng PDF thường cùng size nên 1 page
+  // load xong là cả tài liệu có aspect đúng.
+  const [pageAspects, setPageAspects] = useState<Record<number, number>>({});
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(initialPage ?? 1);
   const [zoom, setZoom] = useState(initialZoom ?? 1);
@@ -176,7 +185,11 @@ export function PdfViewer({
         // the SAME (already-detached) slice from the previous mount. Slicing
         // here makes pdfData a brand-new buffer per load, so the cache master
         // stays intact for next time AND the fileSource memo recomputes.
-        setPdfData(cachedBytes.slice(0));
+        const objectUrl = URL.createObjectURL(
+          new Blob([cachedBytes.slice(0)], { type: 'application/pdf' })
+        );
+        setPdfData(cachedBytes);
+        setBlobUrl(objectUrl);
         return;
       }
       // Need a URL to download from. Reuse a still-valid cached URL (R231).
@@ -192,7 +205,9 @@ export function PdfViewer({
       const buf = await res.arrayBuffer();
       // Cache the master, give react-pdf its own slice (see above).
       setCachedPdf(paperId, buf);
-      setPdfData(buf.slice(0));
+      const objectUrl = URL.createObjectURL(new Blob([buf.slice(0)], { type: 'application/pdf' }));
+      setPdfData(buf);
+      setBlobUrl(objectUrl);
     } catch (e) {
       setUrlError(e instanceof Error ? e.message : 'fetch_failed');
     }
@@ -244,7 +259,11 @@ export function PdfViewer({
   // (and thus scroll position / page jumps) stays exact. A4 aspect ≈ 1.414.
   const VIRTUAL_BUFFER = 2;
   const PAGE_ASPECT = Math.SQRT2;
-  const placeholderHeight = pageWidth * PAGE_ASPECT;
+  // R235: aspect đã đo (nếu có) hoặc fallback A4. Dùng aspect của page đầu
+  // tiên đã biết làm default cho page chưa load (đa số PDF đồng nhất size).
+  const knownAspects = Object.values(pageAspects);
+  const defaultAspect = knownAspects.length > 0 ? knownAspects[0] : PAGE_ASPECT;
+  const heightForPage = (pageNum: number) => pageWidth * (pageAspects[pageNum] ?? defaultAspect);
 
   // Document load callback
   const onDocumentLoadSuccess = useCallback(
@@ -416,7 +435,13 @@ export function PdfViewer({
   // R232f: pdfData is already a per-load slice (loadPdf above), so the memo
   // just wraps it. Each load → new pdfData reference → new fileSource → PDF.js
   // gets a fresh, not-yet-detached buffer; the cache's master is never touched.
-  const fileSource = useMemo(() => (pdfData ? { data: pdfData } : null), [pdfData]);
+  const fileSource = useMemo(() => blobUrl, [blobUrl]);
+  // R232g: revoke Blob URL cũ khi đổi/unmount để không leak object URL.
+  useEffect(() => {
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [blobUrl]);
 
   return (
     <div
@@ -619,10 +644,18 @@ export function PdfViewer({
                         renderTextLayer
                         renderAnnotationLayer
                         className='shadow-md'
+                        onLoadSuccess={(page) => {
+                          // R235: lưu aspect thật (height/width) của page này.
+                          const vp = page.getViewport({ scale: 1 });
+                          const aspect = vp.height / vp.width;
+                          setPageAspects((prev) =>
+                            prev[pageNum] === aspect ? prev : { ...prev, [pageNum]: aspect }
+                          );
+                        }}
                         loading={
                           <div
                             className='flex items-center justify-center bg-card'
-                            style={{ width: pageWidth, height: placeholderHeight }}
+                            style={{ width: pageWidth, height: heightForPage(pageNum) }}
                           >
                             <IconLoader2 className='size-5 animate-spin text-muted-foreground' />
                           </div>
@@ -630,9 +663,10 @@ export function PdfViewer({
                       />
                     ) : (
                       // R225: out-of-window placeholder — same footprint, no canvas.
+                      // R235: height từ aspect thật -> không nhảy khi page vào window.
                       <div
                         className='flex items-center justify-center bg-card/50 shadow-md'
-                        style={{ width: pageWidth, height: placeholderHeight }}
+                        style={{ width: pageWidth, height: heightForPage(pageNum) }}
                       >
                         <span className='text-xs text-muted-foreground'>{pageNum}</span>
                       </div>

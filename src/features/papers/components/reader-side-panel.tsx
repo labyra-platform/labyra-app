@@ -275,7 +275,7 @@ function PanelTabButton({
         'inline-flex h-8 cursor-pointer items-center justify-center rounded-md text-[13px] transition-all',
         active
           ? 'flex-1 gap-1.5 bg-background px-2.5 font-medium text-foreground shadow-sm ring-1 ring-black/[0.04]'
-          : 'w-9 shrink-0 text-muted-foreground hover:bg-background/70 hover:text-foreground'
+          : 'w-9 shrink-0 text-muted-foreground hover:bg-background hover:text-foreground hover:shadow-sm'
       )}
     >
       <span className='shrink-0'>{icon}</span>

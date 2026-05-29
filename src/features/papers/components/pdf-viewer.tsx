@@ -1464,82 +1464,82 @@ export function PdfViewer({
       {/* Find bar (R237be) — slides in under the toolbar on Ctrl+F or the search
           button. Highlights all matches in the text layer; ↑/↓ + Enter cycle. */}
       {searchOpen && (
-        <div className='flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5'>
-          <IconSearch className='size-4 shrink-0 text-muted-foreground' />
-          <input
-            ref={searchInputRef}
-            type='text'
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if (e.shiftKey) gotoPrevMatch();
-                else gotoNextMatch();
-              } else if (e.key === 'Escape') {
-                e.preventDefault();
-                closeSearch();
-              }
-            }}
-            placeholder={t('searchPlaceholder')}
-            className='min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground'
-            aria-label={t('searchInDoc')}
-          />
-          <span className='shrink-0 text-xs tabular-nums text-muted-foreground'>
-            {searchQuery
-              ? searchMatches.length
-                ? t('searchMatch', { current: searchCurrent + 1, total: searchMatches.length })
-                : searchIndexReady
-                  ? t('searchNoMatch')
-                  : '…'
-              : ''}
-          </span>
-          <button
-            type='button'
-            onClick={() => setSearchCaseSensitive((v) => !v)}
-            aria-pressed={searchCaseSensitive}
-            title={t('searchCaseSensitive')}
-            className={cn(
-              'shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors',
-              searchCaseSensitive
-                ? 'bg-primary/15 text-primary'
-                : 'text-muted-foreground hover:bg-muted'
-            )}
-          >
-            Aa
-          </button>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='size-6 shrink-0'
-            onClick={gotoPrevMatch}
-            disabled={searchMatches.length === 0}
-            aria-label={t('searchPrev')}
-            title={`${t('searchPrev')} (Shift ↵)`}
-          >
-            <IconChevronUp className='size-4' />
-          </Button>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='size-6 shrink-0'
-            onClick={gotoNextMatch}
-            disabled={searchMatches.length === 0}
-            aria-label={t('searchNext')}
-            title={`${t('searchNext')} (↵)`}
-          >
-            <IconChevronDown className='size-4' />
-          </Button>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='size-6 shrink-0'
-            onClick={closeSearch}
-            aria-label={t('close')}
-            title={`${t('close')} (Esc)`}
-          >
-            <IconX className='size-4' />
-          </Button>
+        <div className='flex justify-end border-b px-3 py-1.5'>
+          <div className='flex w-full max-w-md items-center gap-1.5 rounded-lg border bg-background px-2 py-1 shadow-sm'>
+            <IconSearch className='size-4 shrink-0 text-muted-foreground' />
+            <input
+              ref={searchInputRef}
+              type='text'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (e.shiftKey) gotoPrevMatch();
+                  else gotoNextMatch();
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  closeSearch();
+                }
+              }}
+              placeholder={t('searchPlaceholder')}
+              className='min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground'
+              aria-label={t('searchInDoc')}
+            />
+            <span className='shrink-0 text-xs tabular-nums text-muted-foreground'>
+              {searchQuery
+                ? searchMatches.length
+                  ? t('searchMatch', { current: searchCurrent + 1, total: searchMatches.length })
+                  : searchIndexReady
+                    ? t('searchNoMatch')
+                    : '…'
+                : ''}
+            </span>
+            <button
+              type='button'
+              onClick={() => setSearchCaseSensitive((v) => !v)}
+              aria-pressed={searchCaseSensitive}
+              title={t('searchCaseSensitive')}
+              className={cn(
+                'shrink-0 cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium transition-colors',
+                searchCaseSensitive
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              Aa
+            </button>
+            <div className='mx-0.5 h-4 w-px bg-border' aria-hidden />
+            <button
+              type='button'
+              onClick={gotoPrevMatch}
+              disabled={searchMatches.length === 0}
+              aria-label={t('searchPrev')}
+              title={`${t('searchPrev')} (Shift ↵)`}
+              className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent'
+            >
+              <IconChevronUp className='size-4' />
+            </button>
+            <button
+              type='button'
+              onClick={gotoNextMatch}
+              disabled={searchMatches.length === 0}
+              aria-label={t('searchNext')}
+              title={`${t('searchNext')} (↵)`}
+              className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent'
+            >
+              <IconChevronDown className='size-4' />
+            </button>
+            <button
+              type='button'
+              onClick={closeSearch}
+              aria-label={t('close')}
+              title={`${t('close')} (Esc)`}
+              className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+            >
+              <IconX className='size-4' />
+            </button>
+          </div>
         </div>
       )}
 

@@ -63,6 +63,7 @@ import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
 import { PdfHighlightLayer } from '@/features/papers/components/pdf-highlight-layer';
 import { PdfDrawLayer } from '@/features/papers/components/pdf-draw-layer';
 import { PdfTranslateLayer } from '@/features/papers/components/pdf-translate-layer';
+import { usePaperTranslationsStore } from '@/features/papers/stores/paper-translations-store';
 import { PdfNavSidebar } from '@/features/papers/components/pdf-nav-sidebar';
 import {
   createAnnotation,
@@ -279,6 +280,8 @@ export function PdfViewer({
   // highlight; when off, selecting text is normal copy (the overlay is
   // pointer-events:none so it never blocks selection regardless).
   const [highlightMode, setHighlightMode] = useState(false);
+  // B2 (R237av): record finished translations for the side-panel list.
+  const addTranslation = usePaperTranslationsStore((s) => s.add);
   // C4: freehand drawing. drawMode toggles pointer capture; while on, text
   // selection (highlight) is suppressed so the two tools don't fight.
   const [drawMode, setDrawMode] = useState(false);
@@ -300,6 +303,12 @@ export function PdfViewer({
   // sits at page 1, the IntersectionObserver reports 1, and that overwrites the
   // saved page in the store before we scroll to it — losing the reading position.
   const restoredRef = useRef(false);
+  // R237aw: anchor (page + offset ratio) captured just before a layout-driven
+  // width change (side panel / sidebar toggle), so we can restore the exact
+  // reading position after the pages re-render at the new width. Without this,
+  // the old scrollTop (px) points at the wrong page once page heights change.
+  const scrollAnchorRef = useRef<{ page: number; ratio: number } | null>(null);
+  const prevPageWidthRef = useRef<number>(0);
 
   // Configure PDF.js worker
   useEffect(() => {
@@ -370,28 +379,79 @@ export function PdfViewer({
     if (hasActivatedRef.current && !pdfData) loadPdf();
   }, [active, pdfData, loadPdf]);
 
-  // R181-6: Track container width via window resize, NOT ResizeObserver.
-  // ResizeObserver fires on internal page renders → feedback loop on zoom.
-  // Window resize only fires on real layout changes.
-  // R181-8: lock container width to PARENT (not clientWidth which shrinks
-  // when horizontal scrollbar appears during zoom). Parent width = viewport
-  // minus sidebar, stable regardless of internal scroll state.
+  // R181-6 / R237aw: track container width. We measure the PARENT width (stable
+  // under PDF zoom, which only changes the inner pages) so a ResizeObserver on
+  // it is safe — it fires on real layout changes (side panel / sidebar / window
+  // toggles) but NOT on internal page renders, avoiding the zoom feedback loop
+  // that made us avoid ResizeObserver originally. Before applying a new width we
+  // snapshot the current reading anchor (page + offset) so the post-resize
+  // layout effect can restore it — otherwise toggling the side panel re-flows
+  // the pages and loses the reading position.
   useLayoutEffect(() => {
-    const measure = () => {
-      const el = pagesContainerRef.current;
-      if (!el || !el.parentElement) return;
-      const w = el.parentElement.clientWidth;
-      setContainerWidth((prev) => (Math.abs(prev - w) > 8 ? w : prev));
+    const el = pagesContainerRef.current;
+    const parent = el?.parentElement;
+    if (!parent) return;
+
+    const captureAnchor = () => {
+      const c = pagesContainerRef.current;
+      if (!c || !restoredRef.current) return;
+      const containerTop = c.getBoundingClientRect().top;
+      const pages = c.querySelectorAll<HTMLElement>('[data-page-index]');
+      for (const p of pages) {
+        const r = p.getBoundingClientRect();
+        if (r.bottom > containerTop + 1) {
+          scrollAnchorRef.current = {
+            page: Number(p.dataset.pageIndex),
+            ratio: Math.max(0, Math.min(1, (containerTop - r.top) / (r.height || 1)))
+          };
+          return;
+        }
+      }
     };
-    // Delay measure to allow DOM to settle after fullscreen toggle
+
+    const measure = () => {
+      const c = pagesContainerRef.current;
+      if (!c || !c.parentElement) return;
+      const w = c.parentElement.clientWidth;
+      setContainerWidth((prev) => {
+        if (Math.abs(prev - w) <= 8) return prev;
+        captureAnchor(); // remember reading position before the width changes
+        return w;
+      });
+    };
+
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const ro = new ResizeObserver(() => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(measure, 120);
+    });
+    ro.observe(parent);
+
     const id = setTimeout(measure, 50);
     measure();
     window.addEventListener('resize', measure);
     return () => {
       clearTimeout(id);
+      if (debounce) clearTimeout(debounce);
+      ro.disconnect();
       window.removeEventListener('resize', measure);
     };
   }, [pdfReady, isFullscreen]);
+
+  // R237aw: after pageWidth changes (e.g. side panel toggle re-flowed the
+  // pages), restore the reading anchor captured just before the change.
+  useLayoutEffect(() => {
+    if (prevPageWidthRef.current === 0) {
+      prevPageWidthRef.current = pageWidth;
+      return;
+    }
+    if (prevPageWidthRef.current === pageWidth) return;
+    prevPageWidthRef.current = pageWidth;
+    const a = scrollAnchorRef.current;
+    if (a && restoredRef.current) {
+      requestAnimationFrame(() => scrollToPageAt(a.page, a.ratio));
+    }
+  });
 
   // Page width = (containerWidth - padding) * zoom
   const pageWidth = useMemo(() => {
@@ -1353,6 +1413,7 @@ export function PdfViewer({
                                 targetLang
                               }
                               onTranslateRegion={handleTranslateRegion}
+                              onTranslated={(rec) => addTranslation(paperId, rec)}
                             />
                           )}
                         </div>

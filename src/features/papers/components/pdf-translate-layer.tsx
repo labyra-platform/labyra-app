@@ -15,6 +15,7 @@
 
 import { IconCheck, IconCopy, IconGripVertical, IconLoader2, IconX } from '@tabler/icons-react';
 import { renderToString as renderKatex } from 'katex';
+import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { copyPapersRich } from '@/features/papers/lib/copy-rich';
 import { cn } from '@/lib/utils';
@@ -30,7 +31,11 @@ interface ActiveBox {
   rect: Rect;
   text: string;
   status: 'loading' | 'done' | 'error';
+  /** Clean translation — NO ellipsis. Partial markers are rendered separately
+   *  (R237aw) so copying never picks up a stray "…". */
   translation: string;
+  partialStart: boolean;
+  partialEnd: boolean;
 }
 
 /** Collect text from text-layer spans intersecting `rect` (page-pixel space).
@@ -222,7 +227,8 @@ export function PdfTranslateLayer({
   pageNumber,
   active,
   targetLabel,
-  onTranslateRegion
+  onTranslateRegion,
+  onTranslated
 }: {
   width: number;
   height: number;
@@ -241,7 +247,18 @@ export function PdfTranslateLayer({
     },
     onChunk?: (partial: string) => void
   ) => Promise<string>;
+  /** B2 (R237av): fired when a region finishes translating, so the host can add
+   *  it to the side-panel "Translations" list. */
+  onTranslated?: (rec: {
+    page: number;
+    source: string;
+    translation: string;
+    partialStart: boolean;
+    partialEnd: boolean;
+    yRatio: number;
+  }) => void;
 }) {
+  const t = useTranslations('papers');
   const layerRef = useRef<HTMLDivElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const [dragRect, setDragRect] = useState<Rect | null>(null);
@@ -303,30 +320,49 @@ export function PdfTranslateLayer({
     const crop = cropCanvasRegion(host, layer.getBoundingClientRect(), rect);
     if (!text && (!crop || crop.blank || !crop.base64)) {
       // No text AND no usable image (blank region) → nothing to translate.
-      setBox({ rect, text: '', status: 'error', translation: '' });
+      setBox({
+        rect,
+        text: '',
+        status: 'error',
+        translation: '',
+        partialStart: false,
+        partialEnd: false
+      });
       return;
     }
     const regionHash = `${pageNumber}:${Math.round(rect.x)}:${Math.round(rect.y)}:${Math.round(
       rect.w
     )}:${Math.round(rect.h)}`;
     const image = crop && !crop.blank ? crop.base64 : null;
-    const decorate = (s: string) => `${partialStart ? '…' : ''}${s}${partialEnd ? '…' : ''}`;
 
-    setBox({ rect, text, status: 'loading', translation: '' });
+    setBox({ rect, text, status: 'loading', translation: '', partialStart, partialEnd });
     try {
       const translation = await onTranslateRegion(
         { text, image, regionHash, partialStart, partialEnd },
         (partial) => {
-          setBox({ rect, text, status: 'done', translation: decorate(partial) });
+          setBox({ rect, text, status: 'done', translation: partial, partialStart, partialEnd });
         }
       );
       if (!translation || translation === '[NO_TEXT]') {
-        setBox({ rect, text, status: 'error', translation: '' });
+        setBox({ rect, text, status: 'error', translation: '', partialStart, partialEnd });
       } else {
-        setBox({ rect, text, status: 'done', translation: decorate(translation) });
+        setBox({ rect, text, status: 'done', translation, partialStart, partialEnd });
+        // B2: surface the finished translation to the side-panel list. yRatio is
+        // the region's vertical position in the page, for scroll-to-region.
+        if (text.trim() && layerRef.current) {
+          const h = layerRef.current.getBoundingClientRect().height || height;
+          onTranslated?.({
+            page: pageNumber,
+            source: text,
+            translation,
+            partialStart,
+            partialEnd,
+            yRatio: Math.max(0, Math.min(1, rect.y / h))
+          });
+        }
       }
     } catch {
-      setBox({ rect, text, status: 'error', translation: '' });
+      setBox({ rect, text, status: 'error', translation: '', partialStart, partialEnd });
     }
   };
 
@@ -459,11 +495,28 @@ export function PdfTranslateLayer({
                     // it room to breathe inside our prose flow.
                     '[&_.katex]:mx-0.5 [&_.katex]:text-[1em]'
                   )}
-                  // Safe: <math> blocks are pre-rendered by KaTeX
-                  // (trust:false, no \href/\input); the rest is HTML-escaped and
-                  // only sub/sup/b/i tags are re-enabled with no attributes.
-                  dangerouslySetInnerHTML={{ __html: sanitizeFormatting(box.translation) }}
-                />
+                >
+                  {box.partialStart && (
+                    <span
+                      className='mr-0.5 select-none text-muted-foreground/45'
+                      title={t('partialNote')}
+                    >
+                      …
+                    </span>
+                  )}
+                  {/* Safe: <math> blocks are pre-rendered by KaTeX
+                      (trust:false, no \href/\input); the rest is HTML-escaped and
+                      only sub/sup/b/i tags are re-enabled with no attributes. */}
+                  <span dangerouslySetInnerHTML={{ __html: sanitizeFormatting(box.translation) }} />
+                  {box.partialEnd && (
+                    <span
+                      className='ml-0.5 select-none text-muted-foreground/45'
+                      title={t('partialNote')}
+                    >
+                      …
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>

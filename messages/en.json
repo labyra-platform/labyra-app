@@ -446,7 +446,12 @@
     "highlightsEmptyHint": "Turn on Highlight, then select text in the PDF to mark it.",
     "page": "Page",
     "highlightDelete": "Delete highlight",
-    "removeFile": "Remove file"
+    "removeFile": "Remove file",
+    "translations": "Translations",
+    "translationsEmptyTitle": "No translations yet",
+    "translationsEmptyHint": "Turn on Translate, then Ctrl+drag a region in the PDF.",
+    "translationDelete": "Remove translation",
+    "partialNote": "Continues adjacent text (selection was cut mid-sentence)"
   },
   "materials": {
     "title": "Materials",

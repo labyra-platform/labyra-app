@@ -446,7 +446,12 @@
     "highlightsEmptyHint": "Bật Tô sáng rồi bôi đen đoạn văn trong PDF để đánh dấu.",
     "page": "Trang",
     "highlightDelete": "Xóa tô sáng",
-    "removeFile": "Bỏ tệp"
+    "removeFile": "Bỏ tệp",
+    "translations": "Bản dịch",
+    "translationsEmptyTitle": "Chưa có bản dịch",
+    "translationsEmptyHint": "Bật Dịch rồi Ctrl+kéo một vùng trong PDF.",
+    "translationDelete": "Xóa bản dịch",
+    "partialNote": "Nối tiếp đoạn liền kề (vùng chọn cắt giữa câu)"
   },
   "materials": {
     "title": "Vật liệu",

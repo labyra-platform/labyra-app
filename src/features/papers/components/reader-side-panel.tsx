@@ -22,6 +22,7 @@ import {
   IconExternalLink,
   IconHighlight,
   IconInfoCircle,
+  IconLanguage,
   IconQuote,
   IconSparkles,
   IconTrash
@@ -33,6 +34,10 @@ import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { deleteAnnotation, subscribeAnnotations } from '@/lib/firestore/queries/annotations';
 import { usePaper } from '@/lib/firestore/queries/papers';
+import {
+  type TranslationRecord,
+  usePaperTranslationsStore
+} from '@/features/papers/stores/paper-translations-store';
 import { formatSciText } from '@/features/spectra/utils/format-units';
 import { cn } from '@/lib/utils';
 import type { AnnotationColor, HighlightAnnotation } from '@/types/annotations';
@@ -90,6 +95,9 @@ function normalizeHighlightText(raw: string): string {
   );
 }
 
+/** Stable empty array so the translations selector doesn't churn renders. */
+const EMPTY_TRANSLATIONS: TranslationRecord[] = [];
+
 const AXIS_ORDER: { axis: ReturnType<typeof getAxis>; labelKey: string }[] = [
   { axis: 'application', labelKey: 'axisApplication' },
   { axis: 'materials_class', labelKey: 'axisMaterials' },
@@ -120,14 +128,19 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
   // "I was on Ask AI, I switch papers, I'm still on Ask AI". Since this panel
   // doesn't remount on paper switch (it lives above PaperReadView and isn't
   // keyed), a local state survives the switch — exactly the desired behaviour.
-  const [panelTab, setPanelTab] = useState<'info' | 'citations' | 'highlights' | 'ai'>('info');
+  const [panelTab, setPanelTab] = useState<
+    'info' | 'citations' | 'highlights' | 'translations' | 'ai'
+  >('info');
 
   const [panelOpen, setPanelOpen] = useState(false);
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
-  const switchPanelTab = useCallback((next: 'info' | 'citations' | 'highlights' | 'ai') => {
-    setPanelTab(next);
-    setPanelOpen(true);
-  }, []);
+  const switchPanelTab = useCallback(
+    (next: 'info' | 'citations' | 'highlights' | 'translations' | 'ai') => {
+      setPanelTab(next);
+      setPanelOpen(true);
+    },
+    []
+  );
 
   // Tell PdfViewer to re-measure after a collapse/expand finishes (PdfViewer
   // listens to window.resize). The delay > the CSS transition duration.
@@ -166,8 +179,8 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
             panelOpen ? 'opacity-100 delay-100' : 'opacity-0'
           )}
         >
-          {/* Tab strip */}
-          <div className='flex shrink-0 items-center gap-1 border-b px-2'>
+          {/* Tab strip — scrolls horizontally if the labels don't all fit. */}
+          <div className='flex shrink-0 items-center gap-0.5 overflow-x-auto border-b px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
             <PanelTabButton
               active={panelTab === 'info'}
               onClick={() => switchPanelTab('info')}
@@ -185,6 +198,12 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
               onClick={() => switchPanelTab('highlights')}
               icon={<IconHighlight className='size-3.5' />}
               label={t('highlight')}
+            />
+            <PanelTabButton
+              active={panelTab === 'translations'}
+              onClick={() => switchPanelTab('translations')}
+              icon={<IconLanguage className='size-3.5' />}
+              label={t('translations')}
             />
             <PanelTabButton
               active={panelTab === 'ai'}
@@ -205,6 +224,8 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
             )
           ) : panelTab === 'highlights' ? (
             <HighlightsTab paperId={paperId} onJumpToPage={onJumpToPage} />
+          ) : panelTab === 'translations' ? (
+            <TranslationsTab paperId={paperId} onJumpToPage={onJumpToPage} />
           ) : (
             <div className='min-h-0 flex-1 overflow-y-auto p-4'>
               {loading ? (
@@ -240,7 +261,7 @@ function PanelTabButton({
       type='button'
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm transition-colors',
+        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] transition-colors',
         active
           ? 'border-primary font-medium text-foreground'
           : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -453,6 +474,90 @@ function HighlightsTab({
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * TranslationsTab (R237av — side-by-side B2) — lists every region the user has
+ * translated in this paper, newest first: the source text (left/top) with its
+ * translation beneath, source rendered with chemical subscripts. Click a card
+ * to jump back to the original region; hover to remove it from the list. Reads
+ * the session store the translate layer writes to.
+ */
+function TranslationsTab({
+  paperId,
+  onJumpToPage
+}: {
+  paperId: string;
+  onJumpToPage: (page: number, y?: number) => void;
+}) {
+  const t = useTranslations('papers');
+  const items = usePaperTranslationsStore((s) => s.byPaper[paperId] ?? EMPTY_TRANSLATIONS);
+  const remove = usePaperTranslationsStore((s) => s.remove);
+
+  if (items.length === 0) {
+    return (
+      <div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-6 text-center'>
+        <IconLanguage className='size-8 text-muted-foreground/40' />
+        <p className='text-sm font-medium'>{t('translationsEmptyTitle')}</p>
+        <p className='text-xs text-muted-foreground'>{t('translationsEmptyHint')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className='min-h-0 flex-1 overflow-y-auto p-3'>
+      <div className='space-y-2'>
+        {items.map((rec) => (
+          <div
+            key={rec.id}
+            className='group rounded-md border border-border bg-card transition-colors hover:bg-muted/40'
+          >
+            <button
+              type='button'
+              onClick={() => onJumpToPage(rec.page, rec.yRatio)}
+              className='block w-full p-2.5 text-left'
+              aria-label={`${t('page')} ${rec.page}: ${rec.translation}`}
+            >
+              <span className='mb-1 flex items-center justify-between gap-2'>
+                <span className='text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground'>
+                  {t('page')} {rec.page}
+                </span>
+              </span>
+              <span className='block text-xs leading-relaxed text-muted-foreground/80'>
+                {formatSciText(rec.source)}
+              </span>
+              <span className='mt-1.5 block border-l-2 border-primary/40 pl-2 text-xs leading-relaxed text-foreground'>
+                {rec.partialStart && (
+                  <span className='select-none text-muted-foreground/45' title={t('partialNote')}>
+                    …{' '}
+                  </span>
+                )}
+                {rec.translation}
+                {rec.partialEnd && (
+                  <span className='select-none text-muted-foreground/45' title={t('partialNote')}>
+                    {' '}
+                    …
+                  </span>
+                )}
+              </span>
+            </button>
+            <div className='flex justify-end px-2 pb-1.5'>
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={() => remove(paperId, rec.id)}
+                className='size-6 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100'
+                aria-label={t('translationDelete')}
+                title={t('translationDelete')}
+              >
+                <IconTrash className='size-3.5' />
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

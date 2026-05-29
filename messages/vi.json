@@ -470,7 +470,9 @@
     "shortcutZoom": "Phóng to / thu nhỏ",
     "shortcutReset": "Đặt lại thu phóng",
     "shortcutUndo": "Hoàn tác nét vẽ",
-    "shortcutClose": "Đóng tìm kiếm / hộp thoại"
+    "shortcutClose": "Đóng tìm kiếm / hộp thoại",
+    "metadataAdd": "Thêm thông tin",
+    "metadataEdit": "Sửa thông tin"
   },
   "materials": {
     "title": "Vật liệu",

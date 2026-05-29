@@ -470,7 +470,9 @@
     "shortcutZoom": "Zoom in / out",
     "shortcutReset": "Reset zoom",
     "shortcutUndo": "Undo stroke",
-    "shortcutClose": "Close find / dialog"
+    "shortcutClose": "Close find / dialog",
+    "metadataAdd": "Add info",
+    "metadataEdit": "Edit info"
   },
   "materials": {
     "title": "Materials",

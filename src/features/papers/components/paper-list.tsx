@@ -30,6 +30,7 @@ import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal
 import { UploadSheet } from '@/features/papers/components/upload-sheet';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
+import { PaperMetadataEditor } from '@/features/papers/components/paper-metadata-editor';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { toast } from 'sonner';
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
@@ -284,6 +285,7 @@ function PaperRow({
   const router = useRouter();
   const openTab = usePaperTabsStore((s) => s.openTab);
   const isOpenInTab = usePaperTabsStore((s) => s.tabs.some((tab) => tab.paperId === paper.id));
+  const [editOpen, setEditOpen] = useState(false);
   const authorLine = formatAuthors(paper.authors);
   const journal = paper.journalShort || paper.journal || null;
   const badgeClass = STATUS_BADGE[paper.status];
@@ -352,7 +354,17 @@ function PaperRow({
             {metaParts.length > 0 ? (
               <span className='truncate'>{metaParts.join(' · ')}</span>
             ) : (
-              <span className='italic'>{t('metadataPending')}</span>
+              <button
+                type='button'
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditOpen(true);
+                }}
+                className='inline-flex cursor-pointer items-center gap-1 rounded text-xs italic text-amber-600 underline-offset-2 hover:underline dark:text-amber-500'
+              >
+                {t('metadataPending')} · {t('metadataAdd')}
+              </button>
             )}
             {/* R222b: DOI link (Cách A) — opens publisher in a new tab. stopPropagation
                 so clicking DOI does NOT also open the in-app paper detail. The
@@ -404,9 +416,18 @@ function PaperRow({
               {t(`status.${paper.status}`)}
             </span>
           )}
-          <PaperRowMenu paperId={paper.id} status={paper.status} />
+          <PaperRowMenu
+            paperId={paper.id}
+            status={paper.status}
+            onEditMetadata={() => setEditOpen(true)}
+          />
         </div>
       </div>
+      <PaperMetadataEditor
+        paper={editOpen ? paper : null}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </div>
   );
 }
@@ -424,7 +445,15 @@ async function paperAuthHeader(): Promise<{ Authorization: string }> {
   return { Authorization: `Bearer ${await user.getIdToken()}` };
 }
 
-function PaperRowMenu({ paperId, status }: { paperId: string; status: PaperStatus }) {
+function PaperRowMenu({
+  paperId,
+  status,
+  onEditMetadata
+}: {
+  paperId: string;
+  status: PaperStatus;
+  onEditMetadata: () => void;
+}) {
   const t = useTranslations('papers');
   const [busy, setBusy] = useState(false);
   const canReprocess = TERMINAL_STATUSES.has(status);
@@ -487,6 +516,15 @@ function PaperRowMenu({ paperId, status }: { paperId: string; status: PaperStatu
           e.stopPropagation();
         }}
       >
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.preventDefault();
+            onEditMetadata();
+          }}
+        >
+          <Icons.edit className='size-4' />
+          {t('metadataEdit')}
+        </DropdownMenuItem>
         {canReprocess && (
           <DropdownMenuItem
             disabled={busy}

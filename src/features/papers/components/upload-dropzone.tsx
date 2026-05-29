@@ -139,7 +139,15 @@ async function uploadPaper(file: File, onProgress: (pct: number) => void): Promi
   return uploadLargePaper(file, token, onProgress);
 }
 
-export function UploadDropzone() {
+export function UploadDropzone({
+  onUploaded
+}: {
+  /** R237ap: when provided (e.g. inside the upload Sheet), called with the new
+   *  paperId instead of navigating. The host decides what to do (close + open
+   *  the paper). When omitted, falls back to navigating to the paper page so
+   *  the standalone /papers/upload route still works. */
+  onUploaded?: (paperId: string) => void;
+} = {}) {
   const t = useTranslations('papers');
   const router = useRouter();
   const params = useParams();
@@ -164,7 +172,11 @@ export function UploadDropzone() {
         } else {
           toast.success(t('uploadStarted'));
         }
-        router.push(`/${locale}/dashboard/papers/${result.paperId}`);
+        if (onUploaded) {
+          onUploaded(result.paperId);
+        } else {
+          router.push(`/${locale}/dashboard/papers/${result.paperId}`);
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'unknown_error';
         setError(msg);
@@ -173,7 +185,7 @@ export function UploadDropzone() {
         setUploading(false);
       }
     },
-    [t, router, locale]
+    [t, router, locale, onUploaded]
   );
 
   const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({

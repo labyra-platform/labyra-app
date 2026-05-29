@@ -31,6 +31,7 @@ import {
   IconArrowsMinimize,
   IconChevronLeft,
   IconChevronRight,
+  IconChevronDown,
   IconDownload,
   IconEraser,
   IconLanguage,
@@ -45,6 +46,18 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Slider } from '@/components/ui/slider';
 import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
 import { PdfHighlightLayer } from '@/features/papers/components/pdf-highlight-layer';
 import { PdfDrawLayer } from '@/features/papers/components/pdf-draw-layer';
@@ -974,56 +987,69 @@ export function PdfViewer({
               />
             )}
           </Button>
-          {/* Hover palette (only when drawing): colors + width slider. */}
+          {/* Palette (only when drawing): colors + width. Popover + stack
+              Slider, opened from a small caret so the pen button itself stays
+              a quick pen/eraser toggle. */}
           {drawMode && (
-            <div className='absolute left-1/2 top-full z-50 hidden -translate-x-1/2 pt-1 group-hover:block'>
-              <div className='flex flex-col gap-2 rounded-lg border bg-popover px-3 py-2.5 shadow-lg'>
-                <div className='flex items-center gap-1.5'>
-                  {DRAW_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type='button'
-                      onClick={() => {
-                        setDrawColor(c);
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='size-7'
+                  aria-label={t('drawWidth')}
+                  title={t('drawWidth')}
+                >
+                  <IconChevronDown className='size-3.5' />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align='center' className='w-auto p-3'>
+                <div className='flex flex-col gap-3'>
+                  <div className='flex items-center gap-1.5'>
+                    {DRAW_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type='button'
+                        onClick={() => {
+                          setDrawColor(c);
+                          setDrawTool('pen');
+                        }}
+                        className={cn(
+                          'size-5 rounded-full border transition-transform hover:scale-110',
+                          drawColor === c ? 'border-foreground' : 'border-black/10'
+                        )}
+                        style={{ backgroundColor: DRAW_SWATCH[c] }}
+                        aria-label={`Pen ${c}`}
+                        aria-pressed={drawColor === c}
+                      />
+                    ))}
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    <span
+                      className='shrink-0 rounded-full'
+                      style={{
+                        width: Math.max(3, drawWidth * 700),
+                        height: Math.max(3, drawWidth * 700),
+                        backgroundColor: DRAW_SWATCH[drawColor]
+                      }}
+                      aria-hidden
+                    />
+                    <Slider
+                      min={0.0015}
+                      max={0.012}
+                      step={0.0005}
+                      value={[drawWidth]}
+                      onValueChange={(v) => {
+                        setDrawWidth(v[0] ?? 0.003);
                         setDrawTool('pen');
                       }}
-                      className={cn(
-                        'size-5 rounded-full border transition-transform hover:scale-110',
-                        drawColor === c ? 'border-foreground' : 'border-black/10'
-                      )}
-                      style={{ backgroundColor: DRAW_SWATCH[c] }}
-                      aria-label={`Pen ${c}`}
-                      aria-pressed={drawColor === c}
+                      className='w-28'
+                      aria-label={t('drawWidth')}
                     />
-                  ))}
+                  </div>
                 </div>
-                {/* Width slider with a live size preview dot. */}
-                <div className='flex items-center gap-2'>
-                  <span
-                    className='shrink-0 rounded-full'
-                    style={{
-                      width: Math.max(3, drawWidth * 700),
-                      height: Math.max(3, drawWidth * 700),
-                      backgroundColor: DRAW_SWATCH[drawColor]
-                    }}
-                    aria-hidden
-                  />
-                  <input
-                    type='range'
-                    min={0.0015}
-                    max={0.012}
-                    step={0.0005}
-                    value={drawWidth}
-                    onChange={(e) => {
-                      setDrawWidth(Number(e.target.value));
-                      setDrawTool('pen');
-                    }}
-                    className='h-1 w-24 cursor-pointer accent-foreground'
-                    aria-label={t('drawWidth')}
-                  />
-                </div>
-              </div>
-            </div>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
         {drawMode && (
@@ -1042,52 +1068,55 @@ export function PdfViewer({
           </div>
         )}
 
-        {/* Translate (C5) — hover to pick target language (like Draw); active =
-            Ctrl+drag a region to translate. Only at rotation 0. */}
-        <div className='group relative'>
-          <Button
-            variant={translateMode ? 'secondary' : 'ghost'}
-            size='icon'
-            className='relative size-7 overflow-hidden'
-            disabled={rotation !== 0}
-            onClick={() => setTranslateMode((v) => !v)}
-            aria-pressed={translateMode}
-            aria-label={t('translate')}
-            title={t('translate')}
-          >
-            <IconLanguage className='size-4' />
-            {translateMode && (
-              <span
-                className='absolute inset-x-1 bottom-0 truncate text-center text-[8px] font-semibold uppercase leading-none text-primary'
-                aria-hidden
-              >
-                {targetLang}
-              </span>
-            )}
-          </Button>
-          {/* Hover language menu */}
-          <div className='absolute left-1/2 top-full z-50 hidden -translate-x-1/2 pt-1 group-hover:block'>
-            <div className='flex flex-col rounded-md border bg-popover py-1 shadow-lg'>
-              {TRANSLATE_LANGS.map((l) => (
-                <button
-                  key={l.code}
-                  type='button'
-                  onClick={() => {
-                    setTargetLang(l.code);
-                    setTranslateMode(true);
-                  }}
-                  className={cn(
-                    'whitespace-nowrap px-3 py-1 text-left text-xs transition-colors hover:bg-muted',
-                    targetLang === l.code ? 'font-medium text-foreground' : 'text-muted-foreground'
-                  )}
-                  aria-pressed={targetLang === l.code}
+        {/* Translate (C5) — pick target language via a proper DropdownMenu;
+            active = right-drag a region to translate. Only at rotation 0. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant={translateMode ? 'secondary' : 'ghost'}
+              size='icon'
+              className='relative size-7 overflow-hidden'
+              disabled={rotation !== 0}
+              aria-label={t('translate')}
+              title={t('translate')}
+            >
+              <IconLanguage className='size-4' />
+              {translateMode && (
+                <span
+                  className='absolute inset-x-1 bottom-0 truncate text-center text-[8px] font-semibold uppercase leading-none text-primary'
+                  aria-hidden
                 >
+                  {targetLang}
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='center' className='min-w-[8rem]'>
+            <DropdownMenuLabel>{t('translate')}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup
+              value={targetLang}
+              onValueChange={(code) => {
+                setTargetLang(code);
+                setTranslateMode(true);
+              }}
+            >
+              {TRANSLATE_LANGS.map((l) => (
+                <DropdownMenuRadioItem key={l.code} value={l.code}>
                   {l.label}
-                </button>
+                </DropdownMenuRadioItem>
               ))}
-            </div>
-          </div>
-        </div>
+            </DropdownMenuRadioGroup>
+            {translateMode && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setTranslateMode(false)}>
+                  {t('translateOff')}
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Fullscreen */}
         <Button

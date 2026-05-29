@@ -247,6 +247,7 @@
     "uploadToStart": "Upload a PDF to start building your lab's knowledge base.",
     "uploadFirstPaper": "Upload first paper",
     "untitled": "Untitled",
+    "openSource": "Open source page",
     "paperNotFound": "Paper not found",
     "backToList": "Back to papers",
     "processingStatus": "Processing status",
@@ -426,7 +427,6 @@
     "tabGroupColor_red": "Red",
     "tabGroupColor_purple": "Purple",
     "tabGroupColor_gray": "Gray",
-    "openSource": "Open source page",
     "rotateClockwise": "Rotate clockwise",
     "navToggle": "Toggle navigation",
     "navThumbnails": "Thumbnails",
@@ -437,7 +437,8 @@
     "drawEraser": "Eraser",
     "drawUndo": "Undo",
     "translate": "Translate",
-    "drawWidth": "Pen width"
+    "drawWidth": "Pen width",
+    "translateOff": "Turn off translation"
   },
   "materials": {
     "title": "Materials",

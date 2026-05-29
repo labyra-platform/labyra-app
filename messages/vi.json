@@ -247,6 +247,7 @@
     "uploadToStart": "Tải lên PDF để bắt đầu xây dựng thư viện.",
     "uploadFirstPaper": "Tải paper đầu tiên",
     "untitled": "Không tiêu đề",
+    "openSource": "Mở trang nguồn",
     "paperNotFound": "Không tìm thấy paper",
     "backToList": "Quay lại danh sách",
     "processingStatus": "Trạng thái xử lý",
@@ -426,7 +427,6 @@
     "tabGroupColor_red": "Đỏ",
     "tabGroupColor_purple": "Tím",
     "tabGroupColor_gray": "Xám",
-    "openSource": "Mở trang nguồn",
     "rotateClockwise": "Xoay theo chiều kim đồng hồ",
     "navToggle": "Bật/tắt điều hướng",
     "navThumbnails": "Ảnh thu nhỏ",
@@ -437,7 +437,8 @@
     "drawEraser": "Tẩy",
     "drawUndo": "Hoàn tác",
     "translate": "Dịch",
-    "drawWidth": "Độ dày nét"
+    "drawWidth": "Độ dày nét",
+    "translateOff": "Tắt dịch"
   },
   "materials": {
     "title": "Vật liệu",

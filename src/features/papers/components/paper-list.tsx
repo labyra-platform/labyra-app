@@ -27,6 +27,8 @@ import {
   paperPassesFilter
 } from '@/features/papers/components/paper-filter-panel';
 import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal-info-card';
+import { UploadSheet } from '@/features/papers/components/upload-sheet';
+import { Button } from '@/components/ui/button';
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { searchPapers } from '@/features/papers/lib/title-search';
@@ -147,13 +149,14 @@ export function PaperList() {
           <p className='font-medium'>{t('noPapersYet')}</p>
           <p className='text-muted-foreground text-sm'>{t('uploadToStart')}</p>
         </div>
-        <Link
-          href={`/${locale}/dashboard/papers/upload`}
-          className='inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium'
-        >
-          <IconUpload className='size-4' />
-          {t('uploadFirstPaper')}
-        </Link>
+        <UploadSheet
+          trigger={
+            <Button className='inline-flex items-center gap-2'>
+              <IconUpload className='size-4' />
+              {t('uploadFirstPaper')}
+            </Button>
+          }
+        />
       </div>
     );
   }

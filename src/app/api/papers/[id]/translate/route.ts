@@ -18,6 +18,7 @@ import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
 import { selectProvider } from '@/lib/ai/providers';
 import { protectRefs, restoreRefs } from '@/features/papers/lib/citation-protect';
 import { glossaryBlock } from '@/features/papers/lib/translation-glossary';
+import { tmBlock, tmRetrieve, tmStore } from '@/lib/ai/rag/translation-memory';
 import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -334,7 +335,12 @@ PARTIAL SELECTION: this text was cut by a drag selection${
     // them, then restore (localizing Figure→Hình etc.) after. The SEP marker is
     // not a ref, so it survives masking untouched.
     const { masked: maskedMiss, map: refMap } = protectRefs(missText);
-    const missPrompt = `Translate the following paragraphs into ${targetName} following ALL the rules above. The paragraphs are separated by the marker "<<<§§§>>>" — keep that marker between paragraphs in your output so I can split them back. Translate each paragraph independently; do NOT merge them.\n\n${maskedMiss}`;
+    // ADR-045 Tier 4: retrieve similar past translations and prepend them as
+    // in-context examples so terminology stays consistent (best-effort; empty
+    // on cold start). Retrieval runs on the raw (unmasked) source text.
+    const tmEntries = await tmRetrieve(tenantId, missText, targetLang);
+    const tmHint = tmBlock(tmEntries);
+    const missPrompt = `${tmHint ? `${tmHint}\n\n` : ''}Translate the following paragraphs into ${targetName} following ALL the rules above. The paragraphs are separated by the marker "<<<§§§>>>" — keep that marker between paragraphs in your output so I can split them back. Translate each paragraph independently; do NOT merge them.\n\n${maskedMiss}`;
     let result;
     try {
       result = await provider.complete({
@@ -407,6 +413,7 @@ Improve the DRAFT: fix mistranslated technical terms, awkward or unnatural phras
 
     // Cache each freshly-translated chunk and splice them back in order.
     let mi = 0;
+    const tmPairs: { source: string; translation: string }[] = [];
     for (const chunk of paragraphPlan.chunks) {
       if (chunk.translation === null) {
         const t = (aligned[mi] ?? '').trim();
@@ -416,10 +423,13 @@ Improve the DRAFT: fix mistranslated technical terms, awkward or unnatural phras
             .doc(`tenants/${tenantId}/_translations/${chunk.hash}`)
             .set({ translation: t, targetLang, paperId, createdAt: Date.now() })
             .catch(() => {});
+          tmPairs.push({ source: chunk.text, translation: t });
         }
         mi++;
       }
     }
+    // ADR-045 Tier 4: remember these pairs for future consistency (best-effort).
+    void tmStore(tenantId, tmPairs, targetLang).catch(() => {});
     const assembled = paragraphPlan.chunks
       .map((c) => c.translation ?? '')
       .join(paragraphPlan.separator);

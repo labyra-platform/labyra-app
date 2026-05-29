@@ -121,6 +121,72 @@ export async function pineconeUpsert(tenantId: string, vectors: UpsertVector[]):
   }
 }
 
+/* ─── Translation Memory (ADR-045 Tier 4, R237bk) ─────────────────────────────
+ * Source→target pairs from past translations, stored in a SEPARATE namespace
+ * (tm__<tenantId>) of the same index so they never mix with paper chunks. Same
+ * embedding model/dimension, so the index is shared. Failures are swallowed —
+ * TM is an optional quality booster and must never break translation. */
+export interface TmMetadata extends RecordMetadata {
+  source: string;
+  translation: string;
+  lang: string;
+}
+export interface TmUpsertVector {
+  id: string;
+  values: number[];
+  metadata: TmMetadata;
+}
+export interface TmQueryMatch {
+  id: string;
+  score: number;
+  metadata: TmMetadata;
+}
+const tmNamespace = (tenantId: string) => `tm__${tenantId}`;
+
+export async function tmUpsert(tenantId: string, vectors: TmUpsertVector[]): Promise<void> {
+  if (vectors.length === 0) return;
+  const ns = getIndex().namespace(tmNamespace(tenantId));
+  for (let i = 0; i < vectors.length; i += 100) {
+    const batch = vectors.slice(i, i + 100);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await ns.upsert({ records: batch } as any);
+    } catch (err) {
+      console.error(
+        JSON.stringify({
+          level: 'error',
+          event: 'tm_upsert_failed',
+          tenantId,
+          error: err instanceof Error ? err.message : String(err)
+        })
+      );
+      // swallow — never break translation
+    }
+  }
+}
+
+export async function tmQuery(
+  tenantId: string,
+  vector: number[],
+  topK: number,
+  filter?: Record<string, unknown>
+): Promise<TmQueryMatch[]> {
+  const ns = getIndex().namespace(tmNamespace(tenantId));
+  const result = await ns.query({
+    vector,
+    topK,
+    includeMetadata: true,
+    ...(filter ? { filter } : {})
+  });
+  return (result.matches ?? [])
+    .filter((m) => m.metadata !== undefined && m.score !== undefined)
+    .map((m) => ({
+      id: m.id,
+      score: m.score!,
+      metadata: m.metadata as unknown as TmMetadata
+    }));
+}
+
 export interface PineconeQueryMatch {
   id: string;
   score: number;

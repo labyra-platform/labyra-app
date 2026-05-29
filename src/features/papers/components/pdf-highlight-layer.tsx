@@ -16,7 +16,7 @@
  */
 
 import { IconTrash } from '@tabler/icons-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AnnotationColor, HighlightAnnotation, NormRect } from '@/types/annotations';
 import { ANNOTATION_COLORS, HIGHLIGHT_FILL } from '@/types/annotations';
 import { cn } from '@/lib/utils';
@@ -42,6 +42,7 @@ export function PdfHighlightLayer({
   width,
   height,
   highlights,
+  enabled,
   onCreate,
   onDelete
 }: {
@@ -49,6 +50,9 @@ export function PdfHighlightLayer({
   width: number;
   height: number;
   highlights: HighlightAnnotation[];
+  /** When true the layer turns a text selection into a highlight. When false
+   *  it only renders saved marks (so text selection = normal copy). */
+  enabled: boolean;
   onCreate: (rects: NormRect[], text: string, color: AnnotationColor) => void;
   onDelete: (id: string) => void;
 }) {
@@ -58,6 +62,12 @@ export function PdfHighlightLayer({
 
   // On mouseup, read the selection and convert its client rects into normalized
   // rects relative to THIS page's layer box. Ignore selections outside the page.
+  //
+  // IMPORTANT: this listens on `document`, NOT on the overlay div. The overlay
+  // is pointer-events:none so the user's drag goes through to react-pdf's text
+  // layer underneath (otherwise the overlay eats the drag and there is no
+  // selection at all — the bug this fixes). We therefore can't rely on an
+  // onMouseUp on the overlay; we listen globally and filter by page box.
   const handleMouseUp = useCallback(() => {
     const layer = layerRef.current;
     if (!layer) return;
@@ -108,6 +118,16 @@ export function PdfHighlightLayer({
     });
   }, [pageNumber, width, height]);
 
+  // Global mouseup listener, only while enabled. Cleaned up on disable/unmount.
+  useEffect(() => {
+    if (!enabled) {
+      setPending(null);
+      return;
+    }
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
+  }, [enabled, handleMouseUp]);
+
   const commit = (color: AnnotationColor) => {
     if (!pending) return;
     onCreate(pending.rects, pending.text, color);
@@ -116,18 +136,13 @@ export function PdfHighlightLayer({
   };
 
   return (
-    // The overlay captures text selection (mouseup) to offer a highlight; it is
-    // not an interactive control itself, so the static-element a11y rule (which
-    // wants a role) doesn't apply here.
-    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
-    <div
-      ref={layerRef}
-      className='absolute inset-0'
-      style={{ width, height }}
-      onMouseUp={handleMouseUp}
-    >
-      {/* Saved highlights — pointer-events only on the rects so text selection
-          underneath still works elsewhere. */}
+    // The overlay is pointer-events:none so a drag selects react-pdf's text
+    // layer underneath. Selection is captured via a document-level mouseup
+    // (see effect above). Saved marks + popups re-enable pointer events so they
+    // remain clickable.
+    <div ref={layerRef} className='pointer-events-none absolute inset-0' style={{ width, height }}>
+      {/* Saved highlights — pointer-events on the rects so they're clickable;
+          the container stays none so selection works elsewhere. */}
       {highlights.map((hl) =>
         hl.rects
           .filter((r) => r.page === pageNumber)
@@ -136,7 +151,7 @@ export function PdfHighlightLayer({
               key={`${hl.id}-${i}`}
               type='button'
               onClick={() => setActiveId(activeId === hl.id ? null : hl.id)}
-              className='absolute cursor-pointer'
+              className='pointer-events-auto absolute cursor-pointer'
               style={{
                 left: r.x * width,
                 top: r.y * height,
@@ -158,7 +173,7 @@ export function PdfHighlightLayer({
           if (!hl || !first) return null;
           return (
             <div
-              className='absolute z-20 flex items-center gap-1 rounded-md border bg-popover p-1 shadow-md'
+              className='pointer-events-auto absolute z-20 flex items-center gap-1 rounded-md border bg-popover p-1 shadow-md'
               style={{
                 left: Math.min(first.x * width, width - 40),
                 top: Math.max(0, first.y * height - 34)
@@ -182,7 +197,7 @@ export function PdfHighlightLayer({
       {/* Color picker popup for a fresh selection. */}
       {pending && (
         <div
-          className='absolute z-30 flex items-center gap-1.5 rounded-full border bg-popover px-2 py-1.5 shadow-lg'
+          className='pointer-events-auto absolute z-30 flex items-center gap-1.5 rounded-full border bg-popover px-2 py-1.5 shadow-lg'
           style={{
             left: Math.min(Math.max(0, pending.anchorX), width - 160),
             top: Math.max(0, pending.anchorY - 40)

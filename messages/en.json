@@ -438,7 +438,14 @@
     "drawUndo": "Undo",
     "translate": "Translate",
     "drawWidth": "Pen width",
-    "translateOff": "Turn off translation"
+    "translateOff": "Turn off translation",
+    "dropHere": "Drop the PDF to upload",
+    "maxSize": "Max {mb} MB · PDF only",
+    "highlight": "Highlight",
+    "highlightsEmptyTitle": "No highlights yet",
+    "highlightsEmptyHint": "Turn on Highlight, then select text in the PDF to mark it.",
+    "page": "Page",
+    "highlightDelete": "Delete highlight"
   },
   "materials": {
     "title": "Materials",

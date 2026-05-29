@@ -34,6 +34,7 @@ import {
   IconChevronDown,
   IconDownload,
   IconEraser,
+  IconHighlight,
   IconLanguage,
   IconLoader2,
   IconMinus,
@@ -274,6 +275,10 @@ export function PdfViewer({
   // C3b: private highlights for this paper (current user), live-subscribed.
   const tenantId = useTenantId();
   const [highlights, setHighlights] = useState<HighlightAnnotation[]>([]);
+  // R237ar: highlight mode toggle. When on, a text selection becomes a
+  // highlight; when off, selecting text is normal copy (the overlay is
+  // pointer-events:none so it never blocks selection regardless).
+  const [highlightMode, setHighlightMode] = useState(false);
   // C4: freehand drawing. drawMode toggles pointer capture; while on, text
   // selection (highlight) is suppressed so the two tools don't fight.
   const [drawMode, setDrawMode] = useState(false);
@@ -956,6 +961,30 @@ export function PdfViewer({
           <RotateIcon className='size-4' />
         </Button>
 
+        {/* Highlight (C3b / R237ar) — toggle: when on, selecting text marks it.
+            Turns off draw/translate so the tools don't fight. Rotation 0 only. */}
+        <Button
+          variant={highlightMode ? 'secondary' : 'ghost'}
+          size='icon'
+          className='size-7'
+          disabled={rotation !== 0}
+          onClick={() => {
+            setHighlightMode((v) => {
+              const next = !v;
+              if (next) {
+                setDrawMode(false);
+                setTranslateMode(false);
+              }
+              return next;
+            });
+          }}
+          aria-pressed={highlightMode}
+          aria-label={t('highlight')}
+          title={t('highlight')}
+        >
+          <IconHighlight className='size-4' />
+        </Button>
+
         {/* Draw (C4) — one button: toggles draw mode AND is the pen tool, with a
             hover color palette + a top color indicator. Only at rotation 0. */}
         <div className='group relative'>
@@ -968,6 +997,7 @@ export function PdfViewer({
               if (!drawMode) {
                 setDrawMode(true);
                 setDrawTool('pen');
+                setHighlightMode(false);
               } else if (drawTool !== 'pen') {
                 setDrawTool('pen');
               } else {
@@ -1099,6 +1129,7 @@ export function PdfViewer({
               onValueChange={(code) => {
                 setTargetLang(code);
                 setTranslateMode(true);
+                setHighlightMode(false);
               }}
             >
               {TRANSLATE_LANGS.map((l) => (
@@ -1276,21 +1307,22 @@ export function PdfViewer({
                               </div>
                             }
                           />
-                          {/* C3b: highlight overlay — at rotation 0, when NOT
-                              drawing (so the two tools don't fight for pointer). */}
-                          {rotation === 0 &&
-                            !drawMode &&
-                            !translateMode &&
-                            pageAspects[pageNum] && (
-                              <PdfHighlightLayer
-                                pageNumber={pageNum}
-                                width={pageWidth}
-                                height={pageWidth * pageAspects[pageNum]}
-                                highlights={highlights}
-                                onCreate={handleCreateHighlight}
-                                onDelete={handleDeleteHighlight}
-                              />
-                            )}
+                          {/* C3b: highlight overlay. Always rendered (rotation
+                              0) so saved marks show; it only captures a
+                              selection when highlightMode is on. The overlay is
+                              pointer-events:none, so it never blocks text
+                              selection / draw / translate underneath. */}
+                          {rotation === 0 && pageAspects[pageNum] && (
+                            <PdfHighlightLayer
+                              pageNumber={pageNum}
+                              width={pageWidth}
+                              height={pageWidth * pageAspects[pageNum]}
+                              highlights={highlights}
+                              enabled={highlightMode && !drawMode && !translateMode}
+                              onCreate={handleCreateHighlight}
+                              onDelete={handleDeleteHighlight}
+                            />
+                          )}
                           {/* C4: drawing overlay — renders saved strokes always
                               (rotation 0); captures pointer only while drawMode. */}
                           {rotation === 0 && pageAspects[pageNum] && (

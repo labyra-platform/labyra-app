@@ -438,7 +438,14 @@
     "drawUndo": "Hoàn tác",
     "translate": "Dịch",
     "drawWidth": "Độ dày nét",
-    "translateOff": "Tắt dịch"
+    "translateOff": "Tắt dịch",
+    "dropHere": "Thả PDF để tải lên",
+    "maxSize": "Tối đa {mb} MB · Chỉ PDF",
+    "highlight": "Tô sáng",
+    "highlightsEmptyTitle": "Chưa có đoạn tô sáng",
+    "highlightsEmptyHint": "Bật Tô sáng rồi bôi đen đoạn văn trong PDF để đánh dấu.",
+    "page": "Trang",
+    "highlightDelete": "Xóa tô sáng"
   },
   "materials": {
     "title": "Vật liệu",

@@ -20,15 +20,21 @@
 import {
   IconChevronRight,
   IconExternalLink,
+  IconHighlight,
   IconInfoCircle,
   IconQuote,
-  IconSparkles
+  IconSparkles,
+  IconTrash
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
+import { useTenantId } from '@/lib/auth/use-claims';
+import { deleteAnnotation, subscribeAnnotations } from '@/lib/firestore/queries/annotations';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
+import type { HighlightAnnotation } from '@/types/annotations';
+import { HIGHLIGHT_FILL } from '@/types/annotations';
 import type { Paper } from '@/types/papers';
 import { AskAiTab } from './ask-ai-tab';
 import { CitationsSection } from './citations-section';
@@ -63,11 +69,11 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
   // "I was on Ask AI, I switch papers, I'm still on Ask AI". Since this panel
   // doesn't remount on paper switch (it lives above PaperReadView and isn't
   // keyed), a local state survives the switch — exactly the desired behaviour.
-  const [panelTab, setPanelTab] = useState<'info' | 'citations' | 'ai'>('info');
+  const [panelTab, setPanelTab] = useState<'info' | 'citations' | 'highlights' | 'ai'>('info');
 
   const [panelOpen, setPanelOpen] = useState(false);
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
-  const switchPanelTab = useCallback((next: 'info' | 'citations' | 'ai') => {
+  const switchPanelTab = useCallback((next: 'info' | 'citations' | 'highlights' | 'ai') => {
     setPanelTab(next);
     setPanelOpen(true);
   }, []);
@@ -124,6 +130,12 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
               label={t('citations')}
             />
             <PanelTabButton
+              active={panelTab === 'highlights'}
+              onClick={() => switchPanelTab('highlights')}
+              icon={<IconHighlight className='size-3.5' />}
+              label={t('highlight')}
+            />
+            <PanelTabButton
               active={panelTab === 'ai'}
               onClick={() => switchPanelTab('ai')}
               icon={<IconSparkles className='size-3.5' />}
@@ -140,6 +152,8 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
             ) : (
               <div className='p-4 text-sm text-muted-foreground'>{t('loading')}</div>
             )
+          ) : panelTab === 'highlights' ? (
+            <HighlightsTab paperId={paperId} onJumpToPage={onJumpToPage} />
           ) : (
             <div className='min-h-0 flex-1 overflow-y-auto p-4'>
               {loading ? (
@@ -280,6 +294,113 @@ function InfoTab({ paper }: { paper: Paper }) {
           <p className='text-sm leading-relaxed text-foreground/90'>{paper.abstract}</p>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * HighlightsTab — lists this user's saved highlights for the paper, newest
+ * first, grouped visually by colour swatch. Click a row to jump to its page;
+ * hover to reveal a delete button. Subscribes to Firestore directly (like the
+ * Ask AI thread) so it stays live as the user highlights while reading.
+ *
+ * @phase R237ar
+ */
+function HighlightsTab({
+  paperId,
+  onJumpToPage
+}: {
+  paperId: string;
+  onJumpToPage: (page: number) => void;
+}) {
+  const t = useTranslations('papers');
+  const tenantId = useTenantId();
+  const [items, setItems] = useState<HighlightAnnotation[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    const unsub = subscribeAnnotations(tenantId, paperId, (anns) => {
+      setItems(
+        anns
+          .filter((a): a is HighlightAnnotation => a.kind === 'highlight')
+          .toSorted((a, b) => b.createdAt - a.createdAt)
+      );
+      setLoaded(true);
+    });
+    return unsub;
+  }, [tenantId, paperId]);
+
+  const remove = useCallback(
+    (id: string) => {
+      if (!tenantId) return;
+      void deleteAnnotation(tenantId, paperId, id);
+    },
+    [tenantId, paperId]
+  );
+
+  if (!loaded) {
+    return (
+      <div className='min-h-0 flex-1 overflow-y-auto p-4 text-sm text-muted-foreground'>
+        {t('loading')}
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-6 text-center'>
+        <IconHighlight className='size-8 text-muted-foreground/40' />
+        <p className='text-sm font-medium'>{t('highlightsEmptyTitle')}</p>
+        <p className='text-xs text-muted-foreground'>{t('highlightsEmptyHint')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className='min-h-0 flex-1 overflow-y-auto p-3'>
+      <div className='space-y-1.5'>
+        {items.map((hl) => {
+          const page = hl.rects[0]?.page ?? 1;
+          return (
+            <div
+              key={hl.id}
+              className='group flex items-start gap-2 rounded-md border border-border bg-card p-2 transition-colors hover:bg-muted/50'
+            >
+              <button
+                type='button'
+                onClick={() => onJumpToPage(page)}
+                className='flex min-w-0 flex-1 items-start gap-2 text-left'
+                aria-label={`${t('page')} ${page}: ${hl.text}`}
+                title={`${t('page')} ${page}`}
+              >
+                <span
+                  className='mt-0.5 h-4 w-1 shrink-0 rounded-full'
+                  style={{ backgroundColor: HIGHLIGHT_FILL[hl.color] }}
+                  aria-hidden
+                />
+                <span className='min-w-0 flex-1'>
+                  <span className='line-clamp-3 text-xs leading-relaxed text-foreground'>
+                    {hl.text}
+                  </span>
+                  <span className='mt-0.5 block text-[10.5px] text-muted-foreground'>
+                    {t('page')} {page}
+                  </span>
+                </span>
+              </button>
+              <button
+                type='button'
+                onClick={() => remove(hl.id)}
+                className='shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive group-hover:opacity-100'
+                aria-label={t('highlightDelete')}
+                title={t('highlightDelete')}
+              >
+                <IconTrash className='size-3.5' />
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

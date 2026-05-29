@@ -445,7 +445,8 @@
     "highlightsEmptyTitle": "Chưa có đoạn tô sáng",
     "highlightsEmptyHint": "Bật Tô sáng rồi bôi đen đoạn văn trong PDF để đánh dấu.",
     "page": "Trang",
-    "highlightDelete": "Xóa tô sáng"
+    "highlightDelete": "Xóa tô sáng",
+    "removeFile": "Bỏ tệp"
   },
   "materials": {
     "title": "Vật liệu",

@@ -33,6 +33,7 @@ import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { deleteAnnotation, subscribeAnnotations } from '@/lib/firestore/queries/annotations';
 import { usePaper } from '@/lib/firestore/queries/papers';
+import { formatSciText } from '@/features/spectra/utils/format-units';
 import { cn } from '@/lib/utils';
 import type { AnnotationColor, HighlightAnnotation } from '@/types/annotations';
 import type { Paper } from '@/types/papers';
@@ -51,17 +52,42 @@ const HIGHLIGHT_SWATCH: Record<AnnotationColor, string> = {
 
 /** Tidy text captured from the PDF text layer for display.
  *  PDF text layers introduce artifacts: words split across line breaks, soft
- *  hyphens, and doubled spaces. This collapses them so the highlight list reads
- *  cleanly. (Cosmetic only — the stored text is untouched. We deliberately do
- *  NOT try to re-join sub/superscript spacing like "TiO 2" because that's
- *  indistinguishable from ordinary spacing like "of 652" and would corrupt it.) */
+ *  hyphens, doubled spaces, and — most visibly — stray spaces around chemical
+ *  subscripts ("TiO 2", "WS 2"). This cleans them for the list. (Cosmetic only;
+ *  stored text is untouched.)
+ *
+ *  Subscript joining is deliberately conservative to avoid corrupting ordinary
+ *  text. We only fuse "<token> <1-2 digits>" when the token looks like a
+ *  formula — i.e. it contains ≥2 uppercase letters (TiO, WO, WS, MoS, SiO,
+ *  WSe, H2O…). That keeps "Fig 2", "Table 3", "The 2 systems", and "652 nm"
+ *  intact (none have two capitals in the token before the number), while
+ *  fixing the formulas a materials reader actually hits. Counting words like
+ *  "Fig"/"Table" are protected first as a belt-and-braces guard. */
 function normalizeHighlightText(raw: string): string {
-  return raw
+  let s = raw
     .replace(/\u00AD/g, '') // soft hyphen
     .replace(/-\s*\n\s*/g, '') // hyphenated line break → join word
-    .replace(/\s*\n\s*/g, ' ') // remaining line breaks → space
-    .replace(/\s{2,}/g, ' ') // collapse runs of spaces
-    .trim();
+    .replace(/\s*\n\s*/g, ' '); // remaining line breaks → space
+
+  // Protect "Fig 2", "Table 3", "Section 4", etc. (number is a reference, not a
+  // subscript) by hiding the space behind a sentinel before the join step.
+  s = s.replace(
+    /\b(Fig|Figure|Table|Tab|Scheme|Section|Sec|Eq|Equation|Ref|Step|Part|Chapter|Ch|No|Note|Sample|Entry|Day|Page|Vol|Movie|Video)\b\.?\s+(\d)/gi,
+    '$1\u0000$2'
+  );
+
+  // Join chemical subscripts: a token containing ≥2 uppercase letters directly
+  // followed by a 1–2 digit number → fuse (TiO 2 → TiO2, WS 2 → WS2).
+  s = s.replace(/\b([A-Za-z]*[A-Z][A-Za-z]*[A-Z][A-Za-z]*)\s+(\d{1,2})\b/g, '$1$2');
+
+  return (
+    s
+      // oxlint-disable-next-line no-control-regex
+      .replace(/\u0000/g, ' ') // restore protected counting-word spaces
+      .replace(/\s+([,.;:!?])/g, '$1') // drop space before punctuation ("TiO2 ," → "TiO2,")
+      .replace(/\s{2,}/g, ' ') // collapse runs of spaces
+      .trim()
+  );
 }
 
 const AXIS_ORDER: { axis: ReturnType<typeof getAxis>; labelKey: string }[] = [
@@ -251,7 +277,7 @@ function InfoTab({ paper }: { paper: Paper }) {
     <div className='space-y-4'>
       <div>
         <h1 className='break-words text-base font-semibold leading-snug'>
-          {paper.title || t('untitled')}
+          {paper.title ? formatSciText(paper.title) : t('untitled')}
         </h1>
         {metaParts.length > 0 && (
           <p className='mt-1 text-xs text-muted-foreground'>
@@ -407,7 +433,7 @@ function HighlightsTab({
                 />
                 <span className='min-w-0 flex-1'>
                   <span className='line-clamp-3 text-xs leading-relaxed text-foreground'>
-                    {normalizeHighlightText(hl.text)}
+                    {formatSciText(normalizeHighlightText(hl.text))}
                   </span>
                   <span className='mt-0.5 block text-[10.5px] text-muted-foreground'>
                     {t('page')} {page}

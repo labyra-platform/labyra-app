@@ -15,7 +15,7 @@
  * the parent hides this layer when rotated, so marks never render misplaced.
  */
 
-import { IconTrash } from '@tabler/icons-react';
+import { Icons } from '@/components/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AnnotationColor, HighlightAnnotation, NormRect } from '@/types/annotations';
 import { ANNOTATION_COLORS, HIGHLIGHT_FILL } from '@/types/annotations';
@@ -188,7 +188,7 @@ export function PdfHighlightLayer({
                 className='rounded p-1 text-destructive hover:bg-muted'
                 aria-label='Delete highlight'
               >
-                <IconTrash className='size-4' />
+                <Icons.trash className='size-4' />
               </button>
             </div>
           );

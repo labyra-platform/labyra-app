@@ -14,10 +14,10 @@
  */
 
 import { IconCheck, IconCopy, IconGripVertical, IconLoader2, IconX } from '@tabler/icons-react';
-import { renderToString as renderKatex } from 'katex';
 import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { copyPapersRich } from '@/features/papers/lib/copy-rich';
+import { sanitizeFormatting } from '@/features/papers/lib/sanitize-formatting';
 import { cn } from '@/lib/utils';
 
 interface Rect {
@@ -38,6 +38,29 @@ interface ActiveBox {
   partialEnd: boolean;
 }
 
+/** True if a text-layer span is rotated (e.g. the vertical "Downloaded via…"
+ *  string printed down a journal's left margin). getComputedStyle resolves any
+ *  rotate()/matrix() to matrix form; horizontal text is scaleX only (angle ≈ 0). */
+function isRotatedSpan(transform: string): boolean {
+  if (!transform || transform === 'none') return false;
+  const m = transform.match(/matrix\(([^)]+)\)/);
+  if (m) {
+    const [a, b] = m[1].split(',').map(Number);
+    const angle = (Math.atan2(b ?? 0, a ?? 1) * 180) / Math.PI;
+    return Math.abs(angle) > 25;
+  }
+  const r = transform.match(/rotate\(([-\d.]+)deg\)/);
+  return r ? Math.abs(Number.parseFloat(r[1])) > 25 : false;
+}
+
+// Fraction of page height treated as header / footer margin. Items whose centre
+// falls in the top HEADER_BAND or bottom FOOTER_BAND of the page are dropped
+// from region translation — they're journal furniture (logo, running head,
+// page number, DOI, copyright), not body text. Bands are small so a box drawn
+// over real content (incl. the title at ~12–18%) is never affected.
+const HEADER_BAND = 0.07;
+const FOOTER_BAND = 0.93;
+
 /** Collect text from text-layer spans intersecting `rect` (page-pixel space).
  *  `host` is the page wrapper that contains both the react-pdf .textLayer and
  *  this overlay; the overlay itself has no spans, so we search the wrapper.
@@ -46,15 +69,27 @@ interface ActiveBox {
  *  "3" in IrCl₃) in their own spans placed flush against the preceding span. A
  *  blind join(' ') turns "IrCl₃" into "IrCl 3". So we only insert a space when
  *  there's a real horizontal gap between consecutive spans on the same line, and
- *  a newline when the line changes — formulae stay intact for the model. */
+ *  a newline when the line changes — formulae stay intact for the model.
+ *
+ *  Non-body furniture is filtered out (R237bf): rotated margin text, and items
+ *  in the header/footer bands — so dragging a wide box doesn't pull the journal
+ *  name, page number or DOI into the translation. */
 function textInRect(host: HTMLElement, overlayBox: DOMRect, rect: Rect): string {
   const spans = host.querySelectorAll<HTMLElement>('.textLayer span');
+  const pageH = overlayBox.height;
   const hits: { text: string; left: number; right: number; top: number; h: number }[] = [];
   for (const span of spans) {
     const r = span.getBoundingClientRect();
     const cx = r.left - overlayBox.left + r.width / 2;
     const cy = r.top - overlayBox.top + r.height / 2;
     if (cx >= rect.x && cx <= rect.x + rect.w && cy >= rect.y && cy <= rect.y + rect.h) {
+      // Drop rotated (vertical-margin) text.
+      if (isRotatedSpan(getComputedStyle(span).transform)) continue;
+      // Drop header / footer furniture by vertical position on the page.
+      if (pageH > 0) {
+        const yFrac = cy / pageH;
+        if (yFrac < HEADER_BAND || yFrac > FOOTER_BAND) continue;
+      }
       const text = span.textContent ?? '';
       if (text.length > 0) {
         hits.push({ text, left: r.left, right: r.right, top: r.top, h: r.height });
@@ -113,62 +148,6 @@ function localPoint(e: React.PointerEvent): { x: number; y: number } {
 /** Heuristic: does this content actually look like LaTeX math? KaTeX warns
  *  loudly when given Vietnamese prose; we only invoke it when there's a real
  *  math signal. */
-function looksLikeMath(s: string): boolean {
-  // eslint-disable-next-line no-control-regex
-  if (/^[\x00-\x7F\s]*$/.test(s) && /[\\^_{}=]/.test(s)) return true;
-  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀ-Ỹ]/.test(s)) {
-    return false;
-  }
-  return /\\[a-zA-Z]+|[\^_{}]/.test(s);
-}
-
-function sanitizeFormatting(raw: string): string {
-  // Defensive: strip a leaked thinking-artifact prefix (e.g. "thought}").
-  const cleaned = raw.replace(
-    /^\s*(?:\{?\s*"?(?:thought|thinking|reasoning)"?\s*[:}\]]+|\}+)\s*/i,
-    ''
-  );
-  const placeholders: string[] = [];
-  // \u0001 isn't a character LaTeX or prose will contain, so it's a safe sentinel.
-  const sentinel = '\u0001';
-  const extracted = cleaned.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
-    const trimmed = latex.trim();
-    let html: string;
-    if (!looksLikeMath(trimmed)) {
-      // Model occasionally wraps prose VN in <math>. Render as plain inline
-      // text instead of letting KaTeX butcher accented characters.
-      html = `<span class="text-foreground">${trimmed
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')}</span>`;
-    } else {
-      try {
-        html = renderKatex(trimmed, {
-          throwOnError: false,
-          displayMode: false,
-          output: 'html',
-          strict: 'ignore',
-          trust: false
-        });
-      } catch {
-        html = `<code class="font-mono">${trimmed
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')}</code>`;
-      }
-    }
-    const idx = placeholders.push(html) - 1;
-    return `${sentinel}M${idx}${sentinel}`;
-  });
-
-  const escaped = extracted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const whitelisted = escaped.replace(/&lt;(\/?)(sub|sup|b|i)&gt;/gi, '<$1$2>');
-  return whitelisted.replace(
-    new RegExp(`${sentinel}M(\\d+)${sentinel}`, 'g'),
-    (_, n: string) => placeholders[Number.parseInt(n, 10)] ?? ''
-  );
-}
-
 /** Crop the page's rendered canvas to `rect` (overlay-pixel space) and return a
  *  PNG data string (base64, no prefix) + a blankness flag. Returns null if no
  *  canvas is found. Blank detection uses luma standard deviation: a near-uniform
@@ -487,8 +466,8 @@ export function PdfTranslateLayer({
                 <div
                   className={cn(
                     'whitespace-pre-wrap',
-                    '[&_sub]:align-sub [&_sub]:text-[0.75em]',
-                    '[&_sup]:align-super [&_sup]:text-[0.75em]',
+                    '[&_sub]:align-sub [&_sub]:text-[0.65em]',
+                    '[&_sup]:align-super [&_sup]:text-[0.65em]',
                     '[&_b]:font-semibold [&_b]:text-foreground',
                     '[&_i]:italic',
                     // KaTeX brings its own typography for .katex; we just give

@@ -86,7 +86,6 @@ import {
   IconStar,
   IconSun,
   IconTestPipe,
-  IconTrash,
   IconTrendingDown,
   IconTrendingUp,
   IconTypography,
@@ -103,6 +102,26 @@ import {
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth={1.5}
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      xmlns='http://www.w3.org/2000/svg'
+      className={className}
+      aria-hidden
+    >
+      <path d='M5 6h14' />
+      <path d='M10 4h4' />
+      <path d='M6 6l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2 -2l1 -13' />
+    </svg>
+  );
+}
 
 function PdfFileIcon({ className }: { className?: string }) {
   return (
@@ -148,7 +167,7 @@ export const Icons = {
   spinner: IconLoader2,
   search: IconSearch,
   settings: IconSettings,
-  trash: IconTrash,
+  trash: TrashIcon,
 
   // Navigation / Chevrons
   chevronDown: IconChevronDown,

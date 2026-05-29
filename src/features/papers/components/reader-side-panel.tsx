@@ -24,16 +24,18 @@ import {
   IconInfoCircle,
   IconLanguage,
   IconQuote,
-  IconSparkles,
-  IconTrash
+  IconSparkles
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { deleteAnnotation, subscribeAnnotations } from '@/lib/firestore/queries/annotations';
 import { usePaper } from '@/lib/firestore/queries/papers';
+import { sanitizeFormatting } from '@/features/papers/lib/sanitize-formatting';
 import {
   type TranslationRecord,
   usePaperTranslationsStore
@@ -180,37 +182,39 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
           )}
         >
           {/* Tab strip — scrolls horizontally if the labels don't all fit. */}
-          <div className='flex shrink-0 items-center gap-0.5 overflow-x-auto border-b px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-            <PanelTabButton
-              active={panelTab === 'info'}
-              onClick={() => switchPanelTab('info')}
-              icon={<IconInfoCircle className='size-3.5' />}
-              label={t('tabInfo')}
-            />
-            <PanelTabButton
-              active={panelTab === 'citations'}
-              onClick={() => switchPanelTab('citations')}
-              icon={<IconQuote className='size-3.5' />}
-              label={t('citations')}
-            />
-            <PanelTabButton
-              active={panelTab === 'highlights'}
-              onClick={() => switchPanelTab('highlights')}
-              icon={<IconHighlight className='size-3.5' />}
-              label={t('highlight')}
-            />
-            <PanelTabButton
-              active={panelTab === 'translations'}
-              onClick={() => switchPanelTab('translations')}
-              icon={<IconLanguage className='size-3.5' />}
-              label={t('translations')}
-            />
-            <PanelTabButton
-              active={panelTab === 'ai'}
-              onClick={() => switchPanelTab('ai')}
-              icon={<IconSparkles className='size-3.5' />}
-              label='Ask AI'
-            />
+          <div className='shrink-0 px-2 pb-1 pt-2'>
+            <div className='flex items-center gap-0.5 rounded-lg bg-muted/60 p-1'>
+              <PanelTabButton
+                active={panelTab === 'info'}
+                onClick={() => switchPanelTab('info')}
+                icon={<IconInfoCircle className='size-4' />}
+                label={t('tabInfo')}
+              />
+              <PanelTabButton
+                active={panelTab === 'citations'}
+                onClick={() => switchPanelTab('citations')}
+                icon={<IconQuote className='size-4' />}
+                label={t('citations')}
+              />
+              <PanelTabButton
+                active={panelTab === 'highlights'}
+                onClick={() => switchPanelTab('highlights')}
+                icon={<IconHighlight className='size-4' />}
+                label={t('highlight')}
+              />
+              <PanelTabButton
+                active={panelTab === 'translations'}
+                onClick={() => switchPanelTab('translations')}
+                icon={<IconLanguage className='size-4' />}
+                label={t('translations')}
+              />
+              <PanelTabButton
+                active={panelTab === 'ai'}
+                onClick={() => switchPanelTab('ai')}
+                icon={<IconSparkles className='size-4' />}
+                label='Ask AI'
+              />
+            </div>
           </div>
 
           {/* Body. Ask AI keys on paperId so it remounts with the right thread
@@ -256,20 +260,34 @@ function PanelTabButton({
   icon: ReactNode;
   label: string;
 }) {
-  return (
+  // Segmented control (macOS/Linear style). The active tab is a raised pill
+  // (solid background + soft shadow) carrying icon + label, so its name is
+  // always legible. Inactive tabs collapse to an icon button that lifts a
+  // background on hover — clearly tappable — with the label in a tooltip. This
+  // fits all five tabs in the 384px panel with no horizontal scroll.
+  const button = (
     <button
       type='button'
       onClick={onClick}
+      aria-label={label}
+      aria-pressed={active}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-2 py-2.5 text-[13px] transition-colors',
+        'inline-flex h-8 cursor-pointer items-center justify-center rounded-md text-[13px] transition-all',
         active
-          ? 'border-primary font-medium text-foreground'
-          : 'border-transparent text-muted-foreground hover:text-foreground'
+          ? 'flex-1 gap-1.5 bg-background px-2.5 font-medium text-foreground shadow-sm ring-1 ring-black/[0.04]'
+          : 'w-9 shrink-0 text-muted-foreground hover:bg-background/70 hover:text-foreground'
       )}
     >
-      {icon}
-      {label}
+      <span className='shrink-0'>{icon}</span>
+      {active && <span className='truncate'>{label}</span>}
     </button>
+  );
+  if (active) return button;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side='bottom'>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -469,7 +487,7 @@ function HighlightsTab({
                 aria-label={t('highlightDelete')}
                 title={t('highlightDelete')}
               >
-                <IconTrash className='size-3.5' />
+                <Icons.trash className='size-3.5' />
               </Button>
             </div>
           );
@@ -496,6 +514,7 @@ function TranslationsTab({
   const t = useTranslations('papers');
   const items = usePaperTranslationsStore((s) => s.byPaper[paperId] ?? EMPTY_TRANSLATIONS);
   const remove = usePaperTranslationsStore((s) => s.remove);
+  const clear = usePaperTranslationsStore((s) => s.clear);
 
   if (items.length === 0) {
     return (
@@ -508,56 +527,80 @@ function TranslationsTab({
   }
 
   return (
-    <div className='min-h-0 flex-1 overflow-y-auto p-3'>
-      <div className='space-y-2'>
-        {items.map((rec) => (
-          <div
-            key={rec.id}
-            className='group rounded-md border border-border bg-card transition-colors hover:bg-muted/40'
-          >
-            <button
-              type='button'
-              onClick={() => onJumpToPage(rec.page, rec.yRatio)}
-              className='block w-full p-2.5 text-left'
-              aria-label={`${t('page')} ${rec.page}: ${rec.translation}`}
+    <div className='flex min-h-0 flex-1 flex-col'>
+      <div className='flex shrink-0 items-center justify-between border-b px-3 py-1.5'>
+        <span className='text-xs text-muted-foreground'>{items.length}</span>
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={() => clear(paperId)}
+          className='h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive'
+        >
+          <Icons.trash className='size-3.5' />
+          {t('translationsClearAll')}
+        </Button>
+      </div>
+      <div className='min-h-0 flex-1 overflow-y-auto p-3'>
+        <div className='space-y-2'>
+          {items.map((rec) => (
+            <div
+              key={rec.id}
+              className='group rounded-md border border-border bg-card transition-colors hover:bg-muted/40'
             >
-              <span className='mb-1 flex items-center justify-between gap-2'>
-                <span className='text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground'>
+              <button
+                type='button'
+                onClick={() => onJumpToPage(rec.page, rec.yRatio)}
+                className='block w-full p-2.5 text-left'
+                aria-label={`${t('page')} ${rec.page}`}
+              >
+                <span className='mb-1 block text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground'>
                   {t('page')} {rec.page}
                 </span>
-              </span>
-              <span className='block text-xs leading-relaxed text-muted-foreground/80'>
-                {formatSciText(rec.source)}
-              </span>
-              <span className='mt-1.5 block border-l-2 border-primary/40 pl-2 text-xs leading-relaxed text-foreground'>
-                {rec.partialStart && (
-                  <span className='select-none text-muted-foreground/45' title={t('partialNote')}>
-                    …{' '}
-                  </span>
-                )}
-                {rec.translation}
-                {rec.partialEnd && (
-                  <span className='select-none text-muted-foreground/45' title={t('partialNote')}>
-                    {' '}
-                    …
-                  </span>
-                )}
-              </span>
-            </button>
-            <div className='flex justify-end px-2 pb-1.5'>
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={() => remove(paperId, rec.id)}
-                className='size-6 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100'
-                aria-label={t('translationDelete')}
-                title={t('translationDelete')}
-              >
-                <IconTrash className='size-3.5' />
-              </Button>
+                <span
+                  className='block text-xs leading-relaxed text-muted-foreground/70 [&_sub]:align-sub [&_sub]:text-[0.65em] [&_sup]:align-super [&_sup]:text-[0.65em]'
+                  // Source is plain text from the layer; escape via textContent semantics.
+                >
+                  {formatSciText(rec.source)}
+                </span>
+                <span
+                  className={cn(
+                    'mt-1.5 block border-l-2 border-primary/40 pl-2 text-xs leading-relaxed text-foreground',
+                    '[&_sub]:align-sub [&_sub]:text-[0.65em]',
+                    '[&_sup]:align-super [&_sup]:text-[0.65em]',
+                    '[&_b]:font-semibold [&_i]:italic',
+                    '[&_.katex]:text-[1em]'
+                  )}
+                >
+                  {rec.partialStart && (
+                    <span className='select-none text-muted-foreground/45' title={t('partialNote')}>
+                      …{' '}
+                    </span>
+                  )}
+                  {/* Render the model's <sub>/<sup>/<b>/<i>/<math> markup. */}
+                  <span dangerouslySetInnerHTML={{ __html: sanitizeFormatting(rec.translation) }} />
+                  {rec.partialEnd && (
+                    <span className='select-none text-muted-foreground/45' title={t('partialNote')}>
+                      {' '}
+                      …
+                    </span>
+                  )}
+                </span>
+              </button>
+              <div className='flex justify-end px-2 pb-1.5'>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={() => remove(paperId, rec.id)}
+                  className='size-6 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100'
+                  aria-label={t('translationDelete')}
+                  title={t('translationDelete')}
+                >
+                  <Icons.trash className='size-3.5' />
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -16,6 +16,8 @@ import { estimateCost } from '@/lib/ai/cost/estimator';
 import { recordCost } from '@/lib/ai/cost/telemetry';
 import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
 import { selectProvider } from '@/lib/ai/providers';
+import { protectRefs, restoreRefs } from '@/features/papers/lib/citation-protect';
+import { glossaryBlock } from '@/features/papers/lib/translation-glossary';
 import { getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -227,6 +229,7 @@ DO NOT TRANSLATE (keep verbatim, do not transliterate or localize):
 - Species/genus names in italics (Streptococcus mutans, S. mutans).
 - Element/compound names written as formulae stay as formulae.
 - Citation markers like [1], [29–31] stay unchanged.
+- Placeholders of the form ⟦C0⟧, ⟦C1⟧, … are protected references — keep each one EXACTLY as written, in place; never translate, reorder, space out, or drop them.
 Translate ONLY the prose connecting these terms.
 
 FORMATTING — mark up the output with these tags ONLY (no other HTML, no Markdown):
@@ -261,6 +264,8 @@ Example (English→Vietnamese):
 
 Output ONLY the translation — no notes, no preamble, no quotes. If the text is
 already in ${targetName}, return it unchanged (still apply the formatting tags).${
+    glossaryBlock(targetLang) ? `\n\n${glossaryBlock(targetLang)}` : ''
+  }${
     mode === 'image'
       ? `
 
@@ -325,7 +330,11 @@ PARTIAL SELECTION: this text was cut by a drag selection${
     const SEP = '\n<<<§§§>>>\n';
     const missChunks = paragraphPlan.chunks.filter((c) => c.translation === null);
     const missText = missChunks.map((c) => c.text).join(SEP);
-    const missPrompt = `Translate the following paragraphs into ${targetName} following ALL the rules above. The paragraphs are separated by the marker "<<<§§§>>>" — keep that marker between paragraphs in your output so I can split them back. Translate each paragraph independently; do NOT merge them.\n\n${missText}`;
+    // ADR-045 Tier 1a: mask citations / cross-refs so the model can't corrupt
+    // them, then restore (localizing Figure→Hình etc.) after. The SEP marker is
+    // not a ref, so it survives masking untouched.
+    const { masked: maskedMiss, map: refMap } = protectRefs(missText);
+    const missPrompt = `Translate the following paragraphs into ${targetName} following ALL the rules above. The paragraphs are separated by the marker "<<<§§§>>>" — keep that marker between paragraphs in your output so I can split them back. Translate each paragraph independently; do NOT merge them.\n\n${maskedMiss}`;
     let result;
     try {
       result = await provider.complete({
@@ -349,11 +358,52 @@ PARTIAL SELECTION: this text was cut by a drag selection${
       latencyMs: Date.now() - started
     }).catch(() => {});
 
-    const translatedMisses = result.text.split(/\n*<<<§§§>>>\n*/);
+    // Reflection pass (ADR-045 Tier 3, always-on R237bi): critique + improve the
+    // draft for higher quality. Placeholders + tags are still masked here (refMap
+    // not yet restored), so refs stay protected across both passes. Runs only on
+    // cache misses, so a passage is 2-pass once, then served from cache. On
+    // failure we keep the pass-1 draft.
+    let finalMasked = result.text;
+    {
+      const reflectPrompt = `You are revising a ${targetName} translation of a scientific passage.
+
+SOURCE:
+${maskedMiss}
+
+DRAFT TRANSLATION:
+${result.text}
+
+Improve the DRAFT: fix mistranslated technical terms, awkward or unnatural phrasing, and any omitted meaning, while staying faithful to the source and using standard ${targetName} scientific terminology. Keep every ⟦Cn⟧ placeholder and every <sub>/<sup>/<b>/<i>/<math> tag EXACTLY as written, and keep the "<<<§§§>>>" markers between paragraphs. Output ONLY the improved ${targetName} translation — no notes, no preamble.`;
+      try {
+        const r2 = await provider.complete({
+          model: config.model,
+          maxTokens,
+          temperature: 0.3,
+          system: [{ text: system, cache: false }],
+          messages: [{ role: 'user', content: reflectPrompt }]
+        });
+        if (r2.text.trim()) finalMasked = r2.text;
+        void recordCost({
+          tenantId,
+          tier: TIER,
+          capability: 'rag-balanced',
+          feature: 'translate_reflect',
+          costUsd: r2.usage.usd,
+          inputTokens: r2.usage.inputTokens,
+          outputTokens: r2.usage.outputTokens,
+          latencyMs: Date.now() - started
+        }).catch(() => {});
+      } catch {
+        // keep pass-1 draft
+      }
+    }
+
+    const restored = restoreRefs(finalMasked, refMap, targetLang);
+    const translatedMisses = restored.split(/\n*<<<§§§>>>\n*/);
     // Defensive: if the model dropped the marker, fall back to a single chunk
     // covering the whole missed text — better than an alignment crash.
     const aligned: string[] =
-      translatedMisses.length === missChunks.length ? translatedMisses : [result.text];
+      translatedMisses.length === missChunks.length ? translatedMisses : [restored];
 
     // Cache each freshly-translated chunk and splice them back in order.
     let mi = 0;

@@ -19,6 +19,7 @@ export type FeatureKind =
   | 'classify' // R178-3 paper domain classification — @r178-3-applied
   | 'fact_extraction' // R193 ADR-035 M2 memory fact extraction
   | 'translate' // R237-C5 in-reader passage translation
+  | 'translate_reflect' // R237bh ADR-045 Tier 3 reflection pass ("Dịch kỹ")
   | 'paper_qa'; // R237am Ask AI Q&A inside a single paper
 
 /** Per-capability stats (R170-3 extended) */

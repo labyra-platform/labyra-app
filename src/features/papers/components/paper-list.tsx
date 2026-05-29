@@ -29,6 +29,9 @@ import {
 import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal-info-card';
 import { UploadSheet } from '@/features/papers/components/upload-sheet';
 import { Button } from '@/components/ui/button';
+import { Icons } from '@/components/icons';
+import { getFirebaseAuth } from '@/lib/firebase/client';
+import { toast } from 'sonner';
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { searchPapers } from '@/features/papers/lib/title-search';
@@ -42,7 +45,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
-import type { Paper, PaperStatus } from '@/types/papers';
+import { type Paper, type PaperStatus, TERMINAL_STATUSES } from '@/types/papers';
 
 // R222: only surface the status badge when it carries signal. 'indexed' is the
 // default expected state — showing it on 100% of cards is pure noise, so it is
@@ -390,17 +393,124 @@ function PaperRow({
           </div>
         </div>
         {/* R222 #5: status badge only when it carries signal (not 'indexed'). */}
-        {badgeClass && (
-          <span
-            className={cn(
-              'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
-              badgeClass
-            )}
-          >
-            {t(`status.${paper.status}`)}
-          </span>
-        )}
+        <div className='flex shrink-0 items-center gap-1'>
+          {badgeClass && (
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
+                badgeClass
+              )}
+            >
+              {t(`status.${paper.status}`)}
+            </span>
+          )}
+          <PaperRowMenu paperId={paper.id} status={paper.status} />
+        </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * PaperRowMenu (R237az) — per-row kebab (3-dot) with Reprocess + Archive.
+ * Moves these out of the (now hidden in reader) detail header into the list,
+ * using the stack DropdownMenu. stopPropagation everywhere so opening the menu
+ * or picking an item never also opens the paper. Archive = remove from list
+ * (soft, restorable); reprocess only offered for terminal statuses.
+ */
+async function paperAuthHeader(): Promise<{ Authorization: string }> {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error('not_authenticated');
+  return { Authorization: `Bearer ${await user.getIdToken()}` };
+}
+
+function PaperRowMenu({ paperId, status }: { paperId: string; status: PaperStatus }) {
+  const t = useTranslations('papers');
+  const [busy, setBusy] = useState(false);
+  const canReprocess = TERMINAL_STATUSES.has(status);
+
+  const reprocess = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/papers/${paperId}/reprocess`, {
+        method: 'POST',
+        headers: await paperAuthHeader()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast.success(t('reprocessStarted'));
+    } catch (e) {
+      toast.error(t('reprocessFailed'), {
+        description: e instanceof Error ? e.message : 'unknown'
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const archive = async () => {
+    if (!confirm(t('archiveConfirm'))) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/papers/${paperId}?reason=manual_archive`, {
+        method: 'DELETE',
+        headers: await paperAuthHeader()
+      });
+      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      toast.success(t('archiveSuccess'));
+    } catch (e) {
+      toast.error(t('archiveFailed'), { description: e instanceof Error ? e.message : 'unknown' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='size-7 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100'
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          aria-label={t('moreActions')}
+        >
+          <Icons.moreHorizontal className='size-4' />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align='end'
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
+        {canReprocess && (
+          <DropdownMenuItem
+            disabled={busy}
+            onClick={(e) => {
+              e.preventDefault();
+              void reprocess();
+            }}
+          >
+            <Icons.refresh className='size-4' />
+            {t('reprocess')}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          disabled={busy}
+          onClick={(e) => {
+            e.preventDefault();
+            void archive();
+          }}
+          className='text-destructive focus:text-destructive'
+        >
+          <Icons.trash className='size-4' />
+          {t('archive')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

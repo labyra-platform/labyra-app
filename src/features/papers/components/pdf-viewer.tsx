@@ -29,18 +29,25 @@ import {
   IconAlertCircle,
   IconArrowsMaximize,
   IconArrowsMinimize,
+  IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconChevronDown,
+  IconDotsVertical,
   IconDownload,
   IconEraser,
+  IconExternalLink,
   IconHighlight,
   IconLanguage,
+  IconKeyboard,
   IconLoader2,
   IconMinus,
   IconPencil,
   IconPlus,
-  IconRefresh
+  IconRefresh,
+  IconSearch,
+  IconChevronUp,
+  IconX
 } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -61,6 +68,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
 import { PdfHighlightLayer } from '@/features/papers/components/pdf-highlight-layer';
+import { countOccurrences, highlightItem } from '@/features/papers/lib/pdf-search';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PdfDrawLayer } from '@/features/papers/components/pdf-draw-layer';
 import { PdfTranslateLayer } from '@/features/papers/components/pdf-translate-layer';
 import { usePaperTranslationsStore } from '@/features/papers/stores/paper-translations-store';
@@ -102,6 +111,7 @@ interface PdfDocLike {
   getPageIndex: (ref: object) => Promise<number>;
   getPage: (pageNumber: number) => Promise<{
     getViewport: (params: { scale: number }) => { width: number; height: number };
+    getTextContent: () => Promise<{ items: Array<{ str?: string }> }>;
   }>;
 }
 
@@ -180,6 +190,7 @@ const PDF_OPTIONS = {
 const ZOOM_STEP = 0.15;
 const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 4;
+const ZOOM_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 async function fetchSignedUrl(paperId: string): Promise<SignedUrlResponse> {
   // Wait for auth state to settle before reading currentUser
@@ -294,6 +305,19 @@ export function PdfViewer({
   const [translateMode, setTranslateMode] = useState(false);
   const [targetLang, setTargetLang] = useState('vi');
   const [pdfReady, setPdfReady] = useState(false);
+
+  // Ctrl+F in-document search (R237be). The text-item strings for each page are
+  // pulled from pdf.js once (on first open) and cached; matches are computed
+  // per item so the count equals the number of <mark> elements.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchCaseSensitive, setSearchCaseSensitive] = useState(false);
+  const [searchMatches, setSearchMatches] = useState<{ page: number; occ: number }[]>([]);
+  const [searchCurrent, setSearchCurrent] = useState(-1);
+  const [searchIndexReady, setSearchIndexReady] = useState(false);
+  const pageItemsRef = useRef<Map<number, string[]>>(new Map());
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -782,6 +806,107 @@ export function PdfViewer({
     requestAnimationFrame(() => scrollToPageAt(jumpRequest.page, jumpRequest.y ?? null));
   }, [jumpRequest, scrollToPageAt]);
 
+  // R237be: build the per-page text index once when search first opens.
+  useEffect(() => {
+    if (!searchOpen || searchIndexReady || !pdfProxy) return;
+    let cancelled = false;
+    (async () => {
+      for (let p = 1; p <= pdfProxy.numPages; p++) {
+        if (cancelled) return;
+        if (pageItemsRef.current.has(p)) continue;
+        try {
+          const page = await pdfProxy.getPage(p);
+          const content = await page.getTextContent();
+          pageItemsRef.current.set(
+            p,
+            content.items.map((it) => it.str ?? '')
+          );
+        } catch {
+          pageItemsRef.current.set(p, []);
+        }
+      }
+      if (!cancelled) setSearchIndexReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchOpen, searchIndexReady, pdfProxy]);
+
+  // Recompute matches whenever the query / case option / index changes.
+  useEffect(() => {
+    if (!searchOpen || !searchQuery) {
+      setSearchMatches([]);
+      setSearchCurrent(-1);
+      return;
+    }
+    const res: { page: number; occ: number }[] = [];
+    for (let p = 1; p <= numPages; p++) {
+      const items = pageItemsRef.current.get(p);
+      if (!items) continue;
+      let occ = 0;
+      for (const s of items) {
+        const c = countOccurrences(s, searchQuery, searchCaseSensitive);
+        for (let k = 0; k < c; k++) {
+          res.push({ page: p, occ });
+          occ++;
+        }
+      }
+    }
+    setSearchMatches(res);
+    setSearchCurrent(res.length ? 0 : -1);
+  }, [searchOpen, searchQuery, searchCaseSensitive, numPages, searchIndexReady]);
+
+  // Scroll the active match into view + mark it. The text layer mounts a frame
+  // or two after the page, so poll briefly for the <mark> before giving up.
+  useEffect(() => {
+    if (searchCurrent < 0) return;
+    const match = searchMatches[searchCurrent];
+    if (!match) return;
+    setCurrentPage(match.page);
+    const el = pagesContainerRef.current;
+    if (!el) return;
+    let tries = 0;
+    let raf = 0;
+    const tick = () => {
+      const pageEl = el.querySelector<HTMLElement>(`[data-page-index="${match.page}"]`);
+      const marks = pageEl?.querySelectorAll<HTMLElement>('.psm');
+      el.querySelectorAll<HTMLElement>('.psm-current').forEach((m) =>
+        m.classList.remove('psm-current')
+      );
+      const mark = marks?.[match.occ];
+      if (mark) {
+        mark.classList.add('psm-current');
+        mark.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return;
+      }
+      if (tries++ < 30) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [searchCurrent, searchMatches]);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchMatches([]);
+    setSearchCurrent(-1);
+  }, []);
+  const gotoNextMatch = useCallback(() => {
+    setSearchCurrent((i) => (searchMatches.length ? (i + 1) % searchMatches.length : -1));
+  }, [searchMatches.length]);
+  const gotoPrevMatch = useCallback(() => {
+    setSearchCurrent((i) =>
+      searchMatches.length ? (i - 1 + searchMatches.length) % searchMatches.length : -1
+    );
+  }, [searchMatches.length]);
+
+  // customTextRenderer for <Page>: highlight matches in the text layer. Memoized
+  // so the text layer only re-renders when the query / case option changes.
+  const renderSearchText = useCallback(
+    (item: { str: string }) => highlightItem(item.str, searchQuery, searchCaseSensitive),
+    [searchQuery, searchCaseSensitive]
+  );
+
   const goPrev = useCallback(() => {
     setCurrentPage((prev) => {
       if (prev > 1) {
@@ -829,6 +954,17 @@ export function PdfViewer({
   const resetZoom = useCallback(() => {
     setZoom(1);
   }, []);
+  const setZoomTo = (z: number) => setZoom(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +z.toFixed(2))));
+  // Fit the current page's full height into the scroll container. (Fit-width is
+  // just 100%, since pageWidth at zoom=1 already fills the available width.)
+  const fitPage = () => {
+    const el = pagesContainerRef.current;
+    if (!el) return;
+    const available = Math.max(320, containerWidth - 32);
+    const aspect = aspectFor(currentPage) || Math.SQRT2;
+    const targetH = el.clientHeight - 48;
+    if (targetH > 0) setZoomTo(targetH / (available * aspect));
+  };
   const rotateCw = useCallback(() => {
     setRotation((r) => (r + 90) % 360);
   }, []);
@@ -855,8 +991,20 @@ export function PdfViewer({
   // Keyboard shortcuts — deps stable thanks to useCallback above
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Ctrl/⌘+F opens the find bar from anywhere (before the input guard).
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setSearchOpen(true);
+        requestAnimationFrame(() => searchInputRef.current?.focus());
+        return;
+      }
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === '?') {
+        e.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
       if (e.key === 'ArrowRight' || e.key === 'PageDown') {
         e.preventDefault();
         goNext();
@@ -930,6 +1078,7 @@ export function PdfViewer({
           )}
         </div>
 
+        <div className='mx-0.5 hidden h-5 w-px shrink-0 bg-border sm:block' aria-hidden />
         {/* Page nav */}
         <div className='hidden items-center gap-1 sm:flex'>
           <Button
@@ -939,7 +1088,7 @@ export function PdfViewer({
             onClick={goPrev}
             disabled={mounted && currentPage <= 1}
             aria-label={t('prevPage')}
-            title={t('prevPage')}
+            title={`${t('prevPage')} (←)`}
           >
             <IconChevronLeft className='size-4' />
           </Button>
@@ -969,12 +1118,13 @@ export function PdfViewer({
             onClick={goNext}
             disabled={mounted && currentPage >= numPages}
             aria-label={t('nextPage')}
-            title={t('nextPage')}
+            title={`${t('nextPage')} (→)`}
           >
             <IconChevronRight className='size-4' />
           </Button>
         </div>
 
+        <div className='mx-0.5 hidden h-5 w-px shrink-0 bg-border sm:block' aria-hidden />
         {/* Zoom */}
         <div className='flex items-center gap-0.5'>
           <Button
@@ -984,18 +1134,38 @@ export function PdfViewer({
             onClick={zoomOut}
             disabled={mounted && zoom <= ZOOM_MIN}
             aria-label={t('zoomOut')}
-            title={t('zoomOut')}
+            title={`${t('zoomOut')} (Ctrl −)`}
           >
             <IconMinus className='size-4' />
           </Button>
-          <button
-            type='button'
-            onClick={resetZoom}
-            className='min-w-[3rem] rounded px-1.5 py-1 text-xs hover:bg-muted'
-            title={t('resetZoom')}
-          >
-            {Math.round((mounted ? zoom : 1) * 100)}%
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type='button'
+                className='flex min-w-[3.25rem] items-center justify-center gap-0.5 rounded px-1.5 py-1 text-xs tabular-nums hover:bg-muted'
+                title={t('zoomLevel')}
+              >
+                {Math.round((mounted ? zoom : 1) * 100)}%
+                <IconChevronDown className='size-3 opacity-60' />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='center' className='min-w-[9rem]'>
+              {ZOOM_PRESETS.map((p) => {
+                const isActive = mounted && Math.round(zoom * 100) === Math.round(p * 100);
+                return (
+                  <DropdownMenuItem
+                    key={p}
+                    onClick={() => setZoomTo(p)}
+                    className='justify-between'
+                  >
+                    {Math.round(p * 100)}%{isActive && <IconCheck className='size-3.5' />}
+                  </DropdownMenuItem>
+                );
+              })}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={fitPage}>{t('fitPage')}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant='ghost'
             size='icon'
@@ -1003,7 +1173,7 @@ export function PdfViewer({
             onClick={zoomIn}
             disabled={mounted && zoom >= ZOOM_MAX}
             aria-label={t('zoomIn')}
-            title={t('zoomIn')}
+            title={`${t('zoomIn')} (Ctrl +)`}
           >
             <IconPlus className='size-4' />
           </Button>
@@ -1021,6 +1191,24 @@ export function PdfViewer({
           <RotateIcon className='size-4' />
         </Button>
 
+        <div className='mx-0.5 hidden h-5 w-px shrink-0 bg-border sm:block' aria-hidden />
+        {/* Search (R237be) — toggle the in-document find bar (Ctrl/⌘+F). */}
+        <Button
+          variant={searchOpen ? 'secondary' : 'ghost'}
+          size='icon'
+          className='size-7 shrink-0'
+          onClick={() => {
+            setSearchOpen((o) => !o);
+            requestAnimationFrame(() => searchInputRef.current?.focus());
+          }}
+          aria-pressed={searchOpen}
+          aria-label={t('searchInDoc')}
+          title={`${t('searchInDoc')} (Ctrl F)`}
+        >
+          <IconSearch className='size-4' />
+        </Button>
+
+        <div className='mx-0.5 hidden h-5 w-px shrink-0 bg-border sm:block' aria-hidden />
         {/* Highlight (C3b / R237ar) — toggle: when on, selecting text marks it.
             Turns off draw/translate so the tools don't fight. Rotation 0 only. */}
         <Button
@@ -1158,6 +1346,7 @@ export function PdfViewer({
           </div>
         )}
 
+        <div className='mx-0.5 hidden h-5 w-px shrink-0 bg-border sm:block' aria-hidden />
         {/* Translate (C5) — pick target language via a proper DropdownMenu;
             active = right-drag a region to translate. Only at rotation 0. */}
         <DropdownMenu>
@@ -1209,6 +1398,7 @@ export function PdfViewer({
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <div className='mx-0.5 hidden h-5 w-px shrink-0 bg-border sm:block' aria-hidden />
         {/* Fullscreen */}
         <Button
           variant='ghost'
@@ -1225,24 +1415,173 @@ export function PdfViewer({
           )}
         </Button>
 
-        {/* Download — icon only; prefers the signed URL, falls back to the
-            loaded blob so it never disappears (R237x). */}
+        {/* View actions kebab (R237bd) — groups download + open-in-new-tab so
+            the toolbar's right edge is one overflow button, not a row of icons. */}
         {(signed?.url || fileSource) && (
-          <Button asChild variant='ghost' size='icon' className='size-7 shrink-0'>
-            <a
-              href={signed?.url ?? fileSource ?? '#'}
-              download={`${displayTitle || 'paper'}.pdf`}
-              rel='noopener noreferrer'
-              aria-label={t('download')}
-              title={t('download')}
-            >
-              <IconDownload className='size-4' />
-            </a>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant='ghost'
+                size='icon'
+                className='size-7 shrink-0'
+                aria-label={t('moreActions')}
+                title={t('moreActions')}
+              >
+                <IconDotsVertical className='size-4' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              <DropdownMenuItem asChild>
+                <a
+                  href={signed?.url ?? fileSource ?? '#'}
+                  download={`${displayTitle || 'paper'}.pdf`}
+                  rel='noopener noreferrer'
+                >
+                  <IconDownload className='size-4' />
+                  {t('download')}
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a
+                  href={signed?.url ?? fileSource ?? '#'}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                >
+                  <IconExternalLink className='size-4' />
+                  {t('openInNewTab')}
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShortcutsOpen(true)}>
+                <IconKeyboard className='size-4' />
+                {t('shortcutsTitle')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </header>
 
-      {/* Body + optional nav sidebar */}
+      {/* Find bar (R237be) — slides in under the toolbar on Ctrl+F or the search
+          button. Highlights all matches in the text layer; ↑/↓ + Enter cycle. */}
+      {searchOpen && (
+        <div className='flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5'>
+          <IconSearch className='size-4 shrink-0 text-muted-foreground' />
+          <input
+            ref={searchInputRef}
+            type='text'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.shiftKey) gotoPrevMatch();
+                else gotoNextMatch();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeSearch();
+              }
+            }}
+            placeholder={t('searchPlaceholder')}
+            className='min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground'
+            aria-label={t('searchInDoc')}
+          />
+          <span className='shrink-0 text-xs tabular-nums text-muted-foreground'>
+            {searchQuery
+              ? searchMatches.length
+                ? t('searchMatch', { current: searchCurrent + 1, total: searchMatches.length })
+                : searchIndexReady
+                  ? t('searchNoMatch')
+                  : '…'
+              : ''}
+          </span>
+          <button
+            type='button'
+            onClick={() => setSearchCaseSensitive((v) => !v)}
+            aria-pressed={searchCaseSensitive}
+            title={t('searchCaseSensitive')}
+            className={cn(
+              'shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors',
+              searchCaseSensitive
+                ? 'bg-primary/15 text-primary'
+                : 'text-muted-foreground hover:bg-muted'
+            )}
+          >
+            Aa
+          </button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='size-6 shrink-0'
+            onClick={gotoPrevMatch}
+            disabled={searchMatches.length === 0}
+            aria-label={t('searchPrev')}
+            title={`${t('searchPrev')} (Shift ↵)`}
+          >
+            <IconChevronUp className='size-4' />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='size-6 shrink-0'
+            onClick={gotoNextMatch}
+            disabled={searchMatches.length === 0}
+            aria-label={t('searchNext')}
+            title={`${t('searchNext')} (↵)`}
+          >
+            <IconChevronDown className='size-4' />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='size-6 shrink-0'
+            onClick={closeSearch}
+            aria-label={t('close')}
+            title={`${t('close')} (Esc)`}
+          >
+            <IconX className='size-4' />
+          </Button>
+        </div>
+      )}
+
+      {/* Search highlight styling for the pdf.js text layer (R237be). The text
+          layer's glyphs are transparent and sit exactly over the canvas; <mark>'s
+          UA style forces black text, which doubled the glyphs — so force the
+          mark text transparent too and only paint the background. */}
+      <style>{`.psm{color:transparent !important;background:rgba(250,204,21,.45);border-radius:1px}.psm-current{color:transparent !important;background:rgba(249,115,22,.7);box-shadow:0 0 0 1px rgba(249,115,22,.85)}`}</style>
+
+      {/* Keyboard shortcuts (R237bg) — opened with ? or from the view kebab. */}
+      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+        <DialogContent className='max-w-sm'>
+          <DialogHeader>
+            <DialogTitle>{t('shortcutsTitle')}</DialogTitle>
+          </DialogHeader>
+          <div className='divide-y text-sm'>
+            {[
+              { keys: ['←', '→'], label: t('shortcutPage') },
+              { keys: ['Ctrl', '+ / −'], label: t('shortcutZoom') },
+              { keys: ['Ctrl', '0'], label: t('shortcutReset') },
+              { keys: ['Ctrl', 'F'], label: t('searchInDoc') },
+              { keys: ['Ctrl', 'Z'], label: t('shortcutUndo') },
+              { keys: ['Esc'], label: t('shortcutClose') }
+            ].map((row) => (
+              <div key={row.label} className='flex items-center justify-between gap-3 py-2'>
+                <span className='text-muted-foreground'>{row.label}</span>
+                <span className='flex shrink-0 items-center gap-1'>
+                  {row.keys.map((k) => (
+                    <kbd
+                      key={k}
+                      className='rounded border bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground'
+                    >
+                      {k}
+                    </kbd>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className='flex min-h-0 flex-1'>
         {sidebarOpen && (
           <PdfNavSidebar
@@ -1349,6 +1688,7 @@ export function PdfViewer({
                             rotate={rotation}
                             renderTextLayer
                             renderAnnotationLayer
+                            customTextRenderer={searchQuery ? renderSearchText : undefined}
                             onLoadSuccess={(page) => {
                               // R235: store the UNROTATED aspect (h/w at rotation 0);
                               // aspectFor() inverts it for 90/270 placeholders.

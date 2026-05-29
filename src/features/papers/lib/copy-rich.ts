@@ -59,10 +59,18 @@ function renderMathML(tex: string): string {
 function contentToHtmlPapers(content: string): string {
   const placeholders: string[] = [];
   const sentinel = '\u0001';
-  const withMath = content.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
-    const idx = placeholders.push(renderMathML(latex)) - 1;
-    return `${sentinel}M${idx}${sentinel}`;
-  });
+  // Capture the char right after </math> so we can decide on spacing: Word glues
+  // the following word straight onto an inline equation. We add a trailing space
+  // unless the next char is punctuation (, . ; : ) ] etc.) or already a space.
+  const withMath = content.replace(
+    /<math>([\s\S]*?)<\/math>(\s*)(.?)/gi,
+    (_, latex: string, gap: string, nextChar: string) => {
+      const idx = placeholders.push(renderMathML(latex)) - 1;
+      const needsSpace =
+        gap.length === 0 && nextChar.length > 0 && !/[,.;:)\]}!?%»"']/.test(nextChar);
+      return `${sentinel}M${idx}${sentinel}${needsSpace ? ' ' : gap}${nextChar}`;
+    }
+  );
 
   const escaped = escapeHtml(withMath);
   const inline = escaped.replace(/&lt;(\/?)(sub|sup|b|i)&gt;/gi, '<$1$2>');

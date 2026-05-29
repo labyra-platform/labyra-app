@@ -18,12 +18,14 @@ import {
   IconAlertCircle,
   IconArrowUp,
   IconCheck,
+  IconChevronRight,
   IconCopy,
   IconLoader2,
   IconSparkles
 } from '@tabler/icons-react';
 import { renderToString as renderKatex } from 'katex';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { copyPapersRich } from '@/features/papers/lib/copy-rich';
 import { cn } from '@/lib/utils';
 import {
@@ -73,6 +75,14 @@ function renderMathBlock(latex: string): string {
     return `<code class="font-mono">${trimmed.replace(/</g, '&lt;')}</code>`;
   }
 }
+/** Defensive strip of a leaked thinking-artifact prefix (e.g. "thought}",
+ *  "{thought}", a stray leading "}"). The Gemini provider already filters
+ *  thought parts (R237ao), but models occasionally emit a stray fragment;
+ *  this keeps the UI clean without affecting normal answers. */
+function stripThoughtArtifact(s: string): string {
+  return s.replace(/^\s*(?:\{?\s*"?(?:thought|thinking|reasoning)"?\s*[:}\]]+|\}+)\s*/i, '');
+}
+
 /** Sanitize + render the assistant answer for safe HTML output.
  *
  *  Pipeline:
@@ -83,9 +93,10 @@ function renderMathBlock(latex: string): string {
  *  (4) Turn citation brackets [n] into clickable buttons.
  *  (5) Swap sentinels back for the rendered math HTML. */
 function renderAnswerHtml(answer: string): string {
+  const cleaned = stripThoughtArtifact(answer);
   const placeholders: string[] = [];
   const sentinel = '\u0001';
-  const withMath = answer.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
+  const withMath = cleaned.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
     const idx = placeholders.push(renderMathBlock(latex)) - 1;
     return `${sentinel}M${idx}${sentinel}`;
   });
@@ -300,7 +311,12 @@ export function AskAiTab({
           m.role === 'user' ? (
             <UserBubble key={m.id} content={m.content} selectionText={m.selectionText} />
           ) : (
-            <AssistantBubble key={m.id} message={m} onAnswerClick={handleAnswerClick(m)} />
+            <AssistantBubble
+              key={m.id}
+              message={m}
+              onAnswerClick={handleAnswerClick(m)}
+              onJumpToPage={onJumpToPage}
+            />
           )
         )}
         {error && (
@@ -420,10 +436,12 @@ function UserBubble({ content, selectionText }: { content: string; selectionText
 
 function AssistantBubble({
   message,
-  onAnswerClick
+  onAnswerClick,
+  onJumpToPage
 }: {
   message: AskMessage;
   onAnswerClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onJumpToPage: (page: number) => void;
 }) {
   const html = useMemo(() => renderAnswerHtml(message.content), [message.content]);
   const [copied, setCopied] = useState(false);
@@ -492,36 +510,57 @@ function AssistantBubble({
         </div>
       </div>
       {message.citations && message.citations.length > 0 && (
-        <CitationList citations={message.citations} />
+        <CitationList citations={message.citations} onJumpToPage={onJumpToPage} />
       )}
     </div>
   );
 }
 
-function CitationList({ citations }: { citations: AskCitation[] }) {
+function CitationList({
+  citations,
+  onJumpToPage
+}: {
+  citations: AskCitation[];
+  onJumpToPage: (page: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
   return (
-    <details className='rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs'>
-      <summary className='cursor-pointer text-[11px] text-muted-foreground hover:text-foreground'>
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className='rounded-md border border-border bg-muted/30 px-2.5 py-1.5'
+    >
+      <CollapsibleTrigger className='flex w-full items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground'>
+        <IconChevronRight
+          className={cn('size-3 transition-transform', open && 'rotate-90')}
+          aria-hidden
+        />
         {citations.length} trích nguồn
-      </summary>
-      <ul className='mt-2 space-y-1.5'>
+      </CollapsibleTrigger>
+      <CollapsibleContent className='mt-2 space-y-1.5'>
         {citations.map((c) => (
-          <li key={c.chunkId} className='flex gap-2'>
-            <span className='shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10.5px] font-medium text-primary'>
+          <button
+            key={c.chunkId}
+            type='button'
+            onClick={() => onJumpToPage(c.page)}
+            className='flex w-full gap-2 rounded p-1 text-left transition-colors hover:bg-muted'
+            title={`Tới trang ${c.page}`}
+          >
+            <span className='h-fit shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10.5px] font-medium text-primary'>
               [{c.idx}]
             </span>
-            <div className='min-w-0 flex-1'>
-              <div className='text-[10.5px] text-muted-foreground'>
+            <span className='min-w-0 flex-1'>
+              <span className='block text-[10.5px] text-muted-foreground'>
                 Trang {c.page}
                 {c.section ? ` · ${c.section}` : ''}
-              </div>
-              <p className='line-clamp-2 text-[11.5px] italic text-muted-foreground'>
+              </span>
+              <span className='line-clamp-2 text-[11.5px] italic text-muted-foreground'>
                 &ldquo;{c.snippet}&rdquo;
-              </p>
-            </div>
-          </li>
+              </span>
+            </span>
+          </button>
         ))}
-      </ul>
-    </details>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

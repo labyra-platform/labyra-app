@@ -361,7 +361,12 @@ export class GeminiProvider implements LLMProvider {
     for await (const chunk of stream) {
       const parts = chunk.candidates?.[0]?.content?.parts ?? [];
       for (const part of parts) {
-        if (typeof part.text === 'string' && part.text.length > 0) {
+        // Gemini 3 emits thinking content as parts flagged `thought: true`
+        // (sometimes carrying a thoughtSignature). Those must NOT be streamed
+        // as answer text — otherwise fragments like "thought}" leak to the UI.
+        // Only real answer text parts (thought falsy) are forwarded.
+        const isThought = (part as { thought?: boolean }).thought === true;
+        if (!isThought && typeof part.text === 'string' && part.text.length > 0) {
           yield { type: 'text_delta', delta: part.text };
         }
         if (part.functionCall) {

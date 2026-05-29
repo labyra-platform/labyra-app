@@ -118,10 +118,15 @@ function looksLikeMath(s: string): boolean {
 }
 
 function sanitizeFormatting(raw: string): string {
+  // Defensive: strip a leaked thinking-artifact prefix (e.g. "thought}").
+  const cleaned = raw.replace(
+    /^\s*(?:\{?\s*"?(?:thought|thinking|reasoning)"?\s*[:}\]]+|\}+)\s*/i,
+    ''
+  );
   const placeholders: string[] = [];
   // \u0001 isn't a character LaTeX or prose will contain, so it's a safe sentinel.
   const sentinel = '\u0001';
-  const extracted = raw.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
+  const extracted = cleaned.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
     const trimmed = latex.trim();
     let html: string;
     if (!looksLikeMath(trimmed)) {
@@ -227,7 +232,13 @@ export function PdfTranslateLayer({
   /** One-shot: send any combination of text + cropped image, with a stable
    *  region hash for caching. Server picks mode (text/image/dual). */
   onTranslateRegion: (
-    payload: { text: string; image: string | null; regionHash: string },
+    payload: {
+      text: string;
+      image: string | null;
+      regionHash: string;
+      partialStart: boolean;
+      partialEnd: boolean;
+    },
     onChunk?: (partial: string) => void
   ) => Promise<string>;
 }) {
@@ -275,8 +286,16 @@ export function PdfTranslateLayer({
     const layer = layerRef.current;
     const host = layer?.parentElement;
     if (!layer || !host) return;
-    const text = textInRect(host, layer.getBoundingClientRect(), rect);
+    const rawText = textInRect(host, layer.getBoundingClientRect(), rect);
     setPanelOffset({ dx: 0, dy: 0 });
+
+    // Detect a selection that starts or ends mid-sentence so we can show a "…"
+    // and tell the model to translate the fragment as-is (not complete it).
+    //   - partialStart: first non-space char is lowercase / not a sentence start.
+    //   - partialEnd: last char isn't sentence-final punctuation.
+    const partialStart = /^[\p{Ll}]/u.test(rawText) || /^[,;:)\]]/.test(rawText);
+    const partialEnd = rawText.length > 0 && !/[.!?:”"'）)\]]\s*$/.test(rawText);
+    const text = rawText;
 
     // Crop the page canvas for the region. We send the image alongside the text
     // (dual mode) so the model can recover equations / sub-superscripts the PDF
@@ -291,16 +310,20 @@ export function PdfTranslateLayer({
       rect.w
     )}:${Math.round(rect.h)}`;
     const image = crop && !crop.blank ? crop.base64 : null;
+    const decorate = (s: string) => `${partialStart ? '…' : ''}${s}${partialEnd ? '…' : ''}`;
 
     setBox({ rect, text, status: 'loading', translation: '' });
     try {
-      const translation = await onTranslateRegion({ text, image, regionHash }, (partial) => {
-        setBox({ rect, text, status: 'done', translation: partial });
-      });
+      const translation = await onTranslateRegion(
+        { text, image, regionHash, partialStart, partialEnd },
+        (partial) => {
+          setBox({ rect, text, status: 'done', translation: decorate(partial) });
+        }
+      );
       if (!translation || translation === '[NO_TEXT]') {
         setBox({ rect, text, status: 'error', translation: '' });
       } else {
-        setBox({ rect, text, status: 'done', translation });
+        setBox({ rect, text, status: 'done', translation: decorate(translation) });
       }
     } catch {
       setBox({ rect, text, status: 'error', translation: '' });

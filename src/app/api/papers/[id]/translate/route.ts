@@ -45,6 +45,10 @@ interface TranslateBody {
   image?: string;
   /** Stable hash of the image region (paperId+page+rect) for caching. */
   imageHash?: string;
+  /** R237ao: selection starts/ends mid-sentence (drag cut a sentence). The
+   *  model should translate the fragment as-is, not invent a complete one. */
+  partialStart?: boolean;
+  partialEnd?: boolean;
   targetLang: string;
 }
 
@@ -275,6 +279,18 @@ as the source of truth for any formula, equation, sub/superscript, or symbol,
 and use the TEXT only for the prose. Wrap recovered equations in <math>…</math>
 with LaTeX. Reproduce every chemical species (e.g. ·O<sub>2</sub><sup>−</sup>)
 exactly as the image shows.`
+      : ''
+  }${
+    body.partialStart || body.partialEnd
+      ? `
+
+PARTIAL SELECTION: this text was cut by a drag selection${
+          body.partialStart && body.partialEnd
+            ? ' at BOTH the start and the end'
+            : body.partialStart
+              ? ' at the START (it begins mid-sentence)'
+              : ' at the END (it ends mid-sentence)'
+        }. Translate ONLY what is given — do NOT complete the sentence, do NOT add words to make it grammatical, do NOT invent a beginning or ending. Mirror the fragment faithfully.`
       : ''
   }`;
 

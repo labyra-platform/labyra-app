@@ -27,7 +27,6 @@ import {
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
-import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
 import type { Paper } from '@/types/papers';
@@ -60,24 +59,18 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
   const t = useTranslations('papers');
   const { paper, loading } = usePaper(paperId);
 
-  const tabState = usePaperTabsStore((s) => s.getTab(paperId));
-  const setPanelTab = usePaperTabsStore((s) => s.setPanelTab);
-
-  // Persisted Zustand store ↔ SSR: gate UI on a mounted flag so the server
-  // markup matches the client's first paint (cf. R237ak fix).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const panelTab = mounted ? (tabState?.activePanelTab ?? 'info') : 'info';
+  // R237ao: the active tab is workspace-level, not per-paper. The user expects
+  // "I was on Ask AI, I switch papers, I'm still on Ask AI". Since this panel
+  // doesn't remount on paper switch (it lives above PaperReadView and isn't
+  // keyed), a local state survives the switch — exactly the desired behaviour.
+  const [panelTab, setPanelTab] = useState<'info' | 'citations' | 'ai'>('info');
 
   const [panelOpen, setPanelOpen] = useState(false);
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
-  const switchPanelTab = useCallback(
-    (next: 'info' | 'citations' | 'ai') => {
-      setPanelTab(paperId, next);
-      setPanelOpen(true);
-    },
-    [paperId, setPanelTab]
-  );
+  const switchPanelTab = useCallback((next: 'info' | 'citations' | 'ai') => {
+    setPanelTab(next);
+    setPanelOpen(true);
+  }, []);
 
   // Tell PdfViewer to re-measure after a collapse/expand finishes (PdfViewer
   // listens to window.resize). The delay > the CSS transition duration.

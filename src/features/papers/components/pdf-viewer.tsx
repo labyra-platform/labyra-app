@@ -530,7 +530,13 @@ export function PdfViewer({
 
   const handleTranslateRegion = useCallback(
     async (
-      payload: { text: string; image: string | null; regionHash: string },
+      payload: {
+        text: string;
+        image: string | null;
+        regionHash: string;
+        partialStart: boolean;
+        partialEnd: boolean;
+      },
       onChunk?: (partial: string) => void
     ): Promise<string> => {
       // Client session cache key combines the text content AND the region hash
@@ -541,7 +547,9 @@ export function PdfViewer({
         {
           text: payload.text || undefined,
           image: payload.image || undefined,
-          imageHash: payload.image ? `${paperId}:${payload.regionHash}` : undefined
+          imageHash: payload.image ? `${paperId}:${payload.regionHash}` : undefined,
+          partialStart: payload.partialStart,
+          partialEnd: payload.partialEnd
         },
         onChunk
       );

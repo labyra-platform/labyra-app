@@ -28,16 +28,41 @@ import {
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { deleteAnnotation, subscribeAnnotations } from '@/lib/firestore/queries/annotations';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
-import type { HighlightAnnotation } from '@/types/annotations';
-import { HIGHLIGHT_FILL } from '@/types/annotations';
+import type { AnnotationColor, HighlightAnnotation } from '@/types/annotations';
 import type { Paper } from '@/types/papers';
 import { AskAiTab } from './ask-ai-tab';
 import { CitationsSection } from './citations-section';
+
+/** Solid (opaque) swatch per highlight color — used for the list's left bar so
+ *  it reads clearly, unlike the translucent on-page HIGHLIGHT_FILL. */
+const HIGHLIGHT_SWATCH: Record<AnnotationColor, string> = {
+  yellow: '#FFC400',
+  green: '#00C853',
+  blue: '#2979FF',
+  pink: '#F50057',
+  orange: '#FF6D00'
+};
+
+/** Tidy text captured from the PDF text layer for display.
+ *  PDF text layers introduce artifacts: words split across line breaks, soft
+ *  hyphens, and doubled spaces. This collapses them so the highlight list reads
+ *  cleanly. (Cosmetic only — the stored text is untouched. We deliberately do
+ *  NOT try to re-join sub/superscript spacing like "TiO 2" because that's
+ *  indistinguishable from ordinary spacing like "of 652" and would corrupt it.) */
+function normalizeHighlightText(raw: string): string {
+  return raw
+    .replace(/\u00AD/g, '') // soft hyphen
+    .replace(/-\s*\n\s*/g, '') // hyphenated line break → join word
+    .replace(/\s*\n\s*/g, ' ') // remaining line breaks → space
+    .replace(/\s{2,}/g, ' ') // collapse runs of spaces
+    .trim();
+}
 
 const AXIS_ORDER: { axis: ReturnType<typeof getAxis>; labelKey: string }[] = [
   { axis: 'application', labelKey: 'axisApplication' },
@@ -58,7 +83,7 @@ interface ReaderSidePanelProps {
   paperId: string;
   /** Called when an Ask AI citation chip is clicked; the workspace forwards
    *  it down to the active PdfViewer via PaperReadView's jumpRequest prop. */
-  onJumpToPage: (page: number) => void;
+  onJumpToPage: (page: number, y?: number) => void;
 }
 
 export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps) {
@@ -311,7 +336,7 @@ function HighlightsTab({
   onJumpToPage
 }: {
   paperId: string;
-  onJumpToPage: (page: number) => void;
+  onJumpToPage: (page: number, y?: number) => void;
 }) {
   const t = useTranslations('papers');
   const tenantId = useTenantId();
@@ -361,7 +386,8 @@ function HighlightsTab({
     <div className='min-h-0 flex-1 overflow-y-auto p-3'>
       <div className='space-y-1.5'>
         {items.map((hl) => {
-          const page = hl.rects[0]?.page ?? 1;
+          const first = hl.rects[0];
+          const page = first?.page ?? 1;
           return (
             <div
               key={hl.id}
@@ -369,34 +395,35 @@ function HighlightsTab({
             >
               <button
                 type='button'
-                onClick={() => onJumpToPage(page)}
+                onClick={() => onJumpToPage(page, first?.y)}
                 className='flex min-w-0 flex-1 items-start gap-2 text-left'
                 aria-label={`${t('page')} ${page}: ${hl.text}`}
                 title={`${t('page')} ${page}`}
               >
                 <span
                   className='mt-0.5 h-4 w-1 shrink-0 rounded-full'
-                  style={{ backgroundColor: HIGHLIGHT_FILL[hl.color] }}
+                  style={{ backgroundColor: HIGHLIGHT_SWATCH[hl.color] }}
                   aria-hidden
                 />
                 <span className='min-w-0 flex-1'>
                   <span className='line-clamp-3 text-xs leading-relaxed text-foreground'>
-                    {hl.text}
+                    {normalizeHighlightText(hl.text)}
                   </span>
                   <span className='mt-0.5 block text-[10.5px] text-muted-foreground'>
                     {t('page')} {page}
                   </span>
                 </span>
               </button>
-              <button
-                type='button'
+              <Button
+                variant='ghost'
+                size='icon'
                 onClick={() => remove(hl.id)}
-                className='shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-destructive group-hover:opacity-100'
+                className='size-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100'
                 aria-label={t('highlightDelete')}
                 title={t('highlightDelete')}
               >
                 <IconTrash className='size-3.5' />
-              </button>
+              </Button>
             </div>
           );
         })}

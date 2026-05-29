@@ -234,7 +234,7 @@ export function PdfViewer({
   /** R237am: external request to scroll to a specific page (e.g. from an Ask AI
    *  citation chip). Change the nonce to re-trigger even if the page is the
    *  same one the user is already on. */
-  jumpRequest?: { page: number; nonce: number };
+  jumpRequest?: { page: number; y?: number; nonce: number };
 }) {
   const t = useTranslations('papers');
   const { paper, loading: paperLoading } = usePaper(paperId);
@@ -719,7 +719,7 @@ export function PdfViewer({
   useEffect(() => {
     if (!jumpRequest) return;
     setCurrentPage(jumpRequest.page);
-    requestAnimationFrame(() => scrollToPageAt(jumpRequest.page));
+    requestAnimationFrame(() => scrollToPageAt(jumpRequest.page, jumpRequest.y ?? null));
   }, [jumpRequest, scrollToPageAt]);
 
   const goPrev = useCallback(() => {

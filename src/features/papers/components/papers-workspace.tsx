@@ -40,11 +40,11 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
 
   // R237am: Ask AI citation jump bus. Lives here (not in PaperReadView) so the
   // side panel that drives jumps doesn't blink when papers are switched.
-  const [jumpRequest, setJumpRequest] = useState<{ page: number; nonce: number } | undefined>(
-    undefined
-  );
-  const handleJumpToPage = useCallback((page: number) => {
-    setJumpRequest({ page, nonce: Date.now() });
+  const [jumpRequest, setJumpRequest] = useState<
+    { page: number; y?: number; nonce: number } | undefined
+  >(undefined);
+  const handleJumpToPage = useCallback((page: number, y?: number) => {
+    setJumpRequest({ page, y, nonce: Date.now() });
   }, []);
 
   return (

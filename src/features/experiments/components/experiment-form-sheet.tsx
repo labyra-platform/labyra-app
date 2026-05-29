@@ -35,7 +35,7 @@ export function ExperimentFormSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
-      <SheetContent side='right' className='w-full overflow-y-auto sm:max-w-xl'>
+      <SheetContent side='right' className='w-full overflow-y-auto sm:max-w-[440px]'>
         <SheetHeader>
           <SheetTitle>{isEdit ? t('editPageTitle') : t('addNew')}</SheetTitle>
           <SheetDescription>{t('subtitle')}</SheetDescription>

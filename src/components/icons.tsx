@@ -104,11 +104,6 @@ import {
 
 export type Icon = React.ComponentType<IconProps>;
 
-/**
- * R237a-v2: original PDF file glyph (Zotero-style) — a sheet with a folded
- * corner and a red "PDF" tab. Hand-drawn SVG (not a trademarked logo) so it's
- * safe to ship. Inherits size via width/height props; the red label is fixed.
- */
 function PdfFileIcon({ className }: { className?: string }) {
   return (
     <svg

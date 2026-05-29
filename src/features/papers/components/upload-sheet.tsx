@@ -30,7 +30,7 @@ export function UploadSheet({ trigger }: { trigger: ReactNode }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
-      <SheetContent side='right' className='w-full overflow-y-auto sm:max-w-xl'>
+      <SheetContent side='right' className='w-full overflow-y-auto sm:max-w-[440px]'>
         <SheetHeader>
           <SheetTitle>{t('uploadPageTitle')}</SheetTitle>
           <SheetDescription>{t('uploadPageSubtitle')}</SheetDescription>

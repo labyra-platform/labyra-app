@@ -506,7 +506,7 @@ function PaperRowMenu({
           }}
           aria-label={t('moreActions')}
         >
-          <Icons.moreHorizontal className='size-4' />
+          <Icons.ellipsis className='size-4' />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

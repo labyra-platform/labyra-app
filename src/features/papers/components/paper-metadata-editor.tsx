@@ -12,6 +12,7 @@
  * Controlled (open / onOpenChange) so the list can drive it from a row button
  * or the kebab. Uses shadcn Sheet + Input/Textarea.
  */
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
@@ -47,6 +48,7 @@ export function PaperMetadataEditor({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations('papers');
   const [title, setTitle] = useState('');
   const [authors, setAuthors] = useState('');
   const [year, setYear] = useState('');
@@ -66,7 +68,7 @@ export function PaperMetadataEditor({
   const resolveFromDoi = async () => {
     const d = doi.trim().replace(/^https?:\/\/doi\.org\//i, '');
     if (!DOI_RE.test(d)) {
-      toast.error('DOI không hợp lệ', { description: 'Định dạng: 10.xxxx/yyyy' });
+      toast.error(t('metadataDoiInvalid'), { description: t('metadataDoiFormat') });
       return;
     }
     setResolving(true);
@@ -79,19 +81,20 @@ export function PaperMetadataEditor({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (!data.found) {
-        toast.error('Không tìm thấy DOI', { description: 'Crossref/OpenAlex không có bản ghi.' });
+        toast.error(t('metadataDoiNotFound'), { description: t('metadataDoiNotFoundDesc') });
         return;
       }
       if (data.title) setTitle(data.title);
       if (Array.isArray(data.authors) && data.authors.length) setAuthors(data.authors.join('\n'));
       if (data.year) setYear(String(data.year));
       setDoi(data.doi || d);
-      toast.success(
-        data.isRetracted ? '⚠️ Đã điền — bài này BỊ RÚT (retracted)' : 'Đã điền từ DOI',
-        { description: data.journal || undefined }
-      );
+      toast.success(data.isRetracted ? t('metadataFilledRetracted') : t('metadataFilled'), {
+        description: data.journal || undefined
+      });
     } catch (e) {
-      toast.error('Lỗi tra DOI', { description: e instanceof Error ? e.message : 'unknown' });
+      toast.error(t('metadataDoiResolveError'), {
+        description: e instanceof Error ? e.message : 'unknown'
+      });
     } finally {
       setResolving(false);
     }
@@ -99,19 +102,19 @@ export function PaperMetadataEditor({
 
   const save = async () => {
     if (!paper) return;
-    const t = title.trim();
-    if (!t) {
-      toast.error('Tiêu đề không được trống');
+    const titleVal = title.trim();
+    if (!titleVal) {
+      toast.error(t('metadataTitleRequired'));
       return;
     }
     const d = doi.trim().replace(/^https?:\/\/doi\.org\//i, '');
     if (d && !DOI_RE.test(d)) {
-      toast.error('DOI không hợp lệ', { description: 'Để trống hoặc nhập đúng 10.xxxx/yyyy' });
+      toast.error(t('metadataDoiInvalid'), { description: t('metadataDoiInvalidSave') });
       return;
     }
     const yNum = year.trim() ? Number.parseInt(year.trim(), 10) : undefined;
     const patch: Record<string, unknown> = {
-      title: t,
+      title: titleVal,
       authors: authors
         .split(/[\n;]+/)
         .map((a) => a.trim())
@@ -131,10 +134,12 @@ export function PaperMetadataEditor({
         body: JSON.stringify(patch)
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      toast.success('Đã lưu thông tin');
+      toast.success(t('metadataSaved'));
       onOpenChange(false);
     } catch (e) {
-      toast.error('Lưu thất bại', { description: e instanceof Error ? e.message : 'unknown' });
+      toast.error(t('metadataSaveFailed'), {
+        description: e instanceof Error ? e.message : 'unknown'
+      });
     } finally {
       setSaving(false);
     }
@@ -144,10 +149,8 @@ export function PaperMetadataEditor({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className='flex w-full flex-col gap-0 p-0 sm:max-w-[440px]'>
         <SheetHeader className='border-b px-5 py-4'>
-          <SheetTitle>Xác nhận thông tin bài báo</SheetTitle>
-          <SheetDescription>
-            Sửa hoặc điền tiêu đề, tác giả, năm, DOI. Có thể tự điền từ DOI.
-          </SheetDescription>
+          <SheetTitle>{t('metadataConfirmTitle')}</SheetTitle>
+          <SheetDescription>{t('metadataConfirmDesc')}</SheetDescription>
         </SheetHeader>
 
         <div className='flex-1 space-y-4 overflow-y-auto px-5 py-4'>
@@ -173,39 +176,37 @@ export function PaperMetadataEditor({
                 ) : (
                   <Icons.refresh className='size-4' />
                 )}
-                Lấy từ DOI
+                {t('metadataFetchFromDoi')}
               </Button>
             </div>
-            <p className='text-xs text-muted-foreground'>
-              Tra Crossref → OpenAlex và điền tiêu đề/tác giả/năm chuẩn.
-            </p>
+            <p className='text-xs text-muted-foreground'>{t('metadataFetchHint')}</p>
           </div>
 
           <div className='space-y-1.5'>
-            <Label htmlFor='pm-title'>Tiêu đề</Label>
+            <Label htmlFor='pm-title'>{t('metadataTitleLabel')}</Label>
             <Textarea
               id='pm-title'
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               rows={2}
-              placeholder='Tiêu đề đầy đủ của bài báo'
+              placeholder={t('metadataTitlePlaceholder')}
             />
           </div>
 
           <div className='space-y-1.5'>
-            <Label htmlFor='pm-authors'>Tác giả</Label>
+            <Label htmlFor='pm-authors'>{t('metadataAuthorsLabel')}</Label>
             <Textarea
               id='pm-authors'
               value={authors}
               onChange={(e) => setAuthors(e.target.value)}
               rows={4}
-              placeholder={'Mỗi tác giả 1 dòng\nNguyen Van A\nTran Thi B'}
+              placeholder={t('metadataAuthorsPlaceholder')}
             />
-            <p className='text-xs text-muted-foreground'>Mỗi tác giả một dòng.</p>
+            <p className='text-xs text-muted-foreground'>{t('metadataAuthorsHint')}</p>
           </div>
 
           <div className='space-y-1.5'>
-            <Label htmlFor='pm-year'>Năm</Label>
+            <Label htmlFor='pm-year'>{t('metadataYearLabel')}</Label>
             <Input
               id='pm-year'
               value={year}
@@ -219,11 +220,11 @@ export function PaperMetadataEditor({
 
         <SheetFooter className='flex-row justify-end gap-2 border-t px-5 py-4'>
           <Button variant='ghost' onClick={() => onOpenChange(false)} disabled={saving}>
-            Huỷ
+            {t('metadataCancel')}
           </Button>
           <Button onClick={() => void save()} disabled={saving} className='gap-1'>
             {saving && <Icons.spinner className='size-4 animate-spin' />}
-            Lưu
+            {t('metadataSave')}
           </Button>
         </SheetFooter>
       </SheetContent>

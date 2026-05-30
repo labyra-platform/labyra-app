@@ -118,13 +118,54 @@ export interface PublisherGroup {
   journals: JournalStats[];
 }
 
+/**
+ * R237ch: collapse publisher-name variants so the filter tree groups them as one
+ * (e.g. "Elsevier BV" / "Elsevier Ltd" / "Elsevier Science" → "Elsevier"). Strips
+ * trailing legal/entity suffixes, then maps a few well-known aliases. Display-only
+ * — paper.publisher is untouched; this just controls grouping.
+ */
+const PUBLISHER_ALIASES: Record<string, string> = {
+  elsevier: 'Elsevier',
+  'elsevier science': 'Elsevier',
+  'royal society of chemistry': 'Royal Society of Chemistry',
+  rsc: 'Royal Society of Chemistry',
+  'american chemical society': 'American Chemical Society',
+  acs: 'American Chemical Society',
+  springer: 'Springer',
+  'springer nature': 'Springer Nature',
+  nature: 'Springer Nature',
+  'nature portfolio': 'Springer Nature',
+  wiley: 'Wiley',
+  'john wiley & sons': 'Wiley',
+  'wiley-vch': 'Wiley',
+  iop: 'IOP Publishing',
+  'institute of physics': 'IOP Publishing',
+  'taylor & francis': 'Taylor & Francis',
+  mdpi: 'MDPI',
+  aip: 'AIP Publishing',
+  'american institute of physics': 'AIP Publishing'
+};
+
+export function normalizePublisher(publisher: string): string {
+  let s = (publisher ?? '').trim();
+  if (!s) return '';
+  s = s.replace(/\s*\([^)]*\)\s*$/, '').trim(); // drop trailing "(RSC)", "(ACS)"…
+  s = s
+    .replace(
+      /[\s,]+(B\.?V\.?|Ltd\.?|Limited|Inc\.?|LLC|GmbH|AG|S\.?A\.?|Co\.?|Company|Corp\.?|Corporation|Press|Publishing|Publications|Publishers?|Group|International)\.?$/gi,
+      ''
+    )
+    .trim();
+  return PUBLISHER_ALIASES[s.toLowerCase()] ?? s;
+}
+
 export function aggregatePublisherTree(papers: Paper[]): PublisherGroup[] {
   const journalStats = aggregateJournalStats(papers);
   const journalToPublisher = new Map<string, string>();
   for (const p of papers) {
     const journal = (p.journal ?? '').trim();
     if (journal && !journalToPublisher.has(journal)) {
-      journalToPublisher.set(journal, (p.publisher ?? '').trim());
+      journalToPublisher.set(journal, normalizePublisher(p.publisher ?? ''));
     }
   }
   const groups = new Map<string, JournalStats[]>();

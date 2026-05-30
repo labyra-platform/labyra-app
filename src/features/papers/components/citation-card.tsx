@@ -1,4 +1,5 @@
 'use client';
+import { formatSciText } from '@/features/spectra/utils/format-units';
 import {
   IconBooks,
   IconCheck,
@@ -86,7 +87,9 @@ export function CitationCard({ citation }: { citation: Citation }) {
         )}
         <div className='min-w-0 flex-1 space-y-1'>
           <div className='flex items-start justify-between gap-2'>
-            <div className='break-words text-sm font-medium leading-snug'>{title}</div>
+            <div className='break-words text-sm font-medium leading-snug'>
+              {formatSciText(title)}
+            </div>
             <span
               className={cn(
                 'inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10.5px]',

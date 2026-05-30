@@ -16,6 +16,7 @@ const SUPERSCRIPT_MAP: Record<string, string> = {
   '8': '⁸',
   '9': '⁹',
   '-': '⁻',
+  '\u2212': '⁻',
   '+': '⁺'
 };
 
@@ -56,6 +57,18 @@ function toSubscript(s: string): string {
 export function formatSciText(text: string): string {
   if (!text) return text;
   let out = text;
+  // HTML from Crossref/JATS titles (e.g. "TiO<sub>2</sub>", "g-C<sub>3</sub>N<sub>4</sub>",
+  // "cm<sup>-2</sup>"): decode entities, convert sub/sup tags to Unicode, strip the rest.
+  out = out
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_m, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_m, h) => String.fromCodePoint(parseInt(h, 16)));
+  out = out.replace(/<sub>(.*?)<\/sub>/gi, (_m, s) => toSubscript(s));
+  out = out.replace(/<sup>(.*?)<\/sup>/gi, (_m, s) => toSuperscript(s));
+  out = out.replace(/<\/?[a-zA-Z][^>]*>/g, ''); // strip remaining tags (<i>, <b>, <em>…)
   // Chemical formula subscript: H2O → H₂O, W18O49 → W₁₈O₄₉, CO2 → CO₂
   // Match: Capital letter (+ optional lowercase) followed by digits
   // Skip if surrounded by space-digit patterns that look like coordinates/measurements
@@ -71,7 +84,7 @@ export function formatSciText(text: string): string {
   });
   // Pattern: unit-N or unit+N (e.g. cm-1, m-2, s-1) → superscript exponent
   out = out.replace(
-    /(\bcm|nm|um|mm|km|s|m|Hz|kg|g|mg|J|eV|K|mol|L|N)([+-]?\d+)/g,
+    /(\bcm|nm|um|mm|km|s|m|Hz|kg|g|mg|J|eV|K|mol|L|N)([+\-\u2212]?\d+)/g,
     (_m, unit, exp) => {
       return `${unit}${toSuperscript(exp)}`;
     }

@@ -33,6 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useIsSuperAdmin } from '@/lib/auth/use-claims';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { PaperOpenAlexBadge } from '@/features/papers/components/paper-openalex-badge';
+import { formatSciText } from '@/features/spectra/utils/format-units';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { cn } from '@/lib/utils';
@@ -190,14 +191,16 @@ export function PaperDetail({ paperId }: { paperId: string }) {
                   className='group inline decoration-muted-foreground/40 underline-offset-4 hover:underline'
                   title={t('openSource')}
                 >
-                  {paper.title || t('untitled')}
+                  {paper.title ? formatSciText(paper.title) : t('untitled')}
                   <IconExternalLink
                     className='ml-1 inline size-4 align-baseline text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100'
                     aria-hidden
                   />
                 </a>
+              ) : paper.title ? (
+                formatSciText(paper.title)
               ) : (
-                paper.title || t('untitled')
+                t('untitled')
               )}
             </h1>
             {metaParts.length > 0 && (

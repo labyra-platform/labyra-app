@@ -1,7 +1,7 @@
 /**
  * Per-model cost calculation. Single source of truth for AI pricing.
  *
- * Prices in USD per 1M tokens (verified 2026-05-16 from official Anthropic
+ * Prices in USD per 1M tokens (verified 2026-05-30 from official Anthropic
  * + Google Gemini pricing pages).
  *
  * IMPORTANT: This is the authoritative pricing table. All cost estimation
@@ -34,7 +34,7 @@ interface ModelPricing {
 }
 
 const PRICING: Record<string, ModelPricing> = {
-  // ─── Anthropic Claude family (verified 2026-05) ─────────────
+  // ─── Anthropic Claude family (verified 2026-05-30) ─────────────
   'claude-opus-4-7': {
     inputPerM: 5,
     outputPerM: 25,
@@ -55,7 +55,8 @@ const PRICING: Record<string, ModelPricing> = {
     outputPerM: 5,
     cacheReadPerM: 0.1,
     cacheWritePerM: 1.25,
-    notes: 'Not currently in tier assignments. Reserved for future failover.'
+    notes:
+      'Grounding on-topic check + app-side metadata/enrich extraction (cheap guard, outside T3-T5).'
   },
 
   // ─── Google Gemini family (verified 2026-05) ────────────────

@@ -35,6 +35,13 @@ import {
   usePaperCitationStats
 } from '@/lib/firestore/queries/citations';
 import { CitationCard } from './citation-card';
+import {
+  CitationFilter,
+  type CitationFilterValue,
+  type PublisherOption,
+  citationPassesFilter,
+  createDefaultFilter
+} from './citation-filter';
 
 const COLLAPSED_LIMIT = 5;
 
@@ -72,6 +79,8 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
 
   const [outExpanded, setOutExpanded] = useState(false);
   const [inExpanded, setInExpanded] = useState(false);
+  // R237cp: filter by publisher + Open-Access (replaces the old confidence chips)
+  const [filter, setFilter] = useState<CitationFilterValue>(() => createDefaultFilter());
 
   // R237cn #5: drop the paper's OWN doi from its reference list (a paper does not
   // cite itself — that entry is extraction noise). Then sort in document order.
@@ -86,16 +95,47 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
   );
   const inSorted = useMemo(() => inCitations.slice().sort(byConfidence), [inCitations]);
 
+  // R237cp: distinct publishers across both lists, by frequency, for the filter.
+  const publishers = useMemo<PublisherOption[]>(() => {
+    const counts = new Map<string, number>();
+    for (const c of [...outSorted, ...inSorted]) {
+      const p = c.targetPublisher?.trim();
+      if (p) counts.set(p, (counts.get(p) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [outSorted, inSorted]);
+
+  // Only show the filter once enrichment has produced something to filter on
+  // (pre-reprocess, no citation has publisher/OA → an empty filter is useless).
+  const hasFilterData = useMemo(
+    () =>
+      publishers.length > 0 ||
+      [...outSorted, ...inSorted].some((c) => c.targetIsOpenAccess != null),
+    [publishers, outSorted, inSorted]
+  );
+
+  const outFiltered = useMemo(
+    () => outSorted.filter((c) => citationPassesFilter(c, filter)),
+    [outSorted, filter]
+  );
+  const inFiltered = useMemo(
+    () => inSorted.filter((c) => citationPassesFilter(c, filter)),
+    [inSorted, filter]
+  );
+
   // No stats doc + no citations → don't render section at all (paper not yet processed)
   const hasAnyData = stats !== null || outCitations.length > 0 || inCitations.length > 0;
   if (!hasAnyData && !outLoading && !inLoading) {
     return null;
   }
 
-  const outCount = outSorted.length;
-  const inCount = inSorted.length;
-  const outVisible = outExpanded ? outSorted : outSorted.slice(0, COLLAPSED_LIMIT);
-  const inVisible = inExpanded ? inSorted : inSorted.slice(0, COLLAPSED_LIMIT);
+  const filterOn = filter.openAccessOnly || filter.publishers.size > 0;
+  const outCount = outFiltered.length;
+  const inCount = inFiltered.length;
+  const outVisible = outExpanded ? outFiltered : outFiltered.slice(0, COLLAPSED_LIMIT);
+  const inVisible = inExpanded ? inFiltered : inFiltered.slice(0, COLLAPSED_LIMIT);
 
   return (
     <div className='space-y-3'>
@@ -103,14 +143,24 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
       {paper && <SelfDoiCard paper={paper} />}
       {paper && <SupplementaryInfo paperId={paperId} paper={paper} />}
 
+      {/* R237cp: publisher + Open-Access filter (only once enrichment populated) */}
+      {hasFilterData && (
+        <CitationFilter value={filter} onChange={setFilter} publishers={publishers} />
+      )}
+
       {/* Outbound — this paper's reference list */}
       <div className='space-y-2 rounded-lg border p-4'>
         <div className='flex items-center justify-between gap-2'>
           <h3 className='flex items-center gap-1.5 text-sm font-medium'>
             <IconBookmark className='size-3.5 text-muted-foreground' aria-hidden />
-            {t('referencesTitle', { count: outCount })}
+            {t('referencesTitle', { count: outSorted.length })}
+            {filterOn && outFiltered.length !== outSorted.length && (
+              <span className='ml-1 font-normal text-muted-foreground'>
+                {t('filteredCount', { count: outFiltered.length })}
+              </span>
+            )}
           </h3>
-          {outSorted.length > COLLAPSED_LIMIT && (
+          {outFiltered.length > COLLAPSED_LIMIT && (
             <button
               type='button'
               onClick={() => setOutExpanded((v) => !v)}
@@ -121,7 +171,7 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
               ) : (
                 <IconChevronRight className='size-3' aria-hidden />
               )}
-              {outExpanded ? t('showLess') : t('showAllCitations', { count: outSorted.length })}
+              {outExpanded ? t('showLess') : t('showAllCitations', { count: outFiltered.length })}
             </button>
           )}
         </div>
@@ -131,8 +181,19 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
             <IconLoader2 className='size-4 animate-spin' />
             {t('loadingCitations')}
           </div>
-        ) : outCount === 0 ? (
+        ) : outSorted.length === 0 ? (
           <div className='text-muted-foreground text-sm py-2'>{t('citationsOutEmpty')}</div>
+        ) : outCount === 0 ? (
+          <div className='flex items-center gap-2 py-2 text-muted-foreground text-sm'>
+            <span>{t('filterNoMatches')}</span>
+            <button
+              type='button'
+              onClick={() => setFilter(createDefaultFilter())}
+              className='underline hover:text-foreground'
+            >
+              {t('filterClear')}
+            </button>
+          </div>
         ) : (
           <div className='space-y-1.5'>
             {outVisible.map((c) => (
@@ -143,11 +204,18 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
       </div>
 
       {/* Inbound — papers citing this paper */}
-      {inCount > 0 && (
+      {inSorted.length > 0 && (
         <div className='space-y-2 rounded-lg border p-4'>
           <div className='flex items-center justify-between gap-2'>
-            <h3 className='text-sm font-medium'>{t('citationsInTitle', { count: inCount })}</h3>
-            {inSorted.length > COLLAPSED_LIMIT && (
+            <h3 className='text-sm font-medium'>
+              {t('citationsInTitle', { count: inSorted.length })}
+              {filterOn && inFiltered.length !== inSorted.length && (
+                <span className='ml-1 font-normal text-muted-foreground'>
+                  {t('filteredCount', { count: inFiltered.length })}
+                </span>
+              )}
+            </h3>
+            {inFiltered.length > COLLAPSED_LIMIT && (
               <button
                 type='button'
                 onClick={() => setInExpanded((v) => !v)}
@@ -158,7 +226,7 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
                 ) : (
                   <IconChevronRight className='size-3' aria-hidden />
                 )}
-                {inExpanded ? t('showLess') : t('showAllCitations', { count: inSorted.length })}
+                {inExpanded ? t('showLess') : t('showAllCitations', { count: inFiltered.length })}
               </button>
             )}
           </div>
@@ -167,6 +235,17 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
             <div className='flex items-center gap-2 text-muted-foreground text-sm py-2'>
               <IconLoader2 className='size-4 animate-spin' />
               {t('loadingCitations')}
+            </div>
+          ) : inCount === 0 ? (
+            <div className='flex items-center gap-2 py-2 text-muted-foreground text-sm'>
+              <span>{t('filterNoMatches')}</span>
+              <button
+                type='button'
+                onClick={() => setFilter(createDefaultFilter())}
+                className='underline hover:text-foreground'
+              >
+                {t('filterClear')}
+              </button>
             </div>
           ) : (
             <div className='space-y-1.5'>

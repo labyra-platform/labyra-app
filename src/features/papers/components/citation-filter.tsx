@@ -1,149 +1,132 @@
 'use client';
-import { IconCheck, IconLibrary, IconQuestionMark, IconQuote } from '@tabler/icons-react';
 /**
- * Citation filter — controlled component.
- *
- * Two axes:
- *   - confidence: multi-select chip toggle for each level
- *   - inLibraryOnly: toggle to show only citations with targetPaperId resolved
- *
- * Pure controlled — parent owns CitationFilterValue state.
- *
- * @phase R166-6b-2
+ * Citation filter (R237cp) — controlled.
+ *   - Open Access only: keep refs whose cited paper is OA (OpenAlex is_oa).
+ *   - Publisher: multi-select (checkbox dropdown) over the publishers actually
+ *     present in this paper's references.
+ * Replaces the old confidence-chip filter. Both fields come from R237co worker
+ * enrichment (targetPublisher / targetIsOpenAccess).
  */
+import { IconBuildingStore, IconChevronDown, IconLockOpen } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { CitationConfidence } from '@/types/citations';
 
 export interface CitationFilterValue {
-  confidences: Set<CitationConfidence>;
-  inLibraryOnly: boolean;
+  publishers: Set<string>;
+  openAccessOnly: boolean;
 }
-
-export const ALL_CONFIDENCES: ReadonlyArray<CitationConfidence> = [
-  'doi-exact',
-  'manual',
-  'title-fuzzy',
-  'unverified'
-];
 
 export function createDefaultFilter(): CitationFilterValue {
-  // R224b: default to the most trustworthy view — DOI-verified citations that are
-  // already in the lab's library. The user can widen to manual/title-match/
-  // unverified as needed. Aligns with Trust > Coverage.
-  return {
-    confidences: new Set<CitationConfidence>(['doi-exact']),
-    inLibraryOnly: true
-  };
+  return { publishers: new Set(), openAccessOnly: false };
 }
 
-const CONFIDENCE_META: Record<
-  CitationConfidence,
-  {
-    icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
-    activeClass: string;
-    i18nKey: string;
-  }
-> = {
-  'doi-exact': {
-    icon: IconCheck,
-    activeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40',
-    i18nKey: 'confidenceDoiExact'
-  },
-  manual: {
-    icon: IconCheck,
-    activeClass: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/40',
-    i18nKey: 'confidenceManual'
-  },
-  'title-fuzzy': {
-    icon: IconQuote,
-    activeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40',
-    i18nKey: 'confidenceTitleFuzzy'
-  },
-  unverified: {
-    icon: IconQuestionMark,
-    activeClass: 'bg-foreground/5 text-foreground border-foreground/30',
-    i18nKey: 'confidenceUnverified'
-  }
-};
+export interface PublisherOption {
+  name: string;
+  count: number;
+}
 
 interface Props {
   value: CitationFilterValue;
   onChange: (next: CitationFilterValue) => void;
+  publishers: PublisherOption[];
 }
 
-export function CitationFilter({ value, onChange }: Props) {
+export function CitationFilter({ value, onChange, publishers }: Props) {
   const t = useTranslations('papers');
 
-  function toggleConfidence(level: CitationConfidence) {
-    const next = new Set(value.confidences);
-    if (next.has(level)) {
-      next.delete(level);
-    } else {
-      next.add(level);
-    }
-    onChange({ ...value, confidences: next });
-  }
+  const togglePublisher = (name: string) => {
+    const next = new Set(value.publishers);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    onChange({ ...value, publishers: next });
+  };
 
-  function toggleInLibrary() {
-    onChange({ ...value, inLibraryOnly: !value.inLibraryOnly });
-  }
+  const selectedCount = value.publishers.size;
 
   return (
-    <div className='flex flex-wrap items-center gap-1.5 text-xs'>
-      <span className='text-muted-foreground mr-1'>{t('filterLabel')}</span>
+    <div className='flex flex-wrap items-center gap-1.5'>
+      <span className='mr-1 text-xs text-muted-foreground'>{t('filterLabel')}</span>
 
-      {ALL_CONFIDENCES.map((level) => {
-        const meta = CONFIDENCE_META[level];
-        const Icon = meta.icon;
-        const active = value.confidences.has(level);
-        return (
-          <button
-            key={level}
-            type='button'
-            onClick={() => toggleConfidence(level)}
-            className={cn(
-              'inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition-colors',
-              active
-                ? meta.activeClass
-                : 'bg-transparent text-muted-foreground border-border hover:border-foreground/30'
-            )}
-            aria-pressed={active}
-          >
-            <Icon className='size-3' aria-hidden />
-            {t(meta.i18nKey)}
-          </button>
-        );
-      })}
-
+      {/* Open Access toggle */}
       <button
         type='button'
-        onClick={toggleInLibrary}
+        onClick={() => onChange({ ...value, openAccessOnly: !value.openAccessOnly })}
+        aria-pressed={value.openAccessOnly}
         className={cn(
-          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition-colors ml-1',
-          value.inLibraryOnly
-            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40'
-            : 'bg-transparent text-muted-foreground border-border hover:border-foreground/30'
+          'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors',
+          value.openAccessOnly
+            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+            : 'text-muted-foreground hover:bg-muted/50'
         )}
-        aria-pressed={value.inLibraryOnly}
-        title={t('filterInLibraryHint')}
       >
-        <IconLibrary className='size-3' aria-hidden />
-        {t('filterInLibrary')}
+        <IconLockOpen className='size-3' aria-hidden />
+        {t('filterOpenAccess')}
       </button>
+
+      {/* Publisher multi-select */}
+      {publishers.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type='button'
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors',
+                selectedCount > 0
+                  ? 'border-primary/40 bg-primary/5 text-foreground'
+                  : 'text-muted-foreground hover:bg-muted/50'
+              )}
+            >
+              <IconBuildingStore className='size-3' aria-hidden />
+              {selectedCount > 0
+                ? t('filterPublisherCount', { count: selectedCount })
+                : t('filterPublisher')}
+              <IconChevronDown className='size-3' aria-hidden />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='start' className='max-h-72 w-56 overflow-y-auto'>
+            {publishers.map((p) => (
+              <DropdownMenuCheckboxItem
+                key={p.name}
+                checked={value.publishers.has(p.name)}
+                onCheckedChange={() => togglePublisher(p.name)}
+                onSelect={(e) => e.preventDefault()}
+              >
+                <span className='flex-1 truncate'>{p.name}</span>
+                <span className='ml-2 tabular-nums text-muted-foreground'>{p.count}</span>
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {(value.openAccessOnly || selectedCount > 0) && (
+        <button
+          type='button'
+          onClick={() => onChange(createDefaultFilter())}
+          className='text-xs text-muted-foreground underline hover:text-foreground'
+        >
+          {t('filterClear')}
+        </button>
+      )}
     </div>
   );
 }
 
-/**
- * Pure filter predicate — apply CitationFilterValue to a single citation.
- * Exported for reuse + unit-testability.
- */
+/** Pure predicate — apply CitationFilterValue to a single citation. */
 export function citationPassesFilter(
-  c: { confidence: CitationConfidence; targetPaperId?: string | null },
+  c: { targetPublisher?: string; targetIsOpenAccess?: boolean },
   filter: CitationFilterValue
 ): boolean {
-  if (!filter.confidences.has(c.confidence)) return false;
-  if (filter.inLibraryOnly && !c.targetPaperId) return false;
+  if (filter.openAccessOnly && c.targetIsOpenAccess !== true) return false;
+  if (filter.publishers.size > 0) {
+    const p = (c.targetPublisher ?? '').trim();
+    if (!p || !filter.publishers.has(p)) return false;
+  }
   return true;
 }

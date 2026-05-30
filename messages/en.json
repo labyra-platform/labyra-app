@@ -527,7 +527,10 @@
     "landscapeByPublisherDesc": "Papers grouped by normalized publisher",
     "landscapeByYear": "By publication year",
     "landscapeByYearDesc": "Distribution across publication years",
-    "landscapeNoData": "Not enough data yet"
+    "landscapeNoData": "Not enough data yet",
+    "filterOpenAccess": "Open Access",
+    "filterPublisher": "Publisher",
+    "filterPublisherCount": "{count} publishers"
   },
   "materials": {
     "title": "Materials",

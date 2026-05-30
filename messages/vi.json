@@ -527,7 +527,10 @@
     "landscapeByPublisherDesc": "Bài báo nhóm theo nhà xuất bản đã chuẩn hóa",
     "landscapeByYear": "Theo năm xuất bản",
     "landscapeByYearDesc": "Phân bố theo các năm xuất bản",
-    "landscapeNoData": "Chưa đủ dữ liệu"
+    "landscapeNoData": "Chưa đủ dữ liệu",
+    "filterOpenAccess": "Truy cập mở",
+    "filterPublisher": "Nhà xuất bản",
+    "filterPublisherCount": "{count} nhà xuất bản"
   },
   "materials": {
     "title": "Vật liệu",

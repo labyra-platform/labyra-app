@@ -512,7 +512,9 @@
     "openalexClassification": "Phân loại (OpenAlex)",
     "openalexScoreLabel": "Độ tin cậy mô hình OpenAlex",
     "filterOpenAlexLabel": "Lĩnh vực (OpenAlex)",
-    "filterOpenAlexSearch": "Tìm lĩnh vực / phân ngành…"
+    "filterOpenAlexSearch": "Tìm lĩnh vực / phân ngành…",
+    "doiUnverified": "DOI chưa xác minh",
+    "doiUnverifiedHint": "DOI này không tra được ở Crossref/OpenAlex — có thể sai (vd lỗi OCR). Vui lòng kiểm tra lại."
   },
   "materials": {
     "title": "Vật liệu",

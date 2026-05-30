@@ -9,6 +9,7 @@ import {
   IconArchive,
   IconArrowLeft,
   IconChevronDown,
+  IconAlertTriangle,
   IconExternalLink,
   IconEye,
   IconFileText,
@@ -214,6 +215,15 @@ export function PaperDetail({ paperId }: { paperId: string }) {
                       DOI
                       <IconExternalLink className='size-3' aria-hidden />
                     </a>
+                    {paper.doiVerified === false && (
+                      <span
+                        title={t('doiUnverifiedHint')}
+                        className='ml-1 inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400'
+                      >
+                        <IconAlertTriangle className='size-3' aria-hidden />
+                        {t('doiUnverified')}
+                      </span>
+                    )}
                   </>
                 )}
               </p>

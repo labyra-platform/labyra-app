@@ -9,6 +9,7 @@
 
 import {
   IconArrowsSort,
+  IconAlertTriangle,
   IconExternalLink,
   IconFileText,
   IconLayoutList,
@@ -384,6 +385,12 @@ function PaperRow({
                   DOI
                   <IconExternalLink className='size-3' aria-hidden />
                 </a>
+                {paper.doiVerified === false && (
+                  <IconAlertTriangle
+                    className='size-3 text-amber-600 dark:text-amber-400'
+                    title={t('doiUnverified')}
+                  />
+                )}
               </>
             )}
             {/* R237ca: OpenAlex field — authoritative classification, shown

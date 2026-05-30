@@ -81,6 +81,9 @@ export interface Paper extends ProvBase {
   authors: string[];
   year: number;
   doi: string;
+  /** R237cc: false when the DOI didn't resolve at Crossref/OpenAlex (likely an
+   * OCR error). undefined for papers processed before this check existed. */
+  doiVerified?: boolean;
   abstract: string;
   pageCount: number;
 

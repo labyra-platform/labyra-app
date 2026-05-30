@@ -512,7 +512,9 @@
     "openalexClassification": "Classification (OpenAlex)",
     "openalexScoreLabel": "OpenAlex model confidence",
     "filterOpenAlexLabel": "Field (OpenAlex)",
-    "filterOpenAlexSearch": "Search field / subfield…"
+    "filterOpenAlexSearch": "Search field / subfield…",
+    "doiUnverified": "Unverified DOI",
+    "doiUnverifiedHint": "This DOI didn't resolve at Crossref or OpenAlex — it may be wrong (e.g. an OCR error). Please double-check."
   },
   "materials": {
     "title": "Materials",

@@ -84,6 +84,13 @@ export interface Paper extends ProvBase {
   abstract: string;
   pageCount: number;
 
+  /**
+   * Link to the paper's Supplementary Information (R237bv). User-provided
+   * (the only reliable source — publishers rarely deposit SI relations to
+   * Crossref). May be auto-filled best-effort from Crossref relation later.
+   */
+  siUrl?: string;
+
   // R177-1e: documentType + book/non-article fields.
   // documentType defaults 'unknown' for legacy papers (pre-R177-1d).
   // Book fields (isbn, publisher, bookSubtitle, bookPageCount,

@@ -495,7 +495,19 @@
     "metadataAuthorsHint": "Mỗi tác giả một dòng.",
     "metadataYearLabel": "Năm",
     "metadataCancel": "Huỷ",
-    "metadataSave": "Lưu"
+    "metadataSave": "Lưu",
+    "referencesTitle": "Tài liệu tham khảo ({count})",
+    "thisPaperDoi": "DOI của bài này",
+    "noDoiForPaper": "Bài này chưa có DOI.",
+    "supplementaryInfo": "Thông tin bổ sung (SI)",
+    "openSupplementary": "Mở Thông tin bổ sung",
+    "supplementaryPlaceholder": "Dán link SI (trang nhà xuất bản)…",
+    "openDoiNewTab": "Mở DOI ở tab mới",
+    "copy": "Sao chép",
+    "edit": "Sửa",
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "saveFailed": "Lưu thất bại"
   },
   "materials": {
     "title": "Vật liệu",

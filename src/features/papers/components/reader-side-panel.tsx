@@ -237,7 +237,7 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
               ) : !paper ? (
                 <p className='text-sm text-muted-foreground'>{t('paperNotFound')}</p>
               ) : panelTab === 'citations' ? (
-                <CitationsSection paperId={paperId} />
+                <CitationsSection paperId={paperId} paper={paper} />
               ) : (
                 <InfoTab paper={paper} />
               )}

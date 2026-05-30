@@ -495,7 +495,19 @@
     "metadataAuthorsHint": "One author per line.",
     "metadataYearLabel": "Year",
     "metadataCancel": "Cancel",
-    "metadataSave": "Save"
+    "metadataSave": "Save",
+    "referencesTitle": "References ({count})",
+    "thisPaperDoi": "DOI of this paper",
+    "noDoiForPaper": "No DOI on record for this paper.",
+    "supplementaryInfo": "Supplementary Information",
+    "openSupplementary": "Open Supplementary Information",
+    "supplementaryPlaceholder": "Paste the SI link (publisher page)…",
+    "openDoiNewTab": "Open DOI in a new tab",
+    "copy": "Copy",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving…",
+    "saveFailed": "Save failed"
   },
   "materials": {
     "title": "Materials",

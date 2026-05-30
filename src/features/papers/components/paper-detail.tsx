@@ -238,7 +238,7 @@ export function PaperDetail({ paperId }: { paperId: string }) {
 
       {/* R223 #1: citations promoted above processing/cost — this is the
           research value of the knowledge base, not operational detail. */}
-      <CitationsSection paperId={paperId} />
+      <CitationsSection paperId={paperId} paper={paper} />
 
       {/* R223 #2: processing status demoted + collapsed into a single summary
           line. The 8 green checks no longer occupy a full screen of zero-signal

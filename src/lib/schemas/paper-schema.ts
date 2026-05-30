@@ -43,7 +43,14 @@ const PaperPatchFields = {
     .max(20)
     .regex(/^$|^[\d\-\sX]{10,17}$/i, 'isbn: 10 or 13 digits, hyphens allowed')
     .optional(),
-  publisher: z.string().max(200).optional()
+  publisher: z.string().max(200).optional(),
+  // SI link (R237bv): user-provided URL to the paper's Supplementary
+  // Information. http(s) only; empty string clears it.
+  siUrl: z
+    .string()
+    .max(1000)
+    .regex(/^$|^https?:\/\/.+/i, 'siUrl: must be an http(s) URL')
+    .optional()
 };
 
 export const UpdatePaperMetadataSchema = ProvBasePatchSchema.extend(PaperPatchFields);

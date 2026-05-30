@@ -507,7 +507,8 @@
     "edit": "Edit",
     "save": "Save",
     "saving": "Saving…",
-    "saveFailed": "Save failed"
+    "saveFailed": "Save failed",
+    "filterPublisherUnknown": "Unclassified publisher"
   },
   "materials": {
     "title": "Materials",

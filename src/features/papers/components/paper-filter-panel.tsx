@@ -17,8 +17,11 @@
 import {
   IconBook,
   IconCalendar,
+  IconCheck,
   IconChevronDown,
+  IconChevronRight,
   IconFilter,
+  IconMinus,
   IconSearch,
   IconX
 } from '@tabler/icons-react';
@@ -44,8 +47,10 @@ export function createEmptyDomainFilter(): DomainFilterValue {
 import {
   aggregateDomainCounts,
   aggregateJournalStats,
+  aggregatePublisherTree,
   aggregateYearRange,
-  type JournalStats
+  type JournalStats,
+  type PublisherGroup
 } from '@/features/papers/lib/journal-stats';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -107,10 +112,27 @@ interface Props {
 export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }: Props) {
   const t = useTranslations('papers');
   const [journalSearch, setJournalSearch] = useState('');
-  const [showAllJournals, setShowAllJournals] = useState(false); // R229
+  const [expandedPubs, setExpandedPubs] = useState<Set<string>>(() => new Set()); // R237by
 
   const journalStats = useMemo(() => aggregateJournalStats(papers), [papers]);
   const yearRange = useMemo(() => aggregateYearRange(papers), [papers]);
+  // R237by: publisher → journals tree, filtered by the journal search box.
+  const publisherTree = useMemo(() => {
+    const tree = aggregatePublisherTree(papers);
+    const q = journalSearch.trim().toLowerCase();
+    if (!q) return tree;
+    return tree
+      .map((g) => ({
+        ...g,
+        journals: g.journals.filter(
+          (j) =>
+            j.name.toLowerCase().includes(q) ||
+            j.short.toLowerCase().includes(q) ||
+            g.publisher.toLowerCase().includes(q)
+        )
+      }))
+      .filter((g) => g.journals.length > 0);
+  }, [papers, journalSearch]);
   const domainCounts = useMemo(() => aggregateDomainCounts(papers), [papers]); // R229
   const currentYear = new Date().getFullYear(); // R229 year presets
 
@@ -122,23 +144,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
     [papers, value]
   );
 
-  const filteredJournals = useMemo(() => {
-    const q = journalSearch.trim().toLowerCase();
-    if (!q) return journalStats;
-    return journalStats.filter(
-      (j) => j.name.toLowerCase().includes(q) || j.short.toLowerCase().includes(q)
-    );
-  }, [journalStats, journalSearch]);
-
-  // R229: cap the journal list (sorted by count desc) until "show more". When
-  // searching, show all matches regardless.
-  const JOURNAL_LIMIT = 8;
   const isJournalSearching = journalSearch.trim().length > 0;
-  const visibleJournals =
-    isJournalSearching || showAllJournals
-      ? filteredJournals
-      : filteredJournals.slice(0, JOURNAL_LIMIT);
-  const hiddenJournalCount = filteredJournals.length - visibleJournals.length;
 
   // ---- counts ----
   const activeCount =
@@ -154,6 +160,25 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
     if (next.has(name)) next.delete(name);
     else next.add(name);
     onChange({ ...value, journals: next });
+  }
+
+  // R237by: ticking a publisher selects/deselects all its journals at once.
+  function togglePublisher(group: PublisherGroup): void {
+    const names = group.journals.map((j) => j.name);
+    const allSelected = names.every((n) => value.journals.has(n));
+    const next = new Set(value.journals);
+    if (allSelected) for (const n of names) next.delete(n);
+    else for (const n of names) next.add(n);
+    onChange({ ...value, journals: next });
+  }
+
+  function togglePubExpand(publisher: string): void {
+    setExpandedPubs((prev) => {
+      const next = new Set(prev);
+      if (next.has(publisher)) next.delete(publisher);
+      else next.add(publisher);
+      return next;
+    });
   }
 
   function toggleDomain(slug: string): void {
@@ -362,46 +387,92 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                         className='h-9'
                       />
                     )}
-                    <div className='flex flex-wrap gap-1.5'>
-                      {visibleJournals.map((j: JournalStats) => {
-                        const active = value.journals.has(j.name);
+                    <div className='space-y-1'>
+                      {publisherTree.map((group: PublisherGroup) => {
+                        const names = group.journals.map((j) => j.name);
+                        const selectedCount = names.filter((n) => value.journals.has(n)).length;
+                        const allSelected = selectedCount === names.length && names.length > 0;
+                        const someSelected = selectedCount > 0 && !allSelected;
+                        // Force-open while searching so matches are visible.
+                        const open = isJournalSearching || expandedPubs.has(group.publisher);
+                        const label = group.publisher || t('filterPublisherUnknown');
                         return (
-                          <button
-                            key={j.name}
-                            type='button'
-                            onClick={() => toggleJournal(j.name)}
-                            aria-pressed={active}
-                            title={j.name}
-                            className={cn(
-                              'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                              active
-                                ? 'bg-primary/10 text-primary'
-                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                          <div key={group.publisher || '__none__'} className='rounded-md border'>
+                            <div className='flex items-center gap-1.5 px-1.5 py-1'>
+                              <button
+                                type='button'
+                                onClick={() => togglePublisher(group)}
+                                aria-pressed={allSelected}
+                                title={label}
+                                className={cn(
+                                  'flex size-4 shrink-0 items-center justify-center rounded border transition-colors',
+                                  allSelected
+                                    ? 'border-primary bg-primary text-primary-foreground'
+                                    : someSelected
+                                      ? 'border-primary bg-primary/30 text-primary'
+                                      : 'border-input hover:border-primary'
+                                )}
+                              >
+                                {allSelected ? (
+                                  <IconCheck className='size-3' aria-hidden />
+                                ) : someSelected ? (
+                                  <IconMinus className='size-3' aria-hidden />
+                                ) : null}
+                              </button>
+                              <button
+                                type='button'
+                                onClick={() => togglePubExpand(group.publisher)}
+                                className='flex min-w-0 flex-1 items-center gap-1.5 text-left'
+                              >
+                                <IconChevronRight
+                                  className={cn(
+                                    'size-3.5 shrink-0 text-muted-foreground transition-transform',
+                                    open && 'rotate-90'
+                                  )}
+                                  aria-hidden
+                                />
+                                <span className='min-w-0 flex-1 truncate text-xs font-medium'>
+                                  {label}
+                                </span>
+                                <span className='shrink-0 text-[10.5px] tabular-nums text-muted-foreground'>
+                                  {group.journals.length} · {group.count}
+                                </span>
+                              </button>
+                            </div>
+                            {open && (
+                              <div className='flex flex-wrap gap-1.5 border-t px-2 py-1.5'>
+                                {group.journals.map((j: JournalStats) => {
+                                  const active = value.journals.has(j.name);
+                                  return (
+                                    <button
+                                      key={j.name}
+                                      type='button'
+                                      onClick={() => toggleJournal(j.name)}
+                                      aria-pressed={active}
+                                      title={j.name}
+                                      className={cn(
+                                        'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                        active
+                                          ? 'bg-primary/10 text-primary'
+                                          : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                      )}
+                                    >
+                                      <span className='max-w-[180px] truncate'>{j.short}</span>
+                                      <span className='tabular-nums opacity-60'>{j.count}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             )}
-                          >
-                            <span className='max-w-[180px] truncate'>{j.short}</span>
-                            <span className='tabular-nums opacity-60'>{j.count}</span>
-                          </button>
+                          </div>
                         );
                       })}
-                      {visibleJournals.length === 0 && (
+                      {publisherTree.length === 0 && (
                         <span className='text-xs text-muted-foreground'>
                           {t('filterJournalNoMatch')}
                         </span>
                       )}
                     </div>
-                    {/* R229: show more / less when the list is capped */}
-                    {!isJournalSearching && (hiddenJournalCount > 0 || showAllJournals) && (
-                      <button
-                        type='button'
-                        onClick={() => setShowAllJournals((v) => !v)}
-                        className='text-xs text-muted-foreground hover:text-foreground'
-                      >
-                        {showAllJournals
-                          ? t('filterShowLess')
-                          : t('filterShowMoreN', { count: hiddenJournalCount })}
-                      </button>
-                    )}
                   </section>
                 )}
 

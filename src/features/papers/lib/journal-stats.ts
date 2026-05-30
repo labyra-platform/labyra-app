@@ -58,6 +58,49 @@ export interface YearRange {
   max: number;
 }
 
+/**
+ * R237by: group journals under their publisher for the filter tree.
+ * Each journal is mapped to the first publisher seen for it. Publishers are
+ * sorted by paper count desc; the unclassified bucket ('') sorts last.
+ */
+export interface PublisherGroup {
+  /** Publisher name (Crossref `message.publisher`). '' = unclassified. */
+  publisher: string;
+  /** Total papers across this publisher's journals. */
+  count: number;
+  /** Journals under this publisher, sorted by count desc. */
+  journals: JournalStats[];
+}
+
+export function aggregatePublisherTree(papers: Paper[]): PublisherGroup[] {
+  const journalStats = aggregateJournalStats(papers);
+  const journalToPublisher = new Map<string, string>();
+  for (const p of papers) {
+    const journal = (p.journal ?? '').trim();
+    if (journal && !journalToPublisher.has(journal)) {
+      journalToPublisher.set(journal, (p.publisher ?? '').trim());
+    }
+  }
+  const groups = new Map<string, JournalStats[]>();
+  for (const j of journalStats) {
+    const pub = journalToPublisher.get(j.name) ?? '';
+    const list = groups.get(pub);
+    if (list) list.push(j);
+    else groups.set(pub, [j]);
+  }
+  const out: PublisherGroup[] = [];
+  for (const [publisher, journals] of groups) {
+    out.push({
+      publisher,
+      count: journals.reduce((n, j) => n + j.count, 0),
+      journals
+    });
+  }
+  return out.toSorted(
+    (a, b) => (a.publisher === '' ? 1 : 0) - (b.publisher === '' ? 1 : 0) || b.count - a.count
+  );
+}
+
 export function aggregateYearRange(papers: Paper[]): YearRange | null {
   let min = Number.POSITIVE_INFINITY;
   let max = 0;

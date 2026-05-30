@@ -507,7 +507,8 @@
     "edit": "Sửa",
     "save": "Lưu",
     "saving": "Đang lưu…",
-    "saveFailed": "Lưu thất bại"
+    "saveFailed": "Lưu thất bại",
+    "filterPublisherUnknown": "Chưa rõ nhà xuất bản"
   },
   "materials": {
     "title": "Vật liệu",

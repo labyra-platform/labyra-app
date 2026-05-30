@@ -40,7 +40,7 @@ import {
   type TranslationRecord,
   usePaperTranslationsStore
 } from '@/features/papers/stores/paper-translations-store';
-import { formatSciText } from '@/features/spectra/utils/format-units';
+import { formatSciNode, formatSciText } from '@/features/spectra/utils/format-units';
 import { cn } from '@/lib/utils';
 import type { AnnotationColor, HighlightAnnotation } from '@/types/annotations';
 import type { Paper } from '@/types/papers';
@@ -316,7 +316,7 @@ function InfoTab({ paper }: { paper: Paper }) {
     <div className='space-y-4'>
       <div>
         <h1 className='break-words text-base font-semibold leading-snug'>
-          {paper.title ? formatSciText(paper.title) : t('untitled')}
+          {paper.title ? formatSciNode(paper.title) : t('untitled')}
         </h1>
         {metaParts.length > 0 && (
           <p className='mt-1 text-xs text-muted-foreground'>

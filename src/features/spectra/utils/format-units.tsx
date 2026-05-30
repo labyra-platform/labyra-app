@@ -109,3 +109,58 @@ export function formatSciText(text: string): string {
 export function SciText({ children }: { children: string }) {
   return <>{formatSciText(children)}</>;
 }
+
+/**
+ * Like formatSciText but renders real <sub>/<sup> elements (React nodes) instead
+ * of Unicode. Use for TITLES so chemical formulae with LETTERS in sub/superscript
+ * (e.g. WO3-x → WO₃₋ₓ, Ni1-x, vacancy notation) render correctly — Unicode only
+ * covers digits + a few chars. Handles Crossref/JATS HTML (<sub>/<sup>/entities)
+ * and ASCII patterns (H2O, cm-1, sp2). Returns a string when there's nothing to
+ * mark up. Keep formatSciText (string) for copy/search/non-JSX contexts.
+ *
+ * @phase R237cf
+ */
+export function formatSciNode(text: string): React.ReactNode {
+  if (!text) return text;
+  let s = text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_m, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_m, h) => String.fromCodePoint(parseInt(h, 16)));
+  // Strip non sub/sup tags (<i>, <b>, <em>…), keep <sub>/<sup>.
+  s = s.replace(/<(?!\/?su[bp]\b)[^>]*>/gi, '');
+  // Greek/symbol normalization (string-level).
+  s = s
+    .replace(/\blambda\b/gi, 'λ')
+    .replace(/\b2theta\b/gi, '2θ')
+    .replace(/\btheta\b/gi, 'θ')
+    .replace(/\bnu\b/g, 'ν')
+    .replace(/\balpha\b/gi, 'α')
+    .replace(/\bbeta\b/gi, 'β');
+  // Normalize ASCII sci patterns to tags so everything is tag-based.
+  s = s.replace(/([A-Za-z)\]])(\d+)/g, '$1<sub>$2</sub>'); // H2O → H<sub>2</sub>
+  s = s.replace(
+    /(\bcm|nm|um|mm|km|s|m|Hz|kg|g|mg|J|eV|K|mol|L|N)([+\-\u2212]\d+)/g,
+    '$1<sup>$2</sup>'
+  ); // cm-1 → cm<sup>-1</sup> (only signed exponents, to avoid eating subscripts)
+  s = s.replace(/\bsp<sub>([23])<\/sub>/g, 'sp<sup>$1</sup>'); // sp2 → sp²
+  // Tokenize <sub>/<sup> into React nodes; plain text stays as strings.
+  const parts: React.ReactNode[] = [];
+  const re = /<(sub|sup)>([^<]*)<\/(?:sub|sup)>/g;
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null = re.exec(s);
+  while (m !== null) {
+    if (m.index > last) parts.push(s.slice(last, m.index));
+    const Tag = m[1] as 'sub' | 'sup';
+    parts.push(<Tag key={key}>{m[2]}</Tag>);
+    key += 1;
+    last = re.lastIndex;
+    m = re.exec(s);
+  }
+  if (last < s.length) parts.push(s.slice(last));
+  if (parts.length === 0) return s;
+  return parts.length === 1 ? parts[0] : parts;
+}

@@ -38,7 +38,7 @@ import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
 import { PaperOpenAlexBadge } from '@/features/papers/components/paper-openalex-badge';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { searchPapers } from '@/features/papers/lib/title-search';
-import { formatSciText } from '@/features/spectra/utils/format-units';
+import { formatSciNode } from '@/features/spectra/utils/format-units';
 import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import {
   DropdownMenu,
@@ -338,7 +338,7 @@ function PaperRow({
               onClick={(e) => e.stopPropagation()}
               className='hover:underline focus-visible:underline focus-visible:outline-none'
             >
-              {paper.title ? formatSciText(paper.title) : t('untitled')}
+              {paper.title ? formatSciNode(paper.title) : t('untitled')}
             </Link>
             {/* R227c: subtle "open in a tab" marker so the user knows this paper
                 already has a reading session (clicking returns to it). */}

@@ -59,7 +59,7 @@ import {
 import { Icons } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { TAB_GROUP_COLOR_STYLES } from '@/features/papers/lib/tab-group-colors';
-import { formatSciText } from '@/features/spectra/utils/format-units';
+import { formatSciNode } from '@/features/spectra/utils/format-units';
 import {
   type PaperTab,
   type TabGroup,
@@ -480,7 +480,7 @@ function TabItem({
         >
           <Icons.pdfFile className='size-4 shrink-0' />
           <span className='min-w-0 flex-1 truncate'>
-            {tab.title ? formatSciText(tab.title) : t('untitled')}
+            {tab.title ? formatSciNode(tab.title) : t('untitled')}
           </span>
           <button
             type='button'

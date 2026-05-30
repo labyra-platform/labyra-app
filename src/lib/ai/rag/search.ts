@@ -18,6 +18,9 @@ const DEFAULT_VECTOR_TOP_K = 20;
 const DEFAULT_BM25_TOP_K = 20;
 const DEFAULT_FUSED_TOP_K = 20;
 const DEFAULT_TOP_N = 5;
+// ADR-033 T-4: BM25 fail-soft budget. The scan-all-chunks path is the slow one
+// at scale; beyond this, fall back to vector-only instead of timing out search.
+const BM25_TIMEOUT_MS = 5000;
 
 // Sections to exclude from retrieval (boilerplate, citations, low-info)
 // References dense with keywords cause BM25 to surface them in top results.
@@ -92,14 +95,38 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   // BM25 retrieval (only if encoder available — may be null for new tenants)
   let bm25Hits: { chunkId: string; score: number; chunk: PaperChunkDoc }[] = [];
   if (bm25Encoder) {
-    bm25Hits = await retrieveBM25(
-      req.tenantId,
-      req.query,
-      bm25Encoder,
-      DEFAULT_BM25_TOP_K,
-      req.viewerGroupId,
-      req.isPrivileged
-    );
+    // Fail-soft (ADR-033 T-4): the current BM25 path scans all chunks in the
+    // tenant, so at scale it can dominate latency. Cap it with a timeout and
+    // fall back to vector-only (≈70-80% quality) rather than letting a slow
+    // BM25 time out the whole search. Vector results are already retrieved above.
+    let bm25Timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      bm25Hits = await Promise.race([
+        retrieveBM25(
+          req.tenantId,
+          req.query,
+          bm25Encoder,
+          DEFAULT_BM25_TOP_K,
+          req.viewerGroupId,
+          req.isPrivileged
+        ),
+        new Promise<never>((_resolve, reject) => {
+          bm25Timer = setTimeout(() => reject(new Error('bm25_timeout')), BM25_TIMEOUT_MS);
+        })
+      ]);
+    } catch (err) {
+      console.warn(
+        JSON.stringify({
+          level: 'warn',
+          event: 'bm25_failsoft',
+          tenantId: req.tenantId,
+          error: err instanceof Error ? err.message : String(err)
+        })
+      );
+      bm25Hits = []; // vector-only fallback
+    } finally {
+      if (bm25Timer) clearTimeout(bm25Timer);
+    }
     _mark('bm25_retrieve');
   }
 

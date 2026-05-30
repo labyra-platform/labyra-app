@@ -131,8 +131,10 @@ const PUBLISHER_ALIASES: Record<string, string> = {
   rsc: 'Royal Society of Chemistry',
   'american chemical society': 'American Chemical Society',
   acs: 'American Chemical Society',
-  springer: 'Springer',
+  springer: 'Springer Nature',
   'springer nature': 'Springer Nature',
+  'springer science and business media': 'Springer Nature', // Crossref's name for Springer Nature
+  'springer-verlag': 'Springer Nature',
   nature: 'Springer Nature',
   'nature portfolio': 'Springer Nature',
   wiley: 'Wiley',

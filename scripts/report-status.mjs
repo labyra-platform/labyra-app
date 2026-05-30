@@ -19,6 +19,7 @@ const top = (map, k = 12) =>
 function normPub(p) {
   let s = (p || '').trim();
   if (!s) return '';
+  s = s.replace(/\s*\([^)]*\)\s*$/, '').trim();
   s = s
     .replace(
       /[\s,]+(B\.?V\.?|Ltd\.?|Limited|Inc\.?|LLC|GmbH|AG|S\.?A\.?|Co\.?|Company|Corp\.?|Corporation|Press|Publishing|Publications|Publishers?|Group|International)\.?$/gi,
@@ -27,9 +28,11 @@ function normPub(p) {
     .trim();
   const A = {
     'elsevier': 'Elsevier', 'elsevier science': 'Elsevier',
-    'royal society of chemistry': 'Royal Society of Chemistry',
-    'american chemical society': 'American Chemical Society',
-    'springer': 'Springer', 'springer nature': 'Springer Nature', 'nature': 'Springer Nature',
+    'royal society of chemistry': 'Royal Society of Chemistry', 'rsc': 'Royal Society of Chemistry',
+    'american chemical society': 'American Chemical Society', 'acs': 'American Chemical Society',
+    'springer': 'Springer Nature', 'springer nature': 'Springer Nature',
+    'springer science and business media': 'Springer Nature', 'springer-verlag': 'Springer Nature',
+    'nature': 'Springer Nature', 'nature portfolio': 'Springer Nature',
     'wiley': 'Wiley', 'john wiley & sons': 'Wiley', 'wiley-vch': 'Wiley',
     'iop': 'IOP Publishing', 'institute of physics': 'IOP Publishing',
     'taylor & francis': 'Taylor & Francis', 'mdpi': 'MDPI', 'aip': 'AIP Publishing'

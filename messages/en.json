@@ -508,7 +508,11 @@
     "save": "Save",
     "saving": "Saving…",
     "saveFailed": "Save failed",
-    "filterPublisherUnknown": "Unclassified publisher"
+    "filterPublisherUnknown": "Unclassified publisher",
+    "openalexClassification": "Classification (OpenAlex)",
+    "openalexScoreLabel": "OpenAlex model confidence",
+    "filterOpenAlexLabel": "Field (OpenAlex)",
+    "filterOpenAlexSearch": "Search field / subfield…"
   },
   "materials": {
     "title": "Materials",

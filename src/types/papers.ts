@@ -114,6 +114,23 @@ export interface Paper extends ProvBase {
   /** e.g., v1 — bump when taxonomy slugs change. */
   domainTaxonomyVersion?: string;
 
+  // R237bz: OpenAlex authoritative classification (Domain→Field→Subfield→Topic).
+  // Set from primary_topic when the paper has a DOI (free lookup). Primary
+  // classification (badge + filter); Gemini taxonomy above is kept for
+  // materials-specific subtopics. '' / undefined when no DOI or not in OpenAlex.
+  /** Top-level domain, e.g. "Physical Sciences". */
+  openalexDomain?: string;
+  /** Field, e.g. "Materials Science". */
+  openalexField?: string;
+  /** Subfield, e.g. "Electronic, Optical and Magnetic Materials". */
+  openalexSubfield?: string;
+  /** Primary topic display name. */
+  openalexTopic?: string;
+  /** primary_topic.score (0–1) — model confidence. */
+  openalexTopicScore?: number;
+  /** OpenAlex topic id URL, e.g. "https://openalex.org/T10024". */
+  openalexTopicId?: string;
+
   // R179-2: journal metadata via Crossref/OpenAlex — @r179-2-applied
   /** Full journal name (Crossref container-title). '' if unresolved. */
   journal?: string;

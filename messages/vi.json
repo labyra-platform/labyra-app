@@ -508,7 +508,11 @@
     "save": "Lưu",
     "saving": "Đang lưu…",
     "saveFailed": "Lưu thất bại",
-    "filterPublisherUnknown": "Chưa rõ nhà xuất bản"
+    "filterPublisherUnknown": "Chưa rõ nhà xuất bản",
+    "openalexClassification": "Phân loại (OpenAlex)",
+    "openalexScoreLabel": "Độ tin cậy mô hình OpenAlex",
+    "filterOpenAlexLabel": "Lĩnh vực (OpenAlex)",
+    "filterOpenAlexSearch": "Tìm lĩnh vực / phân ngành…"
   },
   "materials": {
     "title": "Vật liệu",

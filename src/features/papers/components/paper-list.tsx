@@ -34,6 +34,7 @@ import { PaperMetadataEditor } from '@/features/papers/components/paper-metadata
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { toast } from 'sonner';
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
+import { PaperOpenAlexBadge } from '@/features/papers/components/paper-openalex-badge';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { searchPapers } from '@/features/papers/lib/title-search';
 import { formatSciText } from '@/features/spectra/utils/format-units';
@@ -384,6 +385,17 @@ function PaperRow({
                   <IconExternalLink className='size-3' aria-hidden />
                 </a>
               </>
+            )}
+            {/* R237ca: OpenAlex field — authoritative classification, shown
+                before the Gemini domain chip (option B: OpenAlex is primary). */}
+            {paper.openalexField && (
+              <PaperOpenAlexBadge
+                field={paper.openalexField}
+                subfield={paper.openalexSubfield}
+                topic={paper.openalexTopic}
+                score={paper.openalexTopicScore}
+                variant='compact'
+              />
             )}
             {/* R222 #4: domain as a clickable color chip, not grey tail text. */}
             {paper.domain && paper.domain !== 'unknown' && domainAxis && (

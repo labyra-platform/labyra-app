@@ -53,6 +53,52 @@ export function aggregateJournalStats(papers: Paper[]): JournalStats[] {
   return Array.from(map.values()).toSorted((a, b) => b.count - a.count);
 }
 
+/**
+ * R237cb: group OpenAlex subfields under their field for the filter tree.
+ * Mirrors aggregatePublisherTree (field = publisher, subfield = journal).
+ * Papers without an OpenAlex field are skipped (Gemini-only fallback).
+ */
+export interface OpenAlexSubfieldStat {
+  /** Subfield display name. */
+  name: string;
+  /** Number of papers. */
+  count: number;
+}
+
+export interface OpenAlexFieldGroup {
+  /** Field display name, e.g. "Materials Science". */
+  field: string;
+  /** Total papers in this field. */
+  count: number;
+  /** Subfields under this field, sorted by count desc. */
+  subfields: OpenAlexSubfieldStat[];
+}
+
+export function aggregateOpenAlexTree(papers: Paper[]): OpenAlexFieldGroup[] {
+  // field -> (subfield -> count)
+  const fields = new Map<string, Map<string, number>>();
+  for (const p of papers) {
+    const field = (p.openalexField ?? '').trim();
+    if (!field) continue;
+    const subfield = (p.openalexSubfield ?? '').trim() || '—';
+    const subs = fields.get(field) ?? new Map<string, number>();
+    subs.set(subfield, (subs.get(subfield) ?? 0) + 1);
+    fields.set(field, subs);
+  }
+  const out: OpenAlexFieldGroup[] = [];
+  for (const [field, subs] of fields) {
+    const subfields = Array.from(subs, ([name, count]) => ({ name, count })).toSorted(
+      (a, b) => b.count - a.count
+    );
+    out.push({
+      field,
+      count: subfields.reduce((n, s) => n + s.count, 0),
+      subfields
+    });
+  }
+  return out.toSorted((a, b) => b.count - a.count);
+}
+
 export interface YearRange {
   min: number;
   max: number;

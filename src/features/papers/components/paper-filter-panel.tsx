@@ -22,6 +22,7 @@ import {
   IconChevronRight,
   IconFilter,
   IconMinus,
+  IconRosetteDiscountCheck,
   IconSearch,
   IconX
 } from '@tabler/icons-react';
@@ -47,9 +48,11 @@ export function createEmptyDomainFilter(): DomainFilterValue {
 import {
   aggregateDomainCounts,
   aggregateJournalStats,
+  aggregateOpenAlexTree,
   aggregatePublisherTree,
   aggregateYearRange,
   type JournalStats,
+  type OpenAlexFieldGroup,
   type PublisherGroup
 } from '@/features/papers/lib/journal-stats';
 import { Badge } from '@/components/ui/badge';
@@ -87,6 +90,8 @@ const AXIS_GROUPS: ReadonlyArray<AxisGroup> = [
 export interface PaperFilterValue {
   domain: DomainFilterValue;
   journals: Set<string>;
+  /** R237cb: selected OpenAlex subfields (field rows toggle their subfields). */
+  openalexSubfields: Set<string>;
   yearMin: number | null;
   yearMax: number | null;
   titleQuery: string;
@@ -96,6 +101,7 @@ export function createEmptyPaperFilter(): PaperFilterValue {
   return {
     domain: createEmptyDomainFilter(),
     journals: new Set(),
+    openalexSubfields: new Set(),
     yearMin: null,
     yearMax: null,
     titleQuery: ''
@@ -113,6 +119,8 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
   const t = useTranslations('papers');
   const [journalSearch, setJournalSearch] = useState('');
   const [expandedPubs, setExpandedPubs] = useState<Set<string>>(() => new Set()); // R237by
+  const [oaSearch, setOaSearch] = useState(''); // R237cb
+  const [expandedFields, setExpandedFields] = useState<Set<string>>(() => new Set()); // R237cb
 
   const journalStats = useMemo(() => aggregateJournalStats(papers), [papers]);
   const yearRange = useMemo(() => aggregateYearRange(papers), [papers]);
@@ -133,6 +141,21 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
       }))
       .filter((g) => g.journals.length > 0);
   }, [papers, journalSearch]);
+  // R237cb: OpenAlex field → subfields tree, filtered by its own search box.
+  const oaTree = useMemo(() => {
+    const tree = aggregateOpenAlexTree(papers);
+    const q = oaSearch.trim().toLowerCase();
+    if (!q) return tree;
+    return tree
+      .map((g) => ({
+        ...g,
+        subfields: g.subfields.filter(
+          (s) => s.name.toLowerCase().includes(q) || g.field.toLowerCase().includes(q)
+        )
+      }))
+      .filter((g) => g.subfields.length > 0);
+  }, [papers, oaSearch]);
+  const isOaSearching = oaSearch.trim().length > 0;
   const domainCounts = useMemo(() => aggregateDomainCounts(papers), [papers]); // R229
   const currentYear = new Date().getFullYear(); // R229 year presets
 
@@ -150,6 +173,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
   const activeCount =
     value.domain.selected.size +
     value.journals.size +
+    value.openalexSubfields.size +
     (value.yearMin !== null || value.yearMax !== null ? 1 : 0);
 
   const hasAny = activeCount > 0 || value.titleQuery.trim().length > 0;
@@ -181,6 +205,32 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
     });
   }
 
+  // R237cb: OpenAlex field/subfield mutators (mirror the publisher tree).
+  function toggleSubfield(name: string): void {
+    const next = new Set(value.openalexSubfields);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    onChange({ ...value, openalexSubfields: next });
+  }
+
+  function toggleField(group: OpenAlexFieldGroup): void {
+    const names = group.subfields.map((s) => s.name);
+    const allSelected = names.every((n) => value.openalexSubfields.has(n));
+    const next = new Set(value.openalexSubfields);
+    if (allSelected) for (const n of names) next.delete(n);
+    else for (const n of names) next.add(n);
+    onChange({ ...value, openalexSubfields: next });
+  }
+
+  function toggleFieldExpand(field: string): void {
+    setExpandedFields((prev) => {
+      const next = new Set(prev);
+      if (next.has(field)) next.delete(field);
+      else next.add(field);
+      return next;
+    });
+  }
+
   function toggleDomain(slug: string): void {
     const next = new Set(value.domain.selected);
     if (next.has(slug)) next.delete(slug);
@@ -200,6 +250,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
   function clearAll(): void {
     onChange(createEmptyPaperFilter());
     setJournalSearch('');
+    setOaSearch('');
   }
 
   // domain slug -> axis color (for chips)
@@ -476,6 +527,124 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                   </section>
                 )}
 
+                {/* OpenAlex field → subfields (R237cb) — authoritative axis. */}
+                {oaTree.length > 0 && (
+                  <section className='space-y-2'>
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center gap-1.5 text-sm font-medium'>
+                        <IconRosetteDiscountCheck
+                          className='size-4 text-sky-600 dark:text-sky-400'
+                          aria-hidden
+                        />
+                        {t('filterOpenAlexLabel')}
+                        <span className='text-xs font-normal text-muted-foreground'>
+                          ({oaTree.length})
+                        </span>
+                      </div>
+                      {value.openalexSubfields.size > 0 && (
+                        <button
+                          type='button'
+                          onClick={() => onChange({ ...value, openalexSubfields: new Set() })}
+                          className='text-xs text-muted-foreground hover:text-foreground'
+                        >
+                          {t('filterClear')} ({value.openalexSubfields.size})
+                        </button>
+                      )}
+                    </div>
+                    {oaTree.length > 6 && (
+                      <Input
+                        type='text'
+                        value={oaSearch}
+                        onChange={(e) => setOaSearch(e.target.value)}
+                        placeholder={t('filterOpenAlexSearch')}
+                        aria-label={t('filterOpenAlexSearch')}
+                        className='h-9'
+                      />
+                    )}
+                    <div className='space-y-1'>
+                      {oaTree.map((group: OpenAlexFieldGroup) => {
+                        const names = group.subfields.map((s) => s.name);
+                        const selectedCount = names.filter((n) =>
+                          value.openalexSubfields.has(n)
+                        ).length;
+                        const allSelected = selectedCount === names.length && names.length > 0;
+                        const someSelected = selectedCount > 0 && !allSelected;
+                        const open = isOaSearching || expandedFields.has(group.field);
+                        return (
+                          <div key={group.field} className='rounded-md border'>
+                            <div className='flex items-center gap-1.5 px-1.5 py-1'>
+                              <button
+                                type='button'
+                                onClick={() => toggleField(group)}
+                                aria-pressed={allSelected}
+                                title={group.field}
+                                className={cn(
+                                  'flex size-4 shrink-0 items-center justify-center rounded border transition-colors',
+                                  allSelected
+                                    ? 'border-primary bg-primary text-primary-foreground'
+                                    : someSelected
+                                      ? 'border-primary bg-primary/30 text-primary'
+                                      : 'border-input hover:border-primary'
+                                )}
+                              >
+                                {allSelected ? (
+                                  <IconCheck className='size-3' aria-hidden />
+                                ) : someSelected ? (
+                                  <IconMinus className='size-3' aria-hidden />
+                                ) : null}
+                              </button>
+                              <button
+                                type='button'
+                                onClick={() => toggleFieldExpand(group.field)}
+                                className='flex min-w-0 flex-1 items-center gap-1.5 text-left'
+                              >
+                                <IconChevronRight
+                                  className={cn(
+                                    'size-3.5 shrink-0 text-muted-foreground transition-transform',
+                                    open && 'rotate-90'
+                                  )}
+                                  aria-hidden
+                                />
+                                <span className='min-w-0 flex-1 truncate text-xs font-medium'>
+                                  {group.field}
+                                </span>
+                                <span className='shrink-0 text-[10.5px] tabular-nums text-muted-foreground'>
+                                  {group.subfields.length} · {group.count}
+                                </span>
+                              </button>
+                            </div>
+                            {open && (
+                              <div className='flex flex-wrap gap-1.5 border-t px-2 py-1.5'>
+                                {group.subfields.map((s) => {
+                                  const active = value.openalexSubfields.has(s.name);
+                                  return (
+                                    <button
+                                      key={s.name}
+                                      type='button'
+                                      onClick={() => toggleSubfield(s.name)}
+                                      aria-pressed={active}
+                                      title={s.name}
+                                      className={cn(
+                                        'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                        active
+                                          ? 'bg-primary/10 text-primary'
+                                          : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                      )}
+                                    >
+                                      <span className='max-w-[180px] truncate'>{s.name}</span>
+                                      <span className='tabular-nums opacity-60'>{s.count}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
                 {/* Domain — collapsible per axis */}
                 <section className='space-y-1'>
                   <div className='flex items-center gap-1.5 text-sm font-medium'>
@@ -608,6 +777,11 @@ export function paperPassesFilter(paper: Paper, filter: PaperFilterValue): boole
 
   if (filter.journals.size > 0) {
     if (!paper.journal || !filter.journals.has(paper.journal)) return false;
+  }
+
+  if (filter.openalexSubfields.size > 0) {
+    const sub = (paper.openalexSubfield ?? '').trim() || '—';
+    if (!paper.openalexField || !filter.openalexSubfields.has(sub)) return false;
   }
 
   if (filter.domain.selected.size > 0) {

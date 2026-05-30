@@ -31,6 +31,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsSuperAdmin } from '@/lib/auth/use-claims';
 import { getFirebaseAuth } from '@/lib/firebase/client';
+import { PaperOpenAlexBadge } from '@/features/papers/components/paper-openalex-badge';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { cn } from '@/lib/utils';
@@ -220,6 +221,16 @@ export function PaperDetail({ paperId }: { paperId: string }) {
           </div>
         </div>
       </header>
+
+      {/* R237ca: OpenAlex authoritative classification (primary), above the
+          Gemini taxonomy which provides materials-specific subtopics. */}
+      <PaperOpenAlexBadge
+        field={paper.openalexField}
+        subfield={paper.openalexSubfield}
+        topic={paper.openalexTopic}
+        score={paper.openalexTopicScore}
+        variant='full'
+      />
 
       {/* R223 #5: domain classification — grouped by axis with labels so the four
           conceptually-different chip types (application / materials / synthesis /

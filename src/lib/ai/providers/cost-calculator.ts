@@ -35,6 +35,15 @@ interface ModelPricing {
 
 const PRICING: Record<string, ModelPricing> = {
   // ─── Anthropic Claude family (verified 2026-05-30) ─────────────
+  'claude-opus-4-8': {
+    inputPerM: 5,
+    outputPerM: 25,
+    cacheReadPerM: 0.5,
+    cacheWritePerM: 6.25,
+    tokenizerInflation: 1.35, // same tokenizer as 4.7 (unchanged 4.7→4.8)
+    notes:
+      'Current flagship (released 2026-05-28). Same standard rates as 4.7. Fast mode $10/$50 not modeled.'
+  },
   'claude-opus-4-7': {
     inputPerM: 5,
     outputPerM: 25,

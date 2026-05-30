@@ -43,6 +43,12 @@ export interface Citation extends ProvBase {
   /** Cited paper journal. */
   targetJournal?: string;
 
+  /** R237co: cited paper publisher (Crossref / OpenAlex). */
+  targetPublisher?: string;
+
+  /** R237co: cited paper Open-Access status (OpenAlex open_access.is_oa). */
+  targetIsOpenAccess?: boolean;
+
   /**
    * Resolved internal paperId if target paper is ALSO in our DB.
    * Populated by separate cross-reference step (runs after extraction).

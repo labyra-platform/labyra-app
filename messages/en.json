@@ -514,7 +514,20 @@
     "filterOpenAlexLabel": "Field (OpenAlex)",
     "filterOpenAlexSearch": "Search field / subfield…",
     "doiUnverified": "Unverified DOI",
-    "doiUnverifiedHint": "This DOI didn't resolve at Crossref or OpenAlex — it may be wrong (e.g. an OCR error). Please double-check."
+    "doiUnverifiedHint": "This DOI didn't resolve at Crossref or OpenAlex — it may be wrong (e.g. an OCR error). Please double-check.",
+    "viewListMode": "List",
+    "viewOverviewMode": "Overview",
+    "landscapePapers": "Papers",
+    "landscapeFields": "Fields",
+    "landscapePublishers": "Publishers",
+    "landscapeYearSpan": "Year span",
+    "landscapeByField": "By research field",
+    "landscapeByFieldDesc": "{count} papers classified by OpenAlex",
+    "landscapeByPublisher": "By publisher",
+    "landscapeByPublisherDesc": "Papers grouped by normalized publisher",
+    "landscapeByYear": "By publication year",
+    "landscapeByYearDesc": "Distribution across publication years",
+    "landscapeNoData": "Not enough data yet"
   },
   "materials": {
     "title": "Materials",

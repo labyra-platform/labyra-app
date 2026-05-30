@@ -218,3 +218,20 @@ export function aggregateDomainCounts(papers: Paper[]): Map<string, number> {
   }
   return counts;
 }
+
+/** R237cl: year → paper count, sorted ascending, for the landscape histogram. */
+export interface YearCount {
+  year: number;
+  count: number;
+}
+
+export function aggregateYearCounts(papers: Paper[]): YearCount[] {
+  const counts = new Map<number, number>();
+  for (const p of papers) {
+    const y = p.year;
+    if (typeof y === 'number' && y > 0) counts.set(y, (counts.get(y) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([year, count]) => ({ year, count }))
+    .toSorted((a, b) => a.year - b.year);
+}

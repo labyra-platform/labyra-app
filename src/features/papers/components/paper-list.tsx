@@ -9,6 +9,7 @@
 
 import {
   IconArrowsSort,
+  IconChartHistogram,
   IconAlertTriangle,
   IconExternalLink,
   IconFileText,
@@ -35,6 +36,7 @@ import { PaperMetadataEditor } from '@/features/papers/components/paper-metadata
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { toast } from 'sonner';
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
+import { PapersLandscape } from '@/features/papers/components/papers-landscape';
 import { PaperOpenAlexBadge } from '@/features/papers/components/paper-openalex-badge';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { searchPapers } from '@/features/papers/lib/title-search';
@@ -88,6 +90,7 @@ function toEpochMs(value: FirestoreTimestampLike | undefined | null): number {
 
 type SortKey = 'recent' | 'year_desc' | 'title_asc' | 'domain';
 type ViewMode = 'compact' | 'comfortable';
+type MainView = 'list' | 'overview';
 
 /** Format the author line the way researchers recognize papers: "Zhang et al." */
 function formatAuthors(authors: string[] | undefined): string | null {
@@ -105,6 +108,7 @@ export function PaperList() {
   const [filter, setFilter] = useState<PaperFilterValue>(() => createEmptyPaperFilter());
   const [sort, setSort] = useState<SortKey>('recent');
   const [view, setView] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen
+  const [mainView, setMainView] = useState<MainView>('list'); // R237cl: list vs overview dashboard
 
   const visibleSlugs = useMemo(() => {
     const s = new Set<string>();
@@ -168,6 +172,46 @@ export function PaperList() {
     );
   }
 
+  const viewToggle = (
+    <div className='inline-flex rounded-md border p-0.5'>
+      <button
+        type='button'
+        onClick={() => setMainView('list')}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs',
+          mainView === 'list'
+            ? 'bg-muted font-medium'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <IconLayoutList className='size-3.5' />
+        {t('viewListMode')}
+      </button>
+      <button
+        type='button'
+        onClick={() => setMainView('overview')}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs',
+          mainView === 'overview'
+            ? 'bg-muted font-medium'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <IconChartHistogram className='size-3.5' />
+        {t('viewOverviewMode')}
+      </button>
+    </div>
+  );
+
+  if (mainView === 'overview') {
+    return (
+      <div className='space-y-3'>
+        {viewToggle}
+        <PapersLandscape papers={papers} />
+      </div>
+    );
+  }
+
   const hasFilter =
     filter.domain.selected.size > 0 ||
     filter.journals.size > 0 ||
@@ -194,6 +238,7 @@ export function PaperList() {
 
   return (
     <div className='space-y-3'>
+      {viewToggle}
       <PaperFilterPanel
         value={filter}
         onChange={setFilter}

@@ -514,7 +514,20 @@
     "filterOpenAlexLabel": "Lĩnh vực (OpenAlex)",
     "filterOpenAlexSearch": "Tìm lĩnh vực / phân ngành…",
     "doiUnverified": "DOI chưa xác minh",
-    "doiUnverifiedHint": "DOI này không tra được ở Crossref/OpenAlex — có thể sai (vd lỗi OCR). Vui lòng kiểm tra lại."
+    "doiUnverifiedHint": "DOI này không tra được ở Crossref/OpenAlex — có thể sai (vd lỗi OCR). Vui lòng kiểm tra lại.",
+    "viewListMode": "Danh sách",
+    "viewOverviewMode": "Tổng quan",
+    "landscapePapers": "Bài báo",
+    "landscapeFields": "Lĩnh vực",
+    "landscapePublishers": "Nhà xuất bản",
+    "landscapeYearSpan": "Khoảng năm",
+    "landscapeByField": "Theo lĩnh vực nghiên cứu",
+    "landscapeByFieldDesc": "{count} bài được phân loại bởi OpenAlex",
+    "landscapeByPublisher": "Theo nhà xuất bản",
+    "landscapeByPublisherDesc": "Bài báo nhóm theo nhà xuất bản đã chuẩn hóa",
+    "landscapeByYear": "Theo năm xuất bản",
+    "landscapeByYearDesc": "Phân bố theo các năm xuất bản",
+    "landscapeNoData": "Chưa đủ dữ liệu"
   },
   "materials": {
     "title": "Vật liệu",

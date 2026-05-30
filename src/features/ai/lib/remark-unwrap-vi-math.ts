@@ -19,6 +19,8 @@ import type { Root } from 'mdast';
 // Ký tự có dấu tiếng Việt: Latin-1 Supplement (À-ÿ) + Latin Extended-A/B
 // + tổ hợp dấu thanh (U+0300–U+036F) + các ký tự VN riêng (ơ ư đ...).
 // LaTeX command/biến hợp lệ chỉ dùng ASCII + ký hiệu toán, nên dấu = chắc chắn là prose.
+// U+0300–036F bắt cả trường hợp model xuất NFD (base + combining); chuẩn hoá NFC
+// trước khi test để gom NFD về precomposed.
 const VI_DIACRITIC = /[\u00C0-\u024F\u1E00-\u1EFF]/u;
 
 interface MathNode {
@@ -30,7 +32,7 @@ export const remarkUnwrapViMath: Plugin<[], Root> = () => {
   return (tree: Root) => {
     visit(tree, ['inlineMath', 'math'], (node: unknown) => {
       const m = node as MathNode;
-      if (typeof m.value === 'string' && VI_DIACRITIC.test(m.value)) {
+      if (typeof m.value === 'string' && VI_DIACRITIC.test(m.value.normalize('NFC'))) {
         // Mutate node in place: math -> text. Giữ delimiter để rõ là đoạn gốc.
         const isDisplay = m.type === 'math';
         const wrapped = isDisplay ? `$$${m.value}$$` : `$${m.value}$`;

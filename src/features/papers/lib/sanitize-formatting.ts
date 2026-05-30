@@ -11,18 +11,26 @@
  */
 import { renderToString as renderKatex } from 'katex';
 
-function looksLikeMath(s: string): boolean {
+function looksLikeMath(raw: string): boolean {
+  const s = raw.normalize('NFC');
   // oxlint-disable-next-line no-control-regex
   if (/^[\x00-\x7F\s]*$/.test(s) && /[\\^_{}=]/.test(s)) return true;
-  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀ-Ỹ]/.test(s)) {
+  // Accented-Latin ranges (precomposed) + combining marks (NFD safety net):
+  // Latin-1/Ext-A/B (À-ɏ), Latin Extended Additional (Vietnamese), and combining
+  // diacritics U+0300-036F. Any of these is a strong "prose, not LaTeX" signal.
+  if (/[\u00C0-\u024F\u1E00-\u1EFF]/u.test(s)) {
     return false;
   }
   return /\\[a-zA-Z]+|[\^_{}]/.test(s);
 }
 
 export function sanitizeFormatting(raw: string): string {
+  // Normalize to NFC first so decomposed (NFD) Vietnamese — base letter +
+  // combining marks — becomes precomposed, which the math/prose heuristic and
+  // the rest of the pipeline handle consistently.
+  const normalized = raw.normalize('NFC');
   // Defensive: strip a leaked thinking-artifact prefix (e.g. "thought}").
-  const cleaned = raw.replace(
+  const cleaned = normalized.replace(
     /^\s*(?:\{?\s*"?(?:thought|thinking|reasoning)"?\s*[:}\]]+|\}+)\s*/i,
     ''
   );

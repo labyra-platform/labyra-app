@@ -41,12 +41,14 @@ import {
  *  caret, underscore, brace, equality, operator), otherwise fall back to a
  *  plain inline span. This makes the panel robust to a model that occasionally
  *  wraps prose in <math> by accident. */
-function looksLikeMath(s: string): boolean {
+function looksLikeMath(raw: string): boolean {
+  const s = raw.normalize('NFC');
   // Quick ASCII signal — if it's pure ASCII it's most likely real LaTeX.
   // eslint-disable-next-line no-control-regex
   if (/^[\x00-\x7F\s]*$/.test(s) && /[\\^_{}=]/.test(s)) return true;
-  // Vietnamese characters are a strong "this is prose" signal.
-  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀ-Ỹ]/.test(s)) {
+  // Accented-Latin (precomposed). NFC-normalised above so NFD Vietnamese (base +
+  // combining marks) is folded to these precomposed code points first.
+  if (/[\u00C0-\u024F\u1E00-\u1EFF]/u.test(s)) {
     return false;
   }
   // Mixed-but-no-Vietnamese: require at least one math command.
@@ -93,7 +95,7 @@ function stripThoughtArtifact(s: string): string {
  *  (4) Turn citation brackets [n] into clickable buttons.
  *  (5) Swap sentinels back for the rendered math HTML. */
 function renderAnswerHtml(answer: string): string {
-  const cleaned = stripThoughtArtifact(answer);
+  const cleaned = stripThoughtArtifact(answer.normalize('NFC'));
   const placeholders: string[] = [];
   const sentinel = '\u0001';
   const withMath = cleaned.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {

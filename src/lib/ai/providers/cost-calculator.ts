@@ -140,9 +140,9 @@ export function calculateCost(
     // still trips and spend is over- (not under-) estimated. Loud-log for ops.
     // eslint-disable-next-line no-console -- audit log for unknown model
     console.error(
-      `[cost-calculator] unknown model: ${model} — falling back to claude-opus-4-7 pricing (conservative). Add this model to PRICING.`
+      `[cost-calculator] unknown model: ${model} — falling back to claude-opus-4-8 pricing (conservative). Add this model to PRICING.`
     );
-    const fallback = PRICING['claude-opus-4-7'];
+    const fallback = PRICING['claude-opus-4-8'];
     const inflation = fallback.tokenizerInflation ?? 1.0;
     const usd =
       ((inputTokens * inflation) / 1_000_000) * fallback.inputPerM +
@@ -199,7 +199,7 @@ export function isTierModel(model: string): boolean {
     'gemini-3.1-flash-lite', // T0
     'gemini-3-flash-preview', // T2
     'claude-sonnet-4-6', // T3, T4
-    'claude-opus-4-7' // T5
+    'claude-opus-4-8' // T5
   ]);
   return tierModels.has(model);
 }

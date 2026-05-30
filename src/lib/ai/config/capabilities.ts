@@ -11,7 +11,7 @@
  *   T0    → gemini-3.1-flash-lite (GA)
  *   T1+T2 → gemini-3-flash-preview (GA on Vertex AI, preview on Gemini API)
  *   T3+T4 → claude-sonnet-4-6
- *   T5    → claude-opus-4-7 (+35% tokenizer)
+ *   T5    → claude-opus-4-8 (+35% tokenizer)
  *
  * R176-2a migrated SDK @google/generative-ai → @google/genai 2.3.0
  *   which auto-handles thought_signature (Gemini 3 requirement).
@@ -100,14 +100,15 @@ export const CAPABILITY_MAP: Record<Capability, CapabilityProfile> = {
   },
   'reasoning-frontier': {
     provider: 'anthropic',
-    model: 'claude-opus-4-7',
+    model: 'claude-opus-4-8',
     inputCost: 5.0,
     outputCost: 25.0,
     cacheReadCost: 0.5,
     maxTokens: 4096,
     contextWindow: 1_000_000,
     tokenizerInflation: 1.35,
-    notes: '+35% tokenizer inflation vs Opus 4.6 (factor applied automatically).'
+    notes:
+      'Opus 4.8 (current flagship). +35% tokenizer (same as 4.7), factor applied automatically.'
   },
   embedding: {
     provider: 'voyage',

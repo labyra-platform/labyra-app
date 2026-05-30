@@ -66,7 +66,7 @@ export async function runAuditor(opts: AuditorOptions): Promise<AuditResult> {
       unsupportedCount: 0,
       contradictedCount: 0,
       totalCost: emptyCost(),
-      evaluatorModel: 'claude-opus-4-7',
+      evaluatorModel: 'claude-opus-4-8',
       evaluatedAt: Date.now(),
       durationMs: Date.now() - startedAt
     };

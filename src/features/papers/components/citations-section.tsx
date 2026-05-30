@@ -47,6 +47,19 @@ function byConfidence(a: { confidence: string }, b: { confidence: string }): num
   return av - bv;
 }
 
+// Outbound = this paper's reference list. Show in document order (number, set by
+// the worker) so it reads like the printed references; fall back to confidence
+// for entries without a number. References with no number sort last.
+function byNumberThenConfidence(
+  a: { number?: number; confidence: string },
+  b: { number?: number; confidence: string }
+): number {
+  const an = a.number ?? Number.POSITIVE_INFINITY;
+  const bn = b.number ?? Number.POSITIVE_INFINITY;
+  if (an !== bn) return an - bn;
+  return byConfidence(a, b);
+}
+
 export function CitationsSection({ paperId }: { paperId: string }) {
   const t = useTranslations('papers');
   const { stats } = usePaperCitationStats(paperId);
@@ -69,7 +82,7 @@ export function CitationsSection({ paperId }: { paperId: string }) {
       outCitations
         .filter((c) => citationPassesFilter(c, filter))
         .slice()
-        .sort(byConfidence),
+        .sort(byNumberThenConfidence),
     [outCitations, filter]
   );
   const inFiltered = useMemo(

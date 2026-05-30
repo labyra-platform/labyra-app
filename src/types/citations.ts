@@ -64,6 +64,21 @@ export interface Citation extends ProvBase {
 
   /** Citation type (heuristic from context): primary research, review, methods, etc. */
   citationType?: 'primary' | 'review' | 'methods' | 'background' | 'unknown';
+
+  /**
+   * Position of this reference in the source paper's reference list (1-based),
+   * in order of appearance. Set by the worker (R237bn/bo). Used to display the
+   * reference list in document order. NOT a citation marker — many journals use
+   * author-year style with no printed numbers, so this is order-only.
+   */
+  number?: number;
+
+  /**
+   * The raw reference line as printed in the paper (R237bn/bo). Shown when the
+   * DOI lookup yielded no title, so the entry still reads as a real reference
+   * instead of "Untitled".
+   */
+  rawText?: string;
 }
 
 /**

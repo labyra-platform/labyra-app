@@ -56,7 +56,8 @@ export function CitationCard({ citation }: { citation: Citation }) {
   const conf = CONFIDENCE_STYLES[citation.confidence];
   const ConfIcon = conf.icon;
 
-  const title = citation.targetTitle ?? citation.targetDoi ?? t('citationUntitled');
+  const title =
+    citation.targetTitle ?? citation.targetDoi ?? citation.rawText ?? t('citationUntitled');
   const authors = formatAuthors(citation.targetAuthors);
   const yearJournal = [citation.targetYear, citation.targetJournal].filter(Boolean).join(' · ');
 

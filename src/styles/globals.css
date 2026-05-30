@@ -158,6 +158,11 @@
   border-top-right-radius: 0.375rem;
 }
 
+/* Active tab lift — token-based so it works in dark mode (was hardcoded black). */
+.edge-tab-active {
+  box-shadow: 0 -1px 3px color-mix(in srgb, var(--foreground) 9%, transparent);
+}
+
 /* The two bottom flares. Sit just outside each bottom corner, on the baseline. */
 .edge-tab-active::before,
 .edge-tab-active::after {

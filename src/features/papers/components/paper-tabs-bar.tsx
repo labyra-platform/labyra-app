@@ -368,7 +368,7 @@ function tabSheetClass(active: boolean) {
   return cn(
     'edge-tab group relative flex h-9 items-center gap-1.5 px-3 text-xs transition-colors',
     active
-      ? 'edge-tab-active z-10 -mx-px -mb-px bg-background font-medium text-foreground shadow-[0_-1px_3px_hsl(0_0%_0%/0.08)]'
+      ? 'edge-tab-active z-10 -mx-px -mb-px bg-background font-medium text-foreground'
       : 'z-0 bg-transparent text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground'
   );
 }

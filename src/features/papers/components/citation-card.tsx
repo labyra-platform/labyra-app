@@ -1,56 +1,50 @@
 'use client';
 import { formatSciNode } from '@/features/spectra/utils/format-units';
-import {
-  IconBooks,
-  IconCheck,
-  IconExternalLink,
-  IconQuestionMark,
-  IconQuote
-} from '@tabler/icons-react';
+import { IconCheck, IconExternalLink, IconQuestionMark, IconQuote } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 /**
- * Render a single citation entry with confidence badge.
+ * Render a single citation entry, compact (R237cn): the cited paper's TITLE
+ * (truncated to 2 lines) with a small confidence icon, then one muted line of
+ * "first-author et al · year · journal". The DOI is no longer shown as text and
+ * is never run through formatSciNode (which would subscript DOI digits).
  *
- * Confidence color mapping uses shadcn/Tailwind tokens only (CLAUDE.md rule:
- * no hardcode colors). Each confidence level maps to a semantic intent.
- *
- * @phase R166-6b-1
+ * @phase R166-6b-1 base, R237cn compact redesign
  */
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { Citation, CitationConfidence } from '@/types/citations';
 
 interface ConfidenceStyle {
-  badgeClass: string;
+  iconClass: string;
   icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   i18nKey: string;
 }
 
 const CONFIDENCE_STYLES: Record<CitationConfidence, ConfidenceStyle> = {
   'doi-exact': {
-    badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+    iconClass: 'text-emerald-600 dark:text-emerald-400',
     icon: IconCheck,
     i18nKey: 'confidenceDoiExact'
   },
   manual: {
-    badgeClass: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+    iconClass: 'text-blue-600 dark:text-blue-400',
     icon: IconCheck,
     i18nKey: 'confidenceManual'
   },
   'title-fuzzy': {
-    badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+    iconClass: 'text-amber-600 dark:text-amber-400',
     icon: IconQuote,
     i18nKey: 'confidenceTitleFuzzy'
   },
   unverified: {
-    badgeClass: 'bg-muted text-muted-foreground border-border',
+    iconClass: 'text-muted-foreground/60',
     icon: IconQuestionMark,
     i18nKey: 'confidenceUnverified'
   }
 };
 
-function formatAuthors(authors: string[] | undefined, maxShown: number = 3): string {
+function formatAuthors(authors: string[] | undefined, maxShown: number = 1): string {
   if (!authors || authors.length === 0) return '';
   if (authors.length <= maxShown) return authors.join(', ');
   return `${authors.slice(0, maxShown).join(', ')} et al.`;
@@ -63,10 +57,15 @@ export function CitationCard({ citation }: { citation: Citation }) {
   const conf = CONFIDENCE_STYLES[citation.confidence];
   const ConfIcon = conf.icon;
 
-  const title =
-    citation.targetTitle ?? citation.targetDoi ?? citation.rawText ?? t('citationUntitled');
-  const authors = formatAuthors(citation.targetAuthors);
-  const yearJournal = [citation.targetYear, citation.targetJournal].filter(Boolean).join(' · ');
+  // R237cn: show the cited paper's TITLE (truncated), never the DOI. formatSciNode
+  // is applied ONLY to a real title (so "TiO2" → "TiO₂"); a raw-text/Untitled
+  // fallback is rendered plain so DOI-like digits never get subscripted (#4).
+  const realTitle = citation.targetTitle?.trim();
+  const displayTitle = realTitle || citation.rawText?.trim() || t('citationUntitled');
+  // First author + et al · year · journal — all on one line.
+  const meta = [formatAuthors(citation.targetAuthors), citation.targetYear, citation.targetJournal]
+    .filter(Boolean)
+    .join(' · ');
 
   // Where a click leads: prefer the in-library paper, else the DOI. Either way
   // it opens in a NEW tab so the reader keeps their place in the current PDF.
@@ -77,59 +76,34 @@ export function CitationCard({ citation }: { citation: Citation }) {
   const openHref = internalHref ?? doiHref;
 
   const card = (
-    <>
-      <div className='flex items-start gap-2.5'>
-        {/* Sequence number — order in the reference list, not a citation marker. */}
-        {citation.number != null && (
-          <span className='mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10.5px] font-medium tabular-nums text-muted-foreground'>
-            {citation.number}
+    <div className='flex items-start gap-2'>
+      {/* Sequence number — order in the reference list, not a citation marker. */}
+      {citation.number != null && (
+        <span className='mt-px inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium tabular-nums text-muted-foreground'>
+          {citation.number}
+        </span>
+      )}
+      <div className='min-w-0 flex-1'>
+        <div className='flex items-start gap-1.5'>
+          <span className='line-clamp-2 flex-1 text-[13px] font-medium leading-snug'>
+            {realTitle ? formatSciNode(displayTitle) : displayTitle}
           </span>
-        )}
-        <div className='min-w-0 flex-1 space-y-1'>
-          <div className='flex items-start justify-between gap-2'>
-            <div className='break-words text-sm font-medium leading-snug'>
-              {formatSciNode(title)}
-            </div>
-            <span
-              className={cn(
-                'inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10.5px]',
-                conf.badgeClass
-              )}
-              title={t(conf.i18nKey)}
-            >
-              <ConfIcon className='size-3' aria-hidden />
-              {t(conf.i18nKey)}
-            </span>
-          </div>
-
-          {authors && <div className='break-words text-xs text-muted-foreground'>{authors}</div>}
-          {yearJournal && <div className='text-xs text-muted-foreground'>{yearJournal}</div>}
-
-          <div className='flex items-center gap-2 pt-0.5'>
-            {citation.targetPaperId && (
-              <span className='inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10.5px] font-medium text-emerald-700 dark:text-emerald-400'>
-                <IconBooks className='size-3' aria-hidden />
-                {t('inLibrary')}
-              </span>
-            )}
-            {citation.targetDoi && (
-              <span className='truncate text-[11px] text-muted-foreground/80'>
-                {citation.targetDoi}
-              </span>
-            )}
-            {openHref && (
-              <IconExternalLink
-                className='ml-auto size-3.5 shrink-0 text-muted-foreground/60 transition-colors group-hover/cite:text-foreground'
-                aria-hidden
-              />
-            )}
-          </div>
+          <span title={t(conf.i18nKey)} className='mt-px shrink-0'>
+            <ConfIcon className={cn('size-3.5', conf.iconClass)} aria-hidden />
+          </span>
+          {openHref && (
+            <IconExternalLink
+              className='mt-px size-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover/cite:text-foreground'
+              aria-hidden
+            />
+          )}
         </div>
+        {meta && <div className='mt-0.5 truncate text-[11px] text-muted-foreground'>{meta}</div>}
       </div>
-    </>
+    </div>
   );
 
-  const baseClass = 'group/cite block rounded-md border p-3 text-left transition-colors';
+  const baseClass = 'group/cite block rounded-md border px-2.5 py-1.5 text-left transition-colors';
 
   // Clickable whole-card when there's somewhere to go; in-library uses an SPA
   // link (new tab), external DOI a plain anchor (new tab).

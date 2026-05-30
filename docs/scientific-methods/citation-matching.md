@@ -259,3 +259,57 @@ const order: Record<Citation['confidence'], number> = {
   downgrades 404s to `unverified`.
 
 <!-- R168-3.3d -->
+
+## Publisher + Open-Access enrichment (R237co)
+
+Each citation carries two extra target fields used by the citation-panel filter
+(publisher multi-select + Open-Access toggle):
+
+| Field | Source | Notes |
+|---|---|---|
+| `targetPublisher` | Crossref `message.publisher`, else OpenAlex `primary_location.source.host_organization_name` | Crossref preferred when a per-DOI lookup ran |
+| `targetIsOpenAccess` | OpenAlex `open_access.is_oa` (boolean) | Crossref does **not** expose OA status |
+
+**Why a batch call.** The primary ingest branch (`_ingest_crossref_refs`) builds
+citations straight from Crossref-deposited `reference[]` entries with **no** per-DOI
+network lookup — and those entries carry neither publisher nor OA. To enrich every
+reference without N per-DOI calls, both branches gather their ref DOIs and issue a
+single OpenAlex batch request:
+
+```
+GET /works?filter=doi:10.x/a|10.x/b|…&select=doi,open_access,primary_location&per-page=50
+```
+
+- OpenAlex accepts `filter=doi:` with `|` (OR), so ~50 references resolve per request.
+- DOI lookups are **free** and do not consume the OpenAlex daily credit cap.
+- Results are keyed by bare lower-case DOI (OpenAlex returns the DOI as a full URL —
+  `_normalize_oa_doi` strips `https://doi.org/`).
+- Best-effort: a failed/missing chunk simply leaves those refs without the fields.
+
+**Reprocess backfill.** `create_citation` keeps the more-trusted confidence on an
+existing doc, but still backfills `targetPublisher` / `targetIsOpenAccess` (and the
+R237bn `number` / `rawText`) when the existing doc predates them — so a reprocess
+enriches in place without downgrading anything.
+
+### Implementation files (R237co)
+
+| File | Role |
+|---|---|
+| `…/src/papers/openalex.py` | `fetch_openalex_oa_batch()` + `OaInfo` + `_extract_publisher_oa` / `_extract_is_oa` |
+| `…/src/papers/crossref.py` | `lookup_doi_crossref` adds `publisher` (OA = None) |
+| `…/src/papers/citation.py` | both ingest branches call the batch + fill fields |
+| `…/src/papers/citation_service.py` | writes + reprocess-backfills the two fields |
+| `…/src/papers/citation_types.py` | `CitationMetadata` / `CitationDoc` / `CitationCreateInput` |
+| `src/types/citations.ts` | TS mirror (`targetPublisher`, `targetIsOpenAccess`) |
+| `src/features/papers/components/citation-filter.tsx` | filter UI + `citationPassesFilter` (R237cp) |
+
+### Reverse DOI lookup (R237cg)
+
+When no DOI is extractable from the PDF, `reverse_lookup_doi(title, authors, year)`
+queries Crossref `query.bibliographic` and accepts a candidate DOI **only** if its
+title token-set Jaccard ≥ `REVERSE_MATCH_THRESHOLD` (0.70) — a wrong DOI is worse than
+none. Implemented in `crossref.py`; wired in the orchestrator after the page-text DOI
+scan fails (source = `crossref-title`).
+
+<!-- R237co + R237cg + R237cp -->
+

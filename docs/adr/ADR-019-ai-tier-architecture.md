@@ -105,7 +105,7 @@ function buildTierConfig(): Record<AiTier, LLMProviderConfig> {
 export const TIER_CONFIG: Record<AiTier, LLMProviderConfig> = buildTierConfig();
 ```
 
-To swap a model (e.g., Opus 4.7 → 4.8 when released), edit ONE field in `CAPABILITY_MAP`. All tier handlers auto-pick up new model.
+To swap a model, edit ONE field in `CAPABILITY_MAP`; all tier handlers auto-pick up the new model. **R237cj**: Tier-5 `reasoning-frontier` was swapped `claude-opus-4-7` → `claude-opus-4-8` (same price $5/$25, same +35% tokenizer inflation, stronger). The `claude-opus-4-7` PRICING entry is kept for historical cost rows.
 
 ---
 
@@ -154,7 +154,7 @@ Current `CAPABILITY_MAP`:
 | tool-calling-cheap | google | gemini-3-flash-preview | Tool calls + Firestore lookups |
 | rag-balanced | google | gemini-3-flash-preview | RAG + grounding; saves Sonnet quota |
 | reasoning-balanced | anthropic | claude-sonnet-4-6 | Best price/quality for complex reasoning |
-| reasoning-frontier | anthropic | claude-opus-4-7 | Best quality for audit/peer review (+35% tokenizer inflation acceptable for low-frequency T5) |
+| reasoning-frontier | anthropic | claude-opus-4-8 | Best quality for audit/peer review (+35% tokenizer inflation acceptable for low-frequency T5; R237cj, was opus-4-7) |
 | embedding | voyage | voyage-3-large | 1024-dim, best matryoshka representation |
 | rerank | voyage | rerank-2.5 | Best dense reranker |
 | ocr | mistral | mistral-ocr-latest | Best layout-aware OCR for scientific PDFs |

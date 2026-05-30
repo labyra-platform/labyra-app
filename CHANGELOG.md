@@ -5,7 +5,44 @@
 
 <!-- R178-docs-update-2026-05-18 -->
 
-**Last updated**: 2026-05-22
+**Last updated**: 2026-05-30
+
+---
+
+## R237br → R237cp — DOI/citation quality, dashboards, cost, citation filter (May 29–30, 2026)
+
+### DOI quality (worker)
+- R237br: KaTeX/title NFC normalization (combining marks → `no-misleading-character-class`).
+- R237cc/cd: main-paper DOI **verified** against Crossref/OpenAlex; "unverified" UI warning.
+- R237cg: **reverse DOI lookup** — Crossref `query.bibliographic` (title+author+year),
+  accept only if title token-set Jaccard ≥ 0.70. Non-book DOI coverage → 25/25.
+
+### Classification + publisher (app + worker)
+- R237bz/ca/cb: OpenAlex `primary_topic` field badge (authoritative) + library field filter.
+- R237ch/ck: `normalizePublisher()` — strips org tags / legal suffixes + alias map
+  (all Springer variants → "Springer Nature"). Display-only.
+
+### Library Overview dashboard (app)
+- R237cl: `papers-landscape.tsx` — "List | Overview" toggle; stat tiles + OpenAlex-field
+  pie + publisher bar + year histogram (recharts + shadcn ChartContainer, no extra calls).
+- R237cm: click a pie field / bar publisher → sets library filter + switches to list;
+  removable quick-filter chips.
+
+### Pricing + tier (app + worker)
+- R237ci: prices re-verified 2026-05-30 (no change); added `claude-opus-4-8` PRICING entry.
+- R237cj: Tier-5 model `claude-opus-4-7` → `claude-opus-4-8` (same price). ADR-019.
+
+### Citation panel + filter (app + worker)
+- R237cn: panel redesign — no section collapse; reference card shows cited **title**
+  (2-line clamp) + "author et al · year · journal"; DOI no longer rendered (and never via
+  `formatSciNode` → fixes "s43586" subscript); own-DOI removed from refs; show-more on the
+  REFERENCES header; cards ≈ ⅓ height. Active-tab shadow → `.edge-tab-active` CSS using
+  `color-mix(--foreground …)` (dark-mode safe).
+- R237co (worker): citations store `targetPublisher` + `targetIsOpenAccess` (Crossref
+  publisher + OpenAlex `open_access.is_oa`); one batched OpenAlex call (`filter=doi:A|B|…`,
+  ~50/call, free) fills both branches; `create_citation` backfills on reprocess.
+- R237cp (app): citation filter = Open-Access toggle + publisher multi-select (replaces
+  confidence chips); appears only after enrichment populates the data.
 
 ---
 

@@ -7,6 +7,7 @@
  */
 import 'server-only';
 import { ChandraOcrProvider } from './chandra';
+import { DatalabOcrProvider } from './datalab';
 import { DoclingOcrProvider } from './docling';
 import { MistralOcrProvider } from './mistral';
 import { OlmOcrProvider } from './olmocr';
@@ -37,6 +38,13 @@ export const OCR_ENGINES: Record<OcrEngineId, OcrEngineInfo> = {
     status: 'wired',
     license: 'Code Apache-2.0; weights OpenRAIL-M (<$2M rev AND <$2M funding AND no-compete)',
     create: () => new ChandraOcrProvider()
+  },
+  datalab: {
+    id: 'datalab',
+    label: 'Datalab API (hosted Marker)',
+    status: 'wired',
+    license: 'Paid cloud service (per-page) — $2M open-weights gate N/A',
+    create: () => new DatalabOcrProvider()
   },
   olmocr: {
     id: 'olmocr',

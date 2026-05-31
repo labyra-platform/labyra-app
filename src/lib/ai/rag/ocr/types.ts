@@ -11,7 +11,7 @@
 export type OcrMode = 'realtime' | 'batch';
 
 /** Known OCR engine identifiers (see registry). */
-export type OcrEngineId = 'mistral' | 'chandra' | 'olmocr' | 'docling';
+export type OcrEngineId = 'mistral' | 'chandra' | 'datalab' | 'olmocr' | 'docling';
 
 export interface OcrPage {
   /** Page number (1-indexed) */

@@ -117,12 +117,19 @@ export function MessageList({
       <p className='text-muted-foreground py-8 text-center text-sm'>{t('emptyHistory')}</p>
     ) : (
       messages.map((m) => {
-        const isLastEmpty =
-          isStreaming && m.id === messages.at(-1)?.id && m.role === 'assistant' && !m.content;
+        const isLastAssistant = m.id === messages.at(-1)?.id && m.role === 'assistant';
+        const isLastEmpty = isStreaming && isLastAssistant && !m.content;
         if (isLastEmpty) {
           return <ThinkingIndicator key={m.id} label={thinkingLabel(m, t)} />;
         }
-        return <MessageBubble key={m.id} message={m} conversationId={conversationId} />;
+        return (
+          <MessageBubble
+            key={m.id}
+            message={m}
+            conversationId={conversationId}
+            streaming={Boolean(isStreaming) && isLastAssistant}
+          />
+        );
       })
     );
 

@@ -121,10 +121,12 @@ function renderWithCitations(
 // because any field change produces a new message ref.
 function MessageBubbleInner({
   message,
-  conversationId
+  conversationId,
+  streaming
 }: {
   message: AiMessage;
   conversationId?: string;
+  streaming?: boolean;
 }) {
   const [showAudit, setShowAudit] = useState(false);
   const isUser = message.role === 'user';
@@ -188,18 +190,25 @@ function MessageBubbleInner({
           <>
             {message.tier && <TierBadge tier={message.tier} />}
             {/* Tool calls hidden from UI (ai-5d-3c) — sources accessible via citation chip modal */}
-            <div className='lb-md'>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[
-                  [rehypeKatex, { strict: false, throwOnError: false }],
-                  rehypeNumericTableCols
-                ]}
-                components={markdownComponents}
-              >
-                {safeContent || '...'}
-              </ReactMarkdown>
-            </div>
+            {streaming ? (
+              // R250: while streaming, render raw text (cheap) instead of parsing
+              // markdown + KaTeX on every token. Snaps to the full .lb-md render
+              // once the stream completes (streaming=false → one final re-render).
+              <div className='lb-md whitespace-pre-wrap'>{message.content}</div>
+            ) : (
+              <div className='lb-md'>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[
+                    [rehypeKatex, { strict: false, throwOnError: false }],
+                    rehypeNumericTableCols
+                  ]}
+                  components={markdownComponents}
+                >
+                  {safeContent || '...'}
+                </ReactMarkdown>
+              </div>
+            )}
             <CitationModal source={activeSource} onClose={() => setActiveRef(null)} />
             {message.grounding && <GroundingWarning grounding={message.grounding} />}
             {message.content && <CopyButton text={safeContent} />}

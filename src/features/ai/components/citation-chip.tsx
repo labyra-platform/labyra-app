@@ -8,16 +8,25 @@ import { cn } from '@/lib/utils';
 
 interface CitationChipProps {
   refNumber: number;
+  /** Number shown on the chip (Vancouver order-of-appearance). Falls back to refNumber. */
+  displayNumber?: number;
   totalSources: number;
   /** Called when chip clicked — parent scrolls/highlights source */
   onClick?: (refNumber: number) => void;
 }
 
-export function CitationChip({ refNumber, totalSources, onClick }: CitationChipProps) {
+export function CitationChip({
+  refNumber,
+  displayNumber,
+  totalSources,
+  onClick
+}: CitationChipProps) {
   // Don't render chip if refNumber out of bounds (LLM hallucinated [99])
   if (refNumber < 1 || refNumber > totalSources) {
     return <span className='text-muted-foreground'>[{refNumber}]</span>;
   }
+
+  const label = displayNumber ?? refNumber;
 
   return (
     <button
@@ -30,9 +39,9 @@ export function CitationChip({ refNumber, totalSources, onClick }: CitationChipP
         'bg-primary/15 text-primary hover:bg-primary/25',
         'border border-primary/30 transition-colors cursor-pointer'
       )}
-      aria-label={`Source ${refNumber}`}
+      aria-label={`Source ${label}`}
     >
-      {refNumber}
+      {label}
     </button>
   );
 }

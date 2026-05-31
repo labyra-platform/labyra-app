@@ -99,7 +99,8 @@ const CITATION_RE = /\[([\d\s,]+)\]|([\u2460-\u2473])/g;
 function renderWithCitations(
   text: string,
   totalSources: number,
-  onClickRef: (ref: number) => void
+  onClickRef: (ref: number) => void,
+  displayMap?: Map<number, number>
 ): ReactNode[] {
   if (totalSources === 0 || !text) return [text];
 
@@ -128,6 +129,7 @@ function renderWithCitations(
         <CitationChip
           key={`cite-${idx}-${refNum}-${j}`}
           refNumber={refNum}
+          displayNumber={displayMap?.get(refNum)}
           totalSources={totalSources}
           onClick={onClickRef}
         />
@@ -200,22 +202,54 @@ function MessageBubbleInner({
   const renderContent = streaming ? throttled : (message.content ?? '');
   const safeContent = useMemo(() => unwrapViMath(renderContent), [renderContent]);
 
+  // Number citations by order of FIRST appearance in the answer (Vancouver style),
+  // not by retrieval rank. Maps the model's original ref → display number. Based on
+  // renderContent (= throttled while streaming) so it changes in lockstep with
+  // safeContent and never busts the markdown memo more often than the throttle.
+  const citationOrder = useMemo(() => {
+    const map = new Map<number, number>();
+    if (!renderContent || sources.length === 0) return map;
+    CITATION_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    let next = 1;
+    while ((m = CITATION_RE.exec(renderContent)) !== null) {
+      const refs = m[1]
+        ? m[1]
+            .split(/[\s,]+/)
+            .map(Number)
+            .filter((n) => Number.isInteger(n) && n > 0)
+        : m[2]
+          ? [(m[2].codePointAt(0) ?? CIRCLED_ONE) - CIRCLED_ONE + 1]
+          : [];
+      for (const r of refs) {
+        if (r >= 1 && r <= sources.length && !map.has(r)) map.set(r, next++);
+      }
+    }
+    return map;
+  }, [renderContent, sources.length]);
+
   // Custom markdown renderers that inject citation chips into text nodes
   const markdownComponents = useMemo(
     () => ({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       p: ({ children, ...props }: any) => (
-        <p {...props}>{processChildren(children, sources.length, handleCitationClick)}</p>
+        <p {...props}>
+          {processChildren(children, sources.length, handleCitationClick, citationOrder)}
+        </p>
       ),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       li: ({ children, ...props }: any) => (
-        <li {...props}>{processChildren(children, sources.length, handleCitationClick)}</li>
+        <li {...props}>
+          {processChildren(children, sources.length, handleCitationClick, citationOrder)}
+        </li>
       ),
       // Citations inside comparison-table cells also render as chips. Keep
       // ...props so rehypeNumericTableCols' .lb-num className survives.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       td: ({ children, ...props }: any) => (
-        <td {...props}>{processChildren(children, sources.length, handleCitationClick)}</td>
+        <td {...props}>
+          {processChildren(children, sources.length, handleCitationClick, citationOrder)}
+        </td>
       ),
       // R247: professional comparison table — wrapper enables horizontal scroll +
       // the .lb-table styling (kẻ ngang, header tinh tế, số căn phải). Numeric
@@ -227,7 +261,7 @@ function MessageBubbleInner({
         </div>
       )
     }),
-    [sources.length, handleCitationClick]
+    [sources.length, handleCitationClick, citationOrder]
   );
 
   // R252: memoise the parsed markdown element. The bubble re-renders on every
@@ -272,7 +306,11 @@ function MessageBubbleInner({
             {message.tier && <TierBadge tier={message.tier} />}
             {/* Tool calls hidden from UI (ai-5d-3c) — sources accessible via citation chip modal */}
             <div className='lb-md'>{rendered}</div>
-            <CitationModal source={activeSource} onClose={() => setActiveRef(null)} />
+            <CitationModal
+              source={activeSource}
+              displayRef={activeRef !== null ? citationOrder.get(activeRef) : undefined}
+              onClose={() => setActiveRef(null)}
+            />
             {message.grounding && <GroundingWarning grounding={message.grounding} />}
             {message.content && <CopyButton text={safeContent} />}
             {message.content && conversationId && (message.tier === 3 || message.tier === 4) && (
@@ -302,16 +340,17 @@ function MessageBubbleInner({
 function processChildren(
   children: ReactNode,
   totalSources: number,
-  onClickRef: (ref: number) => void
+  onClickRef: (ref: number) => void,
+  displayMap?: Map<number, number>
 ): ReactNode {
   // Plain text → parse citation markers ([1] / [1, 2] / ①) into chips.
   if (typeof children === 'string') {
-    return renderWithCitations(children, totalSources, onClickRef);
+    return renderWithCitations(children, totalSources, onClickRef, displayMap);
   }
   // Multiple children → process each, recursing into inline formatting.
   if (Array.isArray(children)) {
     return children.map((child, i) => (
-      <Fragment key={i}>{processChildren(child, totalSources, onClickRef)}</Fragment>
+      <Fragment key={i}>{processChildren(child, totalSources, onClickRef, displayMap)}</Fragment>
     ));
   }
   // Inline element (<strong>, <em>…) → recurse so a [n] inside bold/italic still
@@ -326,7 +365,7 @@ function processChildren(
     return cloneElement(
       el,
       undefined,
-      processChildren(el.props.children, totalSources, onClickRef)
+      processChildren(el.props.children, totalSources, onClickRef, displayMap)
     );
   }
   return children;

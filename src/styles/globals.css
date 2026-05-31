@@ -355,3 +355,12 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* Radix ScrollArea wraps its content in an inline `display:table` div that
+   shrink-wraps to the widest child — long paper titles in the AI Scope panel
+   overflowed the w-80 panel and got clipped by the viewport edge. Force the
+   wrapper to block so content fills 100% width and line-clamp engages. Scoped
+   to the AI paper list only. */
+.lb-paper-scroll [data-slot='scroll-area-viewport'] > div {
+  display: block !important;
+}

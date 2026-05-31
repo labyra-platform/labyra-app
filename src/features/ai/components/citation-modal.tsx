@@ -16,10 +16,12 @@ import type { SourceHit } from './sources-panel';
 
 interface CitationModalProps {
   source: SourceHit | null;
+  /** Number shown in the header (Vancouver order-of-appearance). Falls back to source.ref. */
+  displayRef?: number;
   onClose: () => void;
 }
 
-export function CitationModal({ source, onClose }: CitationModalProps) {
+export function CitationModal({ source, displayRef, onClose }: CitationModalProps) {
   // ESC to close
   useEffect(() => {
     if (!source) return;
@@ -64,7 +66,7 @@ export function CitationModal({ source, onClose }: CitationModalProps) {
         {/* Header */}
         <div className='sticky top-0 z-10 flex items-start gap-3 border-b bg-card px-5 py-4'>
           <span className='shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary text-sm font-semibold border border-primary/20'>
-            {source.ref}
+            {displayRef ?? source.ref}
           </span>
           <div className='flex-1 min-w-0'>
             <h3 id='citation-modal-title' className='text-base font-semibold leading-snug'>

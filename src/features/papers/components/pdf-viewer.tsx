@@ -191,6 +191,11 @@ const ZOOM_STEP = 0.15;
 const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 4;
 const ZOOM_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+// R244: comfortable single-page reading width (px @ zoom 1). The page sheet is
+// capped here and centred, so it stays a fixed size regardless of how wide the
+// window is or whether the sidebar / side panel are open — toggling those only
+// changes the margin around the sheet, never the sheet itself.
+const READING_SHEET_MAX = 1100;
 
 async function fetchSignedUrl(paperId: string): Promise<SignedUrlResponse> {
   // Wait for auth state to settle before reading currentUser
@@ -403,19 +408,13 @@ export function PdfViewer({
     if (hasActivatedRef.current && !pdfData) loadPdf();
   }, [active, pdfData, loadPdf]);
 
-  // R181-6 / R237aw: track container width. We measure the PARENT width (stable
-  // under PDF zoom, which only changes the inner pages) so a ResizeObserver on
-  // it is safe — it fires on real layout changes (side panel / sidebar / window
-  // toggles) but NOT on internal page renders, avoiding the zoom feedback loop
-  // that made us avoid ResizeObserver originally. Before applying a new width we
-  // snapshot the current reading anchor (page + offset) so the post-resize
-  // layout effect can restore it — otherwise toggling the side panel re-flows
-  // the pages and loses the reading position.
+  // R244: page width is derived from the VIEWPORT (capped at a comfortable
+  // reading width), NOT the PDF column. Toggling the sidebar or the side panel
+  // changes the column width but not the viewport, so the page keeps its size
+  // and is never re-rasterized on a panel toggle — it only gets more/less margin
+  // around it. Width recomputes only on a real window resize (where page heights
+  // DO change, so we restore the reading anchor captured just before).
   useLayoutEffect(() => {
-    const el = pagesContainerRef.current;
-    const parent = el?.parentElement;
-    if (!parent) return;
-
     const captureAnchor = () => {
       const c = pagesContainerRef.current;
       if (!c || !restoredRef.current) return;
@@ -434,30 +433,20 @@ export function PdfViewer({
     };
 
     const measure = () => {
-      const c = pagesContainerRef.current;
-      if (!c || !c.parentElement) return;
-      const w = c.parentElement.clientWidth;
+      const margin = isFullscreen ? 56 : 88;
+      const w = Math.min(READING_SHEET_MAX + 32, Math.max(352, window.innerWidth - margin));
       setContainerWidth((prev) => {
-        if (Math.abs(prev - w) <= 8) return prev;
+        if (Math.abs(prev - w) <= 1) return prev;
         captureAnchor(); // remember reading position before the width changes
         return w;
       });
     };
 
-    let debounce: ReturnType<typeof setTimeout> | null = null;
-    const ro = new ResizeObserver(() => {
-      if (debounce) clearTimeout(debounce);
-      debounce = setTimeout(measure, 120);
-    });
-    ro.observe(parent);
-
-    const id = setTimeout(measure, 50);
     measure();
+    const id = setTimeout(measure, 50);
     window.addEventListener('resize', measure);
     return () => {
       clearTimeout(id);
-      if (debounce) clearTimeout(debounce);
-      ro.disconnect();
       window.removeEventListener('resize', measure);
     };
   }, [pdfReady, isFullscreen]);

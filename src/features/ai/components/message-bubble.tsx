@@ -1,7 +1,19 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { IconCheck, IconCopy, IconShieldSearch } from '@tabler/icons-react';
-import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  cloneElement,
+  Fragment,
+  isValidElement,
+  memo,
+  type ReactElement,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -79,6 +91,11 @@ function TierBadge({ tier }: { tier: 1 | 2 | 3 | 4 | 5 }) {
  * Parse text containing [N] markers and replace with CitationChip components.
  * Returns array of React nodes (string segments + chips).
  */
+const CIRCLED_ONE = 0x2460; // ① ; ⑳ = U+2473 (20)
+// Citation markers the model may emit: ASCII brackets [1] / [1, 2], or circled
+// digits ①..⑳ (Gemini sometimes "prettifies" [n] into these). Both → chip(s).
+const CITATION_RE = /\[([\d\s,]+)\]|([\u2460-\u2473])/g;
+
 function renderWithCitations(
   text: string,
   totalSources: number,
@@ -86,29 +103,39 @@ function renderWithCitations(
 ): ReactNode[] {
   if (totalSources === 0 || !text) return [text];
 
-  const regex = /\[(\d+)\]/g;
   const nodes: ReactNode[] = [];
   let lastIdx = 0;
   let match: RegExpExecArray | null;
+  CITATION_RE.lastIndex = 0; // module-level /g regex — reset before each parse
 
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIdx) {
-      nodes.push(text.slice(lastIdx, match.index));
-    }
-    const refNum = Number(match[1]);
-    nodes.push(
-      <CitationChip
-        key={`cite-${match.index}-${refNum}`}
-        refNumber={refNum}
-        totalSources={totalSources}
-        onClick={onClickRef}
-      />
-    );
-    lastIdx = match.index + match[0].length;
+  while ((match = CITATION_RE.exec(text)) !== null) {
+    // Bracket form "[1]" / "[1, 2]" (group 1) or circled "①..⑳" (group 2).
+    const refs: number[] = match[1]
+      ? match[1]
+          .split(/[\s,]+/)
+          .map(Number)
+          .filter((n) => Number.isInteger(n) && n > 0)
+      : match[2]
+        ? [(match[2].codePointAt(0) ?? CIRCLED_ONE) - CIRCLED_ONE + 1]
+        : [];
+
+    if (refs.length === 0) continue; // e.g. "[ ]" — leave the matched text in place
+
+    const idx = match.index;
+    if (idx > lastIdx) nodes.push(text.slice(lastIdx, idx));
+    refs.forEach((refNum, j) => {
+      nodes.push(
+        <CitationChip
+          key={`cite-${idx}-${refNum}-${j}`}
+          refNumber={refNum}
+          totalSources={totalSources}
+          onClick={onClickRef}
+        />
+      );
+    });
+    lastIdx = idx + match[0].length;
   }
-  if (lastIdx < text.length) {
-    nodes.push(text.slice(lastIdx));
-  }
+  if (lastIdx < text.length) nodes.push(text.slice(lastIdx));
   return nodes;
 }
 
@@ -183,6 +210,12 @@ function MessageBubbleInner({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       li: ({ children, ...props }: any) => (
         <li {...props}>{processChildren(children, sources.length, handleCitationClick)}</li>
+      ),
+      // Citations inside comparison-table cells also render as chips. Keep
+      // ...props so rehypeNumericTableCols' .lb-num className survives.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      td: ({ children, ...props }: any) => (
+        <td {...props}>{processChildren(children, sources.length, handleCitationClick)}</td>
       ),
       // R247: professional comparison table — wrapper enables horizontal scroll +
       // the .lb-table styling (kẻ ngang, header tinh tế, số căn phải). Numeric
@@ -271,16 +304,30 @@ function processChildren(
   totalSources: number,
   onClickRef: (ref: number) => void
 ): ReactNode {
+  // Plain text → parse citation markers ([1] / [1, 2] / ①) into chips.
   if (typeof children === 'string') {
     return renderWithCitations(children, totalSources, onClickRef);
   }
+  // Multiple children → process each, recursing into inline formatting.
   if (Array.isArray(children)) {
-    return children.map((child, i) => {
-      if (typeof child === 'string') {
-        return <span key={i}>{renderWithCitations(child, totalSources, onClickRef)}</span>;
-      }
-      return child;
-    });
+    return children.map((child, i) => (
+      <Fragment key={i}>{processChildren(child, totalSources, onClickRef)}</Fragment>
+    ));
+  }
+  // Inline element (<strong>, <em>…) → recurse so a [n] inside bold/italic still
+  // becomes a chip. Skip <code>/<pre>/<a> (brackets are literal / no nested button)
+  // and KaTeX math (never touch rendered math).
+  if (isValidElement(children)) {
+    const el = children as ReactElement<{ children?: ReactNode; className?: string }>;
+    const className = typeof el.props.className === 'string' ? el.props.className : '';
+    const skip =
+      el.type === 'code' || el.type === 'pre' || el.type === 'a' || className.includes('katex');
+    if (skip) return children;
+    return cloneElement(
+      el,
+      undefined,
+      processChildren(el.props.children, totalSources, onClickRef)
+    );
   }
   return children;
 }

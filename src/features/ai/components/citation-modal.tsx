@@ -113,7 +113,7 @@ export function CitationModal({ source, onClose }: CitationModalProps) {
               Relevance {source.score != null ? `${(source.score * 100).toFixed(0)}%` : '—'}
             </span>
           </div>
-          <div className='prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed'>
+          <div className='lb-md text-sm leading-relaxed'>
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
               rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}

@@ -24,12 +24,11 @@ export function CitationChip({ refNumber, totalSources, onClick }: CitationChipP
       type='button'
       onClick={() => onClick?.(refNumber)}
       className={cn(
-        'inline-flex items-center justify-center',
-        'min-w-[1.4em] h-[1.4em] mx-0.5 px-1',
-        'rounded-md text-[0.75em] font-medium',
-        'bg-primary/10 text-primary hover:bg-primary/20',
-        'transition-colors cursor-pointer',
-        'border border-primary/20'
+        'inline-flex items-center justify-center align-middle',
+        'mx-0.5 h-[1.5em] min-w-[1.5em] px-1',
+        'rounded text-[0.72em] font-semibold leading-none',
+        'bg-primary/15 text-primary hover:bg-primary/25',
+        'border border-primary/30 transition-colors cursor-pointer'
       )}
       aria-label={`Source ${refNumber}`}
     >

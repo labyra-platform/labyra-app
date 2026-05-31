@@ -11,6 +11,7 @@
 // R165-phase-1-oxlint: oxlint cleanup
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
+import { mapWithConcurrency } from '@/lib/utils/concurrency';
 import type { PaperChunkDoc } from '@/types/papers';
 import { BM25Encoder } from './bm25';
 import { loadBM25State, saveBM25State } from './firestore-store';
@@ -36,6 +37,9 @@ function getCache(): Map<string, CachedEntry> {
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h
 const COLD_START_MIN_PAPERS = 3;
+// R238c: cap concurrent per-paper chunk reads so a large tenant doesn't fire
+// hundreds of simultaneous Firestore round-trips at once.
+const CHUNK_FETCH_CONCURRENCY = 25;
 
 /**
  * AI-16: invalidate a tenant's cached BM25 encoder. Call after a paper finishes
@@ -94,8 +98,11 @@ async function getCorpus(tenantId: string): Promise<string[]> {
     .get();
 
   const corpus: string[] = [];
-  for (const paperDoc of papers.docs) {
-    const chunks = await paperDoc.ref.collection('chunks').get();
+  // R238c: parallelize per-paper chunk reads (was a serial N+1 — one RTT/paper).
+  const chunkSnaps = await mapWithConcurrency(papers.docs, CHUNK_FETCH_CONCURRENCY, (paperDoc) =>
+    paperDoc.ref.collection('chunks').get()
+  );
+  for (const chunks of chunkSnaps) {
     for (const chunk of chunks.docs) {
       const data = chunk.data() as PaperChunkDoc;
       if (data.text) corpus.push(data.text);

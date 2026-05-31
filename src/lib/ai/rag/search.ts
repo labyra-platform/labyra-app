@@ -5,6 +5,7 @@
 import 'server-only';
 // R188-4-phase1-tool-timeout
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
+import { mapWithConcurrency } from '@/lib/utils/concurrency';
 import type { PaperChunkDoc } from '@/types/papers';
 import { getEmbeddingProvider } from './embedding';
 import { reciprocalRankFusion, toRankedList } from './fusion/rrf';
@@ -21,6 +22,8 @@ const DEFAULT_TOP_N = 5;
 // ADR-033 T-4: BM25 fail-soft budget. The scan-all-chunks path is the slow one
 // at scale; beyond this, fall back to vector-only instead of timing out search.
 const BM25_TIMEOUT_MS = 5000;
+// R238c: cap concurrent per-paper chunk reads (parallelized from a serial N+1).
+const CHUNK_FETCH_CONCURRENCY = 25;
 
 // Sections to exclude from retrieval (boilerplate, citations, low-info)
 // References dense with keywords cause BM25 to surface them in top results.
@@ -84,51 +87,57 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   }
   const mergedFilter: Record<string, unknown> = { $and: filterClauses };
 
-  const vectorMatches = await vectorStore.query(
-    req.tenantId,
-    queryVector,
-    vectorTopK,
-    mergedFilter
-  );
-  _mark('vector_query');
+  // R238c: run vector + BM25 retrieval concurrently (were sequential — BM25 was
+  // added on top of vector latency). Each leg records its own mark on resolution
+  // so per-leg timing stays observable.
+  const vectorPromise = vectorStore
+    .query(req.tenantId, queryVector, vectorTopK, mergedFilter)
+    .then((matches) => {
+      _mark('vector_query');
+      return matches;
+    });
 
-  // BM25 retrieval (only if encoder available — may be null for new tenants)
-  let bm25Hits: { chunkId: string; score: number; chunk: PaperChunkDoc }[] = [];
-  if (bm25Encoder) {
-    // Fail-soft (ADR-033 T-4): the current BM25 path scans all chunks in the
-    // tenant, so at scale it can dominate latency. Cap it with a timeout and
-    // fall back to vector-only (≈70-80% quality) rather than letting a slow
-    // BM25 time out the whole search. Vector results are already retrieved above.
-    let bm25Timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      bm25Hits = await Promise.race([
-        retrieveBM25(
-          req.tenantId,
-          req.query,
-          bm25Encoder,
-          DEFAULT_BM25_TOP_K,
-          req.viewerGroupId,
-          req.isPrivileged
-        ),
-        new Promise<never>((_resolve, reject) => {
-          bm25Timer = setTimeout(() => reject(new Error('bm25_timeout')), BM25_TIMEOUT_MS);
-        })
-      ]);
-    } catch (err) {
-      console.warn(
-        JSON.stringify({
-          level: 'warn',
-          event: 'bm25_failsoft',
-          tenantId: req.tenantId,
-          error: err instanceof Error ? err.message : String(err)
-        })
-      );
-      bm25Hits = []; // vector-only fallback
-    } finally {
-      if (bm25Timer) clearTimeout(bm25Timer);
-    }
-    _mark('bm25_retrieve');
-  }
+  // BM25 retrieval (only if encoder available — may be null for new tenants).
+  // Fail-soft (ADR-033 T-4): the BM25 path scans all chunks in the tenant, so at
+  // scale it can dominate latency. Cap it with a timeout and fall back to
+  // vector-only (≈70-80% quality) rather than letting a slow BM25 time out search.
+  const bm25HitsPromise: Promise<{ chunkId: string; score: number; chunk: PaperChunkDoc }[]> =
+    bm25Encoder
+      ? (async () => {
+          let bm25Timer: ReturnType<typeof setTimeout> | undefined;
+          try {
+            const hits = await Promise.race([
+              retrieveBM25(
+                req.tenantId,
+                req.query,
+                bm25Encoder,
+                DEFAULT_BM25_TOP_K,
+                req.viewerGroupId,
+                req.isPrivileged
+              ),
+              new Promise<never>((_resolve, reject) => {
+                bm25Timer = setTimeout(() => reject(new Error('bm25_timeout')), BM25_TIMEOUT_MS);
+              })
+            ]);
+            _mark('bm25_retrieve');
+            return hits;
+          } catch (err) {
+            console.warn(
+              JSON.stringify({
+                level: 'warn',
+                event: 'bm25_failsoft',
+                tenantId: req.tenantId,
+                error: err instanceof Error ? err.message : String(err)
+              })
+            );
+            return []; // vector-only fallback
+          } finally {
+            if (bm25Timer) clearTimeout(bm25Timer);
+          }
+        })()
+      : Promise.resolve<{ chunkId: string; score: number; chunk: PaperChunkDoc }[]>([]);
+
+  const [vectorMatches, bm25Hits] = await Promise.all([vectorPromise, bm25HitsPromise]);
 
   // ─── STEP 2: Build candidate map ────────────────────────────────
   const candidates = new Map<string, HitCandidate>();
@@ -323,8 +332,11 @@ async function retrieveBM25(
     'ASSOCIATED CONTENT',
     'Terms and Conditions'
   ]);
-  for (const paper of papers.docs) {
-    const chunks = await paper.ref.collection('chunks').get();
+  // R238c: parallelize per-paper chunk reads (was serial N+1 — one RTT/paper).
+  const chunkSnaps = await mapWithConcurrency(papers.docs, CHUNK_FETCH_CONCURRENCY, (paper) =>
+    paper.ref.collection('chunks').get()
+  );
+  for (const chunks of chunkSnaps) {
     for (const c of chunks.docs) {
       const data = c.data() as PaperChunkDoc;
       // Skip excluded sections

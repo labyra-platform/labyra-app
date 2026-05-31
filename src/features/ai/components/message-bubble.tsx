@@ -1,7 +1,7 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { IconCheck, IconCopy, IconShieldSearch } from '@tabler/icons-react';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { memo, type ReactNode, useCallback, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -112,7 +112,14 @@ function renderWithCitations(
   return nodes;
 }
 
-export function MessageBubble({
+// R249: rendering a message parses markdown + KaTeX, which the Profiler showed
+// costs ~50–80ms PER MESSAGE and (actualMs ≈ baseMs) re-ran for EVERY message on
+// every streaming delta — O(n) re-parse per token. memo() below makes a bubble
+// re-render only when its own props change; since streaming updates preserve the
+// object identity of untouched messages (use-chat-stream maps `: m`), only the
+// streaming message re-renders. Default shallow compare is safe here precisely
+// because any field change produces a new message ref.
+function MessageBubbleInner({
   message,
   conversationId
 }: {
@@ -238,3 +245,5 @@ function processChildren(
   }
   return children;
 }
+
+export const MessageBubble = memo(MessageBubbleInner);

@@ -6,7 +6,7 @@
 <!-- R182-docs-update-2026-05-19 -->
 
 **Version**: 3.3 (R186)
-**Last updated**: 2026-05-20
+**Last updated**: 2026-05-30 (R237cj: T5 → Opus 4.8)
 **State**: Production (all 6 tiers live). AI pipeline unchanged R183-R186; those rounds were security/launch + data-model work — see ROADMAP.md commercial-launch track.
 
 
@@ -147,7 +147,7 @@ Strict prompt rules (R174-8):
 
 ### T5 — Auditor (peer review) ← R173-5
 
-**Model**: `claude-opus-4-7` (`reasoning-frontier` capability, +35% tokenizer inflation)
+**Model**: `claude-opus-4-8` (`reasoning-frontier` capability, +35% tokenizer inflation)
 **Role**: Verify claims in T3/T4 responses against RAG sources
 **Latency**: ~10-15s
 **Cost**: ~$0.05-0.15/audit (max 15 claims/run)
@@ -157,7 +157,7 @@ Endpoint: `POST /api/messages/[id]/audit` (explicit trigger).
 Flow:
 1. Load source message + aiProvenance (RAG chunks used)
 2. Extract claims (numerical, citation, mechanism, definition)
-3. Single Opus 4.7 batch call evaluating all claims
+3. Single Opus 4.8 batch call evaluating all claims
 4. Verdict per claim: supported / partially_supported / unsupported / contradicted
 5. Confidence score + evidence chunkIds
 6. Save `tenants/{tid}/aiAudits/{auditId}`
@@ -192,7 +192,7 @@ export const CAPABILITY_MAP: Record<Capability, CapabilityProfile> = {
   },
   'reasoning-frontier': {
     provider: 'anthropic',
-    model: 'claude-opus-4-7',
+    model: 'claude-opus-4-8',
     inputCost: 15, outputCost: 75,
     cacheReadCost: 1.5,
     maxTokens: 4096,
@@ -310,7 +310,7 @@ Per-tenant attribution via share ratio. Alert if |drift| > 20%.
 **Schedule**: `0 3 * * 0` (03:00 UTC Sunday)
 **File**: `functions/src/scheduled/ragas-eval.ts`
 
-Samples 10 random conversations from past 7 days (tier ≥ 2). 11 metrics via Opus 4.7 evaluator:
+Samples 10 random conversations from past 7 days (tier ≥ 2). 11 metrics via Opus 4.8 evaluator:
 
 **Core RAG (3)**:
 - Faithfulness
@@ -643,7 +643,7 @@ tenants/{tid}/aiAudits/{auditId}
   - overallConfidence
   - supportedCount, unsupportedCount, contradictedCount
   - totalCost
-  - evaluatorModel: 'claude-opus-4-7'
+  - evaluatorModel: 'claude-opus-4-8'
   - evaluatedAt
 ```
 

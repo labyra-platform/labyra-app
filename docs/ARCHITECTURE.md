@@ -3,8 +3,8 @@
 > System architecture for Labyra Platform. For AI-specific design, see `AI_ARCHITECTURE.md`.
 > For dev workflow, see `WORKFLOW.md`. For coding rules, see `CLAUDE.md`.
 
-**Status**: Active (R186 shipped; C1 security fix DEPLOYED; RBAC enforcement in progress)
-**Last updated**: 2026-05-20
+**Status**: Active (R237 shipped; Papers citation/DOI quality + classification + Overview dashboard + publisher/OA filter)
+**Last updated**: 2026-05-30
 <!-- @r182-arch-refresh -->
 
 ---
@@ -332,7 +332,7 @@ export async function createMaterial(data: NewMaterial) {
 | T2 | Gemini 3 Flash | Spectrum analysis, paper classify (R178/R181-9), journal resolve | ~$0.001-0.06 | Live |
 | T3 | Claude Sonnet 4.6 | Theory chat, RAG synthesis, paper writing | ~$0.06 | Live |
 | T4 | Claude Sonnet 4.6 | Multi-step lab ops with tool chains | ~$0.10 | Live |
-| T5 | Claude Opus 4 | Complex reasoning, full-paper review | ~$0.30 | Live |
+| T5 | Claude Opus 4.8 | Complex reasoning, full-paper review | ~$0.30 | Live |
 
 Intent classification at T0 (Gemini Flash-Lite). Expected mix: 70% T1-T2, 25% T3-T4, 5% T5.
 Average ~$0.02/query. See ADR-019 (tier architecture), ADR-020 (cost controls), ADR-021 (inter-tier protocols).
@@ -791,10 +791,45 @@ Doc: `docs/scientific-methods/ftir-reference-library.md`.
 - **ADR-028**: Mozilla Observatory 100/100 security headers (8 HTTP headers + CSP nonce). Idempotency Key SHA-256. Feature Flag system. Backup/DR Cloud Function. MCP server MVP (3 tools: listChemicals, searchPapers, recentExperiments) — strategic pitch differentiator.
 - **ADR-029**: 5-level security testing. L1 static audit per PR. L2 weekly OWASP ZAP + Trivy. L3 manual auth testing. L4 AI red team (50+ prompt injection payloads). L5 deferred to pre-Series A.
 
-### 12.10 Removed / superseded from earlier sections
+### 12.11 Citation network + classification + dashboard (R165–R237, May 15–30)
+
+- **Citation data layer (R165–R166).** Outbound/inbound citations in
+  `tenants/{tid}/citations/{id}`. Extraction chain (Trust > Coverage): (A)
+  Crossref-deposited `reference[]`, (B) PDF DOI-anchored scan (R237bo), (C)
+  agent-assisted (planned, never fabricates a DOI). Confidence = `doi-exact` |
+  `title-fuzzy` | `unverified` | `manual`. Doc: `scientific-methods/citation-matching.md`,
+  ADR-016 (PROV-O), ADR-017 (citation network).
+- **DOI verification + reverse lookup (R237cc–cg).** Main-paper DOI is confirmed
+  against Crossref/OpenAlex (UI shows an "unverified" warning otherwise). When no DOI
+  is in the PDF, `reverse_lookup_doi` queries Crossref `query.bibliographic` and accepts
+  only on title token-set Jaccard ≥ 0.70. Non-book DOI coverage 25/25.
+- **OpenAlex authoritative classification (R237bz–cb).** Field from OpenAlex
+  `primary_topic` → `PaperDomainBadge` + a library field filter, preferred over the
+  Gemini domain guess. (Gemini domain taxonomy from R178-3 remains as fallback.)
+- **Publisher normalization (R237ch/ck).** `normalizePublisher()` strips org tags +
+  legal suffixes + applies an alias map (Springer variants → "Springer Nature").
+  Display-only; drives the publisher tree + Overview chart.
+- **Library Overview dashboard (R237cl/cm).** `papers-landscape.tsx` — "List | Overview"
+  toggle, stat tiles + OpenAlex-field pie + publisher bar + year histogram (recharts +
+  shadcn ChartContainer). Clicking a slice/bar sets the library filter.
+- **Citation publisher + Open-Access enrichment (R237co).** Citations store
+  `targetPublisher` + `targetIsOpenAccess` (Crossref publisher + OpenAlex
+  `open_access.is_oa`); one batched OpenAlex call fills both for all references; the
+  citation panel filters by publisher + an Open-Access toggle (R237cp).
+- **Async paper processing (R167).** Pub/Sub cutover Vercel → Cloud Run; 16-page paper
+  ~16s vs prior 60s Vercel timeout. ADR-018.
+
+### 12.12 spectra/reference-cards crash root-cause (R192, May 28)
+
+`useReferenceCards` did `setAllCards(cards)` where `cards` came from `res.json().cards`;
+a response body without a top-level `cards` field → `setAllCards(undefined)` → every
+consumer crashed. Fixed at the hook (`setAllCards(cards ?? [])`). Debug lesson:
+navigate-crash + reload-OK = data not loaded on first render, not hydration.
+
+
 
 - Section 5.1 three-tier table (R160 era) → six-tier R182 (above)
 - Section 5.3 provenance `tier: 1|2|3` → `0|1|2|3|4|5`
-- "Bonus tier Haiku 4.5" deprecated; Haiku 4.5 retained for migration cases only, default routing uses Gemini Flash family for T0-T2
+- "Bonus tier Haiku 4.5" deprecated; Haiku 4.5 runs OUTSIDE the 6-tier stack for cheap guard/extraction tasks (Ask-AI on-topic grounding check, app-side metadata/enrich). Default T0-T2 routing uses the Gemini Flash family.
 
 ---

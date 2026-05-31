@@ -11,6 +11,7 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { requireSuperadmin } from '@/lib/auth/superadmin-guard';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
+import { mapWithConcurrency } from '@/lib/utils/concurrency';
 
 interface DailyTotal {
   date: string;
@@ -27,6 +28,9 @@ function utcYmd(daysAgo: number): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
+// R238e: cap concurrent per-tenant _costs reads (parallelized from serial N+1).
+const TENANT_COSTS_CONCURRENCY = 25;
+
 export async function GET(request: Request): Promise<NextResponse> {
   const guard = await requireSuperadmin(request);
   if (!guard.allowed) return guard.response!;
@@ -41,27 +45,32 @@ export async function GET(request: Request): Promise<NextResponse> {
   const startDate = utcYmd(rangeDays);
   const endDate = utcYmd(0);
 
-  const allRows: DailyTotal[] = [];
-  for (const tenantDoc of tenantsSnap.docs) {
-    const tenantId = tenantDoc.id;
-    const costsSnap = await db
-      .collection(`tenants/${tenantId}/_costs`)
-      .where('date', '>=', startDate)
-      .where('date', '<=', endDate)
-      .get();
-
-    for (const doc of costsSnap.docs) {
-      const d = doc.data();
-      allRows.push({
-        date: d.date,
-        tenantId,
-        totalCost: d.totalCost ?? 0,
-        byTier: d.byTier ?? {},
-        byFeature: d.byFeature ?? {},
-        byCapability: d.byCapability ?? {}
+  // R238e: fetch each tenant's _costs concurrently (was a serial N+1 across all
+  // tenants — the superadmin report scans every tenant). Bounded at 25 in flight.
+  const perTenant = await mapWithConcurrency(
+    tenantsSnap.docs,
+    TENANT_COSTS_CONCURRENCY,
+    async (tenantDoc): Promise<DailyTotal[]> => {
+      const tenantId = tenantDoc.id;
+      const costsSnap = await db
+        .collection(`tenants/${tenantId}/_costs`)
+        .where('date', '>=', startDate)
+        .where('date', '<=', endDate)
+        .get();
+      return costsSnap.docs.map((doc) => {
+        const d = doc.data();
+        return {
+          date: d.date,
+          tenantId,
+          totalCost: d.totalCost ?? 0,
+          byTier: d.byTier ?? {},
+          byFeature: d.byFeature ?? {},
+          byCapability: d.byCapability ?? {}
+        } as DailyTotal;
       });
     }
-  }
+  );
+  const allRows: DailyTotal[] = perTenant.flat();
 
   // Aggregate summary
   const totalCost = allRows.reduce((s, r) => s + r.totalCost, 0);

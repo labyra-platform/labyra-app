@@ -118,45 +118,15 @@ interface Props {
 
 export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }: Props) {
   const t = useTranslations('papers');
-  const [journalSearch, setJournalSearch] = useState('');
   const [expandedPubs, setExpandedPubs] = useState<Set<string>>(() => new Set()); // R237by
-  const [oaSearch, setOaSearch] = useState(''); // R237cb
   const [expandedFields, setExpandedFields] = useState<Set<string>>(() => new Set()); // R237cb
 
   const journalStats = useMemo(() => aggregateJournalStats(papers), [papers]);
   const yearRange = useMemo(() => aggregateYearRange(papers), [papers]);
-  // R237by: publisher → journals tree, filtered by the journal search box.
-  const publisherTree = useMemo(() => {
-    const tree = aggregatePublisherTree(papers);
-    const q = journalSearch.trim().toLowerCase();
-    if (!q) return tree;
-    return tree
-      .map((g) => ({
-        ...g,
-        journals: g.journals.filter(
-          (j) =>
-            j.name.toLowerCase().includes(q) ||
-            j.short.toLowerCase().includes(q) ||
-            g.publisher.toLowerCase().includes(q)
-        )
-      }))
-      .filter((g) => g.journals.length > 0);
-  }, [papers, journalSearch]);
-  // R237cb: OpenAlex field → subfields tree, filtered by its own search box.
-  const oaTree = useMemo(() => {
-    const tree = aggregateOpenAlexTree(papers);
-    const q = oaSearch.trim().toLowerCase();
-    if (!q) return tree;
-    return tree
-      .map((g) => ({
-        ...g,
-        subfields: g.subfields.filter(
-          (s) => s.name.toLowerCase().includes(q) || g.field.toLowerCase().includes(q)
-        )
-      }))
-      .filter((g) => g.subfields.length > 0);
-  }, [papers, oaSearch]);
-  const isOaSearching = oaSearch.trim().length > 0;
+  // R243: publisher → journals tree (search box removed; tree shown in full).
+  const publisherTree = useMemo(() => aggregatePublisherTree(papers), [papers]);
+  // R243: OpenAlex field → subfields tree (search box removed; shown in full).
+  const oaTree = useMemo(() => aggregateOpenAlexTree(papers), [papers]);
   const domainCounts = useMemo(() => aggregateDomainCounts(papers), [papers]); // R229
   const currentYear = new Date().getFullYear(); // R229 year presets
 
@@ -167,8 +137,6 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
     () => papers.reduce((n, p) => (paperPassesFilter(p, value) ? n + 1 : n), 0),
     [papers, value]
   );
-
-  const isJournalSearching = journalSearch.trim().length > 0;
 
   // ---- counts ----
   const activeCount =
@@ -250,8 +218,6 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
   }
   function clearAll(): void {
     onChange(createEmptyPaperFilter());
-    setJournalSearch('');
-    setOaSearch('');
   }
 
   // domain slug -> axis color (for chips)
@@ -387,7 +353,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                         value={value.yearMin ?? ''}
                         onChange={(e) => setYearMin(e.target.value ? Number(e.target.value) : null)}
                         aria-label={t('filterYearMin')}
-                        className='h-9 w-24'
+                        className='h-8 w-16'
                       />
                       <span className='text-muted-foreground'>—</span>
                       <Input
@@ -399,7 +365,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                         value={value.yearMax ?? ''}
                         onChange={(e) => setYearMax(e.target.value ? Number(e.target.value) : null)}
                         aria-label={t('filterYearMax')}
-                        className='h-9 w-24'
+                        className='h-8 w-16'
                       />
                       <span className='text-xs text-muted-foreground'>
                         {yearRange.min}–{yearRange.max}
@@ -429,24 +395,13 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                         </button>
                       )}
                     </div>
-                    {journalStats.length > 6 && (
-                      <Input
-                        type='text'
-                        value={journalSearch}
-                        onChange={(e) => setJournalSearch(e.target.value)}
-                        placeholder={t('filterJournalSearch')}
-                        aria-label={t('filterJournalSearch')}
-                        className='h-9'
-                      />
-                    )}
                     <div className='space-y-1'>
                       {publisherTree.map((group: PublisherGroup) => {
                         const names = group.journals.map((j) => j.name);
                         const selectedCount = names.filter((n) => value.journals.has(n)).length;
                         const allSelected = selectedCount === names.length && names.length > 0;
                         const someSelected = selectedCount > 0 && !allSelected;
-                        // Force-open while searching so matches are visible.
-                        const open = isJournalSearching || expandedPubs.has(group.publisher);
+                        const open = expandedPubs.has(group.publisher);
                         const label = group.publisher || t('filterPublisherUnknown');
                         return (
                           <div key={group.publisher || '__none__'} className='rounded-md border'>
@@ -533,10 +488,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                   <section className='space-y-2'>
                     <div className='flex items-center justify-between'>
                       <div className='flex items-center gap-1.5 text-sm font-medium'>
-                        <IconCategory2
-                          className='size-4 text-sky-600 dark:text-sky-400'
-                          aria-hidden
-                        />
+                        <IconCategory2 className='size-4 text-muted-foreground' aria-hidden />
                         {t('filterOpenAlexLabel')}
                         <span className='text-xs font-normal text-muted-foreground'>
                           ({oaTree.length})
@@ -552,16 +504,6 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                         </button>
                       )}
                     </div>
-                    {oaTree.length > 6 && (
-                      <Input
-                        type='text'
-                        value={oaSearch}
-                        onChange={(e) => setOaSearch(e.target.value)}
-                        placeholder={t('filterOpenAlexSearch')}
-                        aria-label={t('filterOpenAlexSearch')}
-                        className='h-9'
-                      />
-                    )}
                     <div className='space-y-1'>
                       {oaTree.map((group: OpenAlexFieldGroup) => {
                         const names = group.subfields.map((s) => s.name);
@@ -570,7 +512,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                         ).length;
                         const allSelected = selectedCount === names.length && names.length > 0;
                         const someSelected = selectedCount > 0 && !allSelected;
-                        const open = isOaSearching || expandedFields.has(group.field);
+                        const open = expandedFields.has(group.field);
                         return (
                           <div key={group.field} className='rounded-md border'>
                             <div className='flex items-center gap-1.5 px-1.5 py-1'>

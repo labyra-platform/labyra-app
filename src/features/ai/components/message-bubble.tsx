@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { remarkUnwrapViMath } from '../lib/remark-unwrap-vi-math';
+import { unwrapViMath } from '../lib/sanitize-vi-math';
 import { cn } from '@/lib/utils';
 import type { AiMessage } from '@/types/ai';
 import 'katex/dist/katex.min.css';
@@ -130,6 +130,11 @@ export function MessageBubble({
   const activeSource =
     activeRef !== null ? (sources.find((s) => s.ref === activeRef) ?? null) : null;
 
+  // R240: strip math delimiters the model wrongly wrapped around Vietnamese
+  // prose, before react-markdown renders it (the old remark plugin is a no-op
+  // under react-markdown v10). Used for both rendering and the copy action.
+  const safeContent = useMemo(() => unwrapViMath(message.content ?? ''), [message.content]);
+
   // Custom markdown renderers that inject citation chips into text nodes
   const markdownComponents = useMemo(
     () => ({
@@ -168,16 +173,16 @@ export function MessageBubble({
             {/* Tool calls hidden from UI (ai-5d-3c) — sources accessible via citation chip modal */}
             <div className='prose prose-sm dark:prose-invert max-w-none prose-table:my-2 prose-pre:my-2 prose-p:my-1.5'>
               <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath, remarkUnwrapViMath]}
+                remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
                 components={markdownComponents}
               >
-                {message.content || '...'}
+                {safeContent || '...'}
               </ReactMarkdown>
             </div>
             <CitationModal source={activeSource} onClose={() => setActiveRef(null)} />
             {message.grounding && <GroundingWarning grounding={message.grounding} />}
-            {message.content && <CopyButton text={message.content} />}
+            {message.content && <CopyButton text={safeContent} />}
             {message.content && conversationId && (message.tier === 3 || message.tier === 4) && (
               <>
                 <button

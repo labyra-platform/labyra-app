@@ -7,6 +7,7 @@ import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import { unwrapViMath } from '../lib/sanitize-vi-math';
+import { rehypeNumericTableCols } from '../lib/rehype-numeric-table-cols';
 import { cn } from '@/lib/utils';
 import type { AiMessage } from '@/types/ai';
 import 'katex/dist/katex.min.css';
@@ -145,6 +146,15 @@ export function MessageBubble({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       li: ({ children, ...props }: any) => (
         <li {...props}>{processChildren(children, sources.length, handleCitationClick)}</li>
+      ),
+      // R247: professional comparison table — wrapper enables horizontal scroll +
+      // the .lb-table styling (kẻ ngang, header tinh tế, số căn phải). Numeric
+      // columns are tagged .lb-num by the rehypeNumericTableCols plugin.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      table: ({ children }: any) => (
+        <div className='lb-table-wrap'>
+          <table className='lb-table'>{children}</table>
+        </div>
       )
     }),
     [sources.length, handleCitationClick]
@@ -171,10 +181,13 @@ export function MessageBubble({
           <>
             {message.tier && <TierBadge tier={message.tier} />}
             {/* Tool calls hidden from UI (ai-5d-3c) — sources accessible via citation chip modal */}
-            <div className='prose prose-sm dark:prose-invert max-w-none prose-table:my-2 prose-pre:my-2 prose-p:my-1.5'>
+            <div className='lb-md'>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
+                rehypePlugins={[
+                  [rehypeKatex, { strict: false, throwOnError: false }],
+                  rehypeNumericTableCols
+                ]}
                 components={markdownComponents}
               >
                 {safeContent || '...'}

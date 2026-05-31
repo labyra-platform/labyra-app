@@ -211,3 +211,147 @@
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ── AI chat markdown (.lb-md) ──────────────────────────────────────────────
+   The app does NOT ship @tailwindcss/typography, so the prior `prose` classes
+   were no-ops and Tailwind preflight had stripped list markers, heading sizes
+   and block margins from AI responses. This restores a clean, professional flow
+   using design tokens only (no new dependency). */
+.lb-md {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--foreground);
+}
+.lb-md > :first-child {
+  margin-top: 0;
+}
+.lb-md > :last-child {
+  margin-bottom: 0;
+}
+.lb-md p {
+  margin: 0.6rem 0;
+}
+.lb-md h1,
+.lb-md h2,
+.lb-md h3,
+.lb-md h4 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.15rem 0 0.5rem;
+}
+.lb-md h1 {
+  font-size: 1.3rem;
+}
+.lb-md h2 {
+  font-size: 1.15rem;
+}
+.lb-md h3 {
+  font-size: 1.02rem;
+}
+.lb-md h4 {
+  font-size: 0.94rem;
+}
+.lb-md ul,
+.lb-md ol {
+  margin: 0.6rem 0;
+  padding-left: 1.4rem;
+}
+.lb-md ul {
+  list-style: disc;
+}
+.lb-md ol {
+  list-style: decimal;
+}
+.lb-md li {
+  margin: 0.25rem 0;
+}
+.lb-md li::marker {
+  color: var(--muted-foreground);
+}
+.lb-md a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--foreground) 35%, transparent);
+}
+.lb-md a:hover {
+  text-decoration-color: var(--foreground);
+}
+.lb-md :not(pre) > code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
+}
+.lb-md pre {
+  margin: 0.7rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--muted);
+  border: 0.5px solid var(--border);
+  overflow-x: auto;
+}
+.lb-md pre code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+.lb-md blockquote {
+  margin: 0.7rem 0;
+  padding-left: 0.9rem;
+  border-left: 2px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  color: var(--muted-foreground);
+}
+.lb-md hr {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 0.5px solid var(--border);
+}
+.lb-md strong {
+  font-weight: 600;
+}
+
+/* Professional comparison table (render upgrade Phase 1): horizontal rules only
+   (no vertical lines), a subtle un-filled header, airy padding, a secondary
+   first column, and numeric columns right-aligned with tabular figures (.lb-num
+   is added by the rehype-numeric-table-cols plugin). */
+.lb-table-wrap {
+  margin: 0.85rem 0;
+  border: 0.5px solid var(--border);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.lb-table th,
+.lb-table td {
+  padding: 0.6rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+.lb-table thead th {
+  font-weight: 600;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+}
+.lb-table tbody td {
+  border-bottom: 0.5px solid var(--border);
+}
+.lb-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.lb-table tbody tr:hover {
+  background: color-mix(in srgb, var(--muted) 55%, transparent);
+}
+.lb-table tbody td:first-child {
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.lb-table .lb-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

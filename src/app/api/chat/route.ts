@@ -537,6 +537,109 @@ export async function POST(request: Request) {
             citationCount: writerResult.citations.length,
             sourceCount: writerResult.sourceCount
           });
+
+          // R238b: tier-4 (Writer) is a self-contained pipeline. Persist + record +
+          // provenance + title HERE and return, so it no longer falls through to the
+          // branch-B tool loop — which previously re-ran the LLM, doubling cost and
+          // concatenating a second answer onto the draft.
+          const latencyMs = Date.now() - startedAt;
+          const { FieldValue } = await import('firebase-admin/firestore');
+          const batchT4 = db.batch();
+          batchT4.set(convRef.collection('messages').doc(assistantMessageId), {
+            role: 'assistant',
+            content: fullText,
+            createdAt: Timestamp.now(),
+            tier
+          });
+          batchT4.update(convRef, {
+            updatedAt: Timestamp.now(),
+            messageCount: FieldValue.increment(2),
+            'totalCost.inputTokens': FieldValue.increment(totalUsage.inputTokens),
+            'totalCost.outputTokens': FieldValue.increment(totalUsage.outputTokens),
+            'totalCost.cacheReadTokens': FieldValue.increment(totalUsage.cacheReadTokens),
+            'totalCost.cacheWriteTokens': FieldValue.increment(totalUsage.cacheWriteTokens),
+            'totalCost.usd': FieldValue.increment(totalUsage.usd + intentDecision.classifierCostUsd)
+          });
+          await batchT4.commit();
+
+          send({
+            type: 'message_complete',
+            usage: totalUsage,
+            messageId: assistantMessageId
+          });
+
+          // ADR-035 M2: fact extraction post-commit (after() = Vercel-safe).
+          if (memoryEnabled) {
+            const _userTurnT4 = userText;
+            const _assistantTurnT4 = fullText;
+            const _msgIdT4 = assistantMessageId;
+            const _convIdT4 = conversationId!;
+            after(async () => {
+              await extractFactsAsync({
+                tenantId: tenantId!,
+                userId,
+                conversationId: _convIdT4,
+                sourceMessageId: _msgIdT4,
+                userTurn: _userTurnT4,
+                assistantTurn: _assistantTurnT4
+              });
+            });
+          }
+
+          // R238a AI-PERF-6: cost + provenance off the response path via after().
+          after(async () => {
+            try {
+              await recordCost({
+                tenantId,
+                tier,
+                capability: getCapabilityForTier(tier),
+                feature: intentDecision.feature,
+                costUsd: totalUsage.usd,
+                inputTokens: totalUsage.inputTokens,
+                outputTokens: totalUsage.outputTokens,
+                latencyMs
+              });
+            } catch (e) {
+              logger.warn('recordCost_failed', { tenantId, error: String(e) });
+            }
+            try {
+              await writeProvenance({
+                tenantId,
+                userId,
+                userEmail,
+                conversationId: conversationId!,
+                messageId: assistantMessageId,
+                tier,
+                model: config.model,
+                provider: provider.id === 'anthropic' ? 'anthropic-direct' : 'gcp-vertex',
+                region: provider.region,
+                toolsCalled: [],
+                ragChunksUsed: [],
+                reflectionIterations: 0,
+                cost: totalUsage,
+                latencyMs,
+                timestamp: Date.now(),
+                intentDecision: {
+                  reason: intentDecision.reason,
+                  confidence: intentDecision.confidence,
+                  classifierCostUsd: intentDecision.classifierCostUsd,
+                  classifierLatencyMs: intentDecision.classifierLatencyMs
+                }
+              });
+            } catch (e) {
+              logger.warn('provenance_write_failed', { tenantId, error: String(e) });
+            }
+          });
+
+          // R238a AI-PERF-7: title started concurrently — await ~free; defer write.
+          if (titlePromise) {
+            const title = await titlePromise;
+            if (title) {
+              send({ type: 'title_update', conversationId: conversationId!, title });
+              after(() => convRef.update({ title }).catch(() => undefined));
+            }
+          }
+          return;
         }
 
         // Branch for Tier 3 (Opus) reflection
@@ -982,6 +1085,26 @@ export async function POST(request: Request) {
           inputJson: JSON.stringify(r.input)
         }));
         after(async () => {
+          // R238b: branch B (tiers 0/1/2 — incl. all T2 RAG) previously never called
+          // recordCost, so _costs/{date} only ever saw tier-3 spend and Cost Guard +
+          // the cost reports undercounted everything else. Record it here (post-
+          // response, alongside provenance).
+          try {
+            await recordCost({
+              tenantId,
+              tier,
+              capability: getCapabilityForTier(tier),
+              feature: intentDecision.feature,
+              costUsd: totalUsage.usd,
+              inputTokens: totalUsage.inputTokens,
+              outputTokens: totalUsage.outputTokens,
+              latencyMs,
+              unverifiedNumbers: groundingForTelemetry?.unverifiedNumbers ?? 0,
+              unsourcedClaims: groundingForTelemetry?.unsourcedClaims ?? 0
+            });
+          } catch (e) {
+            logger.warn('recordCost_failed', { tenantId, error: String(e) });
+          }
           try {
             await writeProvenance({
               tenantId,

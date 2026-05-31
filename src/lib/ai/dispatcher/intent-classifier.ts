@@ -34,7 +34,9 @@ Classify the user's message into ONE of four production tiers:
 - "What is bandgap of WO₃?"
 - "Explain Tauc plot for indirect semiconductor"
 - "What does this paper say about ..."
+- "So sánh X và Y trong các paper của tôi" — multi-paper comparison or synthesis over the user's library (needs retrieval)
 - Conceptual definitions, formula meaning
+- ANY paper-content question — including comparison/synthesis across multiple papers — belongs here. This tier has searchPapers; Tier 3 does not.
 - Default when uncertain (most technical chat)
 
 **Tier 3 (Engineer — spectrum analysis + reasoning)** — Multi-step interpretation
@@ -42,8 +44,9 @@ Classify the user's message into ONE of four production tiers:
 - "Interpret this UV-Vis curve"
 - "Compare CV vs LSV for HER on my data"
 - "Design experiment for HER catalyst optimization"
-- Multi-paper synthesis, multi-step planning, spectrum interpretation
+- Multi-step planning and interpretation of data the user has ALREADY provided (no paper-library lookup required)
 - Reflection loop active (max 3 rounds)
+- NOTE: Tier 3 has NO paper-library retrieval. Questions that need the user's papers (comparison/synthesis across their library, "what do my papers say", "so sánh ... trong các paper của tôi") → Tier 2, never Tier 3.
 
 **Tier 4 (Writer — paper section drafting)** — Manuscript section drafting
 - "Draft methods section for WO₃ hydrothermal synthesis"

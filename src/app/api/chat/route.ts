@@ -26,7 +26,7 @@ import { writeProvenance } from '@/lib/ai/provenance-writer';
 import { selectProvider } from '@/lib/ai/providers';
 import type { LLMMessage, LLMToolCall } from '@/lib/ai/providers/types';
 import { runReflection } from '@/lib/ai/reflection/orchestrator';
-import { LABYRA_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
+import { LABYRA_SYSTEM_PROMPT, LABYRA_TOOLS_BLOCK } from '@/lib/ai/system-prompt';
 import { buildSystemPromptWithMemory } from '@/lib/ai/memory/system-prompt-builder';
 import { extractFactsAsync } from '@/lib/ai/memory/extract-orchestrator';
 import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
@@ -844,6 +844,7 @@ export async function POST(request: Request) {
         const systemBlocks = await buildSystemPromptWithMemory(LABYRA_SYSTEM_PROMPT, {
           userId,
           tenantId: tenantId!,
+          toolsBlock: LABYRA_TOOLS_BLOCK,
           dynamicBlock: scopeSystemBlock,
           enableMemory: memoryEnabled
         });

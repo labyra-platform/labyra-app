@@ -106,6 +106,12 @@ export function renderSemanticMemory(facts: Array<{ subject: string; object: unk
 interface BuildOpts {
   userId: string;
   tenantId: string;
+  /**
+   * Tool-capability block (LABYRA_TOOLS_BLOCK). Pass ONLY on paths that wire
+   * tools (the chat tool-loop). Omit on tool-less paths (reflection) so the
+   * model is never told to call a tool it doesn't have. Static → cached.
+   */
+  toolsBlock?: string | null;
   /** Dynamic, per-conversation segment (e.g. scoped paper list). Not cached. */
   dynamicBlock?: string | null;
   /** L2 fact injection only when the user opted in (M2). */
@@ -126,6 +132,13 @@ export async function buildSystemPromptWithMemory(
   ]);
 
   const blocks: LLMSystemBlock[] = [{ text: base, cache: true, cacheTtl: '1h' }];
+
+  // R239: tool-capability block — only present on paths that actually wire
+  // tools. Static (same for every user) → cached; placed right after the base
+  // so the base remains the longest shared prefix for Gemini implicit caching.
+  if (opts.toolsBlock) {
+    blocks.push({ text: opts.toolsBlock, cache: true, cacheTtl: '1h' });
+  }
 
   if (tenantCtx) {
     const text = renderTenantContext(tenantCtx).trim();

@@ -353,7 +353,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                         value={value.yearMin ?? ''}
                         onChange={(e) => setYearMin(e.target.value ? Number(e.target.value) : null)}
                         aria-label={t('filterYearMin')}
-                        className='h-8 w-16'
+                        className='no-spinner h-8 w-16 px-2 text-center tabular-nums'
                       />
                       <span className='text-muted-foreground'>—</span>
                       <Input
@@ -365,7 +365,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                         value={value.yearMax ?? ''}
                         onChange={(e) => setYearMax(e.target.value ? Number(e.target.value) : null)}
                         aria-label={t('filterYearMax')}
-                        className='h-8 w-16'
+                        className='no-spinner h-8 w-16 px-2 text-center tabular-nums'
                       />
                       <span className='text-xs text-muted-foreground'>
                         {yearRange.min}–{yearRange.max}

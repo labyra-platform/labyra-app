@@ -198,3 +198,16 @@
   background-color: color-mix(in srgb, var(--foreground) 38%, transparent);
   transition: opacity 0.12s ease;
 }
+
+/* Hide the native number-input stepper (the dated up/down spinner) on opt-in
+   type=number fields — e.g. the year-range inputs. Standard cross-browser form.
+   Keeps real <input type="number"> semantics (min/max, numeric keypad). */
+.no-spinner::-webkit-inner-spin-button,
+.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

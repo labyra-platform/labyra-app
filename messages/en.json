@@ -193,6 +193,7 @@
     "paperSelectorNoMatch": "No papers match your search",
     "paperSelectorAllScope": "Searching all library",
     "paperSelectorScoped": "Scoped to {count} papers",
+    "paperSelectorScopeHint": "Papers selected to scope the search (max 10). 0 = search the whole library.",
     "paperSelectorClear": "Clear",
     "paperSelectorSaving": "Saving...",
     "paperSelectorStartConversation": "Send a message to start scoping papers",

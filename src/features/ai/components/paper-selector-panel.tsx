@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
 import { useSelectedPapers, PAPER_SELECT_MAX } from '../hooks/use-selected-papers';
@@ -92,9 +93,16 @@ export function PaperSelectorPanel({
         {isOpen && (
           <div className='flex min-w-0 flex-1 items-center gap-2'>
             <h2 className='truncate text-sm font-medium'>{t('paperSelectorTitle')}</h2>
-            <Badge variant='secondary' className='shrink-0'>
-              {selected.size}/{PAPER_SELECT_MAX}
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className='shrink-0 cursor-default'>
+                  <Badge variant='secondary'>
+                    {selected.size}/{PAPER_SELECT_MAX}
+                  </Badge>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className='max-w-56'>{t('paperSelectorScopeHint')}</TooltipContent>
+            </Tooltip>
           </div>
         )}
         <Button

@@ -1,11 +1,21 @@
 'use client';
 import { useTranslations } from 'next-intl';
-import { IconCheck, IconCopy, IconShieldSearch } from '@tabler/icons-react';
+import {
+  IconBooks,
+  IconCheck,
+  IconCopy,
+  IconLayoutDashboard,
+  IconPencil,
+  IconShieldCheck,
+  IconShieldSearch,
+  IconTool
+} from '@tabler/icons-react';
 import {
   cloneElement,
   Fragment,
   isValidElement,
   memo,
+  type ComponentType,
   type ReactElement,
   type ReactNode,
   useCallback,
@@ -21,6 +31,7 @@ import remarkMath from 'remark-math';
 import { unwrapViMath } from '../lib/sanitize-vi-math';
 import { rehypeNumericTableCols } from '../lib/rehype-numeric-table-cols';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import type { AiMessage } from '@/types/ai';
 import 'katex/dist/katex.min.css';
 import { useChatSources } from '../hooks/use-chat-sources';
@@ -50,6 +61,14 @@ const TIER_COLORS: Record<1 | 2 | 3 | 4 | 5, string> = {
   5: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
 };
 
+const TIER_ICONS: Record<1 | 2 | 3 | 4 | 5, ComponentType<{ className?: string }>> = {
+  1: IconLayoutDashboard, // Lab Manager
+  2: IconBooks, // Librarian
+  3: IconTool, // Engineer
+  4: IconPencil, // Writer
+  5: IconShieldCheck // Auditor
+};
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const onCopy = async () => {
@@ -75,15 +94,12 @@ function CopyButton({ text }: { text: string }) {
 
 function TierBadge({ tier }: { tier: 1 | 2 | 3 | 4 | 5 }) {
   const t = useTranslations('ai');
+  const Icon = TIER_ICONS[tier];
   return (
-    <span
-      className={cn(
-        'mb-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
-        TIER_COLORS[tier]
-      )}
-    >
+    <Badge variant='outline' className={cn('mb-1.5 gap-1 border-transparent', TIER_COLORS[tier])}>
+      <Icon className='size-3' />
       {t(TIER_LABELS[tier])}
-    </span>
+    </Badge>
   );
 }
 

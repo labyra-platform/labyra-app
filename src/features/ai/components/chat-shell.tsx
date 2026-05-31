@@ -164,7 +164,7 @@ export function ChatShell() {
           )}
 
           {hasMessages && (
-            <div className='text-muted-foreground shrink-0 space-y-0.5 text-xs'>
+            <div className='text-muted-foreground/55 shrink-0 space-y-0.5 text-[11px] tabular-nums'>
               {lastUsage && (
                 <div>
                   {t('lastUsage', {
@@ -175,7 +175,7 @@ export function ChatShell() {
                 </div>
               )}
               {sessionUsage.usd > 0 && (
-                <div className='font-medium'>
+                <div>
                   {t('sessionUsage', {
                     input: sessionUsage.inputTokens,
                     output: sessionUsage.outputTokens,

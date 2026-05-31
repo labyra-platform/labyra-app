@@ -193,6 +193,7 @@
     "paperSelectorNoMatch": "Không có paper nào khớp",
     "paperSelectorAllScope": "Đang tìm toàn bộ thư viện",
     "paperSelectorScoped": "Đã giới hạn {count} paper",
+    "paperSelectorScopeHint": "Số paper đã chọn để giới hạn tìm kiếm (tối đa 10). 0 = tìm toàn bộ thư viện.",
     "paperSelectorClear": "Xóa",
     "paperSelectorSaving": "Đang lưu...",
     "paperSelectorStartConversation": "Gửi tin nhắn để bắt đầu chọn paper",

@@ -235,21 +235,21 @@
 .lb-md h2,
 .lb-md h3,
 .lb-md h4 {
-  font-weight: 600;
+  font-weight: 650;
   line-height: 1.3;
-  margin: 1.15rem 0 0.5rem;
+  margin: 1.6rem 0 0.6rem;
 }
 .lb-md h1 {
-  font-size: 1.3rem;
+  font-size: 1.45rem;
 }
 .lb-md h2 {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
 }
 .lb-md h3 {
-  font-size: 1.02rem;
+  font-size: 1.12rem;
 }
 .lb-md h4 {
-  font-size: 0.94rem;
+  font-size: 1rem;
 }
 .lb-md ul,
 .lb-md ol {
@@ -264,6 +264,11 @@
 }
 .lb-md li {
   margin: 0.25rem 0;
+}
+.lb-md li > ul,
+.lb-md li > ol {
+  margin: 0.3rem 0;
+  padding-left: 1.1rem;
 }
 .lb-md li::marker {
   color: var(--muted-foreground);

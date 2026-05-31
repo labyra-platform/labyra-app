@@ -63,6 +63,15 @@ export async function loadConversationHistory(
   }
   let capped = budgeted;
 
+  // AI-PERF-8 / R245 (failure mode 3): a user turn with empty or whitespace-only
+  // content is rejected by Anthropic ("text content blocks must contain non-empty
+  // text") → 400 → ~500ms retry. Drop such turns up front. Crucially this runs
+  // BEFORE the leading-assistant trim below: removing an empty leading user could
+  // otherwise expose a leading assistant and slip an assistant-first history
+  // through. Any consecutive same-role turns this leaves are fine — the existing
+  // tool_result-then-next-user-query path already emits consecutive user turns.
+  capped = capped.filter((m) => m.role !== 'user' || (m.content ?? '').trim().length > 0);
+
   // AI-2 fix (failure mode 1): char-budget truncation walks from the end, so the
   // oldest retained message can be an assistant turn. Anthropic rejects a history
   // that starts with role:'assistant' (400 "first message must use the user role").

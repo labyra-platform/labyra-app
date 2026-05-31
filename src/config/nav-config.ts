@@ -26,7 +26,7 @@ const SUPERADMIN_GROUP: NavGroup = {
       title: 'Cost Overview',
       titleKey: 'nav.superadminCosts',
       url: '/dashboard/superadmin/costs',
-      icon: 'dashboard',
+      icon: 'costOverview',
       shortcut: ['s', 'c'],
       items: [],
       access: { role: 'superadmin' }
@@ -35,7 +35,7 @@ const SUPERADMIN_GROUP: NavGroup = {
       title: 'Quality Evals',
       titleKey: 'nav.superadminEvals',
       url: '/dashboard/superadmin/evals',
-      icon: 'check',
+      icon: 'evals',
       shortcut: ['s', 'e'],
       items: [],
       access: { role: 'superadmin' }
@@ -44,7 +44,7 @@ const SUPERADMIN_GROUP: NavGroup = {
       title: 'Cost Drift',
       titleKey: 'nav.superadminDrift',
       url: '/dashboard/superadmin/drift',
-      icon: 'alertCircle',
+      icon: 'costDrift',
       shortcut: ['s', 'd'],
       items: [],
       access: { role: 'superadmin' }
@@ -155,7 +155,7 @@ export const navGroups: NavGroup[] = [
         title: 'References',
         titleKey: 'nav.references',
         url: '/dashboard/reference-cards',
-        icon: 'papers',
+        icon: 'references',
         shortcut: ['r', 'e'],
         items: []
       },

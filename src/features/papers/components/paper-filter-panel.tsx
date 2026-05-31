@@ -17,13 +17,14 @@
 import {
   IconBook,
   IconCalendar,
+  IconCategory2,
   IconCheck,
   IconChevronDown,
   IconChevronRight,
   IconFilter,
   IconMinus,
-  IconRosetteDiscountCheck,
   IconSearch,
+  IconTags,
   IconX
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
@@ -532,7 +533,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                   <section className='space-y-2'>
                     <div className='flex items-center justify-between'>
                       <div className='flex items-center gap-1.5 text-sm font-medium'>
-                        <IconRosetteDiscountCheck
+                        <IconCategory2
                           className='size-4 text-sky-600 dark:text-sky-400'
                           aria-hidden
                         />
@@ -648,7 +649,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
                 {/* Domain — collapsible per axis */}
                 <section className='space-y-1'>
                   <div className='flex items-center gap-1.5 text-sm font-medium'>
-                    <IconFilter className='size-4 text-muted-foreground' aria-hidden />
+                    <IconTags className='size-4 text-muted-foreground' aria-hidden />
                     {t('domainFilterLabel')}
                   </div>
                   {AXIS_GROUPS.map(({ axis, i18nKey, slugs }) => {

@@ -122,11 +122,13 @@ function renderWithCitations(
 function MessageBubbleInner({
   message,
   conversationId,
-  streaming
+  streaming,
+  animate
 }: {
   message: AiMessage;
   conversationId?: string;
   streaming?: boolean;
+  animate?: boolean;
 }) {
   const [showAudit, setShowAudit] = useState(false);
   const isUser = message.role === 'user';
@@ -170,7 +172,7 @@ function MessageBubbleInner({
   );
 
   return (
-    <div className={cn('message-appear', isUser && 'flex justify-end')}>
+    <div className={cn(animate && 'message-appear', isUser && 'flex justify-end')}>
       <div
         className={cn(
           'group relative text-sm',

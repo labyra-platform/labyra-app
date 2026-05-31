@@ -159,6 +159,7 @@
     "groupLast30Days": "Last 30 days",
     "groupEarlier": "Earlier",
     "emptyHistory": "No conversations yet. Ask anything about your lab or literature.",
+    "scrollToBottom": "Scroll to bottom",
     "loading": "Loading...",
     "loadError": "Could not load conversations",
     "delete": "Delete",

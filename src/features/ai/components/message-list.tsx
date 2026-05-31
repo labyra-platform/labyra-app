@@ -3,6 +3,7 @@
 import {
   Profiler,
   type ProfilerOnRenderCallback,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -19,6 +20,7 @@ import {
  * @phase R160-ai-3b-hotfix-scroll
  */
 import { useTranslations } from 'next-intl';
+import { IconArrowDown } from '@tabler/icons-react';
 import type { AiMessage } from '@/types/ai';
 import { logger } from '@/lib/logger';
 import { MessageBubble } from './message-bubble';
@@ -112,12 +114,21 @@ export function MessageList({
     prevCountRef.current = messages.length;
   }, [messages.length]);
 
+  // R251: jump-to-latest (the floating circular ⌄ button, shown only when the
+  // user has scrolled up).
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    setIsNearBottom(true);
+  }, []);
+
   const body =
     messages.length === 0 ? (
       <p className='text-muted-foreground py-8 text-center text-sm'>{t('emptyHistory')}</p>
     ) : (
       messages.map((m) => {
-        const isLastAssistant = m.id === messages.at(-1)?.id && m.role === 'assistant';
+        const isLast = m.id === messages.at(-1)?.id;
+        const isLastAssistant = isLast && m.role === 'assistant';
         const isLastEmpty = isStreaming && isLastAssistant && !m.content;
         if (isLastEmpty) {
           return <ThinkingIndicator key={m.id} label={thinkingLabel(m, t)} />;
@@ -128,23 +139,36 @@ export function MessageList({
             message={m}
             conversationId={conversationId}
             streaming={Boolean(isStreaming) && isLastAssistant}
+            animate={isLast}
           />
         );
       })
     );
 
   return (
-    <div
-      ref={scrollRef}
-      onScroll={handleScroll}
-      className='flex-1 space-y-6 overflow-y-auto px-1 py-2 scroll-smooth'
-    >
-      {PROFILE_RENDER ? (
-        <Profiler id={`ai-messages·${messages.length}`} onRender={onRenderProfile}>
-          {body}
-        </Profiler>
-      ) : (
-        body
+    <div className='relative flex min-h-0 flex-1 flex-col'>
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className='flex-1 space-y-6 overflow-y-auto px-1 py-2 scroll-smooth'
+      >
+        {PROFILE_RENDER ? (
+          <Profiler id={`ai-messages·${messages.length}`} onRender={onRenderProfile}>
+            {body}
+          </Profiler>
+        ) : (
+          body
+        )}
+      </div>
+      {!isNearBottom && messages.length > 0 && (
+        <button
+          type='button'
+          onClick={scrollToBottom}
+          aria-label={t('scrollToBottom')}
+          className='animate-in fade-in slide-in-from-bottom-1 text-muted-foreground hover:text-foreground absolute bottom-3 left-1/2 z-10 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border bg-background shadow-md transition-colors duration-200 hover:bg-muted'
+        >
+          <IconArrowDown className='size-4' />
+        </button>
       )}
     </div>
   );

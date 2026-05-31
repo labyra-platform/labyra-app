@@ -1,7 +1,7 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { IconCheck, IconCopy, IconShieldSearch } from '@tabler/icons-react';
-import { memo, type ReactNode, useCallback, useMemo, useState } from 'react';
+import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -112,6 +112,8 @@ function renderWithCitations(
   return nodes;
 }
 
+const STREAM_THROTTLE_MS = 120; // R252: cap streaming markdown re-parse to ~8×/s
+
 // R249: rendering a message parses markdown + KaTeX, which the Profiler showed
 // costs ~50–80ms PER MESSAGE and (actualMs ≈ baseMs) re-ran for EVERY message on
 // every streaming delta — O(n) re-parse per token. memo() below makes a bubble
@@ -142,10 +144,34 @@ function MessageBubbleInner({
   const activeSource =
     activeRef !== null ? (sources.find((s) => s.ref === activeRef) ?? null) : null;
 
-  // R240: strip math delimiters the model wrongly wrapped around Vietnamese
-  // prose, before react-markdown renders it (the old remark plugin is a no-op
-  // under react-markdown v10). Used for both rendering and the copy action.
-  const safeContent = useMemo(() => unwrapViMath(message.content ?? ''), [message.content]);
+  // R252: while streaming, render LIVE markdown but throttle the content fed to
+  // the parser to ~STREAM_THROTTLE_MS so it re-parses ~8×/s instead of on every
+  // token (R250 rendered raw text, which showed ugly markdown source mid-stream).
+  const [throttled, setThrottled] = useState(message.content ?? '');
+  const lastTickRef = useRef(0);
+  useEffect(() => {
+    const full = message.content ?? '';
+    if (!streaming) {
+      setThrottled(full);
+      return;
+    }
+    const elapsed = Date.now() - lastTickRef.current;
+    if (elapsed >= STREAM_THROTTLE_MS) {
+      lastTickRef.current = Date.now();
+      setThrottled(full);
+      return;
+    }
+    const id = setTimeout(() => {
+      lastTickRef.current = Date.now();
+      setThrottled(full);
+    }, STREAM_THROTTLE_MS - elapsed);
+    return () => clearTimeout(id);
+  }, [message.content, streaming]);
+
+  // R240: strip math delimiters the model wrongly wrapped around Vietnamese prose
+  // before react-markdown renders it. Used for both rendering and the copy action.
+  const renderContent = streaming ? throttled : (message.content ?? '');
+  const safeContent = useMemo(() => unwrapViMath(renderContent), [renderContent]);
 
   // Custom markdown renderers that inject citation chips into text nodes
   const markdownComponents = useMemo(
@@ -171,6 +197,26 @@ function MessageBubbleInner({
     [sources.length, handleCitationClick]
   );
 
+  // R252: memoise the parsed markdown element. The bubble re-renders on every
+  // streaming token (its message ref changes), but ReactMarkdown only re-parses
+  // when `safeContent` actually changes — i.e. ~8×/s under the throttle above,
+  // not once per token. Combined, this keeps live formatting cheap.
+  const rendered = useMemo(
+    () => (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[
+          [rehypeKatex, { strict: false, throwOnError: false }],
+          rehypeNumericTableCols
+        ]}
+        components={markdownComponents}
+      >
+        {safeContent || '...'}
+      </ReactMarkdown>
+    ),
+    [safeContent, markdownComponents]
+  );
+
   return (
     <div className={cn(animate && 'message-appear', isUser && 'flex justify-end')}>
       <div
@@ -192,25 +238,7 @@ function MessageBubbleInner({
           <>
             {message.tier && <TierBadge tier={message.tier} />}
             {/* Tool calls hidden from UI (ai-5d-3c) — sources accessible via citation chip modal */}
-            {streaming ? (
-              // R250: while streaming, render raw text (cheap) instead of parsing
-              // markdown + KaTeX on every token. Snaps to the full .lb-md render
-              // once the stream completes (streaming=false → one final re-render).
-              <div className='lb-md whitespace-pre-wrap'>{message.content}</div>
-            ) : (
-              <div className='lb-md'>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[
-                    [rehypeKatex, { strict: false, throwOnError: false }],
-                    rehypeNumericTableCols
-                  ]}
-                  components={markdownComponents}
-                >
-                  {safeContent || '...'}
-                </ReactMarkdown>
-              </div>
-            )}
+            <div className='lb-md'>{rendered}</div>
             <CitationModal source={activeSource} onClose={() => setActiveRef(null)} />
             {message.grounding && <GroundingWarning grounding={message.grounding} />}
             {message.content && <CopyButton text={safeContent} />}

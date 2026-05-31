@@ -3,6 +3,7 @@
  * @phase R160-ai-3c1
  */
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from '@/lib/logger';
 import { calculateCost } from './cost-calculator';
 import type {
   LLMMessage,
@@ -171,6 +172,15 @@ export class AnthropicProvider implements LLMProvider {
           : final.stop_reason === 'max_tokens'
             ? 'max_tokens'
             : 'end_turn';
+      // R238a AI-PERF-4: surface prompt-cache hit/miss for verification (dev-only
+      // — logger.info is stripped in prod). cache_read consistently 0 across turns
+      // ⇒ caching silently broken (SDK/version/block-ordering/prompt drift).
+      logger.info('anthropic_cache', {
+        model: request.model,
+        cacheRead: u.cache_read_input_tokens ?? 0,
+        cacheCreate: u.cache_creation_input_tokens ?? 0,
+        input: u.input_tokens
+      });
       yield { type: 'message_complete', usage, stopReason };
     } catch (e) {
       yield {
@@ -205,6 +215,13 @@ export class AnthropicProvider implements LLMProvider {
       u.cache_read_input_tokens ?? 0,
       u.cache_creation_input_tokens ?? 0
     );
+    // R238a AI-PERF-4: cache telemetry for the non-streaming path (classifiers).
+    logger.info('anthropic_cache', {
+      model: request.model,
+      cacheRead: u.cache_read_input_tokens ?? 0,
+      cacheCreate: u.cache_creation_input_tokens ?? 0,
+      input: u.input_tokens
+    });
     return { text, usage };
   }
 }

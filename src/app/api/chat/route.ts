@@ -36,6 +36,7 @@ import { getToolDefinitions } from '@/lib/ai/tools/registry';
 import { getTenantIdFromToken, getGroupIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { downloadBuffer } from '@/lib/firebase/storage';
+import { logger } from '@/lib/logger';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiCostBreakdown, AiTier, ChatRequestBodyV2, ChatStreamEventV2 } from '@/types/ai';
 
@@ -324,6 +325,24 @@ export async function POST(request: Request) {
     ...(safeAttachments.length > 0 ? { attachments: safeAttachments } : {})
   });
 
+  // R238a AI-PERF-1/2: kick off the two independent classifiers + history load
+  // concurrently. We still AWAIT on-topic first so an off-topic refusal ships as
+  // fast as before (no regression for the ~5% off-topic case); the intent
+  // classifier (~500-1500ms) and history read run *underneath* it, so for
+  // on-topic traffic the ~300-500ms on-topic latency is hidden under intent.
+  // classifyIntent never rejects (internal try/catch → fallback), so a dangling
+  // promise on the off-topic path is harmless. priorHistory is consumed only by
+  // the tool/RAG branch (tiers 0-2); on tier 3/4 the read is wasted but parallel.
+  const intentPromise = classifyIntent(userText);
+  const historyPromise: Promise<LLMMessage[]> = loadConversationHistory(
+    tenantId,
+    conversationId!,
+    userMessageRef.id // exclude the just-saved pending user message
+  ).catch((err: unknown) => {
+    logger.warn('history_load_failed', { tenantId, error: String(err) });
+    return [];
+  });
+
   // R160-ai-5e-2 L6: OOD check — bail early on off-topic queries
   const onTopic = await classifyOnTopic(userText);
   if (!onTopic.onTopic) {
@@ -376,8 +395,8 @@ export async function POST(request: Request) {
     });
   }
 
-  // Tier dispatch
-  const intentDecision = await classifyIntent(userText);
+  // Tier dispatch — intent classifier was kicked off above (runs under on-topic)
+  const intentDecision = await intentPromise;
 
   // R170-5 [R170-hotfix]: Cost Guard pre-check
   const estimated = estimateCost(intentDecision.tier, intentDecision.feature);
@@ -452,6 +471,15 @@ export async function POST(request: Request) {
   const assistantMessageId = convRef.collection('messages').doc().id;
   const startedAt = Date.now();
   const toolDefinitions = getToolDefinitions();
+
+  // R238a AI-PERF-7: for a new conversation, generate the title CONCURRENTLY with
+  // the LLM stream instead of after it. The stream takes seconds while Haiku title
+  // gen is ~500-1500ms, so by stream end the title is already resolved and the
+  // await below is ~free — off the close path, but still pushed live via SSE.
+  // Never rejects (.catch → null → keep "Untitled").
+  const titlePromise: Promise<string | null> | null = isNewConversation
+    ? generateConversationTitle(userText).catch(() => null)
+    : null;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -609,85 +637,79 @@ export async function POST(request: Request) {
             });
           }
 
-          // R169-4: cost telemetry (best-effort, non-blocking)
-
-          try {
-            await recordCost({
-              tenantId,
-              tier,
-              capability: getCapabilityForTier(tier),
-              feature: intentDecision.feature, // R170-2: per-feature attribution
-              costUsd: totalUsage.usd,
-              // R170-4: extended telemetry
-              inputTokens: totalUsage.inputTokens,
-              outputTokens: totalUsage.outputTokens,
-              latencyMs: Date.now() - startedAt,
-              unverifiedNumbers: groundingForTelemetry?.unverifiedNumbers ?? 0,
-              unsourcedClaims: groundingForTelemetry?.unsourcedClaims ?? 0
-            });
-          } catch (e) {
-            // eslint-disable-next-line no-console
-
-            console.warn('[chat-route] recordCost failed (non-fatal):', e);
-          }
-
-          await writeProvenance({
-            tenantId,
-            userId,
-            userEmail,
-            conversationId: conversationId!,
-            messageId: assistantMessageId,
-            tier,
-            model: config.model,
-            provider: provider.id === 'anthropic' ? 'anthropic-direct' : 'gcp-vertex',
-            region: provider.region,
-            toolsCalled: [],
-            ragChunksUsed: [],
-            reflectionIterations: result.iterations,
-            cost: totalUsage,
-            latencyMs,
-            timestamp: Date.now(),
-            intentDecision: {
-              reason: intentDecision.reason,
-              confidence: intentDecision.confidence,
-              classifierCostUsd: intentDecision.classifierCostUsd,
-              classifierLatencyMs: intentDecision.classifierLatencyMs
-            }
-          });
-
           send({
             type: 'message_complete',
             usage: totalUsage,
             messageId: assistantMessageId
           });
 
-          if (isNewConversation) {
+          // R238a AI-PERF-6: cost telemetry + provenance are non-user-visible
+          // writes. Schedule them via after() (guaranteed to run on Vercel, unlike
+          // bare fire-and-forget which the platform would kill on response close)
+          // so they no longer block message_complete. recordCost feeds Cost Guard;
+          // the post-response quota-lag window is negligible for a soft pre-check.
+          after(async () => {
             try {
-              const title = await generateConversationTitle(userText);
-              await convRef.update({ title });
-              send({
-                type: 'title_update',
-                conversationId: conversationId!,
-                title
+              await recordCost({
+                tenantId,
+                tier,
+                capability: getCapabilityForTier(tier),
+                feature: intentDecision.feature, // R170-2: per-feature attribution
+                costUsd: totalUsage.usd,
+                inputTokens: totalUsage.inputTokens,
+                outputTokens: totalUsage.outputTokens,
+                latencyMs,
+                unverifiedNumbers: groundingForTelemetry?.unverifiedNumbers ?? 0,
+                unsourcedClaims: groundingForTelemetry?.unsourcedClaims ?? 0
               });
-            } catch {
-              // keep Untitled
+            } catch (e) {
+              logger.warn('recordCost_failed', { tenantId, error: String(e) });
+            }
+            try {
+              await writeProvenance({
+                tenantId,
+                userId,
+                userEmail,
+                conversationId: conversationId!,
+                messageId: assistantMessageId,
+                tier,
+                model: config.model,
+                provider: provider.id === 'anthropic' ? 'anthropic-direct' : 'gcp-vertex',
+                region: provider.region,
+                toolsCalled: [],
+                ragChunksUsed: [],
+                reflectionIterations: result.iterations,
+                cost: totalUsage,
+                latencyMs,
+                timestamp: Date.now(),
+                intentDecision: {
+                  reason: intentDecision.reason,
+                  confidence: intentDecision.confidence,
+                  classifierCostUsd: intentDecision.classifierCostUsd,
+                  classifierLatencyMs: intentDecision.classifierLatencyMs
+                }
+              });
+            } catch (e) {
+              logger.warn('provenance_write_failed', { tenantId, error: String(e) });
+            }
+          });
+
+          // R238a AI-PERF-7: title was started concurrently above — await is ~free.
+          // Push it live via SSE, then defer the Firestore write via after().
+          if (titlePromise) {
+            const title = await titlePromise;
+            if (title) {
+              send({ type: 'title_update', conversationId: conversationId!, title });
+              after(() => convRef.update({ title }).catch(() => undefined));
             }
           }
           return;
         }
 
-        // R160-ai-5e-1c: Multi-turn — load past messages from Firestore for context
-        let priorHistory: LLMMessage[] = [];
-        try {
-          priorHistory = await loadConversationHistory(
-            tenantId!,
-            conversationId!,
-            userMessageRef.id // exclude the just-saved pending user message
-          );
-        } catch (err) {
-          console.error('history_load_failed', err);
-        }
+        // R160-ai-5e-1c: Multi-turn — past messages for context. R238a AI-PERF-1:
+        // the read was kicked off concurrently with the classifiers (top of
+        // handler), so this await is ~free here. Already guarded (.catch → []).
+        const priorHistory: LLMMessage[] = await historyPromise;
         // ADR-036: load image attachments -> base64 blocks for the current user turn
         const imageBlocks = await Promise.all(
           safeAttachments.map(async (a) => {
@@ -946,53 +968,56 @@ export async function POST(request: Request) {
           });
         }
 
-        // Provenance
-        await writeProvenance({
-          tenantId,
-          userId,
-          userEmail,
-          conversationId: conversationId!,
-          messageId: assistantMessageId,
-          tier,
-          model: config.model,
-          provider: provider.id === 'anthropic' ? 'anthropic-direct' : 'gcp-vertex',
-          region: provider.region,
-          toolsCalled: toolCallRecords.map((r) => ({
-            id: r.id,
-            name: r.name,
-            inputJson: JSON.stringify(r.input)
-          })),
-          ragChunksUsed: [],
-          reflectionIterations: 0,
-          cost: totalUsage,
-          latencyMs,
-          timestamp: Date.now(),
-          intentDecision: {
-            reason: intentDecision.reason,
-            confidence: intentDecision.confidence,
-            classifierCostUsd: intentDecision.classifierCostUsd,
-            classifierLatencyMs: intentDecision.classifierLatencyMs
-          }
-        });
-
         send({
           type: 'message_complete',
           usage: totalUsage,
           messageId: assistantMessageId
         });
 
-        // Title generation
-        if (isNewConversation) {
+        // R238a AI-PERF-6: provenance is a non-user-visible lineage write — defer
+        // via after() (Vercel-safe) so it stops blocking message_complete.
+        const provToolsCalled = toolCallRecords.map((r) => ({
+          id: r.id,
+          name: r.name,
+          inputJson: JSON.stringify(r.input)
+        }));
+        after(async () => {
           try {
-            const title = await generateConversationTitle(userText);
-            await convRef.update({ title });
-            send({
-              type: 'title_update',
+            await writeProvenance({
+              tenantId,
+              userId,
+              userEmail,
               conversationId: conversationId!,
-              title
+              messageId: assistantMessageId,
+              tier,
+              model: config.model,
+              provider: provider.id === 'anthropic' ? 'anthropic-direct' : 'gcp-vertex',
+              region: provider.region,
+              toolsCalled: provToolsCalled,
+              ragChunksUsed: [],
+              reflectionIterations: 0,
+              cost: totalUsage,
+              latencyMs,
+              timestamp: Date.now(),
+              intentDecision: {
+                reason: intentDecision.reason,
+                confidence: intentDecision.confidence,
+                classifierCostUsd: intentDecision.classifierCostUsd,
+                classifierLatencyMs: intentDecision.classifierLatencyMs
+              }
             });
-          } catch {
-            // keep Untitled
+          } catch (e) {
+            logger.warn('provenance_write_failed', { tenantId, error: String(e) });
+          }
+        });
+
+        // R238a AI-PERF-7: title started concurrently above — await ~free, push
+        // live via SSE, defer the Firestore write via after().
+        if (titlePromise) {
+          const title = await titlePromise;
+          if (title) {
+            send({ type: 'title_update', conversationId: conversationId!, title });
+            after(() => convRef.update({ title }).catch(() => undefined));
           }
         }
       } catch (e) {

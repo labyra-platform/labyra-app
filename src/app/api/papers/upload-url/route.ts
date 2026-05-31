@@ -86,7 +86,12 @@ export async function POST(request: Request) {
   }
 
   // ─── Quota check (paper count + storage size) ────────────────
-  const papersQuota = await checkQuota(tenantId, 'paper', 1);
+  // R238a API-PERF-5: both quota reads run concurrently (were sequential).
+  // Paper-cap error still takes precedence to preserve prior response order.
+  const [papersQuota, storageQuota] = await Promise.all([
+    checkQuota(tenantId, 'paper', 1),
+    checkQuota(tenantId, 'storage', body.sizeBytes)
+  ]);
   if (!papersQuota.allowed) {
     return jsonError(429, papersQuota.reason ?? 'quota_exceeded', {
       action: 'paper',
@@ -94,7 +99,6 @@ export async function POST(request: Request) {
       limit: papersQuota.limit
     });
   }
-  const storageQuota = await checkQuota(tenantId, 'storage', body.sizeBytes);
   if (!storageQuota.allowed) {
     return jsonError(429, storageQuota.reason ?? 'storage_quota_exceeded', {
       action: 'storage',

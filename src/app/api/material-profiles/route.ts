@@ -146,13 +146,12 @@ export async function POST(request: NextRequest) {
     const db = getAdminFirestoreService();
     const docRef = db.collection('materialProfiles').doc(data.formula);
 
+    const existingSnap = await docRef.get(); // R238a API-PERF-3: single read (was 2×)
     await docRef.set(
       {
         ...data,
         updatedAt: new Date().toISOString(),
-        createdAt: (await docRef.get()).exists
-          ? (await docRef.get()).data()?.createdAt
-          : new Date().toISOString()
+        createdAt: existingSnap.exists ? existingSnap.data()?.createdAt : new Date().toISOString()
       },
       { merge: true }
     );

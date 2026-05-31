@@ -235,9 +235,12 @@ export async function POST(request: Request) {
   });
 
   // ─── Track usage + release reservation ───────────────────────
-  await trackUsage(tenantId, 'paper', 1);
-  await trackUsage(tenantId, 'storage', actualSize);
-  await resRef.delete();
+  // R238a API-PERF-4: 3 independent writes run concurrently (was sequential).
+  await Promise.all([
+    trackUsage(tenantId, 'paper', 1),
+    trackUsage(tenantId, 'storage', actualSize),
+    resRef.delete()
+  ]);
 
   // ─── Enqueue processing ──────────────────────────────────────
   const jobId = randomUUID();

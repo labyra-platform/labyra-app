@@ -145,7 +145,12 @@ export async function checkCostGuard(
     );
     featureCap = limits.daily.total;
   }
-  if (featureCap !== undefined) {
+  // R238a AI-PERF-5: the 3 reads above already run in parallel; the only wasted
+  // read on the happy path is this conditional per-feature lookup. When the cap is
+  // Infinity (enterprise) the check can never trip, so skip the round-trip.
+  // NB: we do NOT short-circuit on a small estimatedCost — a tiny call must still
+  // be blocked if the tenant already exceeded their daily/monthly accumulated spend.
+  if (featureCap !== undefined && featureCap !== Infinity) {
     const featureCurrent = await getDailyFeatureSpend(tenantId, feature);
     if (featureCurrent + estimatedCost > featureCap) {
       return {

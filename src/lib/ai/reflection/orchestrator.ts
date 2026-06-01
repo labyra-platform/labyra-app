@@ -67,7 +67,7 @@ interface RunOptions {
 }
 
 /**
- * Run reflection loop for Tier 3 (Opus) queries.
+ * Run reflection loop for Tier 3 (Sonnet) queries.
  * Stops early if critic finds response sufficient.
  */
 export async function runReflection(opts: RunOptions): Promise<ReflectionResult> {

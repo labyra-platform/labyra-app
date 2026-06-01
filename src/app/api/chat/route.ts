@@ -642,7 +642,7 @@ export async function POST(request: Request) {
           return;
         }
 
-        // Branch for Tier 3 (Opus) reflection
+        // Branch for Tier 3 (Sonnet) reflection
         if (tier === 3) {
           const reflectionHistory: Array<{
             round: number;

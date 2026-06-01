@@ -556,7 +556,10 @@
     "empty": "Chưa có bộ sưu tập",
     "loading": "Đang tải…",
     "renameTitle": "Đổi tên bộ sưu tập",
-    "createTitle": "Bộ sưu tập mới"
+    "createTitle": "Bộ sưu tập mới",
+    "addToCollection": "Thêm vào bộ sưu tập",
+    "addedToast": "Đã thêm vào {name}",
+    "addFailed": "Không thêm được vào bộ sưu tập"
   },
   "materials": {
     "title": "Vật liệu",

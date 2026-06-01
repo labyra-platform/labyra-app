@@ -13,6 +13,7 @@ import {
   IconAlertTriangle,
   IconExternalLink,
   IconFileText,
+  IconFolderPlus,
   IconLayoutList,
   IconLayoutRows,
   IconLoader2,
@@ -46,10 +47,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  type CollectionPaperFilter,
+  useCollections
+} from '@/features/papers/collections/use-collections';
+import { addPapersToCollection } from '@/lib/firestore/queries/collections';
+import { useTenantId } from '@/lib/auth';
 import { type Paper, type PaperStatus, TERMINAL_STATUSES } from '@/types/papers';
 
 // R222: only surface the status badge when it carries signal. 'indexed' is the
@@ -100,7 +111,11 @@ function formatAuthors(authors: string[] | undefined): string | null {
   return authors.length > 1 ? `${first} et al.` : first;
 }
 
-export function PaperList() {
+export function PaperList({
+  collectionFilter = null
+}: {
+  collectionFilter?: CollectionPaperFilter | null;
+}) {
   const t = useTranslations('papers');
   const params = useParams();
   const locale = params.locale as string;
@@ -124,7 +139,15 @@ export function PaperList() {
   const filteredPapers = useMemo(() => {
     // R179-7c: fuzzy title search BEFORE field filters (intersection)
     const titleMatched = filter.titleQuery ? searchPapers(papers, filter.titleQuery) : papers;
-    const passed = titleMatched.filter((p) => paperPassesFilter(p, filter));
+    let passed = titleMatched.filter((p) => paperPassesFilter(p, filter));
+    // R280: collection scope from the sidebar selection.
+    if (collectionFilter) {
+      passed = passed.filter((p) =>
+        collectionFilter.kind === 'include'
+          ? collectionFilter.ids.has(p.id)
+          : !collectionFilter.ids.has(p.id)
+      );
+    }
     // R222: client-side sort (data already in memory; no extra query).
     const sorted = [...passed];
     switch (sort) {
@@ -142,7 +165,7 @@ export function PaperList() {
         break;
     }
     return sorted;
-  }, [papers, filter, sort]);
+  }, [papers, filter, sort, collectionFilter]);
 
   if (loading) {
     return (
@@ -521,6 +544,26 @@ function PaperRowMenu({
   const t = useTranslations('papers');
   const [busy, setBusy] = useState(false);
   const canReprocess = TERMINAL_STATUSES.has(status);
+  const tc = useTranslations('collections');
+  const tenantId = useTenantId();
+  const queryClient = useQueryClient();
+  const { collections } = useCollections();
+
+  const addToCollection = async (collectionId: string, collectionName: string) => {
+    if (!tenantId) return;
+    setBusy(true);
+    try {
+      await addPapersToCollection(tenantId, collectionId, [paperId]);
+      await queryClient.invalidateQueries({
+        queryKey: ['tenant-collection', tenantId, 'collections']
+      });
+      toast.success(tc('addedToast', { name: collectionName }));
+    } catch (e) {
+      toast.error(tc('addFailed'), { description: e instanceof Error ? e.message : 'unknown' });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const reprocess = async () => {
     setBusy(true);
@@ -589,6 +632,28 @@ function PaperRowMenu({
           <Icons.edit className='size-4' />
           {t('metadataEdit')}
         </DropdownMenuItem>
+        {collections.length > 0 && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <IconFolderPlus className='size-4' />
+              {tc('addToCollection')}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {collections.map((c) => (
+                <DropdownMenuItem
+                  key={c.id}
+                  disabled={busy}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void addToCollection(c.id, c.name);
+                  }}
+                >
+                  {c.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
         {canReprocess && (
           <DropdownMenuItem
             disabled={busy}

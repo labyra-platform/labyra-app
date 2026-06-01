@@ -556,7 +556,10 @@
     "empty": "No collections yet",
     "loading": "Loading…",
     "renameTitle": "Rename collection",
-    "createTitle": "New collection"
+    "createTitle": "New collection",
+    "addToCollection": "Add to collection",
+    "addedToast": "Added to {name}",
+    "addFailed": "Couldn't add to collection"
   },
   "materials": {
     "title": "Materials",

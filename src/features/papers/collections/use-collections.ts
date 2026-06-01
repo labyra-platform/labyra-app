@@ -24,6 +24,11 @@ export type CollectionSelection =
   | { kind: 'unfiled' }
   | { kind: 'collection'; collectionId: string };
 
+/** Paper-id filter derived from a CollectionSelection, applied by PaperList. */
+export type CollectionPaperFilter =
+  | { kind: 'include'; ids: Set<string> }
+  | { kind: 'exclude'; ids: Set<string> };
+
 export function useCollections(): {
   collections: PaperCollection[];
   tree: CollectionNode[];

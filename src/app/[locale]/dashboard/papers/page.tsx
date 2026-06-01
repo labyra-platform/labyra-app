@@ -2,7 +2,7 @@ import { IconUpload } from '@tabler/icons-react';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
-import { PaperList } from '@/features/papers/components/paper-list';
+import { PapersLibraryView } from '@/features/papers/components/papers-library-view';
 import { UploadSheet } from '@/features/papers/components/upload-sheet';
 
 export async function generateMetadata() {
@@ -27,7 +27,7 @@ export default async function PapersListPage() {
         />
       }
     >
-      <PaperList />
+      <PapersLibraryView />
     </PageContainer>
   );
 }

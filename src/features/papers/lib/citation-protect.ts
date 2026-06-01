@@ -32,7 +32,8 @@ export type RefKind =
   | 'authoryear'
   | 'doi'
   | 'arxiv'
-  | 'url';
+  | 'url'
+  | 'formula';
 
 export interface RefEntry {
   kind: RefKind;
@@ -80,11 +81,166 @@ const PATTERNS: { kind: RefKind; re: RegExp; numGroup?: number }[] = [
 const PLACEHOLDER_OPEN = '\u27E6C'; // ⟦C
 const PLACEHOLDER_CLOSE = '\u27E7'; // ⟧
 
+// R270: chemical-formula protection. Materials-science prose is dense with
+// formulae (H2O, WO3, MoS2, Fe2O3) that the model otherwise breaks (subscript
+// split, "H 2 O") or transliterates. We mask any whole-word token that parses
+// ENTIRELY into periodic-table element symbols AND looks chemical (≥2 element
+// groups OR a digit) — so ordinary words that happen to be element symbols
+// ("In", "As", "He", "No", "Be") are left untouched. Restored verbatim.
+const ELEMENTS = new Set([
+  'H',
+  'He',
+  'Li',
+  'Be',
+  'B',
+  'C',
+  'N',
+  'O',
+  'F',
+  'Ne',
+  'Na',
+  'Mg',
+  'Al',
+  'Si',
+  'P',
+  'S',
+  'Cl',
+  'Ar',
+  'K',
+  'Ca',
+  'Sc',
+  'Ti',
+  'V',
+  'Cr',
+  'Mn',
+  'Fe',
+  'Co',
+  'Ni',
+  'Cu',
+  'Zn',
+  'Ga',
+  'Ge',
+  'As',
+  'Se',
+  'Br',
+  'Kr',
+  'Rb',
+  'Sr',
+  'Y',
+  'Zr',
+  'Nb',
+  'Mo',
+  'Tc',
+  'Ru',
+  'Rh',
+  'Pd',
+  'Ag',
+  'Cd',
+  'In',
+  'Sn',
+  'Sb',
+  'Te',
+  'I',
+  'Xe',
+  'Cs',
+  'Ba',
+  'La',
+  'Ce',
+  'Pr',
+  'Nd',
+  'Pm',
+  'Sm',
+  'Eu',
+  'Gd',
+  'Tb',
+  'Dy',
+  'Ho',
+  'Er',
+  'Tm',
+  'Yb',
+  'Lu',
+  'Hf',
+  'Ta',
+  'W',
+  'Re',
+  'Os',
+  'Ir',
+  'Pt',
+  'Au',
+  'Hg',
+  'Tl',
+  'Pb',
+  'Bi',
+  'Po',
+  'At',
+  'Rn',
+  'Fr',
+  'Ra',
+  'Ac',
+  'Th',
+  'Pa',
+  'U',
+  'Np',
+  'Pu',
+  'Am',
+  'Cm',
+  'Bk',
+  'Cf',
+  'Es',
+  'Fm',
+  'Md',
+  'No',
+  'Lr',
+  'Rf',
+  'Db',
+  'Sg',
+  'Bh',
+  'Hs',
+  'Mt',
+  'Ds',
+  'Rg',
+  'Cn',
+  'Nh',
+  'Fl',
+  'Mc',
+  'Lv',
+  'Ts',
+  'Og'
+]);
+
+// Whole-word run of element-like groups (Capital + optional lowercase + digits).
+// The \b…\b bounds mean formula-like fragments inside real words (e.g. the "Fi"
+// in "Figure") never match — the trailing letter breaks the word boundary.
+const FORMULA_CANDIDATE_RE = /\b(?:[A-Z][a-z]?\d*)+\b/g;
+
+/** True when `token` is a plausible chemical formula: every element symbol is
+ *  real AND it has ≥2 element groups or at least one subscript digit. */
+function isChemicalFormula(token: string): boolean {
+  const groups = token.match(/[A-Z][a-z]?\d*/g);
+  if (!groups) return false;
+  let hasDigit = false;
+  for (const g of groups) {
+    const m = /^([A-Z][a-z]?)(\d*)$/.exec(g);
+    if (!m || !ELEMENTS.has(m[1] as string)) return false;
+    if (m[2]) hasDigit = true;
+  }
+  return groups.length >= 2 || hasDigit;
+}
+
 /** Replace refs with ⟦Cn⟧ placeholders. Returns the masked text + an ordered
  *  map for {@link restoreRefs}. */
 export function protectRefs(text: string): ProtectResult {
   const map: RefEntry[] = [];
   let out = text;
+  // R270: chemical formulae FIRST — before any ⟦Cn⟧ placeholders exist, so the
+  // formula scanner can't accidentally re-match the "C<n>" inside a placeholder,
+  // and the later ref patterns never see (or split) a formula token.
+  out = out.replace(FORMULA_CANDIDATE_RE, (m) => {
+    if (!isChemicalFormula(m)) return m;
+    const idx = map.length;
+    map.push({ kind: 'formula', raw: m });
+    return `${PLACEHOLDER_OPEN}${idx}${PLACEHOLDER_CLOSE}`;
+  });
   for (const { kind, re, numGroup } of PATTERNS) {
     out = out.replace(re, (m, ...groups) => {
       const idx = map.length;

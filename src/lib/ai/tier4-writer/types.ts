@@ -5,7 +5,15 @@
 import type { GroundingResult } from '@/lib/ai/grounding';
 import type { AiCostBreakdown } from '@/types/ai';
 
-export type SectionType = 'methods' | 'results' | 'discussion' | 'introduction' | 'auto';
+export type SectionType =
+  | 'methods'
+  | 'results'
+  | 'discussion'
+  | 'introduction'
+  | 'abstract'
+  | 'materials'
+  | 'conclusion'
+  | 'auto';
 
 export interface WriterCitation {
   /** Paper ID from RAG search */

@@ -52,7 +52,24 @@ const SECTION_GUIDANCE: Record<Exclude<SectionType, 'auto'>, string> = {
 - Present tense for context, past for prior work.
 - Funnel: broad context → specific gap → this work's contribution.
 - Last paragraph: explicit objective + brief approach.
-- Length: 400-800 words typical.`
+- Length: 400-800 words typical.`,
+
+  abstract: `Section: ABSTRACT
+- ONE paragraph, ~150-300 words, self-contained. No citations, no figure references.
+- Flow: context → objective → approach → key quantitative results (with units) → conclusion/significance.
+- Past tense for what was done/found; present tense for the standing conclusion.`,
+
+  materials: `Section: MATERIALS
+- List every reagent/precursor with supplier and purity (e.g. "tungsten(VI) chloride (WCl₆, 99.9%, Sigma-Aldrich)").
+- Substrates, gases, solvents with grade; note any drying/purification.
+- Past tense. NO procedure here (procedure belongs in Methods).
+- Length: 100-400 words typical.`,
+
+  conclusion: `Section: CONCLUSION
+- Concise synthesis of key findings and significance — NO new data or figures.
+- State what was demonstrated, the headline quantitative result, and why it matters.
+- End with a brief outlook/future direction.
+- Length: 150-400 words typical.`
 };
 
 export function buildWriterSystemPrompt(section: Exclude<SectionType, 'auto'>): string {
@@ -62,10 +79,13 @@ export function buildWriterSystemPrompt(section: Exclude<SectionType, 'auto'>): 
 /** Heuristic section detection from user message */
 export function detectSection(message: string): Exclude<SectionType, 'auto'> {
   const lower = message.toLowerCase();
+  if (/abstract|tóm tắt/.test(lower)) return 'abstract';
   if (/method|procedure|experimental|synthesis/.test(lower)) return 'methods';
+  if (/reagent|precursor|materials used|chemical list/.test(lower)) return 'materials';
   if (/result|finding|measure|characteriz/.test(lower)) return 'results';
   if (/discussion|interpret|mechanism|compare/.test(lower)) return 'discussion';
   if (/introduction|background|motivation/.test(lower)) return 'introduction';
+  if (/conclusion|conclude|kết luận|outlook/.test(lower)) return 'conclusion';
   return 'discussion'; // default: most common section requested
 }
 

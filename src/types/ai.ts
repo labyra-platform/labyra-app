@@ -187,7 +187,14 @@ export type ChatStreamEventV2 =
   | { type: 'rag_search_complete'; paperCount: number }
   | {
       type: 'writer_complete';
-      section: 'methods' | 'results' | 'discussion' | 'introduction';
+      section:
+        | 'methods'
+        | 'results'
+        | 'discussion'
+        | 'introduction'
+        | 'abstract'
+        | 'materials'
+        | 'conclusion';
       citationCount: number;
       sourceCount: number;
       // R276: deterministic grounding surfaced to the client.

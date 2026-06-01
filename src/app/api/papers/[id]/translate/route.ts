@@ -173,11 +173,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   // ─── Identity short-circuit (§3): same-language = nothing to translate ──
   // If the selection is already in the target language, return it verbatim with
-  // 0 tokens + no model call. Text mode only (an image always needs OCR). franc-
-  // min is already a dependency (sparse retrieval) and runs locally in ~ms. We
-  // short-circuit ONLY on an exact language match, so a misdetection falls
-  // through to a real translation rather than returning wrong-language text.
-  if (mode === 'text' && text.length > 10 && FRANC_TO_LANG[franc(text)] === targetLang) {
+  // 0 tokens + no model call (text mode only — an image always needs OCR).
+  //   Tier 2: franc-min on the selection — local, ~ms, no read. Reliable for
+  //           paragraph-sized text. We short-circuit ONLY on an exact match, so
+  //           a misdetection falls through to a real translation.
+  //   Tier 3: when franc can't decide (very short selection), fall back to the
+  //           paper's stored language (worker metadata) — further below.
+  const francLang = mode === 'text' && text.length > 10 ? FRANC_TO_LANG[franc(text)] : undefined;
+  if (francLang === targetLang) {
     return NextResponse.json({
       paperId,
       targetLang,
@@ -240,6 +243,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         })
         .catch(() => {});
       return NextResponse.json({ paperId, targetLang, translation: assembled, cached: true });
+    }
+  }
+
+  // ─── Identity short-circuit Tier 3 (franc inconclusive) ───────
+  // Very short selections defeat franc; fall back to the paper's stored language
+  // (set by the worker metadata step). One read, only when franc couldn't decide
+  // and we haven't already returned from cache. Catches short same-language drags.
+  if (mode === 'text' && !francLang) {
+    try {
+      const paperSnap = await db.doc(`tenants/${tenantId}/papers/${paperId}`).get();
+      const paperLang = (paperSnap.data() as { language?: string } | undefined)?.language;
+      if (paperLang === targetLang) {
+        return NextResponse.json({
+          paperId,
+          targetLang,
+          translation: text,
+          cached: false,
+          identity: true
+        });
+      }
+    } catch {
+      // best-effort — fall through to a real translation
     }
   }
 

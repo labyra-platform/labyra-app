@@ -69,6 +69,7 @@ export const GLOSSARY_VI: GlossaryEntry[] = [
   { en: 'Miller indices', vi: 'chỉ số Miller' },
   { en: 'lattice parameter', vi: 'hằng số mạng' },
   { en: 'dislocation density', vi: 'mật độ lệch mạng' },
+  { en: 'microstrain', vi: 'vi biến dạng' },
   { en: 'preferred orientation', vi: 'định hướng ưu tiên' },
   { en: 'amorphous', vi: 'vô định hình' },
   // DFT / computational (R271)
@@ -80,16 +81,25 @@ export const GLOSSARY_VI: GlossaryEntry[] = [
   { en: 'conduction band', vi: 'vùng dẫn' },
   { en: 'Fermi level', vi: 'mức Fermi' },
   { en: 'pseudopotential', vi: 'giả thế' },
+  { en: 'first-principles', vi: 'nguyên lý cơ bản' },
+  { en: 'supercell', vi: 'siêu ô' },
+  { en: 'exchange-correlation', vi: 'trao đổi-tương quan' },
   // Photoelectrochemistry (R271)
   { en: 'water splitting', vi: 'tách nước' },
   { en: 'photocurrent', vi: 'dòng quang' },
   { en: 'charge carrier', vi: 'hạt tải điện' },
   { en: 'charge separation', vi: 'phân tách điện tích' },
   { en: 'recombination', vi: 'tái hợp' },
+  { en: 'photoanode', vi: 'quang anode' },
+  { en: 'photocathode', vi: 'quang cathode' },
+  { en: 'flat band potential', vi: 'thế dải phẳng' },
+  { en: 'solar-to-hydrogen efficiency', vi: 'hiệu suất quang-hydro (STH)' },
   // FTIR / Raman (R271)
   { en: 'functional group', vi: 'nhóm chức' },
   { en: 'transmittance', vi: 'độ truyền qua' },
-  { en: 'wavenumber', vi: 'số sóng' }
+  { en: 'wavenumber', vi: 'số sóng' },
+  { en: 'stretching vibration', vi: 'dao động hóa trị' },
+  { en: 'bending vibration', vi: 'dao động biến dạng' }
 ];
 
 /** Build the prompt block. Returns '' for non-vi (no glossary yet). */

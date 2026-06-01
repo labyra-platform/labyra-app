@@ -22,6 +22,13 @@ describe('translation-glossary (R271)', () => {
     expect(block).toContain('water splitting → tách nước');
   });
 
+  it('includes the R272 confirmed terms', () => {
+    const block = glossaryBlock('vi');
+    expect(block).toContain('first-principles → nguyên lý cơ bản');
+    expect(block).toContain('photoanode → quang anode');
+    expect(block).toContain('stretching vibration → dao động hóa trị');
+  });
+
   it('returns empty for non-vi targets (no glossary yet)', () => {
     expect(glossaryBlock('en')).toBe('');
     expect(glossaryBlock('ja')).toBe('');

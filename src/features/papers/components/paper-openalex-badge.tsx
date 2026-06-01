@@ -5,7 +5,7 @@
  *
  * Option B (R237ca): OpenAlex is the PRIMARY classification (this badge), shown
  * prominently in the card and detail header; the Gemini taxonomy chips
- * (PaperDomainBadge / DomainSection) are kept for materials-specific subtopics.
+ * (materials-specific subtopics) render inline in reader-side-panel.
  *
  * Two variants:
  *   - 'compact' (card): a single field chip with a verified mark.

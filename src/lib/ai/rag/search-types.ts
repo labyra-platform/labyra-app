@@ -16,6 +16,9 @@ export interface SearchRequest {
   viewerGroupId?: string | null;
   /** admin/superadmin → no group filter (cross-group visibility). */
   isPrivileged?: boolean;
+  /** R-collection-2: scope retrieval to papers in this collection (own
+   * membership). Empty/missing collection → no hits. Omit = whole library. */
+  collectionId?: string | null;
 }
 
 export interface SearchHit {

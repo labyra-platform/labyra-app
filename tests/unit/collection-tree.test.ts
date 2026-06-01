@@ -7,6 +7,7 @@ import {
   descendantIds,
   MAX_COLLECTION_DEPTH,
   subtreeHeight,
+  validateMove,
   wouldCreateCycle,
   wouldExceedDepth
 } from '@/features/papers/collections/collection-tree';
@@ -84,5 +85,18 @@ describe('wouldExceedDepth', () => {
   });
   it('allows a move that stays within the cap', () => {
     expect(wouldExceedDepth(tree, 'c', null)).toBe(false); // root + height 1 = 1
+  });
+});
+
+describe('validateMove', () => {
+  it('throws on a cycle', () => {
+    expect(() => validateMove(tree, 'a', 'c')).toThrow(/cycle/i);
+  });
+  it('throws when exceeding depth', () => {
+    const deep = [mk('p1'), mk('p2', 'p1'), mk('p3', 'p2'), mk('p4', 'p3'), mk('s'), mk('s2', 's')];
+    expect(() => validateMove(deep, 's', 'p3')).toThrow(/depth/i);
+  });
+  it('does not throw for a valid move', () => {
+    expect(() => validateMove(tree, 'c', 'e')).not.toThrow();
   });
 });

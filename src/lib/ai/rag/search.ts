@@ -7,6 +7,7 @@ import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { mapWithConcurrency } from '@/lib/utils/concurrency';
 import type { PaperChunkDoc } from '@/types/papers';
+import { resolveCollectionPaperIds } from './collection-scope';
 import { getEmbeddingProvider } from './embedding';
 import { reciprocalRankFusion, toRankedList } from './fusion/rrf';
 import { getRerankProvider } from './rerank';
@@ -60,6 +61,22 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   const vectorTopK = req.vectorTopK ?? DEFAULT_VECTOR_TOP_K;
   const topN = req.topN ?? DEFAULT_TOP_N;
 
+  // R-collection-2: optional collection scope. Resolve to member paperIds and
+  // short-circuit an empty/missing collection before any embed or retrieval.
+  // Gated on req.collectionId — callers that omit it keep identical behaviour.
+  let collectionPaperIds: Set<string> | null = null;
+  if (req.collectionId) {
+    collectionPaperIds = new Set(await resolveCollectionPaperIds(req.tenantId, req.collectionId));
+    if (collectionPaperIds.size === 0) {
+      return {
+        hits: [],
+        cost: { embed: 0, rerank: 0, total: 0 },
+        tokensUsed: { embed: 0, rerank: 0 },
+        latencyMs: Date.now() - startedAt
+      };
+    }
+  }
+
   // ─── STEP 1: Parallel retrieval ─────────────────────────────────
   const embedder = getEmbeddingProvider();
   const bm25Promise = getBM25ForTenant(req.tenantId);
@@ -84,6 +101,10 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   // ADR-034 TEAM-5: group scope. Privileged viewers see all groups.
   if (!req.isPrivileged && req.viewerGroupId !== undefined) {
     filterClauses.push({ groupId: { $in: [req.viewerGroupId, 'lab-shared'] } });
+  }
+  // R-collection-2: restrict to the collection's member papers.
+  if (collectionPaperIds) {
+    filterClauses.push({ paperId: { $in: [...collectionPaperIds] } });
   }
   const mergedFilter: Record<string, unknown> = { $and: filterClauses };
 
@@ -113,7 +134,8 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
                 bm25Encoder,
                 DEFAULT_BM25_TOP_K,
                 req.viewerGroupId,
-                req.isPrivileged
+                req.isPrivileged,
+                collectionPaperIds
               ),
               new Promise<never>((_resolve, reject) => {
                 bm25Timer = setTimeout(() => reject(new Error('bm25_timeout')), BM25_TIMEOUT_MS);
@@ -310,7 +332,8 @@ async function retrieveBM25(
   encoder: import('./sparse').BM25Encoder,
   topK: number,
   viewerGroupId?: string | null,
-  isPrivileged?: boolean
+  isPrivileged?: boolean,
+  collectionPaperIds?: Set<string> | null
 ): Promise<{ chunkId: string; score: number; chunk: PaperChunkDoc }[]> {
   const db = getAdminFirestoreService();
   // ADR-034 TEAM-5: group scope. status uses '==' so adding one 'in' is allowed.
@@ -321,6 +344,13 @@ async function retrieveBM25(
     papersQuery = papersQuery.where('groupId', 'in', [viewerGroupId, 'lab-shared']);
   }
   const papers = await papersQuery.get();
+  // R-collection-2: collection scope — keep only member papers (in-memory; a
+  // Firestore `in` caps at 30, collections may hold more).
+  let scopedPapers = papers.docs;
+  if (collectionPaperIds != null) {
+    const ids = collectionPaperIds;
+    scopedPapers = papers.docs.filter((p) => ids.has(p.id));
+  }
 
   const allChunks: { chunkId: string; chunk: PaperChunkDoc }[] = [];
   const excludedSet = new Set([
@@ -333,7 +363,7 @@ async function retrieveBM25(
     'Terms and Conditions'
   ]);
   // R238c: parallelize per-paper chunk reads (was serial N+1 — one RTT/paper).
-  const chunkSnaps = await mapWithConcurrency(papers.docs, CHUNK_FETCH_CONCURRENCY, (paper) =>
+  const chunkSnaps = await mapWithConcurrency(scopedPapers, CHUNK_FETCH_CONCURRENCY, (paper) =>
     paper.ref.collection('chunks').get()
   );
   for (const chunks of chunkSnaps) {

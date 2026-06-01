@@ -125,3 +125,21 @@ export function wouldExceedDepth(
   const parentDepth = newParentId == null ? 0 : collectionDepth(collections, newParentId);
   return parentDepth + subtreeHeight(collections, moveId) > maxDepth;
 }
+
+/**
+ * Throw if moving `moveId` under `newParentId` is illegal (cycle or depth cap).
+ * Defensive guard for moveCollection, independent of any UI pre-check.
+ */
+export function validateMove(
+  collections: PaperCollection[],
+  moveId: string,
+  newParentId: string | null,
+  maxDepth: number = MAX_COLLECTION_DEPTH
+): void {
+  if (wouldCreateCycle(collections, moveId, newParentId)) {
+    throw new Error('Move would create a cycle in the collection tree.');
+  }
+  if (wouldExceedDepth(collections, moveId, newParentId, maxDepth)) {
+    throw new Error(`Move would exceed the maximum nesting depth (${maxDepth}).`);
+  }
+}

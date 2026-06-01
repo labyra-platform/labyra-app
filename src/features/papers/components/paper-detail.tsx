@@ -34,7 +34,7 @@ import { useIsSuperAdmin } from '@/lib/auth/use-claims';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { PaperOpenAlexBadge } from '@/features/papers/components/paper-openalex-badge';
 import { formatSciNode } from '@/features/spectra/utils/format-units';
-import { usePaper } from '@/lib/firestore/queries/papers';
+import { usePaper, usePretranslation } from '@/lib/firestore/queries/papers';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { cn } from '@/lib/utils';
 import { CANCELLABLE_STATUSES, TERMINAL_STATUSES } from '@/types/papers';
@@ -72,6 +72,8 @@ export function PaperDetail({ paperId }: { paperId: string }) {
   const locale = params.locale as string;
   const isSuperAdmin = useIsSuperAdmin(); // R223 #3: cost is internal/ops-only
   const { paper, loading } = usePaper(paperId);
+  const pretranslation = usePretranslation(paperId, locale);
+  const [showOriginalAbstract, setShowOriginalAbstract] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -250,13 +252,39 @@ export function PaperDetail({ paperId }: { paperId: string }) {
           characterization) are visually separated, with confidence shown apart. */}
       <DomainSection paper={paper} />
 
-      {/* R223 #1: abstract — the actual research content, surfaced high. */}
-      {paper.abstract && (
+      {/* R223 #1 + R268: abstract surfaced high. Shows the pre-translated version
+          in the reader's language by default (Lớp 1), with a toggle to the original. */}
+      {(paper.abstract || pretranslation?.abstract) && (
+        <section className='space-y-2'>
+          <div className='flex items-center justify-between gap-2'>
+            <h2 className='text-sm font-medium text-muted-foreground uppercase tracking-wide'>
+              {t('abstract')}
+            </h2>
+            {paper.abstract && pretranslation?.abstract && (
+              <button
+                type='button'
+                onClick={() => setShowOriginalAbstract((v) => !v)}
+                className='text-xs text-muted-foreground transition-colors hover:text-foreground'
+              >
+                {showOriginalAbstract ? t('showTranslation') : t('showOriginal')}
+              </button>
+            )}
+          </div>
+          <p className='text-sm leading-relaxed text-foreground/90'>
+            {showOriginalAbstract || !pretranslation?.abstract
+              ? paper.abstract
+              : pretranslation.abstract}
+          </p>
+        </section>
+      )}
+
+      {/* R268: pre-translated conclusion (no original-conclusion field is stored). */}
+      {pretranslation?.conclusion && (
         <section className='space-y-2'>
           <h2 className='text-sm font-medium text-muted-foreground uppercase tracking-wide'>
-            {t('abstract')}
+            {t('conclusion')}
           </h2>
-          <p className='text-sm leading-relaxed text-foreground/90'>{paper.abstract}</p>
+          <p className='text-sm leading-relaxed text-foreground/90'>{pretranslation.conclusion}</p>
         </section>
       )}
 

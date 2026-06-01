@@ -192,6 +192,14 @@ service cloud.firestore {
             && resource.data.userId == request.auth.uid;
           allow write: if false;
         }
+
+        // R223 pre-translate Lớp 1: worker-generated translated sections
+        // (abstract/conclusion/headings). Read by any tenant member; the worker
+        // (Admin SDK) is the only writer.
+        match /pretranslations/{lang} {
+          allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+          allow write: if false;
+        }
       }
 
       // AI provenance — audit trail of every model call. Read by

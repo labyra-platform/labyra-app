@@ -533,7 +533,10 @@
     "landscapeNoData": "Not enough data yet",
     "filterOpenAccess": "Open Access",
     "filterPublisher": "Publisher",
-    "filterPublisherCount": "{count} publishers"
+    "filterPublisherCount": "{count} publishers",
+    "showOriginal": "Show original",
+    "showTranslation": "Show translation",
+    "conclusion": "Conclusion"
   },
   "materials": {
     "title": "Materials",

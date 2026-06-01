@@ -533,7 +533,10 @@
     "landscapeNoData": "Chưa đủ dữ liệu",
     "filterOpenAccess": "Truy cập mở",
     "filterPublisher": "Nhà xuất bản",
-    "filterPublisherCount": "{count} nhà xuất bản"
+    "filterPublisherCount": "{count} nhà xuất bản",
+    "showOriginal": "Xem bản gốc",
+    "showTranslation": "Xem bản dịch",
+    "conclusion": "Kết luận"
   },
   "materials": {
     "title": "Vật liệu",

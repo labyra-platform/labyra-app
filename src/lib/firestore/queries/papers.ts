@@ -125,3 +125,37 @@ export function useMonthlyUsage() {
 
   return { usage, loading };
 }
+
+export interface Pretranslation {
+  abstract?: string;
+  conclusion?: string;
+  headings?: Record<string, string>;
+  sourceLanguage?: string;
+  targetLanguage?: string;
+}
+
+/** Realtime listener for a paper's pre-translated sections in `lang` (Lớp 1).
+ *  Returns null when none exist (e.g. en→en skip, or ineligible paper). */
+export function usePretranslation(paperId: string | null, lang: string | null) {
+  const tenantId = useTenantId();
+  const [pretranslation, setPretranslation] = useState<Pretranslation | null>(null);
+
+  useEffect(() => {
+    if (!tenantId || !paperId || !lang) {
+      setPretranslation(null);
+      return;
+    }
+    const ref = doc(db(), `tenants/${tenantId}/papers/${paperId}/pretranslations/${lang}`);
+    const unsub = onSnapshot(
+      ref,
+      (snap) => setPretranslation(snap.exists() ? (snap.data() as Pretranslation) : null),
+      (err) => {
+        console.error('usePretranslation listener error', err);
+        setPretranslation(null);
+      }
+    );
+    return () => unsub();
+  }, [tenantId, paperId, lang]);
+
+  return pretranslation;
+}

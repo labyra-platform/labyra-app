@@ -36,7 +36,7 @@ function emptyCost(): AiCostBreakdown {
 }
 
 export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
-  const { userMessage, tenantId, onTextDelta, onSearchComplete } = opts;
+  const { userMessage, tenantId, onTextDelta, onSearchComplete, collectionId, priorContext } = opts;
   const startedAt = Date.now();
 
   // 1. Determine section
@@ -48,7 +48,8 @@ export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
     tenantId,
     query: userMessage,
     vectorTopK: TOP_K_PAPERS,
-    topN: TOP_K_PAPERS
+    topN: TOP_K_PAPERS,
+    collectionId
   });
 
   // searchPapers returns SearchResponse with .hits[] — extract for context
@@ -118,6 +119,7 @@ export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
     maxTokens: MAX_DRAFT_TOKENS,
     system: [
       { text: systemPrompt, cache: true, cacheTtl: '1h' },
+      ...(priorContext ? [{ text: priorContext, cache: false }] : []),
       { text: contextBlock, cache: false }
     ],
     messages: [{ role: 'user', content: userMessage }]

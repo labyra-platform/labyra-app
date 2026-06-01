@@ -60,4 +60,8 @@ export interface WriterOptions {
   onTextDelta?: (delta: string) => void;
   /** Called when search phase completes */
   onSearchComplete?: (paperCount: number) => void;
+  /** R-aiscience: scope RAG to a collection (manuscript curated source). */
+  collectionId?: string | null;
+  /** R-aiscience: prior-section running summary + glossary, for coherence. */
+  priorContext?: string;
 }

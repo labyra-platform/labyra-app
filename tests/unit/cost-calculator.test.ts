@@ -6,8 +6,8 @@ import { calculateCost, getPricingNotes } from '@/lib/ai/providers/cost-calculat
  *
  * Context: R190-1 fixed a Tier-0 pricing-key mismatch
  * ('gemini-3.1-flash-lite-preview' in PRICING vs 'gemini-3.1-flash-lite'
- * emitted by CAPABILITY_MAP). calculateCost() returns $0 + warns on an unknown
- * model, so the defect was silent for ~2 weeks and under-counted Cost Guard
+ * emitted by CAPABILITY_MAP). At the time, calculateCost() returned $0 on an
+ * unknown model, so the defect was silent for ~2 weeks and under-counted Cost Guard
  * per-tenant caps. This suite makes "a tier model has no price" a CI failure.
  *
  * CONTRACT: TIER_MODELS below is the canonical billable set. It MUST stay in
@@ -49,9 +49,14 @@ describe('cost-calculator: T0 GA price regression (R190-1)', () => {
   });
 });
 
-describe('cost-calculator: unknown model still returns 0 (unchanged behavior)', () => {
-  it('does not throw and reports $0 for an unmapped model', () => {
+describe('cost-calculator: unknown model falls back to most-expensive tier (AI-3)', () => {
+  it('prices an unmapped model at claude-opus-4-8 rates, never $0', () => {
     const { usd } = calculateCost('totally-not-a-model', 1000, 1000);
-    expect(usd).toBe(0);
+    // AI-3 fix: an unknown model falls back to opus-4-8 ($5/M in, $25/M out, ×1.35
+    // inflation) so the Cost Guard still trips + spend is over- (never under-)
+    // estimated. Returning $0 here silently disabled the guard for ~2 weeks (R190-1).
+    // (1000×1.35/1e6)×5 + (1000×1.35/1e6)×25 = 0.00675 + 0.03375 = 0.0405
+    expect(usd).toBeCloseTo(0.0405, 6);
+    expect(usd).toBeGreaterThan(0);
   });
 });

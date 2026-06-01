@@ -15,7 +15,6 @@ export const tenantAiContextSchema = z.object({
   // R273: tenant translation glossary (en → preferred rendering), merged OVER the
   // built-in domain glossary in the translate prompt. Distinct from `glossary`
   // above, which is term→definition for the Q&A/memory context — do not conflate.
-  translationGlossary: z.record(z.string().max(100), z.string().max(200)).default({}),
   // R267: tenant default target language for pre-translation (worker reads this).
   defaultLanguage: z.enum(['en', 'vi', 'zh', 'ja', 'ko', 'fr', 'de']).default('en')
 });

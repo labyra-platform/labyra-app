@@ -1443,9 +1443,7 @@
       "save": "Lưu bối cảnh lab",
       "saved": "Đã lưu bối cảnh lab",
       "defaultLanguage": "Ngôn ngữ dịch mặc định",
-      "defaultLanguageDesc": "Paper sẽ được dịch sẵn sang ngôn ngữ này. Đặt theo ngôn ngữ đọc của lab.",
-      "translationGlossary": "Thuật ngữ dịch",
-      "translationGlossaryDesc": "Bản dịch tiếng Việt ưu tiên cho mỗi thuật ngữ, mỗi dòng — định dạng: english: tiếng việt. Ghi đè glossary mặc định khi dịch sang tiếng Việt."
+      "defaultLanguageDesc": "Paper sẽ được dịch sẵn sang ngôn ngữ này. Đặt theo ngôn ngữ đọc của lab."
     },
     "memory": {
       "title": "Thông tin đã ghi nhớ",

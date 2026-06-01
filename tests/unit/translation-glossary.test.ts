@@ -34,30 +34,3 @@ describe('translation-glossary (R271)', () => {
     expect(glossaryBlock('ja')).toBe('');
   });
 });
-
-describe('glossaryBlock — tenant merge (R273)', () => {
-  it('tenant rendering overrides domain for the same term', () => {
-    const block = glossaryBlock('vi', { overpotential: 'thế quá áp' });
-    expect(block).toContain('overpotential → thế quá áp');
-    expect(block).not.toContain('overpotential → quá thế');
-  });
-
-  it('appends tenant-only terms', () => {
-    const block = glossaryBlock('vi', { 'custom reactor X': 'lò phản ứng X' });
-    expect(block).toContain('custom reactor X → lò phản ứng X');
-  });
-
-  it('keeps the domain glossary intact when no tenant glossary is given', () => {
-    expect(glossaryBlock('vi')).toContain('overpotential → quá thế');
-  });
-
-  it('returns empty for non-vi even with a tenant glossary', () => {
-    expect(glossaryBlock('en', { foo: 'bar' })).toBe('');
-  });
-
-  it('ignores empty tenant entries', () => {
-    const block = glossaryBlock('vi', { '': 'zzdef', zzkey: '  ' });
-    expect(block).not.toContain('zzdef');
-    expect(block).not.toContain('zzkey');
-  });
-});

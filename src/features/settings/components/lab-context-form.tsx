@@ -60,7 +60,6 @@ interface LabContextFormValues {
   commonEquipment: string;
   houseStyle: string;
   glossary: string; // "term: definition" per line
-  translationGlossary: string; // "english: vietnamese" per line (R273)
   defaultLanguage: string;
 }
 
@@ -72,7 +71,6 @@ const EMPTY: LabContextFormValues = {
   commonEquipment: '',
   houseStyle: '',
   glossary: '',
-  translationGlossary: '',
   defaultLanguage: 'en'
 };
 
@@ -124,7 +122,6 @@ export function LabContextForm() {
             commonEquipment?: string[];
             houseStyle?: string;
             glossary?: Record<string, string>;
-            translationGlossary?: Record<string, string>;
             defaultLanguage?: string;
           } | null;
         };
@@ -138,7 +135,6 @@ export function LabContextForm() {
             commonEquipment: (c.commonEquipment ?? []).join(', '),
             houseStyle: c.houseStyle ?? '',
             glossary: glossaryToText(c.glossary ?? {}),
-            translationGlossary: glossaryToText(c.translationGlossary ?? {}),
             defaultLanguage: c.defaultLanguage ?? 'en'
           });
         }
@@ -165,7 +161,6 @@ export function LabContextForm() {
         commonEquipment: splitCsv(values.commonEquipment),
         houseStyle: values.houseStyle.trim(),
         glossary: parseGlossary(values.glossary),
-        translationGlossary: parseGlossary(values.translationGlossary),
         defaultLanguage: values.defaultLanguage
       };
       const res = await authedFetch('/api/tenant/ai-context', {
@@ -284,20 +279,6 @@ export function LabContextForm() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name='translationGlossary'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('translationGlossary')}</FormLabel>
-                  <FormControl>
-                    <Textarea rows={3} placeholder={'overpotential: quá thế'} {...field} />
-                  </FormControl>
-                  <FormDescription>{t('translationGlossaryDesc')}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name='houseStyle'

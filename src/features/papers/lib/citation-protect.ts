@@ -261,6 +261,20 @@ const LABEL_BY_LANG: Record<string, Partial<Record<RefKind, string>>> = {
  *  figure/table/equation/section refs (keeping the number); everything else is
  *  restored to its original source text. Tolerant of spaces the model may have
  *  inserted inside the placeholder. */
+/**
+ * Render stoichiometric subscripts for a masked chemical formula on restore.
+ * Only MULTI-element formulae (≥2 element groups) get <sub> — their digits are
+ * unambiguously stoichiometric (WO3→WO<sub>3</sub>, Fe2O3). Single-element +
+ * digit is left verbatim: "O2" (diatomic, subscript) is indistinguishable from
+ * "U235" (isotope mass number = SUPERSCRIPT), so we never risk mis-formatting.
+ * Output is consumed as HTML (sanitizeFormatting whitelists <sub>).
+ */
+function formatFormulaSubscripts(raw: string): string {
+  const groups = raw.match(/[A-Z][a-z]?\d*/g);
+  if (!groups || groups.length < 2) return raw;
+  return raw.replace(/(\d+)/g, '<sub>$1</sub>');
+}
+
 export function restoreRefs(text: string, map: RefEntry[], lang: string): string {
   const labels = LABEL_BY_LANG[lang];
   return text.replace(/\u27E6\s*C(\d+)\s*\u27E7/g, (_m, i: string) => {
@@ -268,6 +282,7 @@ export function restoreRefs(text: string, map: RefEntry[], lang: string): string
     if (!entry) return ''; // orphaned placeholder (model dropped the ref) — drop it
     const label = labels?.[entry.kind];
     if (label && entry.num) return `${label} ${entry.num}`;
+    if (entry.kind === 'formula') return formatFormulaSubscripts(entry.raw);
     return entry.raw;
   });
 }

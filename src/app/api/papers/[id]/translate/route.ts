@@ -11,13 +11,13 @@
  */
 
 import { createHash } from 'node:crypto';
-import { franc } from 'franc-min';
 import { NextResponse } from 'next/server';
 import { estimateCost } from '@/lib/ai/cost/estimator';
 import { recordCost } from '@/lib/ai/cost/telemetry';
 import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
 import { selectProvider } from '@/lib/ai/providers';
 import { protectRefs, restoreRefs } from '@/features/papers/lib/citation-protect';
+import { detectLang } from '@/features/papers/lib/translate-identity';
 import { glossaryBlock } from '@/features/papers/lib/translation-glossary';
 import { tmBlock, tmRetrieve, tmStore } from '@/lib/ai/rag/translation-memory';
 import { getTenantIdFromToken } from '@/lib/auth/token';
@@ -37,18 +37,6 @@ const LANG_NAME: Record<string, string> = {
   ko: 'Korean',
   fr: 'French',
   de: 'German'
-};
-
-// franc-min returns ISO 639-3; map to our 2-letter target codes for the identity
-// short-circuit. Only languages offered as targets need an entry.
-const FRANC_TO_LANG: Record<string, string> = {
-  eng: 'en',
-  vie: 'vi',
-  cmn: 'zh',
-  jpn: 'ja',
-  kor: 'ko',
-  fra: 'fr',
-  deu: 'de'
 };
 
 function jsonError(status: number, error: string, extra: Record<string, unknown> = {}) {
@@ -179,7 +167,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   //           a misdetection falls through to a real translation.
   //   Tier 3: when franc can't decide (very short selection), fall back to the
   //           paper's stored language (worker metadata) — further below.
-  const francLang = mode === 'text' && text.length > 10 ? FRANC_TO_LANG[franc(text)] : undefined;
+  const francLang = mode === 'text' ? detectLang(text) : null;
   if (francLang === targetLang) {
     return NextResponse.json({
       paperId,

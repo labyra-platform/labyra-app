@@ -58,7 +58,38 @@ export const GLOSSARY_VI: GlossaryEntry[] = [
   { en: 'doping', vi: 'pha tạp' },
   { en: 'heterojunction', vi: 'lớp tiếp giáp dị thể' },
   { en: 'surface area', vi: 'diện tích bề mặt' },
-  { en: 'morphology', vi: 'hình thái' }
+  { en: 'morphology', vi: 'hình thái' },
+  // XRD (R271)
+  { en: 'X-ray diffraction', vi: 'nhiễu xạ tia X (XRD)' },
+  { en: 'diffraction pattern', vi: 'giản đồ nhiễu xạ' },
+  { en: 'diffraction peak', vi: 'đỉnh nhiễu xạ' },
+  { en: "Bragg's law", vi: 'định luật Bragg' },
+  { en: 'd-spacing', vi: 'khoảng cách mặt mạng' },
+  { en: 'crystal plane', vi: 'mặt phẳng tinh thể' },
+  { en: 'Miller indices', vi: 'chỉ số Miller' },
+  { en: 'lattice parameter', vi: 'hằng số mạng' },
+  { en: 'dislocation density', vi: 'mật độ lệch mạng' },
+  { en: 'preferred orientation', vi: 'định hướng ưu tiên' },
+  { en: 'amorphous', vi: 'vô định hình' },
+  // DFT / computational (R271)
+  { en: 'density functional theory', vi: 'lý thuyết phiếm hàm mật độ (DFT)' },
+  { en: 'density of states', vi: 'mật độ trạng thái (DOS)' },
+  { en: 'band structure', vi: 'cấu trúc vùng năng lượng' },
+  { en: 'Brillouin zone', vi: 'vùng Brillouin' },
+  { en: 'valence band', vi: 'vùng hóa trị' },
+  { en: 'conduction band', vi: 'vùng dẫn' },
+  { en: 'Fermi level', vi: 'mức Fermi' },
+  { en: 'pseudopotential', vi: 'giả thế' },
+  // Photoelectrochemistry (R271)
+  { en: 'water splitting', vi: 'tách nước' },
+  { en: 'photocurrent', vi: 'dòng quang' },
+  { en: 'charge carrier', vi: 'hạt tải điện' },
+  { en: 'charge separation', vi: 'phân tách điện tích' },
+  { en: 'recombination', vi: 'tái hợp' },
+  // FTIR / Raman (R271)
+  { en: 'functional group', vi: 'nhóm chức' },
+  { en: 'transmittance', vi: 'độ truyền qua' },
+  { en: 'wavenumber', vi: 'số sóng' }
 ];
 
 /** Build the prompt block. Returns '' for non-vi (no glossary yet). */

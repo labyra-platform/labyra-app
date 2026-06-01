@@ -102,9 +102,23 @@ export const GLOSSARY_VI: GlossaryEntry[] = [
   { en: 'bending vibration', vi: 'dao động biến dạng' }
 ];
 
-/** Build the prompt block. Returns '' for non-vi (no glossary yet). */
-export function glossaryBlock(targetLang: string): string {
+/** Build the prompt block, merging the built-in domain glossary with an optional
+ *  tenant glossary (lab-specific renderings, which take priority for the same
+ *  English term). Returns '' for non-vi (no glossary yet). */
+export function glossaryBlock(targetLang: string, tenant?: Record<string, string>): string {
   if (targetLang !== 'vi') return '';
-  const lines = GLOSSARY_VI.map((e) => `- ${e.en} → ${e.vi}`).join('\n');
+  // Domain first; tenant overrides the value for a matching term (keeping its
+  // position) and appends any lab-specific terms — so one consistent list, no
+  // contradictions.
+  const merged = new Map<string, string>();
+  for (const e of GLOSSARY_VI) merged.set(e.en, e.vi);
+  if (tenant) {
+    for (const [en, vi] of Object.entries(tenant)) {
+      const k = en.trim();
+      const v = vi.trim();
+      if (k && v) merged.set(k, v);
+    }
+  }
+  const lines = [...merged].map(([en, vi]) => `- ${en} → ${vi}`).join('\n');
   return `PREFERRED TERMINOLOGY (use these Vietnamese renderings when the English term appears, unless the context clearly means something else; keep any parenthetical acronym):\n${lines}`;
 }

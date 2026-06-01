@@ -262,6 +262,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!guard.allowed) return jsonError(402, 'cost_guard_blocked', { reason: guard.reason });
 
   // ─── Translate ────────────────────────────────────────────────
+  // R273: tenant translation glossary (lab-specific renderings), merged OVER the
+  // built-in domain glossary in the prompt below. Best-effort — never blocks.
+  let tenantGlossary: Record<string, string> = {};
+  try {
+    const ctxSnap = await db.doc(`tenants/${tenantId}/aiContext/main`).get();
+    const tg = (ctxSnap.data() as { translationGlossary?: Record<string, string> } | undefined)
+      ?.translationGlossary;
+    if (tg) tenantGlossary = tg;
+  } catch {
+    // best-effort — fall back to the domain glossary only
+  }
+
   const { provider, config } = selectProvider(TIER);
   const system = `You translate scientific text into ${targetName} for an expert reader.
 
@@ -307,7 +319,9 @@ Example (English→Vietnamese):
 
 Output ONLY the translation — no notes, no preamble, no quotes. If the text is
 already in ${targetName}, return it unchanged (still apply the formatting tags).${
-    glossaryBlock(targetLang) ? `\n\n${glossaryBlock(targetLang)}` : ''
+    glossaryBlock(targetLang, tenantGlossary)
+      ? `\n\n${glossaryBlock(targetLang, tenantGlossary)}`
+      : ''
   }${
     mode === 'image'
       ? `

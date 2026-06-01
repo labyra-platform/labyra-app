@@ -1443,7 +1443,9 @@
       "save": "Save lab context",
       "saved": "Lab context saved",
       "defaultLanguage": "Default translation language",
-      "defaultLanguageDesc": "Papers are pre-translated into this language. Set it to your lab's reading language."
+      "defaultLanguageDesc": "Papers are pre-translated into this language. Set it to your lab's reading language.",
+      "translationGlossary": "Translation glossary",
+      "translationGlossaryDesc": "Preferred Vietnamese rendering per term, one per line — format: english: vietnamese. Overrides the built-in glossary when translating to Vietnamese."
     },
     "memory": {
       "title": "Remembered facts",

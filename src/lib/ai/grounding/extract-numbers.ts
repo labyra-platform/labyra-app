@@ -64,8 +64,9 @@ export function buildNumberWhitelist(chunkTexts: string[]): Set<string> {
 
 /**
  * Round number to 2 decimal places, return as string for set keys.
+ * Exported so the manuscript number registry (Gap1) keys lab numbers identically.
  */
-function normalizeNumber(n: number): string {
+export function normalizeNumber(n: number): string {
   if (Number.isInteger(n)) return n.toString();
   return n.toFixed(2);
 }

@@ -190,6 +190,9 @@ export type ChatStreamEventV2 =
       section: 'methods' | 'results' | 'discussion' | 'introduction';
       citationCount: number;
       sourceCount: number;
+      // R276: deterministic grounding surfaced to the client.
+      invalidCitations: string[];
+      unverifiedNumberCount: number;
     }
   | { type: 'title_update'; conversationId: string; title: string }
   | { type: 'error'; message: string };

@@ -4,16 +4,21 @@
  * Flow:
  *   1. Detect section type (or use explicit)
  *   2. RAG search top-K papers
- *   3. Stream draft with section-specific prompt + context
- *   4. Extract citations from draft
+ *   3. Load paper metadata → assign one real [authorYear] key per paper
+ *   4. Stream draft with section prompt + context (labelled with those keys)
+ *   5. Ground the draft: flag citations with no source + numbers not in sources
  *
- * @phase R173-4
+ * @phase R173-4 (R276: real citation keys + deterministic grounding)
  * @see docs/ai/AI_ARCHITECTURE.md Tier 4
  */
 import 'server-only';
+import { checkGrounding, type GroundingResult } from '@/lib/ai/grounding';
 import { selectProvider } from '@/lib/ai/providers';
 import { searchPapers } from '@/lib/ai/rag/search';
 import type { AiCostBreakdown } from '@/types/ai';
+import { buildCitationKey, fallbackCitationKey } from './citation-key';
+import { loadPapersMetadata } from './citation-loader';
+import { auditCitations } from './grounding';
 import { buildWriterSystemPrompt, CONTEXT_INSTRUCTION, detectSection } from './prompts';
 import type { SectionType, WriterCitation, WriterOptions, WriterResult } from './types';
 
@@ -28,31 +33,6 @@ function emptyCost(): AiCostBreakdown {
     cacheWriteTokens: 0,
     usd: 0
   };
-}
-
-function extractCitations(
-  draft: string,
-  paperById: Map<string, { chunks: string[] }>
-): WriterCitation[] {
-  // Match [citationKey] patterns
-  const citationKeys = new Set<string>();
-  const regex = /\[([a-z]+\d{4}[a-z]?)\]/gi;
-  let match;
-  while ((match = regex.exec(draft)) !== null) {
-    citationKeys.add(match[1].toLowerCase());
-  }
-
-  const result: WriterCitation[] = [];
-  for (const key of citationKeys) {
-    // Find matching paper (heuristic: first lastName + year in citationKey)
-    for (const [paperId, info] of paperById) {
-      if (paperId.toLowerCase().includes(key.slice(0, 5))) {
-        result.push({ paperId, chunkIds: info.chunks, citationKey: key });
-        break;
-      }
-    }
-  }
-  return result;
 }
 
 export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
@@ -81,26 +61,48 @@ export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
   }>;
   onSearchComplete?.(papers.length);
 
-  // Build context block from retrieved chunks
-  const paperById = new Map<string, { chunks: string[]; text: string }>();
-  let contextBlock = CONTEXT_INSTRUCTION;
+  // 3. One stable [authorYear] citation key per unique paper (R276). The writer
+  // prompt tells the model to cite [authorYear], so the context MUST label
+  // papers with the same format — otherwise the model cites keys mapping to
+  // nothing. Group chunks by paper first so each paper gets exactly one key.
+  const orderedPaperIds: string[] = [];
+  const chunksByPaper = new Map<string, { chunkId: string; text: string }[]>();
   for (const p of papers.slice(0, TOP_K_PAPERS)) {
     const paperId = String(p.paperId ?? '');
-    const chunkId = String(p.chunkIdx ?? '');
-    const text = String(p.text ?? '').slice(0, 800);
-    const citationKey = paperId
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .slice(0, 12);
-
-    contextBlock += `\n### [${citationKey}] (paper: ${paperId})\n${text}\n`;
-
-    const entry = paperById.get(paperId) ?? { chunks: [], text: '' };
-    entry.chunks.push(chunkId);
-    paperById.set(paperId, entry);
+    if (!paperId) continue;
+    if (!chunksByPaper.has(paperId)) {
+      chunksByPaper.set(paperId, []);
+      orderedPaperIds.push(paperId);
+    }
+    chunksByPaper.get(paperId)?.push({
+      chunkId: String(p.chunkIdx ?? ''),
+      text: String(p.text ?? '').slice(0, 800)
+    });
   }
 
-  if (papers.length === 0) {
+  const metadata = await loadPapersMetadata(tenantId, orderedPaperIds);
+  const usedKeys = new Set<string>();
+  const keyByPaperId = new Map<string, string>();
+  const paperIdByKey = new Map<string, string>();
+  for (const paperId of orderedPaperIds) {
+    const meta = metadata.get(paperId);
+    const key =
+      meta && meta.authors.length > 0
+        ? buildCitationKey(meta, usedKeys)
+        : fallbackCitationKey(paperId, usedKeys);
+    usedKeys.add(key);
+    keyByPaperId.set(paperId, key);
+    paperIdByKey.set(key, paperId);
+  }
+
+  let contextBlock = CONTEXT_INSTRUCTION;
+  for (const paperId of orderedPaperIds) {
+    const key = keyByPaperId.get(paperId) ?? '';
+    for (const chunk of chunksByPaper.get(paperId) ?? []) {
+      contextBlock += `\n### [${key}] (paper: ${paperId})\n${chunk.text}\n`;
+    }
+  }
+  if (orderedPaperIds.length === 0) {
     contextBlock += '\n(No papers found in lab library. Draft without citations.)\n';
   }
 
@@ -130,8 +132,23 @@ export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
     }
   }
 
-  // 4. Extract citations
-  const citations = extractCitations(draft, paperById);
+  // 5. Ground the draft (deterministic — ./grounding + checkGrounding).
+  const validKeys = new Set(keyByPaperId.values());
+  const audit = auditCitations(draft, validKeys);
+  const numberGrounding: GroundingResult = checkGrounding(
+    draft,
+    orderedPaperIds.flatMap((id) => (chunksByPaper.get(id) ?? []).map((c) => ({ text: c.text })))
+  );
+
+  // Citations = valid keys actually used in the draft, mapped back to papers.
+  const citations: WriterCitation[] = audit.valid.map((key) => {
+    const paperId = paperIdByKey.get(key) ?? '';
+    return {
+      paperId,
+      chunkIds: (chunksByPaper.get(paperId) ?? []).map((c) => c.chunkId),
+      citationKey: key
+    };
+  });
 
   return {
     draft,
@@ -139,6 +156,11 @@ export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
     citations,
     totalCost,
     durationMs: Date.now() - startedAt,
-    sourceCount: papers.length
+    sourceCount: orderedPaperIds.length,
+    grounding: {
+      invalidCitations: audit.invalid,
+      unverifiedNumbers: numberGrounding.unverifiedNumbers,
+      totalWarnings: audit.invalid.length + numberGrounding.unverifiedNumbers.length
+    }
   };
 }

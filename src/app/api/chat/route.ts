@@ -531,11 +531,21 @@ export async function POST(request: Request) {
 
           fullText = writerResult.draft;
           totalUsage = writerResult.totalCost;
+          // R276: deterministic grounding — surface fabricated citations + numbers.
+          if (writerResult.grounding.totalWarnings > 0) {
+            logger.warn('writer_grounding_warnings', {
+              tenantId,
+              invalidCitations: writerResult.grounding.invalidCitations,
+              unverifiedNumberCount: writerResult.grounding.unverifiedNumbers.length
+            });
+          }
           send({
             type: 'writer_complete',
             section: writerResult.section,
             citationCount: writerResult.citations.length,
-            sourceCount: writerResult.sourceCount
+            sourceCount: writerResult.sourceCount,
+            invalidCitations: writerResult.grounding.invalidCitations,
+            unverifiedNumberCount: writerResult.grounding.unverifiedNumbers.length
           });
 
           // R238b: tier-4 (Writer) is a self-contained pipeline. Persist + record +

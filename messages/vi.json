@@ -1438,7 +1438,9 @@
       "houseStyle": "Quy ước phòng lab",
       "houseStyleDesc": "Hướng dẫn dạng văn bản tự do, thêm vào system prompt của AI.",
       "save": "Lưu bối cảnh lab",
-      "saved": "Đã lưu bối cảnh lab"
+      "saved": "Đã lưu bối cảnh lab",
+      "defaultLanguage": "Ngôn ngữ dịch mặc định",
+      "defaultLanguageDesc": "Paper sẽ được dịch sẵn sang ngôn ngữ này. Đặt theo ngôn ngữ đọc của lab."
     },
     "memory": {
       "title": "Thông tin đã ghi nhớ",

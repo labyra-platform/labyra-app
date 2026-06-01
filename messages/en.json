@@ -1438,7 +1438,9 @@
       "houseStyle": "House style",
       "houseStyleDesc": "Free-text instructions appended to the AI system prompt.",
       "save": "Save lab context",
-      "saved": "Lab context saved"
+      "saved": "Lab context saved",
+      "defaultLanguage": "Default translation language",
+      "defaultLanguageDesc": "Papers are pre-translated into this language. Set it to your lab's reading language."
     },
     "memory": {
       "title": "Remembered facts",

@@ -17,6 +17,13 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
@@ -33,6 +40,16 @@ async function authedFetch(path: string, init?: RequestInit): Promise<Response> 
   });
 }
 
+const LANGS: readonly { code: string; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'zh', label: '中文' },
+  { code: 'ja', label: '日本語' },
+  { code: 'ko', label: '한국어' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' }
+];
+
 // Form uses comma-joined strings + glossary text for ergonomics; converted to
 // the schema shape (arrays + record) on submit.
 interface LabContextFormValues {
@@ -43,6 +60,7 @@ interface LabContextFormValues {
   commonEquipment: string;
   houseStyle: string;
   glossary: string; // "term: definition" per line
+  defaultLanguage: string;
 }
 
 const EMPTY: LabContextFormValues = {
@@ -52,7 +70,8 @@ const EMPTY: LabContextFormValues = {
   commonMaterials: '',
   commonEquipment: '',
   houseStyle: '',
-  glossary: ''
+  glossary: '',
+  defaultLanguage: 'en'
 };
 
 function splitCsv(s: string): string[] {
@@ -103,6 +122,7 @@ export function LabContextForm() {
             commonEquipment?: string[];
             houseStyle?: string;
             glossary?: Record<string, string>;
+            defaultLanguage?: string;
           } | null;
         };
         if (active && data.context) {
@@ -114,7 +134,8 @@ export function LabContextForm() {
             commonMaterials: (c.commonMaterials ?? []).join(', '),
             commonEquipment: (c.commonEquipment ?? []).join(', '),
             houseStyle: c.houseStyle ?? '',
-            glossary: glossaryToText(c.glossary ?? {})
+            glossary: glossaryToText(c.glossary ?? {}),
+            defaultLanguage: c.defaultLanguage ?? 'en'
           });
         }
       } catch {
@@ -139,7 +160,8 @@ export function LabContextForm() {
         commonMaterials: splitCsv(values.commonMaterials),
         commonEquipment: splitCsv(values.commonEquipment),
         houseStyle: values.houseStyle.trim(),
-        glossary: parseGlossary(values.glossary)
+        glossary: parseGlossary(values.glossary),
+        defaultLanguage: values.defaultLanguage
       };
       const res = await authedFetch('/api/tenant/ai-context', {
         method: 'PUT',
@@ -266,6 +288,31 @@ export function LabContextForm() {
                     <Textarea rows={3} {...field} />
                   </FormControl>
                   <FormDescription>{t('houseStyleDesc')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='defaultLanguage'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('defaultLanguage')}</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {LANGS.map((l) => (
+                        <SelectItem key={l.code} value={l.code}>
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>{t('defaultLanguageDesc')}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

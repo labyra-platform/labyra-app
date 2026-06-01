@@ -11,7 +11,9 @@ export const tenantAiContextSchema = z.object({
   commonTechniques: z.array(z.string().max(100)).max(50).default([]),
   commonEquipment: z.array(z.string().max(100)).max(50).default([]),
   houseStyle: z.string().max(2000).default(''),
-  glossary: z.record(z.string().max(100), z.string().max(500)).default({})
+  glossary: z.record(z.string().max(100), z.string().max(500)).default({}),
+  // R267: tenant default target language for pre-translation (worker reads this).
+  defaultLanguage: z.enum(['en', 'vi', 'zh', 'ja', 'ko', 'fr', 'de']).default('en')
 });
 
 export type TenantAiContextInput = z.infer<typeof tenantAiContextSchema>;

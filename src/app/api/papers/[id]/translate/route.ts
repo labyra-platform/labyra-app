@@ -11,6 +11,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { franc } from 'franc-min';
 import { NextResponse } from 'next/server';
 import { estimateCost } from '@/lib/ai/cost/estimator';
 import { recordCost } from '@/lib/ai/cost/telemetry';
@@ -36,6 +37,18 @@ const LANG_NAME: Record<string, string> = {
   ko: 'Korean',
   fr: 'French',
   de: 'German'
+};
+
+// franc-min returns ISO 639-3; map to our 2-letter target codes for the identity
+// short-circuit. Only languages offered as targets need an entry.
+const FRANC_TO_LANG: Record<string, string> = {
+  eng: 'en',
+  vie: 'vi',
+  cmn: 'zh',
+  jpn: 'ja',
+  kor: 'ko',
+  fra: 'fr',
+  deu: 'de'
 };
 
 function jsonError(status: number, error: string, extra: Record<string, unknown> = {}) {
@@ -157,6 +170,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   //     equations the text layer can't; the text saves vision tokens for prose.
   const isDual = text.length > 0 && image.length > 0;
   const mode: 'text' | 'image' | 'dual' = isDual ? 'dual' : isImage ? 'image' : 'text';
+
+  // ─── Identity short-circuit (§3): same-language = nothing to translate ──
+  // If the selection is already in the target language, return it verbatim with
+  // 0 tokens + no model call. Text mode only (an image always needs OCR). franc-
+  // min is already a dependency (sparse retrieval) and runs locally in ~ms. We
+  // short-circuit ONLY on an exact language match, so a misdetection falls
+  // through to a real translation rather than returning wrong-language text.
+  if (mode === 'text' && text.length > 10 && FRANC_TO_LANG[franc(text)] === targetLang) {
+    return NextResponse.json({
+      paperId,
+      targetLang,
+      translation: text,
+      cached: false,
+      identity: true
+    });
+  }
 
   // ─── Cache lookup (tenant-scoped) ─────────────────────────────
   // Text mode: key = sha256(text + lang). Image mode: key from the client's

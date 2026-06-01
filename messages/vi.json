@@ -454,6 +454,7 @@
     "translationsEmptyHint": "Bật Dịch rồi Ctrl+kéo một vùng trong PDF.",
     "translationDelete": "Xóa bản dịch",
     "partialNote": "Nối tiếp đoạn liền kề (vùng chọn cắt giữa câu)",
+    "sameLanguage": "Đã ở ngôn ngữ đích — giữ nguyên văn bản",
     "translationsClearAll": "Xóa tất cả",
     "moreActions": "Thêm thao tác",
     "zoomLevel": "Thu phóng",

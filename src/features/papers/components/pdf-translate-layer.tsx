@@ -36,6 +36,9 @@ interface ActiveBox {
   translation: string;
   partialStart: boolean;
   partialEnd: boolean;
+  /** R264: selection was already in the target language — returned verbatim, no
+   *  model call. Shows a "same language" note instead of a translation result. */
+  identity?: boolean;
 }
 
 /** True if a text-layer span is rotated (e.g. the vertical "Downloaded via…"
@@ -325,7 +328,15 @@ export function PdfTranslateLayer({
       if (!translation || translation === '[NO_TEXT]') {
         setBox({ rect, text, status: 'error', translation: '', partialStart, partialEnd });
       } else {
-        setBox({ rect, text, status: 'done', translation, partialStart, partialEnd });
+        setBox({
+          rect,
+          text,
+          status: 'done',
+          translation,
+          partialStart,
+          partialEnd,
+          identity: translation.trim() === text.trim()
+        });
         // B2: surface the finished translation to the side-panel list. yRatio is
         // the region's vertical position in the page, for scroll-to-region.
         if (text.trim() && layerRef.current) {
@@ -475,6 +486,9 @@ export function PdfTranslateLayer({
                     '[&_.katex]:mx-0.5 [&_.katex]:text-[1em]'
                   )}
                 >
+                  {box.identity && (
+                    <div className='mb-1.5 text-xs text-muted-foreground'>{t('sameLanguage')}</div>
+                  )}
                   {box.partialStart && (
                     <span
                       className='mr-0.5 select-none text-muted-foreground/45'

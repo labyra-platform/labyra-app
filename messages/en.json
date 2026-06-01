@@ -454,6 +454,7 @@
     "translationsEmptyHint": "Turn on Translate, then Ctrl+drag a region in the PDF.",
     "translationDelete": "Remove translation",
     "partialNote": "Continues adjacent text (selection was cut mid-sentence)",
+    "sameLanguage": "Already in the target language — shown unchanged",
     "translationsClearAll": "Clear all",
     "moreActions": "More actions",
     "zoomLevel": "Zoom",

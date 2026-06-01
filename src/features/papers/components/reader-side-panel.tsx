@@ -26,7 +26,7 @@ import {
   IconQuote,
   IconSparkles
 } from '@tabler/icons-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { useTenantId } from '@/lib/auth/use-claims';
 import { deleteAnnotation, subscribeAnnotations } from '@/lib/firestore/queries/annotations';
-import { usePaper } from '@/lib/firestore/queries/papers';
+import { usePaper, usePretranslation, type Pretranslation } from '@/lib/firestore/queries/papers';
 import { sanitizeFormatting } from '@/features/papers/lib/sanitize-formatting';
 import {
   type TranslationRecord,
@@ -124,7 +124,9 @@ interface ReaderSidePanelProps {
 
 export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps) {
   const t = useTranslations('papers');
+  const locale = useLocale();
   const { paper, loading } = usePaper(paperId);
+  const pretranslation = usePretranslation(paperId, locale);
 
   // R237ao: the active tab is workspace-level, not per-paper. The user expects
   // "I was on Ask AI, I switch papers, I'm still on Ask AI". Since this panel
@@ -239,7 +241,7 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
               ) : panelTab === 'citations' ? (
                 <CitationsSection paperId={paperId} paper={paper} />
               ) : (
-                <InfoTab paper={paper} />
+                <InfoTab paper={paper} pretranslation={pretranslation} />
               )}
             </div>
           )}
@@ -291,8 +293,15 @@ function PanelTabButton({
   );
 }
 
-function InfoTab({ paper }: { paper: Paper }) {
+function InfoTab({
+  paper,
+  pretranslation
+}: {
+  paper: Paper;
+  pretranslation: Pretranslation | null;
+}) {
   const t = useTranslations('papers');
+  const [showOriginalAbstract, setShowOriginalAbstract] = useState(false);
   const authorLine = formatAuthors(paper.authors);
   const journal = paper.journalShort || paper.journal || null;
   const metaParts: string[] = [];
@@ -376,12 +385,36 @@ function InfoTab({ paper }: { paper: Paper }) {
         </div>
       )}
 
-      {paper.abstract && (
+      {(paper.abstract || pretranslation?.abstract) && (
+        <div className='space-y-1'>
+          <div className='flex items-center justify-between gap-2'>
+            <h2 className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+              {t('abstract')}
+            </h2>
+            {paper.abstract && pretranslation?.abstract && (
+              <button
+                type='button'
+                onClick={() => setShowOriginalAbstract((v) => !v)}
+                className='text-[11px] text-muted-foreground transition-colors hover:text-foreground'
+              >
+                {showOriginalAbstract ? t('showTranslation') : t('showOriginal')}
+              </button>
+            )}
+          </div>
+          <p className='text-sm leading-relaxed text-foreground/90'>
+            {showOriginalAbstract || !pretranslation?.abstract
+              ? paper.abstract
+              : pretranslation.abstract}
+          </p>
+        </div>
+      )}
+
+      {pretranslation?.conclusion && (
         <div className='space-y-1'>
           <h2 className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-            {t('abstract')}
+            {t('conclusion')}
           </h2>
-          <p className='text-sm leading-relaxed text-foreground/90'>{paper.abstract}</p>
+          <p className='text-sm leading-relaxed text-foreground/90'>{pretranslation.conclusion}</p>
         </div>
       )}
     </div>

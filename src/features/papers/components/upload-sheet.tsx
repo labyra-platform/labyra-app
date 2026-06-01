@@ -26,9 +26,18 @@ export function UploadSheet({ trigger }: { trigger: ReactNode }) {
   const router = useRouter();
   const locale = useLocale();
   const [open, setOpen] = useState(false);
+  // R259: while bytes are transferring, ignore dismiss attempts (outside-click /
+  // Escape / X) so a stray click can't drop the in-flight upload.
+  const [uploading, setUploading] = useState(false);
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && uploading) return;
+        setOpen(next);
+      }}
+    >
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent side='right' className='w-full overflow-y-auto sm:max-w-[440px]'>
         <SheetHeader>
@@ -37,7 +46,9 @@ export function UploadSheet({ trigger }: { trigger: ReactNode }) {
         </SheetHeader>
         <div className='mt-4'>
           <UploadDropzone
+            onUploadingChange={setUploading}
             onUploaded={(paperId) => {
+              setUploading(false);
               setOpen(false);
               router.push(`/${locale}/dashboard/papers/${paperId}`);
             }}

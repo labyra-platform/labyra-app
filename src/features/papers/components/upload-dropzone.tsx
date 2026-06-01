@@ -148,13 +148,17 @@ async function uploadPaper(file: File, onProgress: (pct: number) => void): Promi
 }
 
 export function UploadDropzone({
-  onUploaded
+  onUploaded,
+  onUploadingChange
 }: {
   /** R237ap: when provided (e.g. inside the upload Sheet), called with the new
    *  paperId instead of navigating. The host decides what to do (close + open
    *  the paper). When omitted, falls back to navigating to the paper page so
    *  the standalone /papers/upload route still works. */
   onUploaded?: (paperId: string) => void;
+  /** R259: report active-upload state so the host (Sheet) can block accidental
+   *  dismiss during the actual byte transfer. */
+  onUploadingChange?: (uploading: boolean) => void;
 } = {}) {
   const t = useTranslations('papers');
   const router = useRouter();
@@ -181,12 +185,20 @@ export function UploadDropzone({
     setError(null);
     setUploading(true);
     setProgress(0);
+    onUploadingChange?.(true);
+    const fileName = selectedFile.name;
+    // Persistent global toast (sonner renders at app root) — survives closing the
+    // upload Sheet so the user always sees upload/processing status. @R259
+    const toastId = toast.loading(t('uploading'), { description: `${fileName} · 0%` });
     try {
-      const result = await uploadPaper(selectedFile, setProgress);
+      const result = await uploadPaper(selectedFile, (pct) => {
+        setProgress(pct);
+        toast.loading(t('uploading'), { id: toastId, description: `${fileName} · ${pct}%` });
+      });
       if (result.duplicate) {
-        toast.info(t('duplicateDetected'));
+        toast.info(t('duplicateDetected'), { id: toastId, description: fileName });
       } else {
-        toast.success(t('uploadStarted'));
+        toast.success(t('uploadStarted'), { id: toastId, description: fileName });
       }
       if (onUploaded) {
         onUploaded(result.paperId);
@@ -196,11 +208,12 @@ export function UploadDropzone({
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'unknown_error';
       setError(msg);
-      toast.error(t('uploadFailed'), { description: msg });
+      toast.error(t('uploadFailed'), { id: toastId, description: msg });
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
     }
-  }, [selectedFile, t, router, locale, onUploaded]);
+  }, [selectedFile, t, router, locale, onUploaded, onUploadingChange]);
 
   const clearFile = useCallback(() => {
     setSelectedFile(null);

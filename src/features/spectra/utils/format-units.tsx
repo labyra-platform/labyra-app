@@ -73,6 +73,9 @@ export function formatSciText(text: string): string {
   // Match: Capital letter (+ optional lowercase) followed by digits
   // Skip if surrounded by space-digit patterns that look like coordinates/measurements
   out = out.replace(/([A-Z][a-z]?)(\d+)/g, (match, element, count) => {
+    // Skip long digit runs — identifiers/codes (e.g. "S40820-..."), not formula
+    // counts. Real chemical subscripts are ≤3 digits (W18O49). @R259
+    if (count.length > 3) return match;
     // Skip known unit prefixes that shouldn't be subscripted
     if (
       ['CO', 'NM', 'KM', 'MM', 'KG', 'MG', 'HZ', 'EV', 'PH'].includes(element.toUpperCase()) &&
@@ -140,7 +143,11 @@ export function formatSciNode(text: string): React.ReactNode {
     .replace(/\balpha\b/gi, 'α')
     .replace(/\bbeta\b/gi, 'β');
   // Normalize ASCII sci patterns to tags so everything is tag-based.
-  s = s.replace(/([A-Za-z)\]])(\d+)/g, '$1<sub>$2</sub>'); // H2O → H<sub>2</sub>
+  // Subscript only short digit runs (≤3) — real formula counts are tiny (W18O49);
+  // long runs are identifiers/codes (e.g. "S40820-026-...") that must stay literal. @R259
+  s = s.replace(/([A-Za-z)\]])(\d+)/g, (match, prefix: string, digits: string) =>
+    digits.length <= 3 ? `${prefix}<sub>${digits}</sub>` : match
+  ); // H2O → H<sub>2</sub>
   s = s.replace(
     /(\bcm|nm|um|mm|km|s|m|Hz|kg|g|mg|J|eV|K|mol|L|N)([+\-\u2212]\d+)/g,
     '$1<sup>$2</sup>'

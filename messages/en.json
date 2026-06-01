@@ -538,6 +538,26 @@
     "showTranslation": "Show translation",
     "conclusion": "Conclusion"
   },
+  "collections": {
+    "title": "Collections",
+    "allPapers": "All papers",
+    "unfiled": "Unfiled",
+    "newCollection": "New collection",
+    "newSubcollection": "New subcollection",
+    "rename": "Rename",
+    "delete": "Delete",
+    "moveToRoot": "Move to top level",
+    "namePlaceholder": "Collection name",
+    "create": "Create",
+    "save": "Save",
+    "cancel": "Cancel",
+    "deleteTitle": "Delete this collection?",
+    "deleteDescription": "Subcollections are moved to the top level. Papers are not deleted — only removed from this collection.",
+    "empty": "No collections yet",
+    "loading": "Loading…",
+    "renameTitle": "Rename collection",
+    "createTitle": "New collection"
+  },
   "materials": {
     "title": "Materials",
     "subtitle": "Manage lab materials inventory",

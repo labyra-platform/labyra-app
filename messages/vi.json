@@ -538,6 +538,26 @@
     "showTranslation": "Xem bản dịch",
     "conclusion": "Kết luận"
   },
+  "collections": {
+    "title": "Bộ sưu tập",
+    "allPapers": "Tất cả papers",
+    "unfiled": "Chưa phân loại",
+    "newCollection": "Bộ sưu tập mới",
+    "newSubcollection": "Bộ sưu tập con",
+    "rename": "Đổi tên",
+    "delete": "Xóa",
+    "moveToRoot": "Đưa ra ngoài cùng",
+    "namePlaceholder": "Tên bộ sưu tập",
+    "create": "Tạo",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "deleteTitle": "Xóa bộ sưu tập này?",
+    "deleteDescription": "Bộ sưu tập con sẽ được đưa ra ngoài cùng. Papers KHÔNG bị xóa — chỉ gỡ khỏi bộ sưu tập này.",
+    "empty": "Chưa có bộ sưu tập",
+    "loading": "Đang tải…",
+    "renameTitle": "Đổi tên bộ sưu tập",
+    "createTitle": "Bộ sưu tập mới"
+  },
   "materials": {
     "title": "Vật liệu",
     "subtitle": "Quản lý danh sách vật liệu trong lab",

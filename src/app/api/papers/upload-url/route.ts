@@ -26,7 +26,7 @@ import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 export const runtime = 'nodejs';
 export const maxDuration = 10; // Quick — no big body
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 const RESERVATION_TTL_MS = 60 * 60 * 1000; // 1h
 const SIGNED_URL_TTL_MS = 15 * 60 * 1000; // 15min
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   if (!tenantId) return jsonError(403, 'missing_tenant_claim');
 
   // ─── Rate limit (stricter than regular upload — signed URL spam protection) ───
-  const rl = await checkRateLimit(rateLimitKey('paper-upload-url', tenantId), 10, 300);
+  const rl = await checkRateLimit(rateLimitKey('paper-upload-url', tenantId), 30, 300);
   if (!rl.allowed) {
     return jsonError(429, 'rate_limited', { retryAfter: rl.resetSec });
   }

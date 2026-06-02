@@ -447,6 +447,8 @@
     "translateOff": "Tắt dịch",
     "dropHere": "Thả PDF để tải lên",
     "maxSize": "Tối đa {mb} MB · Chỉ PDF",
+    "uploadAll": "Tải lên tất cả ({count})",
+    "uploadUpTo": "Tối đa {n} file",
     "highlight": "Tô sáng",
     "highlightsEmptyTitle": "Chưa có đoạn tô sáng",
     "highlightsEmptyHint": "Bật Tô sáng rồi bôi đen đoạn văn trong PDF để đánh dấu.",

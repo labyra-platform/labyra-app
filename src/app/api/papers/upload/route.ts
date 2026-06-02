@@ -28,7 +28,7 @@ import type { Paper } from '@/types/papers';
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Vercel: 60s for upload (processing is async)
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 function jsonError(status: number, error: string, extra: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({ error, ...extra }), {

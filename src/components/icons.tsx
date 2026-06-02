@@ -53,6 +53,7 @@ import {
   IconFileTypePdf,
   IconFileTypeXls,
   IconFileZip,
+  IconFlask,
   IconFlask2,
   IconFolder,
   IconGripVertical,
@@ -297,6 +298,7 @@ export const Icons = {
   manuscripts: IconWriting,
   references: IconCards,
   aiAssistant: IconSparkles,
+  aiScience: IconFlask,
   // Superadmin
   costOverview: IconReportMoney,
   evals: IconChecklist,

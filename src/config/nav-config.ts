@@ -147,8 +147,8 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
-    label: 'AI',
-    labelKey: 'nav.groups.ai',
+    label: 'Research workspace',
+    labelKey: 'nav.groups.researchWorkspace',
     items: [
       {
         // R165-phase-8-sidebar: References entry (R164 — was buried under Spectra UI)
@@ -174,20 +174,23 @@ export const navGroups: NavGroup[] = [
         icon: 'aiAssistant',
         shortcut: ['a', 'i'],
         items: []
-      }
-    ]
-  },
-  {
-    label: 'AI Science',
-    labelKey: 'nav.groups.aiScience',
-    items: [
+      },
       {
-        title: 'Manuscripts',
-        titleKey: 'nav.manuscripts',
+        title: 'AI Science',
+        titleKey: 'nav.aiScience',
         url: '/dashboard/manuscripts',
-        icon: 'manuscripts',
-        shortcut: ['m', 's'],
-        items: []
+        icon: 'aiScience',
+        isActive: true,
+        items: [
+          {
+            title: 'Manuscripts',
+            titleKey: 'nav.manuscripts',
+            url: '/dashboard/manuscripts',
+            icon: 'manuscripts',
+            shortcut: ['m', 's'],
+            items: []
+          }
+        ]
       }
     ]
   },

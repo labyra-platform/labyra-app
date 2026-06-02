@@ -41,7 +41,8 @@
       "ai": "AI",
       "admin": "Quản trị",
       "superadmin": "Quản trị cao cấp",
-      "aiScience": "AI Science"
+      "aiScience": "AI Science",
+      "researchWorkspace": "Nghiên cứu"
     },
     "employee": "Nhân viên",
     "debugAuth": "Debug Auth",
@@ -59,7 +60,8 @@
     "superadminDrift": "Sai lệch chi phí",
     "aiPreferences": "Tùy chỉnh AI",
     "labContext": "Bối cảnh Lab",
-    "manuscripts": "Bản thảo"
+    "manuscripts": "Bản thảo",
+    "aiScience": "AI Science"
   },
   "groups": {
     "title": "Nhóm nghiên cứu",

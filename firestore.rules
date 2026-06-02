@@ -140,6 +140,21 @@ service cloud.firestore {
           && resource.data.createdBy == request.auth.uid;
       }
 
+      // Manuscripts (AI Science). Per-user, owner-only (createdBy == auth.uid)
+      // within the tenant — same scope model as collections.
+      match /manuscripts/{manuscriptId} {
+        allow read: if belongsToTenant(tenantId)
+          && resource.data.createdBy == request.auth.uid;
+        allow create: if belongsToTenant(tenantId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.tenantId == tenantId;
+        allow update: if belongsToTenant(tenantId)
+          && resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdBy == request.auth.uid;
+        allow delete: if belongsToTenant(tenantId)
+          && resource.data.createdBy == request.auth.uid;
+      }
+
       // ---------- Client-readable, Admin-SDK-write-only ----------
       // Lifecycle managed by server pipelines (ingestion, analysis,
       // citation resolver, RAG processor). Any client write would

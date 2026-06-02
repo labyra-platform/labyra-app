@@ -11,7 +11,7 @@
  * @phase R-aiscience-1
  * @see labyra-ai-science-manuscript-strategy.md §6
  */
-import type { WriterCitation } from '@/lib/ai/tier4-writer/types';
+import type { SectionType, WriterCitation, WriterGrounding } from '@/lib/ai/tier4-writer/types';
 import type { AuditFinding } from '@/lib/ai/tier5-auditor/types';
 import type { ProvBase } from '@/types/prov-base';
 
@@ -104,4 +104,19 @@ export interface Manuscript extends ProvBase {
   status: ManuscriptStatus;
   /** Snapshot counter bumped on each large generation. */
   version: number;
+}
+
+/** POST body for the section-generation route (client sends its manuscript state). */
+export interface GenerateSectionRequest {
+  manuscript: Manuscript;
+  sectionType: ManuscriptSectionType;
+  instruction?: string;
+}
+
+/** Final result streamed back when a section finishes generating. */
+export interface SectionDraftResult {
+  section: Exclude<SectionType, 'auto'>;
+  draft: string;
+  citations: WriterCitation[];
+  grounding: WriterGrounding;
 }

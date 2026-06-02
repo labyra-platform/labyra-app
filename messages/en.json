@@ -564,7 +564,11 @@
     "deleteFailed": "Couldn't delete the collection.",
     "saveFailed": "Couldn't save the collection.",
     "moveFailed": "Couldn't move the collection.",
-    "alreadyInCollection": "Already in \"{name}\""
+    "alreadyInCollection": "Already in \"{name}\"",
+    "createFromFilter": "New collection ({count})",
+    "createFromFilterTitle": "New collection from filter",
+    "createFromFilterDesc": "These {count} filtered papers will be added to a new collection. Papers matching the filter later are not added automatically.",
+    "createdFromFilter": "Created \"{name}\" with {count} papers"
   },
   "materials": {
     "title": "Materials",

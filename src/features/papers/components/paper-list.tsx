@@ -60,6 +60,7 @@ import {
   PAPER_DND_MIME,
   useCollections
 } from '@/features/papers/collections/use-collections';
+import { CreateCollectionFromFilter } from '@/features/papers/collections/create-collection-from-filter';
 import { addPapersToCollection } from '@/lib/firestore/queries/collections';
 import { useTenantId } from '@/lib/auth';
 import { type Paper, type PaperStatus, TERMINAL_STATUSES } from '@/types/papers';
@@ -272,11 +273,14 @@ export function PaperList({
 
       {/* R222: toolbar — sort + density toggle */}
       <div className='flex items-center justify-between gap-2'>
-        <p className='text-xs text-muted-foreground'>
-          {hasFilter || collectionFilter !== null
-            ? t('filterShowing', { shown: filteredPapers.length, total: papers.length })
-            : t('paperCount', { count: papers.length })}
-        </p>
+        <div className='flex items-center gap-2'>
+          <p className='text-xs text-muted-foreground'>
+            {hasFilter || collectionFilter !== null
+              ? t('filterShowing', { shown: filteredPapers.length, total: papers.length })
+              : t('paperCount', { count: papers.length })}
+          </p>
+          <CreateCollectionFromFilter paperIds={filteredPapers.map((p) => p.id)} filter={filter} />
+        </div>
         <div className='flex items-center gap-1.5'>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

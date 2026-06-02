@@ -564,7 +564,11 @@
     "deleteFailed": "Không xóa được bộ sưu tập.",
     "saveFailed": "Không lưu được bộ sưu tập.",
     "moveFailed": "Không di chuyển được bộ sưu tập.",
-    "alreadyInCollection": "Tài liệu này đã có trong \"{name}\""
+    "alreadyInCollection": "Tài liệu này đã có trong \"{name}\"",
+    "createFromFilter": "Tạo collection ({count})",
+    "createFromFilterTitle": "Tạo collection từ bộ lọc",
+    "createFromFilterDesc": "{count} papers đang lọc sẽ được thêm vào collection mới. Paper khớp bộ lọc sau này KHÔNG tự thêm.",
+    "createdFromFilter": "Đã tạo \"{name}\" với {count} papers"
   },
   "materials": {
     "title": "Vật liệu",

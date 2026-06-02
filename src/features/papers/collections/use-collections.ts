@@ -18,6 +18,9 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { useTenantCollection } from '@/lib/firestore/use-tenant-collection';
 import type { PaperCollection } from '@/types/collections';
 
+/** dataTransfer MIME used when dragging a paper row onto a collection (DnD). */
+export const PAPER_DND_MIME = 'application/x-labyra-paper';
+
 /** Which scope the papers view is filtered to. */
 export type CollectionSelection =
   | { kind: 'all' }

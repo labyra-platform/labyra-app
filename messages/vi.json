@@ -563,7 +563,8 @@
     "duplicateName": "Đã có collection cùng tên ở cấp này.",
     "deleteFailed": "Không xóa được bộ sưu tập.",
     "saveFailed": "Không lưu được bộ sưu tập.",
-    "moveFailed": "Không di chuyển được bộ sưu tập."
+    "moveFailed": "Không di chuyển được bộ sưu tập.",
+    "alreadyInCollection": "Tài liệu này đã có trong \"{name}\""
   },
   "materials": {
     "title": "Vật liệu",

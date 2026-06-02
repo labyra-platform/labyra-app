@@ -563,7 +563,8 @@
     "duplicateName": "A collection with that name already exists here.",
     "deleteFailed": "Couldn't delete the collection.",
     "saveFailed": "Couldn't save the collection.",
-    "moveFailed": "Couldn't move the collection."
+    "moveFailed": "Couldn't move the collection.",
+    "alreadyInCollection": "Already in \"{name}\""
   },
   "materials": {
     "title": "Materials",

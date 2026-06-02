@@ -41,6 +41,7 @@ import {
   useCollections
 } from '@/features/papers/collections/use-collections';
 import {
+  addPapersToCollection,
   createCollection,
   deleteCollection,
   moveCollection,
@@ -129,6 +130,22 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
     }
   }
 
+  async function handleDropPaper(collectionId: string, paperId: string) {
+    if (!tenantId || !paperId) return;
+    const target = collections.find((c) => c.id === collectionId);
+    if (target?.paperIds.includes(paperId)) {
+      toast.info(t('alreadyInCollection', { name: target.name }));
+      return;
+    }
+    try {
+      await addPapersToCollection(tenantId, collectionId, [paperId]);
+      await refresh();
+      toast.success(t('addedToast', { name: target?.name ?? '' }));
+    } catch {
+      toast.error(t('addFailed'));
+    }
+  }
+
   return (
     <div className='flex h-full flex-col'>
       <div className='flex items-center justify-between px-2 py-1.5'>
@@ -151,7 +168,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
           type='button'
           onClick={() => onSelect({ kind: 'all' })}
           className={cn(
-            'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-sm hover:bg-accent',
+            'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent',
             selection.kind === 'all' && 'bg-accent font-medium'
           )}
         >
@@ -162,7 +179,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
           type='button'
           onClick={() => onSelect({ kind: 'unfiled' })}
           className={cn(
-            'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-sm hover:bg-accent',
+            'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent',
             selection.kind === 'unfiled' && 'bg-accent font-medium'
           )}
         >
@@ -187,6 +204,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
                 onRename={(id, currentName) => setEdit({ mode: 'rename', id, name: currentName })}
                 onDelete={(id, name) => setDeleteTarget({ id, name })}
                 onMoveToRoot={handleMoveToRoot}
+                onDropPaper={handleDropPaper}
               />
             ))
           )}

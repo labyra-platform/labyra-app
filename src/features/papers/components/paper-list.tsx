@@ -57,6 +57,7 @@ import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   type CollectionPaperFilter,
+  PAPER_DND_MIME,
   useCollections
 } from '@/features/papers/collections/use-collections';
 import { addPapersToCollection } from '@/lib/firestore/queries/collections';
@@ -385,6 +386,11 @@ function PaperRow({
     <div
       role='link'
       tabIndex={0}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(PAPER_DND_MIME, paper.id);
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
       onClick={goToDetail}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -551,6 +557,10 @@ function PaperRowMenu({
 
   const addToCollection = async (collectionId: string, collectionName: string) => {
     if (!tenantId) return;
+    if (collections.find((c) => c.id === collectionId)?.paperIds.includes(paperId)) {
+      toast.info(tc('alreadyInCollection', { name: collectionName }));
+      return;
+    }
     setBusy(true);
     try {
       await addPapersToCollection(tenantId, collectionId, [paperId]);
@@ -618,6 +628,7 @@ function PaperRowMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align='end'
+        className='min-w-44'
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -638,7 +649,7 @@ function PaperRowMenu({
               <IconFolderPlus className='size-4' />
               {tc('addToCollection')}
             </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
+            <DropdownMenuSubContent className='min-w-44'>
               {collections.map((c) => (
                 <DropdownMenuItem
                   key={c.id}

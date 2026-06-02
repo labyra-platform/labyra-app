@@ -2,14 +2,18 @@
 
 /**
  * One node in the collection tree. Recursive: renders its own row (folder icon,
- * name, paper-count badge, actions menu) then its children inside a Collapsible.
+ * name, paper-count badge, actions) then its children inside a Collapsible.
  *
- * @phase R-collection-3
+ * Actions are HYBRID — the same set is reachable via a kebab (vertical dots)
+ * and via right-click (context menu). The row is also a drop target: dragging a
+ * paper from the list onto it adds the paper to this collection (Zotero-style).
+ *
+ * @phase R-collection-4 (UI polish + DnD + context menu)
  */
 import {
   IconArrowBackUp,
   IconChevronRight,
-  IconDots,
+  IconDotsVertical,
   IconFolder,
   IconFolderOpen,
   IconPencil,
@@ -22,6 +26,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger
+} from '@/components/ui/context-menu';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -29,7 +40,10 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import type { CollectionNode } from '@/features/papers/collections/collection-tree';
-import type { CollectionSelection } from '@/features/papers/collections/use-collections';
+import {
+  type CollectionSelection,
+  PAPER_DND_MIME
+} from '@/features/papers/collections/use-collections';
 import { cn } from '@/lib/utils';
 
 export interface CollectionItemProps {
@@ -41,6 +55,8 @@ export interface CollectionItemProps {
   onRename: (id: string, currentName: string) => void;
   onDelete: (id: string, name: string) => void;
   onMoveToRoot: (id: string) => void;
+  /** Drop a dragged paper into this collection. */
+  onDropPaper: (collectionId: string, paperId: string) => void;
 }
 
 export function CollectionItem({
@@ -51,102 +67,134 @@ export function CollectionItem({
   onCreateChild,
   onRename,
   onDelete,
-  onMoveToRoot
+  onMoveToRoot,
+  onDropPaper
 }: CollectionItemProps) {
   const t = useTranslations('collections');
   const [open, setOpen] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const { collection, children } = node;
   const hasChildren = children.length > 0;
   const isSelected = selection.kind === 'collection' && selection.collectionId === collection.id;
   const isNested = collection.parentId != null;
 
+  // The action set, rendered identically in the kebab menu and the right-click
+  // context menu. Each renderer wraps these in its own item component.
+  const actions = (
+    Item: typeof DropdownMenuItem | typeof ContextMenuItem,
+    Separator: typeof DropdownMenuSeparator | typeof ContextMenuSeparator
+  ) => (
+    <>
+      <Item onClick={() => onCreateChild(collection.id)}>
+        <IconPlus size={14} />
+        {t('newSubcollection')}
+      </Item>
+      <Item onClick={() => onRename(collection.id, collection.name)}>
+        <IconPencil size={14} />
+        {t('rename')}
+      </Item>
+      {isNested && (
+        <Item onClick={() => onMoveToRoot(collection.id)}>
+          <IconArrowBackUp size={14} />
+          {t('moveToRoot')}
+        </Item>
+      )}
+      <Separator />
+      <Item variant='destructive' onClick={() => onDelete(collection.id, collection.name)}>
+        <IconTrash size={14} />
+        {t('delete')}
+      </Item>
+    </>
+  );
+
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <div
-        className={cn(
-          'group flex items-center gap-1 rounded-md pr-1 text-sm hover:bg-accent',
-          isSelected && 'bg-accent font-medium'
-        )}
-        style={{ paddingLeft: `${depth * 12 + 4}px` }}
-      >
-        {hasChildren ? (
-          <CollapsibleTrigger asChild>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            className={cn(
+              'group flex items-center gap-1 rounded-md pr-1 text-sm hover:bg-accent',
+              isSelected && 'bg-accent font-medium',
+              isDragOver && 'bg-primary/10 ring-1 ring-primary'
+            )}
+            style={{ paddingLeft: `${depth * 12 + 4}px` }}
+            onDragOver={(e) => {
+              if (!e.dataTransfer.types.includes(PAPER_DND_MIME)) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'copy';
+              if (!isDragOver) setIsDragOver(true);
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+              const paperId = e.dataTransfer.getData(PAPER_DND_MIME);
+              setIsDragOver(false);
+              if (!paperId) return;
+              e.preventDefault();
+              onDropPaper(collection.id, paperId);
+            }}
+          >
+            {hasChildren ? (
+              <CollapsibleTrigger asChild>
+                <button
+                  type='button'
+                  className='flex size-4 shrink-0 items-center justify-center text-muted-foreground'
+                  aria-label='toggle'
+                >
+                  <IconChevronRight
+                    size={14}
+                    className={cn('transition-transform', open && 'rotate-90')}
+                  />
+                </button>
+              </CollapsibleTrigger>
+            ) : (
+              <span className='size-4 shrink-0' />
+            )}
+
             <button
               type='button'
-              className='flex size-4 shrink-0 items-center justify-center text-muted-foreground'
-              aria-label='toggle'
+              onClick={() => onSelect({ kind: 'collection', collectionId: collection.id })}
+              className='flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left'
             >
-              <IconChevronRight
-                size={14}
-                className={cn('transition-transform', open && 'rotate-90')}
-              />
+              {collection.color ? (
+                <span
+                  className='size-3 shrink-0 rounded-full'
+                  style={{ backgroundColor: collection.color }}
+                />
+              ) : open && hasChildren ? (
+                <IconFolderOpen size={15} className='shrink-0 text-muted-foreground' />
+              ) : (
+                <IconFolder size={15} className='shrink-0 text-muted-foreground' />
+              )}
+              <span className='truncate'>{collection.name}</span>
             </button>
-          </CollapsibleTrigger>
-        ) : (
-          <span className='size-4 shrink-0' />
-        )}
 
-        <button
-          type='button'
-          onClick={() => onSelect({ kind: 'collection', collectionId: collection.id })}
-          className='flex min-w-0 flex-1 items-center gap-1.5 py-1 text-left'
-        >
-          {collection.color ? (
-            <span
-              className='size-3 shrink-0 rounded-full'
-              style={{ backgroundColor: collection.color }}
-            />
-          ) : open && hasChildren ? (
-            <IconFolderOpen size={15} className='shrink-0 text-muted-foreground' />
-          ) : (
-            <IconFolder size={15} className='shrink-0 text-muted-foreground' />
-          )}
-          <span className='truncate'>{collection.name}</span>
-        </button>
-
-        {collection.paperIds.length > 0 && (
-          <Badge variant='secondary' className='h-4 px-1 text-[10px] tabular-nums'>
-            {collection.paperIds.length}
-          </Badge>
-        )}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant='ghost'
-              size='icon'
-              className='size-5 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100'
-              aria-label='actions'
-            >
-              <IconDots size={14} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
-            <DropdownMenuItem onClick={() => onCreateChild(collection.id)}>
-              <IconPlus size={14} />
-              {t('newSubcollection')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onRename(collection.id, collection.name)}>
-              <IconPencil size={14} />
-              {t('rename')}
-            </DropdownMenuItem>
-            {isNested && (
-              <DropdownMenuItem onClick={() => onMoveToRoot(collection.id)}>
-                <IconArrowBackUp size={14} />
-                {t('moveToRoot')}
-              </DropdownMenuItem>
+            {collection.paperIds.length > 0 && (
+              <Badge variant='secondary' className='h-4 px-1 text-[10px] tabular-nums'>
+                {collection.paperIds.length}
+              </Badge>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant='destructive'
-              onClick={() => onDelete(collection.id, collection.name)}
-            >
-              <IconTrash size={14} />
-              {t('delete')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='size-5 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100'
+                  aria-label='actions'
+                >
+                  <IconDotsVertical size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end' className='min-w-40'>
+                {actions(DropdownMenuItem, DropdownMenuSeparator)}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className='min-w-40'>
+          {actions(ContextMenuItem, ContextMenuSeparator)}
+        </ContextMenuContent>
+      </ContextMenu>
 
       {hasChildren && (
         <CollapsibleContent>
@@ -161,6 +209,7 @@ export function CollectionItem({
               onRename={onRename}
               onDelete={onDelete}
               onMoveToRoot={onMoveToRoot}
+              onDropPaper={onDropPaper}
             />
           ))}
         </CollapsibleContent>

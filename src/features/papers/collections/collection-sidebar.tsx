@@ -10,7 +10,7 @@
  *
  * @phase R-collection-3
  */
-import { IconFiles, IconFolderQuestion, IconPlus } from '@tabler/icons-react';
+import { IconDotsVertical, IconFiles, IconLibrary, IconPlus } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -25,6 +25,18 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger
+} from '@/components/ui/context-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -147,22 +159,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
   }
 
   return (
-    <div className='flex h-full flex-col'>
-      <div className='flex items-center justify-between px-2 py-1.5'>
-        <span className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
-          {t('title')}
-        </span>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='size-6'
-          aria-label={t('newCollection')}
-          onClick={() => setEdit({ mode: 'create', parentId: null, name: '' })}
-        >
-          <IconPlus size={15} />
-        </Button>
-      </div>
-
+    <div className='flex h-full flex-col pt-1'>
       <ScrollArea className='min-h-0 flex-1 px-1'>
         <button
           type='button'
@@ -175,17 +172,55 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
           <IconFiles size={15} className='text-muted-foreground' />
           {t('allPapers')}
         </button>
-        <button
-          type='button'
-          onClick={() => onSelect({ kind: 'unfiled' })}
-          className={cn(
-            'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent',
-            selection.kind === 'unfiled' && 'bg-accent font-medium'
-          )}
-        >
-          <IconFolderQuestion size={15} className='text-muted-foreground' />
-          {t('unfiled')}
-        </button>
+
+        {/* My library (papers not in any collection) — also hosts "New
+            collection" via kebab + right-click; the standalone header + button
+            was removed for a tidier sidebar. */}
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div
+              className={cn(
+                'group flex items-center gap-1 rounded-md pr-1 text-sm hover:bg-accent',
+                selection.kind === 'unfiled' && 'bg-accent font-medium'
+              )}
+            >
+              <button
+                type='button'
+                onClick={() => onSelect({ kind: 'unfiled' })}
+                className='flex min-w-0 flex-1 items-center gap-1.5 px-1.5 py-1.5 text-left'
+              >
+                <IconLibrary size={15} className='text-muted-foreground' />
+                {t('myLibrary')}
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='size-5 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100'
+                    aria-label={t('newCollection')}
+                  >
+                    <IconDotsVertical size={14} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='end' className='min-w-40'>
+                  <DropdownMenuItem
+                    onClick={() => setEdit({ mode: 'create', parentId: null, name: '' })}
+                  >
+                    <IconPlus size={14} />
+                    {t('newCollection')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent className='min-w-40'>
+            <ContextMenuItem onClick={() => setEdit({ mode: 'create', parentId: null, name: '' })}>
+              <IconPlus size={14} />
+              {t('newCollection')}
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
 
         <div className='mt-1 space-y-px'>
           {isLoading ? (

@@ -541,6 +541,7 @@
   "collections": {
     "title": "Bộ sưu tập",
     "allPapers": "Tất cả papers",
+    "myLibrary": "Thư viện của tôi",
     "unfiled": "Chưa phân loại",
     "newCollection": "Bộ sưu tập mới",
     "newSubcollection": "Bộ sưu tập con",

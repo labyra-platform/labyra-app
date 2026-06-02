@@ -541,6 +541,7 @@
   "collections": {
     "title": "Collections",
     "allPapers": "All papers",
+    "myLibrary": "My library",
     "unfiled": "Unfiled",
     "newCollection": "New collection",
     "newSubcollection": "New subcollection",

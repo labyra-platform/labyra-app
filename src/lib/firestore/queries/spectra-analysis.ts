@@ -7,6 +7,7 @@ import 'server-only';
 
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { AnalysisResult } from '@/types/spectra-analysis';
+import type { SpectrumMetadata } from '@/types/spectra';
 
 /**
  * Fetch the latest AnalysisResult for a spectrum.
@@ -21,4 +22,20 @@ export async function getLatestAnalysis(
   const snap = await ref.get();
   if (!snap.exists) return null;
   return snap.data() as AnalysisResult;
+}
+
+/**
+ * Fetch a spectrum's metadata document (instrument config, technique, lineage).
+ * Server-only; returns null if the spectrum no longer exists. Used by manuscript
+ * Methods grounding to describe the real characterization instruments/parameters.
+ */
+export async function getSpectrumMeta(
+  tenantId: string,
+  spectrumId: string
+): Promise<SpectrumMetadata | null> {
+  const db = getAdminFirestoreService();
+  const ref = db.doc(`tenants/${tenantId}/spectra/${spectrumId}`);
+  const snap = await ref.get();
+  if (!snap.exists) return null;
+  return snap.data() as SpectrumMetadata;
 }

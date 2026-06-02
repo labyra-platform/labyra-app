@@ -15,6 +15,7 @@ import type { Manuscript, ManuscriptSectionType } from '@/features/manuscript/ty
 import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
 import type { WriterResult } from '@/lib/ai/tier4-writer/types';
 import { loadLabDataContext } from './lab-data';
+import { loadMethodsContext } from './methods-data';
 import { dropLabVerified } from './number-registry';
 import { buildRunningContext } from './running-memory';
 import { manuscriptToWriterSection } from './section-order';
@@ -39,7 +40,8 @@ function buildSectionInstruction(
   type: ManuscriptSectionType,
   title: string,
   instruction?: string,
-  measurementSummaries?: string[]
+  measurementSummaries?: string[],
+  characterization?: string[]
 ): string {
   const lines = [`Draft the ${sectionLabel(type)} section of the manuscript titled "${title}".`];
   if (type === 'results_discussion') {
@@ -52,6 +54,12 @@ function buildSectionInstruction(
       "\nThe lab's own measurements for this manuscript (use these as the measured results; do not invent or alter numbers):"
     );
     measurementSummaries.forEach((sum, i) => lines.push(`${i + 1}. ${sum}`));
+  }
+  if (type === 'methods' && characterization && characterization.length > 0) {
+    lines.push(
+      '\nCharacterization instruments and acquisition parameters for this manuscript (describe these in the Characterization subsection; use only the instruments/parameters listed — do not invent equipment, models, or settings that are not provided, and omit any detail recorded as missing):'
+    );
+    characterization.forEach((c, i) => lines.push(`${i + 1}. ${c}`));
   }
   if (instruction?.trim()) lines.push(instruction.trim());
   return lines.join('\n');
@@ -96,13 +104,22 @@ export async function generateManuscriptSection(
       ? await loadLabDataContext(tenantId, manuscript.selectedMeasurementIds)
       : { summaries: [], whitelist: new Set<string>() };
 
+  // Methods only: real characterization instruments + acquisition parameters,
+  // so the Characterization subsection names the lab's actual setup (not invented
+  // equipment). The procedure half is owned by protocol instances (future).
+  const methodsData =
+    sectionType === 'methods' && manuscript.selectedMeasurementIds.length > 0
+      ? await loadMethodsContext(tenantId, manuscript.selectedMeasurementIds)
+      : { characterization: [], whitelist: new Set<string>() };
+
   const result = await runWriter({
     tenantId,
     userMessage: buildSectionInstruction(
       sectionType,
       manuscript.title,
       instruction,
-      labData.summaries
+      labData.summaries,
+      methodsData.characterization
     ),
     sectionType: manuscriptToWriterSection(sectionType),
     collectionId: manuscript.collectionId || undefined,
@@ -116,6 +133,7 @@ export async function generateManuscriptSection(
   // caller-provided ∪ lab-derived (this manuscript's selected measurements).
   const whitelist = new Set<string>(labNumberWhitelist ?? []);
   for (const n of labData.whitelist) whitelist.add(n);
+  for (const n of methodsData.whitelist) whitelist.add(n);
   if (whitelist.size === 0) return result;
   const unverifiedNumbers = dropLabVerified(result.grounding.unverifiedNumbers, whitelist);
   return {

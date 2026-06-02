@@ -30,7 +30,7 @@ const SECTION_GUIDANCE: Record<Exclude<SectionType, 'auto'>, string> = {
 - Past tense, third person passive ("X was synthesized…").
 - Materials: list source + purity.
 - Procedure: stepwise, reproducible. Include temperature, time, atmosphere, mass/volume.
-- Characterization: instrument model + measurement parameters (range, step, scan speed).
+- Characterization: state each technique with the EXACT instrument and acquisition parameters provided in the prompt (e.g. XRD anode/Kα and wavelength, Raman excitation wavelength). Do NOT invent instrument models, manufacturers, or settings that were not provided; if a detail is recorded as missing, omit it rather than guessing.
 - Length: 500-1200 words typical.`,
 
   results: `Section: RESULTS

@@ -1530,6 +1530,9 @@
     "nodeProgress": "{done} / {total} drafted",
     "saveFailed": "Couldn't save",
     "addSection": "Add section",
-    "removeSection": "Remove"
+    "removeSection": "Remove",
+    "dataPick": "Data ({count})",
+    "dataPickTitle": "Lab data (measurements)",
+    "dataEmpty": "No measurements yet"
   }
 }

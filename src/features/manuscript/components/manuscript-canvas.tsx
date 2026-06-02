@@ -33,7 +33,14 @@ import {
   type NodeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { IconLayoutColumns, IconPlus, IconRefresh, IconSparkles, IconX } from '@tabler/icons-react';
+import {
+  IconChartHistogram,
+  IconLayoutColumns,
+  IconPlus,
+  IconRefresh,
+  IconSparkles,
+  IconX
+} from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { createContext, useContext, useState } from 'react';
@@ -42,8 +49,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { streamManuscriptSection } from '@/features/manuscript/generate-client';
@@ -56,6 +66,7 @@ import { useCollections } from '@/features/papers/collections/use-collections';
 import { IMRAD_ORDER } from '@/lib/ai/manuscript/section-order';
 import { useTenantId } from '@/lib/auth';
 import { updateManuscriptMeta, upsertManuscriptSection } from '@/lib/firestore/queries/manuscripts';
+import { useAllSpectra } from '@/lib/firestore/queries/spectra';
 
 const SECTION_LABEL_KEY: Record<ManuscriptSectionType, string> = {
   abstract: 'sectionAbstract',
@@ -129,6 +140,62 @@ function StartNode() {
       </p>
       <Handle type='source' position={Position.Right} />
     </div>
+  );
+}
+
+function MeasurementPicker() {
+  const t = useTranslations('manuscript');
+  const tenantId = useTenantId();
+  const queryClient = useQueryClient();
+  const manuscript = useManuscript();
+  const { spectra } = useAllSpectra();
+  const selected = manuscript.selectedMeasurementIds;
+
+  async function toggle(id: string) {
+    if (!tenantId) return;
+    const next = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
+    try {
+      await updateManuscriptMeta(tenantId, manuscript.id, { selectedMeasurementIds: next });
+      await queryClient.invalidateQueries({
+        queryKey: ['tenant-collection', tenantId, 'manuscripts']
+      });
+    } catch {
+      toast.error(t('saveFailed'));
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size='sm' variant='outline' className='nodrag mb-2 w-full justify-start'>
+          <IconChartHistogram className='size-3.5' />
+          {t('dataPick', { count: selected.length })}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='start' className='max-h-72 w-64 overflow-y-auto'>
+        <DropdownMenuLabel>{t('dataPickTitle')}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {spectra.length === 0 ? (
+          <div className='px-2 py-1.5 text-xs text-muted-foreground'>{t('dataEmpty')}</div>
+        ) : (
+          spectra.map((sp) => (
+            <DropdownMenuCheckboxItem
+              key={sp.id}
+              checked={selected.includes(sp.id)}
+              onCheckedChange={() => void toggle(sp.id)}
+              onSelect={(e) => e.preventDefault()}
+            >
+              <span className='truncate'>
+                {sp.chemicalFormula ?? sp.sampleLabel ?? sp.originalFilename}
+              </span>
+              <Badge variant='secondary' className='ml-auto shrink-0 text-[10px]'>
+                {sp.spectrumType}
+              </Badge>
+            </DropdownMenuCheckboxItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -226,6 +293,7 @@ function SectionNode({ data }: NodeProps) {
           </button>
         </div>
       </div>
+      {sectionType === 'results_discussion' && <MeasurementPicker />}
       <p className='mb-2 line-clamp-3 text-xs whitespace-pre-wrap text-muted-foreground'>
         {generating ? streamText || t('generating') : section ? section.content : t('notGenerated')}
       </p>

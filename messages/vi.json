@@ -1530,6 +1530,9 @@
     "nodeProgress": "{done} / {total} đã soạn",
     "saveFailed": "Lưu thất bại",
     "addSection": "Thêm phần",
-    "removeSection": "Bỏ phần này"
+    "removeSection": "Bỏ phần này",
+    "dataPick": "Dữ liệu ({count})",
+    "dataPickTitle": "Dữ liệu lab (measurement)",
+    "dataEmpty": "Chưa có measurement"
   }
 }

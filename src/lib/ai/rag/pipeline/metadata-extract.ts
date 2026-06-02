@@ -5,6 +5,7 @@
  */
 import 'server-only';
 import { selectProvider } from '@/lib/ai/providers';
+import { extractFirstDoi } from '@/lib/utils/extract-doi';
 
 export interface ExtractedMetadata {
   title: string;
@@ -65,6 +66,11 @@ export async function extractMetadata(firstPageText: string): Promise<ExtractedM
       .trim();
 
     const parsed = JSON.parse(jsonText) as Partial<ExtractedMetadata>;
+    const llmDoi = typeof parsed.doi === 'string' ? parsed.doi.trim() : '';
+    // Prefer the DOI parsed deterministically from the page text (e.g. the
+    // "doi.org/10.xxxx/..." URL) over the LLM's transcription — the model can
+    // silently drop characters (e.g. "advs" → "adv"), yielding an unresolvable
+    // DOI. Fall back to the LLM value only when no DOI is found in the text.
     return {
       title:
         typeof parsed.title === 'string' && parsed.title.length > 0 ? parsed.title : 'Untitled',
@@ -72,7 +78,7 @@ export async function extractMetadata(firstPageText: string): Promise<ExtractedM
         ? parsed.authors.filter((a) => typeof a === 'string')
         : [],
       year: typeof parsed.year === 'number' ? parsed.year : 0,
-      doi: typeof parsed.doi === 'string' ? parsed.doi : ''
+      doi: extractFirstDoi(firstPageText) ?? llmDoi
     };
   } catch (err) {
     console.error(

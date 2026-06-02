@@ -33,7 +33,7 @@ import {
   type NodeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { IconLayoutColumns, IconListCheck, IconRefresh, IconSparkles } from '@tabler/icons-react';
+import { IconLayoutColumns, IconPlus, IconRefresh, IconSparkles, IconX } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { createContext, useContext, useState } from 'react';
@@ -42,10 +42,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { streamManuscriptSection } from '@/features/manuscript/generate-client';
@@ -68,7 +66,7 @@ const SECTION_LABEL_KEY: Record<ManuscriptSectionType, string> = {
   conclusion: 'sectionConclusion'
 };
 
-const NODE_GAP_X = 300;
+const NODE_GAP_X = 340;
 
 const CanvasContext = createContext<Manuscript | null>(null);
 function useManuscript(): Manuscript {
@@ -187,16 +185,46 @@ function SectionNode({ data }: NodeProps) {
     }
   }
 
+  async function removeSection() {
+    if (!tenantId) return;
+    const active = pipelineOf(manuscript);
+    if (active.length <= 1) {
+      toast.error(t('sectionsMin'));
+      return;
+    }
+    try {
+      await updateManuscriptMeta(tenantId, manuscript.id, {
+        pipelineSections: active.filter((s) => s !== sectionType)
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['tenant-collection', tenantId, 'manuscripts']
+      });
+    } catch {
+      toast.error(t('saveFailed'));
+    }
+  }
+
   return (
     <div className='w-64 rounded-lg border bg-card p-3 shadow-sm'>
       <Handle type='target' position={Position.Left} />
       <div className='mb-1.5 flex items-center justify-between gap-2'>
         <span className='truncate text-sm font-medium'>{t(SECTION_LABEL_KEY[sectionType])}</span>
-        {section && (
-          <Badge variant='secondary' className='shrink-0 text-[10px]'>
-            {section.status}
-          </Badge>
-        )}
+        <div className='flex shrink-0 items-center gap-1'>
+          {section && (
+            <Badge variant='secondary' className='text-[10px]'>
+              {section.status}
+            </Badge>
+          )}
+          <button
+            type='button'
+            aria-label={t('removeSection')}
+            title={t('removeSection')}
+            className='nodrag rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-destructive'
+            onClick={() => void removeSection()}
+          >
+            <IconX className='size-3.5' />
+          </button>
+        </div>
       </div>
       <p className='mb-2 line-clamp-3 text-xs whitespace-pre-wrap text-muted-foreground'>
         {generating ? streamText || t('generating') : section ? section.content : t('notGenerated')}
@@ -204,7 +232,7 @@ function SectionNode({ data }: NodeProps) {
       <Button
         size='sm'
         variant={section ? 'outline' : 'default'}
-        className='w-full'
+        className='nodrag w-full'
         disabled={generating}
         onClick={() => void generate()}
       >
@@ -235,23 +263,19 @@ function EndNode() {
   );
 }
 
-function SectionsMenu() {
+function AddSectionMenu() {
   const t = useTranslations('manuscript');
   const tenantId = useTenantId();
   const queryClient = useQueryClient();
   const manuscript = useManuscript();
   const active = pipelineOf(manuscript);
+  const available = IMRAD_ORDER.filter((type) => !active.includes(type));
 
-  async function toggle(type: ManuscriptSectionType) {
+  async function add(type: ManuscriptSectionType) {
     if (!tenantId) return;
-    const next = active.includes(type) ? active.filter((s) => s !== type) : [...active, type];
-    if (next.length === 0) {
-      toast.error(t('sectionsMin'));
-      return;
-    }
-    const ordered = IMRAD_ORDER.filter((s) => next.includes(s));
+    const next = IMRAD_ORDER.filter((s) => active.includes(s) || s === type);
     try {
-      await updateManuscriptMeta(tenantId, manuscript.id, { pipelineSections: ordered });
+      await updateManuscriptMeta(tenantId, manuscript.id, { pipelineSections: next });
       await queryClient.invalidateQueries({
         queryKey: ['tenant-collection', tenantId, 'manuscripts']
       });
@@ -264,23 +288,16 @@ function SectionsMenu() {
     <Panel position='top-left'>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size='sm' variant='outline'>
-            <IconListCheck className='size-3.5' />
-            {t('sectionsMenu', { count: active.length })}
+          <Button size='sm' variant='outline' disabled={available.length === 0}>
+            <IconPlus className='size-3.5' />
+            {t('addSection')}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='start' className='w-52'>
-          <DropdownMenuLabel>{t('sectionsMenuTitle')}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {IMRAD_ORDER.map((type) => (
-            <DropdownMenuCheckboxItem
-              key={type}
-              checked={active.includes(type)}
-              onCheckedChange={() => void toggle(type)}
-              onSelect={(e) => e.preventDefault()}
-            >
+          {available.map((type) => (
+            <DropdownMenuItem key={type} onClick={() => void add(type)}>
               {t(SECTION_LABEL_KEY[type])}
-            </DropdownMenuCheckboxItem>
+            </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
@@ -299,7 +316,7 @@ function ResetViewButton({ onReset }: { onReset: () => void }) {
         onClick={() => {
           onReset();
           requestAnimationFrame(() => {
-            void fitView({ duration: 300 });
+            void fitView({ duration: 300, padding: 0.2 });
           });
         }}
       >
@@ -330,8 +347,9 @@ function Flow({ manuscript }: { manuscript: Manuscript }) {
       onEdgesChange={onEdgesChange}
       nodeTypes={nodeTypes}
       fitView
+      fitViewOptions={{ padding: 0.2 }}
     >
-      <SectionsMenu />
+      <AddSectionMenu />
       <ResetViewButton onReset={reset} />
       <Background />
       <Controls />

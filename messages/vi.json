@@ -1526,6 +1526,8 @@
     "sectionsMenuTitle": "Các phần trong pipeline",
     "sectionsMin": "Giữ ít nhất một phần",
     "nodeProgress": "{done} / {total} đã soạn",
-    "saveFailed": "Lưu thất bại"
+    "saveFailed": "Lưu thất bại",
+    "addSection": "Thêm phần",
+    "removeSection": "Bỏ phần này"
   }
 }

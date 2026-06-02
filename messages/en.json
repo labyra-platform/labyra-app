@@ -1526,6 +1526,8 @@
     "sectionsMenuTitle": "Sections in pipeline",
     "sectionsMin": "Keep at least one section",
     "nodeProgress": "{done} / {total} drafted",
-    "saveFailed": "Couldn't save"
+    "saveFailed": "Couldn't save",
+    "addSection": "Add section",
+    "removeSection": "Remove"
   }
 }

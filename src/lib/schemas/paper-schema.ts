@@ -34,6 +34,10 @@ const PaperPatchFields = {
     .max(100)
     .regex(/^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i, 'doi: invalid format')
     .optional(),
+  // R310b: manual DOI verification flag. The metadata editor sets this true after
+  // a successful "Resolve from DOI", clearing the amber unverified-DOI triangle
+  // without a full worker reprocess. The editor only ever sends `true`.
+  doiVerified: z.boolean().optional(),
   abstract: z.string().max(10000).optional(),
   // R177-1e: book/document-type fields. Lenient ISBN format (worker
   // does strict checksum); empty string allowed for non-book papers.

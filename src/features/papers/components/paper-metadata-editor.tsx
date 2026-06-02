@@ -54,6 +54,9 @@ export function PaperMetadataEditor({
   const [year, setYear] = useState('');
   const [doi, setDoi] = useState('');
   const [resolving, setResolving] = useState(false);
+  // R310b: true once a "Resolve from DOI" in THIS session confirmed the DOI
+  // resolves. Saved as doiVerified:true to clear the amber triangle.
+  const [verified, setVerified] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Re-seed fields whenever a new paper is opened.
@@ -63,6 +66,7 @@ export function PaperMetadataEditor({
     setAuthors((paper.authors ?? []).join('\n'));
     setYear(paper.year ? String(paper.year) : '');
     setDoi(paper.doi ?? '');
+    setVerified(false);
   }, [paper]);
 
   const resolveFromDoi = async () => {
@@ -88,6 +92,7 @@ export function PaperMetadataEditor({
       if (Array.isArray(data.authors) && data.authors.length) setAuthors(data.authors.join('\n'));
       if (data.year) setYear(String(data.year));
       setDoi(data.doi || d);
+      setVerified(true); // resolved OK → DOI is confirmed; Save will clear the triangle
       toast.success(data.isRetracted ? t('metadataFilledRetracted') : t('metadataFilled'), {
         description: data.journal || undefined
       });
@@ -120,7 +125,7 @@ export function PaperMetadataEditor({
         .map((a) => a.trim())
         .filter(Boolean),
       ...(yNum && yNum >= 1800 && yNum <= 2100 ? { year: yNum } : {}),
-      ...(d ? { doi: d } : {})
+      ...(d ? { doi: d, ...(verified ? { doiVerified: true } : {}) } : {})
     };
     setSaving(true);
     try {
@@ -160,7 +165,10 @@ export function PaperMetadataEditor({
               <Input
                 id='pm-doi'
                 value={doi}
-                onChange={(e) => setDoi(e.target.value)}
+                onChange={(e) => {
+                  setDoi(e.target.value);
+                  setVerified(false); // hand-edited DOI is no longer "resolved"
+                }}
                 placeholder='10.1021/jacs.0c01234'
                 className='font-mono text-sm'
               />

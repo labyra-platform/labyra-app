@@ -1533,6 +1533,10 @@
     "removeSection": "Remove",
     "dataPick": "Data ({count})",
     "dataPickTitle": "Lab data (measurements)",
-    "dataEmpty": "No measurements yet"
+    "dataEmpty": "No measurements yet",
+    "exportBtn": "Export",
+    "exportMd": "Markdown (.md)",
+    "exportTex": "LaTeX (.tex)",
+    "exportBib": "BibTeX (.bib)"
   }
 }

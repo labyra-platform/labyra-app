@@ -1533,6 +1533,10 @@
     "removeSection": "Bỏ phần này",
     "dataPick": "Dữ liệu ({count})",
     "dataPickTitle": "Dữ liệu lab (measurement)",
-    "dataEmpty": "Chưa có measurement"
+    "dataEmpty": "Chưa có measurement",
+    "exportBtn": "Xuất file",
+    "exportMd": "Markdown (.md)",
+    "exportTex": "LaTeX (.tex)",
+    "exportBib": "BibTeX (.bib)"
   }
 }

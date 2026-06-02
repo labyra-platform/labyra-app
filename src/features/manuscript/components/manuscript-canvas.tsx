@@ -35,6 +35,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import {
   IconChartHistogram,
+  IconDownload,
   IconLayoutColumns,
   IconPlus,
   IconRefresh,
@@ -63,9 +64,17 @@ import type {
   ManuscriptSectionType
 } from '@/features/manuscript/types';
 import { useCollections } from '@/features/papers/collections/use-collections';
+import {
+  buildBibtex,
+  buildLatex,
+  buildMarkdown,
+  collectCitations,
+  type ExportPaperMeta
+} from '@/lib/ai/manuscript/export';
 import { IMRAD_ORDER } from '@/lib/ai/manuscript/section-order';
 import { useTenantId } from '@/lib/auth';
 import { updateManuscriptMeta, upsertManuscriptSection } from '@/lib/firestore/queries/manuscripts';
+import { usePapers } from '@/lib/firestore/queries/papers';
 import { useAllSpectra } from '@/lib/firestore/queries/spectra';
 
 const SECTION_LABEL_KEY: Record<ManuscriptSectionType, string> = {
@@ -312,21 +321,64 @@ function SectionNode({ data }: NodeProps) {
   );
 }
 
+function downloadText(filename: string, text: string): void {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function EndNode() {
   const t = useTranslations('manuscript');
   const manuscript = useManuscript();
+  const { papers } = usePapers();
   const pipeline = pipelineOf(manuscript);
   const drafted = pipeline.filter((type) =>
     manuscript.sections.some((s) => s.type === type && s.content.trim().length > 0)
   ).length;
+  const hasDraft = manuscript.sections.some((s) => s.content.trim().length > 0);
+
+  function exportAs(fmt: 'md' | 'tex' | 'bib') {
+    const paperById = new Map(papers.map((pp): [string, ExportPaperMeta] => [pp.id, pp]));
+    const cited = collectCitations(manuscript, paperById);
+    const slug =
+      manuscript.title
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase()
+        .slice(0, 40) || 'manuscript';
+    if (fmt === 'bib') {
+      downloadText(`${slug}.bib`, buildBibtex(cited));
+    } else if (fmt === 'tex') {
+      downloadText(`${slug}.tex`, buildLatex(manuscript, cited));
+    } else {
+      downloadText(`${slug}.md`, buildMarkdown(manuscript, cited));
+    }
+  }
+
   return (
     <div className='w-64 rounded-lg border-2 border-dashed p-3 text-center'>
       <Handle type='target' position={Position.Left} />
       <div className='text-sm font-semibold'>{t('nodeExport')}</div>
-      <p className='mt-0.5 text-xs font-medium'>
+      <p className='mt-0.5 mb-2 text-xs font-medium'>
         {t('nodeProgress', { done: drafted, total: pipeline.length })}
       </p>
-      <p className='mt-1 text-xs text-muted-foreground'>{t('nodeExportSoon')}</p>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size='sm' variant='outline' className='nodrag w-full' disabled={!hasDraft}>
+            <IconDownload className='size-3.5' />
+            {t('exportBtn')}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='center' className='w-48'>
+          <DropdownMenuItem onClick={() => exportAs('md')}>{t('exportMd')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => exportAs('tex')}>{t('exportTex')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => exportAs('bib')}>{t('exportBib')}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

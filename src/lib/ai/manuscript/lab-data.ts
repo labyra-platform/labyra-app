@@ -54,6 +54,65 @@ function curatedMetrics(parsed: SpectrumParsedData): Record<string, number> {
       if (parsed.tauc_bandgap) v.bandgap_ev = parsed.tauc_bandgap.bandgap_ev;
       break;
     }
+    case 'tafel': {
+      const a = parsed.analysis;
+      v.tafel_slope_mV_per_dec = a.tafel_slope_mV_per_dec;
+      if (typeof a.exchange_current_density_j0 === 'number') {
+        v.exchange_current_density_j0 = a.exchange_current_density_j0;
+      }
+      break;
+    }
+    case 'lsv': {
+      const a = parsed.analysis;
+      if (typeof a.overpotential_at_10mA_cm2_V === 'number') {
+        v.overpotential_at_10mA_cm2_V = a.overpotential_at_10mA_cm2_V;
+      }
+      if (typeof a.onset_overpotential_at_1mA_cm2_V === 'number') {
+        v.onset_overpotential_at_1mA_cm2_V = a.onset_overpotential_at_1mA_cm2_V;
+      }
+      if (a.tafel) v.lsv_tafel_slope_mV_per_dec = a.tafel.tafel_slope_mV_per_dec;
+      break;
+    }
+    case 'cv': {
+      const a = parsed.analysis;
+      if (typeof a.Epa_V === 'number') v.Epa_V = a.Epa_V;
+      if (typeof a.Epc_V === 'number') v.Epc_V = a.Epc_V;
+      if (typeof a.dEp_mV === 'number') v.dEp_mV = a.dEp_mV;
+      if (typeof a.E0_prime_V === 'number') v.E0_prime_V = a.E0_prime_V;
+      if (typeof a.peak_current_ratio === 'number') v.peak_current_ratio = a.peak_current_ratio;
+      break;
+    }
+    case 'eis': {
+      const params = parsed.circuit_fit.parameters;
+      if (params) {
+        for (const [k, val] of Object.entries(params)) {
+          if (typeof val === 'number') v[`eis_${k}`] = val;
+        }
+      }
+      break;
+    }
+    case 'pec_jv': {
+      const a = parsed.analysis;
+      if (typeof a.photocurrent_onset_V === 'number')
+        v.photocurrent_onset_V = a.photocurrent_onset_V;
+      if (typeof a.photocurrent_at_1p23V_RHE === 'number') {
+        v.photocurrent_at_1p23V_RHE = a.photocurrent_at_1p23V_RHE;
+      }
+      if (typeof a.sth_percent === 'number') v.sth_percent = a.sth_percent;
+      if (typeof a.abpe_percent === 'number') v.abpe_percent = a.abpe_percent;
+      break;
+    }
+    case 'pec_mott_schottky': {
+      const a = parsed.analysis;
+      v.flat_band_V_vs_ref = a.flat_band_V_vs_ref;
+      if (typeof a.flat_band_V_vs_rhe === 'number') v.flat_band_V_vs_rhe = a.flat_band_V_vs_rhe;
+      if (typeof a.donor_density_cm3 === 'number') v.donor_density_cm3 = a.donor_density_cm3;
+      if (typeof a.acceptor_density_cm3 === 'number') {
+        v.acceptor_density_cm3 = a.acceptor_density_cm3;
+      }
+      if (typeof a.depletion_width_nm === 'number') v.depletion_width_nm = a.depletion_width_nm;
+      break;
+    }
     default:
       break;
   }

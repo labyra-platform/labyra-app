@@ -1531,6 +1531,8 @@
     "saveFailed": "Lưu thất bại",
     "addSection": "Thêm phần",
     "removeSection": "Bỏ phần này",
+    "expandSpace": "Mở rộng không gian",
+    "collapseList": "Hiện danh sách",
     "dataPick": "Dữ liệu ({count})",
     "dataPickTitle": "Dữ liệu lab (measurement)",
     "dataEmpty": "Chưa có measurement",

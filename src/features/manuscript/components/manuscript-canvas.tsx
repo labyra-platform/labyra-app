@@ -37,6 +37,8 @@ import {
   IconChartHistogram,
   IconDownload,
   IconLayoutColumns,
+  IconMaximize,
+  IconMinimize,
   IconPlus,
   IconRefresh,
   IconSparkles,
@@ -425,31 +427,66 @@ function AddSectionMenu() {
   );
 }
 
-function ResetViewButton({ onReset }: { onReset: () => void }) {
+function CanvasTopRightControls({
+  onReset,
+  focused,
+  onToggleFocused
+}: {
+  onReset: () => void;
+  focused?: boolean;
+  onToggleFocused?: () => void;
+}) {
   const { fitView } = useReactFlow();
   const t = useTranslations('manuscript');
+  const refit = () => requestAnimationFrame(() => void fitView({ duration: 300, padding: 0.2 }));
   return (
     <Panel position='top-right'>
-      <Button
-        size='sm'
-        variant='outline'
-        onClick={() => {
-          onReset();
-          requestAnimationFrame(() => {
-            void fitView({ duration: 300, padding: 0.2 });
-          });
-        }}
-      >
-        <IconLayoutColumns className='size-3.5' />
-        {t('resetView')}
-      </Button>
+      <div className='flex gap-2'>
+        {onToggleFocused && (
+          <Button
+            size='sm'
+            variant='outline'
+            title={focused ? t('collapseList') : t('expandSpace')}
+            aria-label={focused ? t('collapseList') : t('expandSpace')}
+            onClick={() => {
+              onToggleFocused();
+              refit();
+            }}
+          >
+            {focused ? (
+              <IconMinimize className='size-3.5' />
+            ) : (
+              <IconMaximize className='size-3.5' />
+            )}
+          </Button>
+        )}
+        <Button
+          size='sm'
+          variant='outline'
+          onClick={() => {
+            onReset();
+            refit();
+          }}
+        >
+          <IconLayoutColumns className='size-3.5' />
+          {t('resetView')}
+        </Button>
+      </div>
     </Panel>
   );
 }
 
 const nodeTypes = { start: StartNode, section: SectionNode, end: EndNode };
 
-function Flow({ manuscript }: { manuscript: Manuscript }) {
+function Flow({
+  manuscript,
+  focused,
+  onToggleFocused
+}: {
+  manuscript: Manuscript;
+  focused?: boolean;
+  onToggleFocused?: () => void;
+}) {
   const pipeline = pipelineOf(manuscript);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(buildNodes(pipeline));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(buildEdges(pipeline));
@@ -470,19 +507,32 @@ function Flow({ manuscript }: { manuscript: Manuscript }) {
       fitViewOptions={{ padding: 0.2 }}
     >
       <AddSectionMenu />
-      <ResetViewButton onReset={reset} />
+      <CanvasTopRightControls onReset={reset} focused={focused} onToggleFocused={onToggleFocused} />
       <Background />
       <Controls />
     </ReactFlow>
   );
 }
 
-export function ManuscriptCanvas({ manuscript }: { manuscript: Manuscript }) {
+export function ManuscriptCanvas({
+  manuscript,
+  focused,
+  onToggleFocused
+}: {
+  manuscript: Manuscript;
+  focused?: boolean;
+  onToggleFocused?: () => void;
+}) {
   const pipelineKey = pipelineOf(manuscript).join(',');
   return (
     <CanvasContext.Provider value={manuscript}>
-      <div className='h-[calc(100vh-13rem)] w-full overflow-hidden rounded-lg border'>
-        <Flow key={pipelineKey} manuscript={manuscript} />
+      <div className='h-full min-h-[32rem] w-full overflow-hidden rounded-lg border'>
+        <Flow
+          key={pipelineKey}
+          manuscript={manuscript}
+          focused={focused}
+          onToggleFocused={onToggleFocused}
+        />
       </div>
     </CanvasContext.Provider>
   );

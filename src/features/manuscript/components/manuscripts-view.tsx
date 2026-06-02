@@ -48,6 +48,7 @@ export function ManuscriptsView() {
   const [title, setTitle] = useState('');
   const [collectionId, setCollectionId] = useState('');
   const [busy, setBusy] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   const selected = manuscripts.find((m) => m.id === selectedId) ?? null;
 
@@ -72,8 +73,8 @@ export function ManuscriptsView() {
   }
 
   return (
-    <div className='flex gap-4'>
-      <aside className='w-64 shrink-0 space-y-2'>
+    <div className='flex min-h-0 flex-1 gap-4'>
+      <aside className={cn('w-52 shrink-0 space-y-2', focused && 'hidden')}>
         <Button
           className='w-full'
           onClick={() => setCreateOpen(true)}
@@ -110,9 +111,13 @@ export function ManuscriptsView() {
         )}
       </aside>
 
-      <div className='min-w-0 flex-1'>
+      <div className='min-h-0 min-w-0 flex-1'>
         {selected ? (
-          <ManuscriptCanvas manuscript={selected} />
+          <ManuscriptCanvas
+            manuscript={selected}
+            focused={focused}
+            onToggleFocused={() => setFocused((v) => !v)}
+          />
         ) : (
           <p className='text-sm text-muted-foreground'>{t('selectOrCreate')}</p>
         )}

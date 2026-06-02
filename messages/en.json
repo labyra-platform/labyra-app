@@ -1531,6 +1531,8 @@
     "saveFailed": "Couldn't save",
     "addSection": "Add section",
     "removeSection": "Remove",
+    "expandSpace": "Expand space",
+    "collapseList": "Show list",
     "dataPick": "Data ({count})",
     "dataPickTitle": "Lab data (measurements)",
     "dataEmpty": "No measurements yet",

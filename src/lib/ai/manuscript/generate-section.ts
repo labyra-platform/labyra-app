@@ -14,6 +14,7 @@ import 'server-only';
 import type { Manuscript, ManuscriptSectionType } from '@/features/manuscript/types';
 import { runWriter } from '@/lib/ai/tier4-writer/orchestrator';
 import type { WriterResult } from '@/lib/ai/tier4-writer/types';
+import { loadLabDataContext } from './lab-data';
 import { dropLabVerified } from './number-registry';
 import { buildRunningContext } from './running-memory';
 import { manuscriptToWriterSection } from './section-order';
@@ -37,13 +38,20 @@ function sectionLabel(type: ManuscriptSectionType): string {
 function buildSectionInstruction(
   type: ManuscriptSectionType,
   title: string,
-  instruction?: string
+  instruction?: string,
+  measurementSummaries?: string[]
 ): string {
   const lines = [`Draft the ${sectionLabel(type)} section of the manuscript titled "${title}".`];
   if (type === 'results_discussion') {
     lines.push(
       'Present the key results first (with figures/quantities), then interpret them — mechanisms, comparison to the cited literature, and limitations.'
     );
+  }
+  if (measurementSummaries && measurementSummaries.length > 0) {
+    lines.push(
+      "\nThe lab's own measurements for this manuscript (use these as the measured results; do not invent or alter numbers):"
+    );
+    measurementSummaries.forEach((sum, i) => lines.push(`${i + 1}. ${sum}`));
   }
   if (instruction?.trim()) lines.push(instruction.trim());
   return lines.join('\n');
@@ -58,9 +66,21 @@ export async function generateManuscriptSection(
   const prior = manuscript.sections.filter((s) => s.type !== sectionType);
   const priorContext = buildRunningContext(prior, manuscript.glossary);
 
+  // Lab data the manuscript curated: feeds the Writer's context (so Results &
+  // Discussion cites the lab's own findings) and un-flags genuine measured numbers.
+  const labData =
+    manuscript.selectedMeasurementIds.length > 0
+      ? await loadLabDataContext(tenantId, manuscript.selectedMeasurementIds)
+      : { summaries: [], whitelist: new Set<string>() };
+
   const result = await runWriter({
     tenantId,
-    userMessage: buildSectionInstruction(sectionType, manuscript.title, instruction),
+    userMessage: buildSectionInstruction(
+      sectionType,
+      manuscript.title,
+      instruction,
+      labData.summaries
+    ),
     sectionType: manuscriptToWriterSection(sectionType),
     collectionId: manuscript.collectionId || undefined,
     priorContext: priorContext || undefined,
@@ -68,9 +88,12 @@ export async function generateManuscriptSection(
   });
 
   // Gap1: numbers backed by the lab's own measurements are real data, not
-  // fabrications — drop them from the unverified-number warnings.
-  if (!labNumberWhitelist?.size) return result;
-  const unverifiedNumbers = dropLabVerified(result.grounding.unverifiedNumbers, labNumberWhitelist);
+  // fabrications — drop them from the unverified-number warnings. Whitelist =
+  // caller-provided ∪ lab-derived (this manuscript's selected measurements).
+  const whitelist = new Set<string>(labNumberWhitelist ?? []);
+  for (const n of labData.whitelist) whitelist.add(n);
+  if (whitelist.size === 0) return result;
+  const unverifiedNumbers = dropLabVerified(result.grounding.unverifiedNumbers, whitelist);
   return {
     ...result,
     grounding: {

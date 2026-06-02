@@ -1521,6 +1521,11 @@
     "nodeTemplate": "Template",
     "nodeExport": "Export",
     "nodeExportSoon": "Publisher formatting + export — coming soon",
-    "resetView": "Reset layout"
+    "resetView": "Reset layout",
+    "sectionsMenu": "Sections ({count})",
+    "sectionsMenuTitle": "Sections in pipeline",
+    "sectionsMin": "Keep at least one section",
+    "nodeProgress": "{done} / {total} drafted",
+    "saveFailed": "Couldn't save"
   }
 }

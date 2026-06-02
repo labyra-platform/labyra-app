@@ -10,7 +10,12 @@
  * @see labyra-ai-science-manuscript-strategy.md §6
  */
 import { collection as fsCollection, doc, setDoc, updateDoc } from 'firebase/firestore';
-import type { Manuscript, ManuscriptSection, ManuscriptStatus } from '@/features/manuscript/types';
+import type {
+  Manuscript,
+  ManuscriptSection,
+  ManuscriptSectionType,
+  ManuscriptStatus
+} from '@/features/manuscript/types';
 import { getFirebaseAuth, getFirebaseFirestore } from '@/lib/firebase/client';
 
 const COLLECTION = 'manuscripts';
@@ -76,6 +81,7 @@ export async function updateManuscriptMeta(
     collectionId?: string;
     selectedMeasurementIds?: string[];
     status?: ManuscriptStatus;
+    pipelineSections?: ManuscriptSectionType[];
   }
 ): Promise<void> {
   const db = getFirebaseFirestore();

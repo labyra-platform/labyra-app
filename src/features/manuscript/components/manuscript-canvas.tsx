@@ -1,27 +1,29 @@
 'use client';
 
 /**
- * Manuscript node canvas (React Flow). Linear pipeline, top→down:
- *   START (references collection + template) → IMRaD section nodes → END (export).
+ * Manuscript node canvas (React Flow). Horizontal pipeline, left→right:
+ *   START (references collection + template) → IMRaD section nodes → END.
  *
+ * The set of section nodes is driven by `manuscript.pipelineSections` (full IMRaD
+ * or a user-chosen subset; absent/empty = full). Toggle via the "Sections" menu.
  * Each SECTION node reuses the streaming generate flow (R289): stream live text,
  * save the draft, surface deterministic grounding warnings (R276). The live
  * manuscript is provided via React context — React.memo on React Flow nodes does
  * NOT block context-driven re-renders, so nodes refresh after a section is saved
- * and the query is invalidated, while node positions (drag) persist in local state.
+ * and the query is invalidated, while drag positions persist in local state.
  *
- * END is a placeholder until N4 (publisher formatting: text / tables / figures +
- * citation export). The R&D data-asset / spectra picker arrives in N3.
+ * END shows draft progress; publisher formatting + export land in N4. The R&D
+ * data-asset / spectra picker arrives in N3.
  *
- * @phase R-aiscience-N1
+ * @phase R-aiscience-N2
  * @see labyra-ai-science-manuscript-strategy.md §4 (node pipeline)
  */
 import {
   Background,
   Controls,
   Handle,
-  Position,
   Panel,
+  Position,
   ReactFlow,
   useEdgesState,
   useNodesState,
@@ -31,13 +33,21 @@ import {
   type NodeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { IconLayoutColumns, IconRefresh, IconSparkles } from '@tabler/icons-react';
+import { IconLayoutColumns, IconListCheck, IconRefresh, IconSparkles } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { createContext, useContext, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { streamManuscriptSection } from '@/features/manuscript/generate-client';
 import type {
   Manuscript,
@@ -47,7 +57,7 @@ import type {
 import { useCollections } from '@/features/papers/collections/use-collections';
 import { IMRAD_ORDER } from '@/lib/ai/manuscript/section-order';
 import { useTenantId } from '@/lib/auth';
-import { upsertManuscriptSection } from '@/lib/firestore/queries/manuscripts';
+import { updateManuscriptMeta, upsertManuscriptSection } from '@/lib/firestore/queries/manuscripts';
 
 const SECTION_LABEL_KEY: Record<ManuscriptSectionType, string> = {
   abstract: 'sectionAbstract',
@@ -65,6 +75,44 @@ function useManuscript(): Manuscript {
   const m = useContext(CanvasContext);
   if (!m) throw new Error('CanvasContext is missing a provider');
   return m;
+}
+
+function pipelineOf(manuscript: Manuscript): ManuscriptSectionType[] {
+  return manuscript.pipelineSections && manuscript.pipelineSections.length > 0
+    ? manuscript.pipelineSections
+    : [...IMRAD_ORDER];
+}
+
+function buildNodes(sections: ManuscriptSectionType[]): Node[] {
+  const list: Node[] = [{ id: 'start', type: 'start', position: { x: 0, y: 0 }, data: {} }];
+  sections.forEach((type, i) => {
+    list.push({
+      id: type,
+      type: 'section',
+      position: { x: (i + 1) * NODE_GAP_X, y: 0 },
+      data: { sectionType: type }
+    });
+  });
+  list.push({
+    id: 'end',
+    type: 'end',
+    position: { x: (sections.length + 1) * NODE_GAP_X, y: 0 },
+    data: {}
+  });
+  return list;
+}
+
+function buildEdges(sections: ManuscriptSectionType[]): Edge[] {
+  const chain = ['start', ...sections, 'end'];
+  const out: Edge[] = [];
+  for (let i = 0; i < chain.length - 1; i++) {
+    const source = chain[i];
+    const target = chain[i + 1];
+    if (source && target) {
+      out.push({ id: `${source}->${target}`, source, target, animated: true });
+    }
+  }
+  return out;
 }
 
 function StartNode() {
@@ -170,12 +218,73 @@ function SectionNode({ data }: NodeProps) {
 
 function EndNode() {
   const t = useTranslations('manuscript');
+  const manuscript = useManuscript();
+  const pipeline = pipelineOf(manuscript);
+  const drafted = pipeline.filter((type) =>
+    manuscript.sections.some((s) => s.type === type && s.content.trim().length > 0)
+  ).length;
   return (
     <div className='w-64 rounded-lg border-2 border-dashed p-3 text-center'>
       <Handle type='target' position={Position.Left} />
       <div className='text-sm font-semibold'>{t('nodeExport')}</div>
+      <p className='mt-0.5 text-xs font-medium'>
+        {t('nodeProgress', { done: drafted, total: pipeline.length })}
+      </p>
       <p className='mt-1 text-xs text-muted-foreground'>{t('nodeExportSoon')}</p>
     </div>
+  );
+}
+
+function SectionsMenu() {
+  const t = useTranslations('manuscript');
+  const tenantId = useTenantId();
+  const queryClient = useQueryClient();
+  const manuscript = useManuscript();
+  const active = pipelineOf(manuscript);
+
+  async function toggle(type: ManuscriptSectionType) {
+    if (!tenantId) return;
+    const next = active.includes(type) ? active.filter((s) => s !== type) : [...active, type];
+    if (next.length === 0) {
+      toast.error(t('sectionsMin'));
+      return;
+    }
+    const ordered = IMRAD_ORDER.filter((s) => next.includes(s));
+    try {
+      await updateManuscriptMeta(tenantId, manuscript.id, { pipelineSections: ordered });
+      await queryClient.invalidateQueries({
+        queryKey: ['tenant-collection', tenantId, 'manuscripts']
+      });
+    } catch {
+      toast.error(t('saveFailed'));
+    }
+  }
+
+  return (
+    <Panel position='top-left'>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size='sm' variant='outline'>
+            <IconListCheck className='size-3.5' />
+            {t('sectionsMenu', { count: active.length })}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='start' className='w-52'>
+          <DropdownMenuLabel>{t('sectionsMenuTitle')}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {IMRAD_ORDER.map((type) => (
+            <DropdownMenuCheckboxItem
+              key={type}
+              checked={active.includes(type)}
+              onCheckedChange={() => void toggle(type)}
+              onSelect={(e) => e.preventDefault()}
+            >
+              {t(SECTION_LABEL_KEY[type])}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </Panel>
   );
 }
 
@@ -203,58 +312,39 @@ function ResetViewButton({ onReset }: { onReset: () => void }) {
 
 const nodeTypes = { start: StartNode, section: SectionNode, end: EndNode };
 
-const INITIAL_NODES: Node[] = [
-  { id: 'start', type: 'start', position: { x: 0, y: 0 }, data: {} },
-  ...IMRAD_ORDER.map(
-    (type, i): Node => ({
-      id: type,
-      type: 'section',
-      position: { x: (i + 1) * NODE_GAP_X, y: 0 },
-      data: { sectionType: type }
-    })
-  ),
-  {
-    id: 'end',
-    type: 'end',
-    position: { x: (IMRAD_ORDER.length + 1) * NODE_GAP_X, y: 0 },
-    data: {}
-  }
-];
+function Flow({ manuscript }: { manuscript: Manuscript }) {
+  const pipeline = pipelineOf(manuscript);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(buildNodes(pipeline));
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(buildEdges(pipeline));
 
-function buildPipelineEdges(): Edge[] {
-  const chain = ['start', ...IMRAD_ORDER, 'end'];
-  const out: Edge[] = [];
-  for (let i = 0; i < chain.length - 1; i++) {
-    const source = chain[i];
-    const target = chain[i + 1];
-    if (source && target) {
-      out.push({ id: `${source}->${target}`, source, target, animated: true });
-    }
+  function reset() {
+    setNodes(buildNodes(pipeline));
+    setEdges(buildEdges(pipeline));
   }
-  return out;
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      nodeTypes={nodeTypes}
+      fitView
+    >
+      <SectionsMenu />
+      <ResetViewButton onReset={reset} />
+      <Background />
+      <Controls />
+    </ReactFlow>
+  );
 }
 
-const INITIAL_EDGES: Edge[] = buildPipelineEdges();
-
 export function ManuscriptCanvas({ manuscript }: { manuscript: Manuscript }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
-  const [edges, , onEdgesChange] = useEdgesState(INITIAL_EDGES);
-
+  const pipelineKey = pipelineOf(manuscript).join(',');
   return (
     <CanvasContext.Provider value={manuscript}>
       <div className='h-[calc(100vh-13rem)] w-full overflow-hidden rounded-lg border'>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-          fitView
-        >
-          <ResetViewButton onReset={() => setNodes(INITIAL_NODES)} />
-          <Background />
-          <Controls />
-        </ReactFlow>
+        <Flow key={pipelineKey} manuscript={manuscript} />
       </div>
     </CanvasContext.Provider>
   );

@@ -97,6 +97,8 @@ export interface Manuscript extends ProvBase {
   /** Curated data source chosen up front (provenance + number registry). */
   selectedMeasurementIds: string[];
   sections: ManuscriptSection[];
+  /** Which IMRaD sections are in the pipeline (full or partial). Absent/empty = full IMRaD. */
+  pipelineSections?: ManuscriptSectionType[];
   /** Consistent terminology across sections (coherence). */
   glossary: GlossaryTerm[];
   /** Numbers permitted in the draft, with provenance (Gap1). */

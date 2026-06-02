@@ -35,6 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CollectionItem } from '@/features/papers/collections/collection-item';
+import { siblingNameExists } from '@/features/papers/collections/collection-tree';
 import {
   type CollectionSelection,
   useCollections
@@ -46,6 +47,7 @@ import {
   updateCollectionMeta
 } from '@/lib/firestore/queries/collections';
 import { useTenantId } from '@/lib/auth';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface CollectionSidebarProps {
@@ -59,7 +61,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
   const t = useTranslations('collections');
   const tenantId = useTenantId();
   const queryClient = useQueryClient();
-  const { tree, isLoading } = useCollections();
+  const { collections, tree, isLoading } = useCollections();
 
   const [edit, setEdit] = useState<EditState | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -74,15 +76,27 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
   async function submitEdit() {
     const name = edit?.name.trim();
     if (!edit || !tenantId || !name) return;
+    const parentId =
+      edit.mode === 'create'
+        ? (edit.parentId ?? null)
+        : (collections.find((c) => c.id === edit.id)?.parentId ?? null);
+    if (
+      siblingNameExists(collections, parentId, name, edit.mode === 'rename' ? edit.id : undefined)
+    ) {
+      toast.error(t('duplicateName'));
+      return;
+    }
     setBusy(true);
     try {
       if (edit.mode === 'create') {
-        await createCollection(tenantId, { name, parentId: edit.parentId ?? null });
+        await createCollection(tenantId, { name, parentId });
       } else if (edit.id) {
         await updateCollectionMeta(tenantId, edit.id, { name });
       }
       await refresh();
       setEdit(null);
+    } catch {
+      toast.error(t('saveFailed'));
     } finally {
       setBusy(false);
     }
@@ -98,6 +112,8 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
       }
       await refresh();
       setDeleteTarget(null);
+    } catch {
+      toast.error(t('deleteFailed'));
     } finally {
       setBusy(false);
     }
@@ -109,7 +125,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
       await moveCollection(tenantId, id, null);
       await refresh();
     } catch {
-      // validation/permission errors surface in console; toast UX is a later polish
+      toast.error(t('moveFailed'));
     }
   }
 

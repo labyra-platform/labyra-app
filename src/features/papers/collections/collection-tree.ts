@@ -143,3 +143,24 @@ export function validateMove(
     throw new Error(`Move would exceed the maximum nesting depth (${maxDepth}).`);
   }
 }
+
+/**
+ * Does a sibling (same parentId in the given list) already use `name`
+ * (case-insensitive, trimmed)? `excludeId` skips the collection being renamed.
+ * Enforces unique names among siblings (client-side; rules can't do cross-doc).
+ */
+export function siblingNameExists(
+  collections: PaperCollection[],
+  parentId: string | null,
+  name: string,
+  excludeId?: string
+): boolean {
+  const target = name.trim().toLowerCase();
+  if (!target) return false;
+  return collections.some(
+    (c) =>
+      c.id !== excludeId &&
+      (c.parentId ?? null) === (parentId ?? null) &&
+      c.name.trim().toLowerCase() === target
+  );
+}

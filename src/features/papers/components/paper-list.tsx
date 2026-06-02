@@ -272,7 +272,7 @@ export function PaperList({
       {/* R222: toolbar — sort + density toggle */}
       <div className='flex items-center justify-between gap-2'>
         <p className='text-xs text-muted-foreground'>
-          {hasFilter
+          {hasFilter || collectionFilter !== null
             ? t('filterShowing', { shown: filteredPapers.length, total: papers.length })
             : t('paperCount', { count: papers.length })}
         </p>

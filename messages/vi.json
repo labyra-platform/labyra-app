@@ -552,14 +552,18 @@
     "save": "Lưu",
     "cancel": "Hủy",
     "deleteTitle": "Xóa bộ sưu tập này?",
-    "deleteDescription": "Bộ sưu tập con sẽ được đưa ra ngoài cùng. Papers KHÔNG bị xóa — chỉ gỡ khỏi bộ sưu tập này.",
+    "deleteDescription": "Bộ sưu tập con được nâng lên một cấp. Papers KHÔNG bị xóa — papers trong bộ sưu tập con bị xóa sẽ vào nhóm \"Chưa phân loại\" của bộ sưu tập cha.",
     "empty": "Chưa có bộ sưu tập",
     "loading": "Đang tải…",
     "renameTitle": "Đổi tên bộ sưu tập",
     "createTitle": "Bộ sưu tập mới",
     "addToCollection": "Thêm vào bộ sưu tập",
     "addedToast": "Đã thêm vào {name}",
-    "addFailed": "Không thêm được vào bộ sưu tập"
+    "addFailed": "Không thêm được vào bộ sưu tập",
+    "duplicateName": "Đã có collection cùng tên ở cấp này.",
+    "deleteFailed": "Không xóa được bộ sưu tập.",
+    "saveFailed": "Không lưu được bộ sưu tập.",
+    "moveFailed": "Không di chuyển được bộ sưu tập."
   },
   "materials": {
     "title": "Vật liệu",

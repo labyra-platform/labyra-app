@@ -14,6 +14,7 @@ import {
   arrayUnion,
   collection as fsCollection,
   doc,
+  getDoc,
   getDocs,
   query,
   setDoc,
@@ -27,6 +28,7 @@ import type { PaperCollection } from '@/types/collections';
 
 const COLLECTION = 'collections';
 const SCHEMA_VERSION = 1;
+const UNFILED_BUCKET_NAME = 'Chưa phân loại';
 
 function requireUid(): string {
   const uid = getFirebaseAuth().currentUser?.uid;
@@ -142,20 +144,85 @@ export async function moveCollection(
 }
 
 /**
- * Delete a collection. Direct children are promoted to root (parentId = null)
- * so nothing is orphaned and no papers are touched (grouping only).
+ * Delete a collection. Owned children are re-parented UP ONE LEVEL (to the
+ * deleted node's own parent; root for a top-level delete). When a SUBcollection
+ * with papers is deleted, those papers move into the parent's auto-managed
+ * "Chưa phân loại" (unfiled) bucket subcollection (found-or-created) so nothing
+ * is orphaned. Deleting a top-level collection (or the bucket itself) leaves its
+ * papers globally unfiled. Papers are never deleted (grouping only).
+ *
+ * NOTE: every internal query is constrained by `createdBy == owner` — Firestore
+ * rules reject a query that is not provably owner-scoped, which previously made
+ * delete silently fail.
  */
 export async function deleteCollection(tenantId: string, collectionId: string): Promise<void> {
   const db = getFirebaseFirestore();
-  requireUid();
-  const children = await getDocs(
-    query(fsCollection(db, colPath(tenantId)), where('parentId', '==', collectionId))
+  const owner = requireUid();
+
+  const targetSnap = await getDoc(doc(db, `${colPath(tenantId)}/${collectionId}`));
+  if (!targetSnap.exists()) return;
+  const target = targetSnap.data() as PaperCollection;
+  const parentId = target.parentId ?? null;
+
+  const childrenSnap = await getDocs(
+    query(
+      fsCollection(db, colPath(tenantId)),
+      where('createdBy', '==', owner),
+      where('parentId', '==', collectionId)
+    )
   );
+
+  // A subcollection's papers go to the parent's unfiled bucket. Buckets and
+  // top-level collections do not spawn a bucket (papers just become unfiled).
+  const needsBucket = parentId !== null && target.paperIds.length > 0 && !target.isUnfiledBucket;
+  let bucketId: string | null = null;
+  if (needsBucket) {
+    const siblingsSnap = await getDocs(
+      query(
+        fsCollection(db, colPath(tenantId)),
+        where('createdBy', '==', owner),
+        where('parentId', '==', parentId)
+      )
+    );
+    bucketId =
+      siblingsSnap.docs
+        .map((d) => d.data() as PaperCollection)
+        .find((c) => c.isUnfiledBucket && c.id !== collectionId)?.id ?? null;
+  }
+
   const batch = writeBatch(db);
   const now = Date.now();
-  for (const child of children.docs) {
-    batch.update(child.ref, { parentId: null, updatedAt: now });
+
+  for (const child of childrenSnap.docs) {
+    batch.update(child.ref, { parentId, updatedAt: now });
   }
+
+  if (needsBucket) {
+    if (bucketId) {
+      batch.update(doc(db, `${colPath(tenantId)}/${bucketId}`), {
+        paperIds: arrayUnion(...target.paperIds),
+        updatedAt: now
+      });
+    } else {
+      const bucketRef = doc(fsCollection(db, colPath(tenantId)));
+      const bucket: PaperCollection = {
+        id: bucketRef.id,
+        tenantId,
+        schemaVersion: SCHEMA_VERSION,
+        createdBy: owner,
+        createdAt: now,
+        updatedBy: owner,
+        updatedAt: now,
+        lifecycleStatus: 'active',
+        name: UNFILED_BUCKET_NAME,
+        paperIds: [...target.paperIds],
+        parentId,
+        isUnfiledBucket: true
+      };
+      batch.set(bucketRef, bucket);
+    }
+  }
+
   batch.delete(doc(db, `${colPath(tenantId)}/${collectionId}`));
   await batch.commit();
 }

@@ -6,6 +6,7 @@ import {
   collectionDepth,
   descendantIds,
   MAX_COLLECTION_DEPTH,
+  siblingNameExists,
   subtreeHeight,
   validateMove,
   wouldCreateCycle,
@@ -98,5 +99,35 @@ describe('validateMove', () => {
   });
   it('does not throw for a valid move', () => {
     expect(() => validateMove(tree, 'c', 'e')).not.toThrow();
+  });
+});
+
+function named(id: string, name: string, parentId: string | null = null): PaperCollection {
+  return { ...mk(id, parentId), name };
+}
+
+describe('siblingNameExists', () => {
+  // root 'a' = "Photocatalysis"; under 'a': "XRD", "Raman", and "Photocatalysis"
+  const list = [
+    named('a', 'Photocatalysis'),
+    named('b', 'XRD', 'a'),
+    named('c', 'Raman', 'a'),
+    named('d', 'Photocatalysis', 'a')
+  ];
+
+  it('detects a duplicate among root siblings (case-insensitive, trimmed)', () => {
+    expect(siblingNameExists(list, null, '  photocatalysis ')).toBe(true);
+  });
+  it('detects a duplicate among children of the same parent', () => {
+    expect(siblingNameExists(list, 'a', 'xrd')).toBe(true);
+  });
+  it('allows the same name under a different parent', () => {
+    expect(siblingNameExists(list, 'b', 'Photocatalysis')).toBe(false);
+  });
+  it('ignores the collection being renamed (excludeId)', () => {
+    expect(siblingNameExists(list, 'a', 'XRD', 'b')).toBe(false);
+  });
+  it('returns false for a blank name', () => {
+    expect(siblingNameExists(list, null, '   ')).toBe(false);
   });
 });

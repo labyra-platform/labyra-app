@@ -552,14 +552,18 @@
     "save": "Save",
     "cancel": "Cancel",
     "deleteTitle": "Delete this collection?",
-    "deleteDescription": "Subcollections are moved to the top level. Papers are not deleted — only removed from this collection.",
+    "deleteDescription": "Subcollections move up one level. Papers are never deleted — those in a deleted subcollection move to an \"Unfiled\" group under its parent.",
     "empty": "No collections yet",
     "loading": "Loading…",
     "renameTitle": "Rename collection",
     "createTitle": "New collection",
     "addToCollection": "Add to collection",
     "addedToast": "Added to {name}",
-    "addFailed": "Couldn't add to collection"
+    "addFailed": "Couldn't add to collection",
+    "duplicateName": "A collection with that name already exists here.",
+    "deleteFailed": "Couldn't delete the collection.",
+    "saveFailed": "Couldn't save the collection.",
+    "moveFailed": "Couldn't move the collection."
   },
   "materials": {
     "title": "Materials",

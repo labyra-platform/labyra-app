@@ -24,4 +24,9 @@ export interface PaperCollection extends ProvBase {
   color?: string;
   /** Parent collection for nesting; null/undefined = root. */
   parentId?: string | null;
+  /**
+   * Auto-managed bucket holding papers orphaned when a sibling subcollection is
+   * deleted ("Chưa phân loại"). Not user-created; identified by this flag.
+   */
+  isUnfiledBucket?: boolean;
 }

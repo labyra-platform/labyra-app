@@ -20,6 +20,7 @@
  */
 import {
   Background,
+  ControlButton,
   Controls,
   Handle,
   Panel,
@@ -35,13 +36,16 @@ import {
 import '@xyflow/react/dist/style.css';
 import {
   IconChartHistogram,
+  IconChevronDown,
   IconDownload,
+  IconFileText,
   IconLayoutColumns,
   IconMaximize,
   IconMinimize,
   IconPlus,
   IconRefresh,
   IconSparkles,
+  IconViewfinder,
   IconX
 } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -65,6 +69,7 @@ import type {
   ManuscriptSection,
   ManuscriptSectionType
 } from '@/features/manuscript/types';
+import { useManuscripts } from '@/features/manuscript/use-manuscripts';
 import { useCollections } from '@/features/papers/collections/use-collections';
 import {
   buildBibtex,
@@ -78,6 +83,7 @@ import { useTenantId } from '@/lib/auth';
 import { updateManuscriptMeta, upsertManuscriptSection } from '@/lib/firestore/queries/manuscripts';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { useAllSpectra } from '@/lib/firestore/queries/spectra';
+import { cn } from '@/lib/utils';
 
 const SECTION_LABEL_KEY: Record<ManuscriptSectionType, string> = {
   abstract: 'sectionAbstract',
@@ -385,7 +391,61 @@ function EndNode() {
   );
 }
 
-function AddSectionMenu() {
+function ManuscriptSwitcher({
+  currentId,
+  onSelect
+}: {
+  currentId: string;
+  onSelect: (id: string) => void;
+}) {
+  const t = useTranslations('manuscript');
+  const { manuscripts } = useManuscripts();
+  const current = manuscripts.find((m) => m.id === currentId);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size='sm' variant='outline' className='max-w-52'>
+          <IconFileText className='size-3.5 shrink-0' />
+          <span className='truncate'>{current?.title ?? t('selectOrCreate')}</span>
+          <IconChevronDown className='size-3.5 shrink-0 opacity-60' />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='start' className='max-h-72 w-56 overflow-y-auto'>
+        {manuscripts.map((m) => (
+          <DropdownMenuItem
+            key={m.id}
+            onClick={() => onSelect(m.id)}
+            className={cn(m.id === currentId && 'bg-accent')}
+          >
+            <IconFileText className='size-4 shrink-0 text-muted-foreground' />
+            <span className='truncate'>{m.title}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function FitViewButton() {
+  const { fitView } = useReactFlow();
+  const t = useTranslations('manuscript');
+  return (
+    <ControlButton
+      onClick={() => void fitView({ duration: 300, padding: 0.2 })}
+      title={t('fitView')}
+    >
+      <IconViewfinder />
+    </ControlButton>
+  );
+}
+
+function TopLeftControls({
+  focused,
+  onSelectManuscript
+}: {
+  focused?: boolean;
+  onSelectManuscript?: (id: string) => void;
+}) {
   const t = useTranslations('manuscript');
   const tenantId = useTenantId();
   const queryClient = useQueryClient();
@@ -408,21 +468,26 @@ function AddSectionMenu() {
 
   return (
     <Panel position='top-left'>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size='sm' variant='outline' disabled={available.length === 0}>
-            <IconPlus className='size-3.5' />
-            {t('addSection')}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align='start' className='w-52'>
-          {available.map((type) => (
-            <DropdownMenuItem key={type} onClick={() => void add(type)}>
-              {t(SECTION_LABEL_KEY[type])}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className='flex gap-2'>
+        {focused && onSelectManuscript && (
+          <ManuscriptSwitcher currentId={manuscript.id} onSelect={onSelectManuscript} />
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size='sm' variant='outline' disabled={available.length === 0}>
+              <IconPlus className='size-3.5' />
+              {t('addSection')}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='start' className='w-52'>
+            {available.map((type) => (
+              <DropdownMenuItem key={type} onClick={() => void add(type)}>
+                {t(SECTION_LABEL_KEY[type])}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </Panel>
   );
 }
@@ -481,11 +546,13 @@ const nodeTypes = { start: StartNode, section: SectionNode, end: EndNode };
 function Flow({
   manuscript,
   focused,
-  onToggleFocused
+  onToggleFocused,
+  onSelectManuscript
 }: {
   manuscript: Manuscript;
   focused?: boolean;
   onToggleFocused?: () => void;
+  onSelectManuscript?: (id: string) => void;
 }) {
   const pipeline = pipelineOf(manuscript);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(buildNodes(pipeline));
@@ -506,10 +573,12 @@ function Flow({
       fitView
       fitViewOptions={{ padding: 0.2 }}
     >
-      <AddSectionMenu />
+      <TopLeftControls focused={focused} onSelectManuscript={onSelectManuscript} />
       <CanvasTopRightControls onReset={reset} focused={focused} onToggleFocused={onToggleFocused} />
       <Background />
-      <Controls />
+      <Controls showFitView={false}>
+        <FitViewButton />
+      </Controls>
     </ReactFlow>
   );
 }
@@ -517,11 +586,13 @@ function Flow({
 export function ManuscriptCanvas({
   manuscript,
   focused,
-  onToggleFocused
+  onToggleFocused,
+  onSelectManuscript
 }: {
   manuscript: Manuscript;
   focused?: boolean;
   onToggleFocused?: () => void;
+  onSelectManuscript?: (id: string) => void;
 }) {
   const pipelineKey = pipelineOf(manuscript).join(',');
   return (
@@ -532,6 +603,7 @@ export function ManuscriptCanvas({
           manuscript={manuscript}
           focused={focused}
           onToggleFocused={onToggleFocused}
+          onSelectManuscript={onSelectManuscript}
         />
       </div>
     </CanvasContext.Provider>

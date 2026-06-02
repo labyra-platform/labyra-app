@@ -8,12 +8,37 @@
  *
  * @phase R-aiscience-4
  */
-import { IconFileText, IconPlus } from '@tabler/icons-react';
+import {
+  IconDotsVertical,
+  IconFileText,
+  IconFolder,
+  IconPencil,
+  IconPlus,
+  IconTrash
+} from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger
+} from '@/components/ui/context-menu';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +46,13 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -30,10 +62,15 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { ManuscriptCanvas } from '@/features/manuscript/components/manuscript-canvas';
+import type { Manuscript } from '@/features/manuscript/types';
 import { useManuscripts } from '@/features/manuscript/use-manuscripts';
 import { useCollections } from '@/features/papers/collections/use-collections';
 import { useTenantId } from '@/lib/auth';
-import { createManuscript } from '@/lib/firestore/queries/manuscripts';
+import {
+  createManuscript,
+  deleteManuscript,
+  updateManuscriptMeta
+} from '@/lib/firestore/queries/manuscripts';
 import { cn } from '@/lib/utils';
 
 export function ManuscriptsView() {
@@ -49,6 +86,12 @@ export function ManuscriptsView() {
   const [collectionId, setCollectionId] = useState('');
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<Manuscript | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [moveTarget, setMoveTarget] = useState<Manuscript | null>(null);
+  const [moveCollectionId, setMoveCollectionId] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Manuscript | null>(null);
+  const [rowBusy, setRowBusy] = useState(false);
 
   const selected = manuscripts.find((m) => m.id === selectedId) ?? null;
 
@@ -69,6 +112,58 @@ export function ManuscriptsView() {
       toast.error(t('createFailed'));
     } finally {
       setBusy(false);
+    }
+  }
+
+  const paperCount = (cid: string) => collections.find((c) => c.id === cid)?.paperIds.length ?? 0;
+
+  async function refreshList() {
+    await queryClient.invalidateQueries({
+      queryKey: ['tenant-collection', tenantId, 'manuscripts']
+    });
+  }
+
+  async function doRename() {
+    const next = renameValue.trim();
+    if (!tenantId || !renameTarget || !next) return;
+    setRowBusy(true);
+    try {
+      await updateManuscriptMeta(tenantId, renameTarget.id, { title: next });
+      await refreshList();
+      setRenameTarget(null);
+    } catch {
+      toast.error(t('saveFailed'));
+    } finally {
+      setRowBusy(false);
+    }
+  }
+
+  async function doMove() {
+    if (!tenantId || !moveTarget || !moveCollectionId) return;
+    setRowBusy(true);
+    try {
+      await updateManuscriptMeta(tenantId, moveTarget.id, { collectionId: moveCollectionId });
+      await refreshList();
+      setMoveTarget(null);
+    } catch {
+      toast.error(t('saveFailed'));
+    } finally {
+      setRowBusy(false);
+    }
+  }
+
+  async function doDelete() {
+    if (!tenantId || !deleteTarget) return;
+    setRowBusy(true);
+    try {
+      await deleteManuscript(tenantId, deleteTarget.id);
+      if (selectedId === deleteTarget.id) setSelectedId(null);
+      await refreshList();
+      setDeleteTarget(null);
+    } catch {
+      toast.error(t('deleteFailed'));
+    } finally {
+      setRowBusy(false);
     }
   }
 
@@ -94,18 +189,22 @@ export function ManuscriptsView() {
         ) : (
           <div className='space-y-px'>
             {manuscripts.map((m) => (
-              <button
+              <ManuscriptRow
                 key={m.id}
-                type='button'
-                onClick={() => setSelectedId(m.id)}
-                className={cn(
-                  'flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent',
-                  selectedId === m.id && 'bg-accent font-medium'
-                )}
-              >
-                <IconFileText className='size-4 shrink-0 text-muted-foreground' />
-                <span className='truncate'>{m.title}</span>
-              </button>
+                m={m}
+                paperCount={paperCount(m.collectionId)}
+                selected={selectedId === m.id}
+                onSelect={() => setSelectedId(m.id)}
+                onRename={() => {
+                  setRenameValue(m.title);
+                  setRenameTarget(m);
+                }}
+                onChangeCollection={() => {
+                  setMoveCollectionId(m.collectionId);
+                  setMoveTarget(m);
+                }}
+                onDelete={() => setDeleteTarget(m)}
+              />
             ))}
           </div>
         )}
@@ -117,6 +216,7 @@ export function ManuscriptsView() {
             manuscript={selected}
             focused={focused}
             onToggleFocused={() => setFocused((v) => !v)}
+            onSelectManuscript={setSelectedId}
           />
         ) : (
           <p className='text-sm text-muted-foreground'>{t('selectOrCreate')}</p>
@@ -155,6 +255,173 @@ export function ManuscriptsView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('renameTitle')}</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void doRename();
+            }}
+          />
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setRenameTarget(null)} disabled={rowBusy}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={() => void doRename()} disabled={rowBusy || !renameValue.trim()}>
+              {t('save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!moveTarget} onOpenChange={(o) => !o && setMoveTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('changeCollection')}</DialogTitle>
+          </DialogHeader>
+          <Select value={moveCollectionId} onValueChange={setMoveCollectionId}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('pickCollection')} />
+            </SelectTrigger>
+            <SelectContent>
+              {collections.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setMoveTarget(null)} disabled={rowBusy}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={() => void doMove()} disabled={rowBusy || !moveCollectionId}>
+              {t('save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteConfirm', { title: deleteTarget?.title ?? '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rowBusy}>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void doDelete();
+              }}
+              disabled={rowBusy}
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+            >
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function ManuscriptRow({
+  m,
+  paperCount,
+  selected,
+  onSelect,
+  onRename,
+  onChangeCollection,
+  onDelete
+}: {
+  m: Manuscript;
+  paperCount: number;
+  selected: boolean;
+  onSelect: () => void;
+  onRename: () => void;
+  onChangeCollection: () => void;
+  onDelete: () => void;
+}) {
+  const t = useTranslations('manuscript');
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          className={cn(
+            'group flex w-full items-center gap-1 rounded-md pr-1 pl-2 text-sm hover:bg-accent',
+            selected && 'bg-accent font-medium'
+          )}
+        >
+          <button
+            type='button'
+            onClick={onSelect}
+            className='flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left'
+          >
+            <IconFileText className='size-4 shrink-0 text-muted-foreground' />
+            <span className='truncate'>{m.title}</span>
+          </button>
+          <Badge
+            variant='secondary'
+            className='shrink-0'
+            title={t('papersInCollection', { count: paperCount })}
+          >
+            {paperCount}
+          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type='button'
+                aria-label={t('rename')}
+                className='hover:bg-background shrink-0 rounded p-1 text-muted-foreground opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100'
+              >
+                <IconDotsVertical className='size-4' />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              <DropdownMenuItem onClick={onRename}>
+                <IconPencil className='size-4' />
+                {t('rename')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onChangeCollection}>
+                <IconFolder className='size-4' />
+                {t('changeCollection')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onDelete}
+                className='text-destructive focus:text-destructive'
+              >
+                <IconTrash className='size-4' />
+                {t('delete')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={onRename}>
+          <IconPencil className='size-4' />
+          {t('rename')}
+        </ContextMenuItem>
+        <ContextMenuItem onClick={onChangeCollection}>
+          <IconFolder className='size-4' />
+          {t('changeCollection')}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={onDelete} className='text-destructive focus:text-destructive'>
+          <IconTrash className='size-4' />
+          {t('delete')}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

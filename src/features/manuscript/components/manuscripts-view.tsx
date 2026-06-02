@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { ManuscriptEditor } from '@/features/manuscript/components/manuscript-editor';
+import { ManuscriptCanvas } from '@/features/manuscript/components/manuscript-canvas';
 import { useManuscripts } from '@/features/manuscript/use-manuscripts';
 import { useCollections } from '@/features/papers/collections/use-collections';
 import { useTenantId } from '@/lib/auth';
@@ -112,7 +112,7 @@ export function ManuscriptsView() {
 
       <div className='min-w-0 flex-1'>
         {selected ? (
-          <ManuscriptEditor manuscript={selected} />
+          <ManuscriptCanvas manuscript={selected} />
         ) : (
           <p className='text-sm text-muted-foreground'>{t('selectOrCreate')}</p>
         )}

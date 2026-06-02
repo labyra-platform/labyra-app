@@ -1515,6 +1515,11 @@
     "sectionMaterials": "Materials",
     "sectionMethods": "Methods",
     "sectionResultsDiscussion": "Results & Discussion",
-    "sectionConclusion": "Conclusion"
+    "sectionConclusion": "Conclusion",
+    "nodeStart": "Start",
+    "nodeSource": "References",
+    "nodeTemplate": "Template",
+    "nodeExport": "Export",
+    "nodeExportSoon": "Publisher formatting + export — coming soon"
   }
 }

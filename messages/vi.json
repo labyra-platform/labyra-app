@@ -1515,6 +1515,11 @@
     "sectionMaterials": "Vật liệu",
     "sectionMethods": "Phương pháp",
     "sectionResultsDiscussion": "Kết quả & Thảo luận",
-    "sectionConclusion": "Kết luận"
+    "sectionConclusion": "Kết luận",
+    "nodeStart": "Bắt đầu",
+    "nodeSource": "Tài liệu tham khảo",
+    "nodeTemplate": "Mẫu",
+    "nodeExport": "Xuất bản",
+    "nodeExportSoon": "Định dạng theo nhà xuất bản + export — sắp có"
   }
 }

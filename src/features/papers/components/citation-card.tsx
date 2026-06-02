@@ -13,6 +13,7 @@ import { useParams } from 'next/navigation';
  */
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
+import { cleanText } from '@/lib/utils/normalize-text';
 import type { Citation, CitationConfidence } from '@/types/citations';
 
 interface ConfidenceStyle {
@@ -60,7 +61,7 @@ export function CitationCard({ citation }: { citation: Citation }) {
   // R237cn: show the cited paper's TITLE (truncated), never the DOI. formatSciNode
   // is applied ONLY to a real title (so "TiO2" → "TiO₂"); a raw-text/Untitled
   // fallback is rendered plain so DOI-like digits never get subscripted (#4).
-  const realTitle = citation.targetTitle?.trim();
+  const realTitle = cleanText(citation.targetTitle);
   const displayTitle = realTitle || citation.rawText?.trim() || t('citationUntitled');
   // First author + et al · year · journal — all on one line.
   const meta = [formatAuthors(citation.targetAuthors), citation.targetYear, citation.targetJournal]

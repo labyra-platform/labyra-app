@@ -5,6 +5,7 @@
  */
 import 'server-only';
 import { selectProvider } from '@/lib/ai/providers';
+import { cleanText, cleanTextList } from '@/lib/utils/normalize-text';
 import { extractFirstDoi } from '@/lib/utils/extract-doi';
 
 export interface ExtractedMetadata {
@@ -73,9 +74,11 @@ export async function extractMetadata(firstPageText: string): Promise<ExtractedM
     // DOI. Fall back to the LLM value only when no DOI is found in the text.
     return {
       title:
-        typeof parsed.title === 'string' && parsed.title.length > 0 ? parsed.title : 'Untitled',
+        typeof parsed.title === 'string' && parsed.title.length > 0
+          ? (cleanText(parsed.title) ?? 'Untitled')
+          : 'Untitled',
       authors: Array.isArray(parsed.authors)
-        ? parsed.authors.filter((a) => typeof a === 'string')
+        ? (cleanTextList(parsed.authors.filter((a) => typeof a === 'string')) ?? [])
         : [],
       year: typeof parsed.year === 'number' ? parsed.year : 0,
       doi: extractFirstDoi(firstPageText) ?? llmDoi

@@ -54,6 +54,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { usePapers } from '@/lib/firestore/queries/papers';
 import { cn } from '@/lib/utils';
+import { cleanText } from '@/lib/utils/normalize-text';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   type CollectionPaperFilter,
@@ -382,7 +383,7 @@ function PaperRow({
   // row navigates via router on click, the title is a real <Link> (keyboard +
   // middle-click open-in-new-tab), and DOI is a standalone external <a>.
   const goToDetail = () => {
-    openTab(paper.id, paper.title || undefined);
+    openTab(paper.id, cleanText(paper.title) ?? undefined);
     router.push(href);
   };
 
@@ -416,7 +417,7 @@ function PaperRow({
               onClick={(e) => e.stopPropagation()}
               className='hover:underline focus-visible:underline focus-visible:outline-none'
             >
-              {paper.title ? formatSciNode(paper.title) : t('untitled')}
+              {paper.title ? formatSciNode(cleanText(paper.title) ?? paper.title) : t('untitled')}
             </Link>
             {/* R227c: subtle "open in a tab" marker so the user knows this paper
                 already has a reading session (clicking returns to it). */}

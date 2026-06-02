@@ -8,6 +8,7 @@
  * @see https://docs.openalex.org/
  */
 import 'server-only';
+import { cleanText, cleanTextList } from '@/lib/utils/normalize-text';
 import type { CitationMetadata } from './crossref';
 
 const OPENALEX_API_BASE = 'https://api.openalex.org/works';
@@ -40,7 +41,7 @@ export async function lookupDoiOpenalex(
 
     return {
       doi,
-      title: typeof json.title === 'string' ? json.title : undefined,
+      title: cleanText(typeof json.title === 'string' ? json.title : undefined),
       authors: extractAuthorsOA(json.authorships),
       year: typeof json.publication_year === 'number' ? json.publication_year : undefined,
       journal: extractJournalOA(json.primary_location),
@@ -59,13 +60,13 @@ function extractAuthorsOA(raw: unknown): string[] | undefined {
     const name = (a as { author?: { display_name?: string } })?.author?.display_name;
     if (name) out.push(name);
   }
-  return out.length > 0 ? out : undefined;
+  return cleanTextList(out);
 }
 
 function extractJournalOA(raw: unknown): string | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const src = (raw as { source?: { display_name?: string } }).source;
-  return src?.display_name?.trim();
+  return cleanText(src?.display_name);
 }
 
 /**
@@ -143,12 +144,13 @@ export async function lookupDoiBatch(
         if (!key) continue;
         out.set(key, {
           doi: key,
-          title:
+          title: cleanText(
             typeof work.title === 'string'
               ? work.title
               : typeof work.display_name === 'string'
                 ? work.display_name
-                : undefined,
+                : undefined
+          ),
           authors: extractAuthorsOA(work.authorships),
           year: typeof work.publication_year === 'number' ? work.publication_year : undefined,
           journal: extractJournalOA(work.primary_location),

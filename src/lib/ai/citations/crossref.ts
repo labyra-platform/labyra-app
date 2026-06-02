@@ -8,6 +8,7 @@
  * @see https://api.crossref.org/swagger-ui/index.html
  */
 import 'server-only';
+import { cleanText, cleanTextList } from '@/lib/utils/normalize-text';
 
 const CROSSREF_API_BASE = 'https://api.crossref.org/works';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -80,9 +81,9 @@ export async function lookupDoiCrossref(
 
 function extractTitle(raw: unknown): string | undefined {
   if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === 'string') {
-    return raw[0].trim();
+    return cleanText(raw[0]);
   }
-  if (typeof raw === 'string') return raw.trim();
+  if (typeof raw === 'string') return cleanText(raw);
   return undefined;
 }
 
@@ -98,7 +99,7 @@ function extractAuthors(raw: unknown): string[] | undefined {
       }
     }
   }
-  return out.length > 0 ? out : undefined;
+  return cleanTextList(out);
 }
 
 function extractYear(msg: Record<string, unknown>): number | undefined {
@@ -115,7 +116,7 @@ function extractYear(msg: Record<string, unknown>): number | undefined {
 function extractJournal(msg: Record<string, unknown>): string | undefined {
   const cont = msg['container-title'];
   if (Array.isArray(cont) && cont.length > 0 && typeof cont[0] === 'string') {
-    return cont[0].trim();
+    return cleanText(cont[0]);
   }
   return undefined;
 }

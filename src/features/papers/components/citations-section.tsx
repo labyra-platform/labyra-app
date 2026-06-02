@@ -8,9 +8,11 @@ import {
   IconExternalLink,
   IconLoader2,
   IconPaperclip,
-  IconPencil
+  IconPencil,
+  IconRefresh
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 /**
  * Citations section for paper detail page.
  *
@@ -81,6 +83,34 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
   const [inExpanded, setInExpanded] = useState(false);
   // R237cp: filter by publisher + Open-Access (replaces the old confidence chips)
   const [filter, setFilter] = useState<CitationFilterValue>(() => createDefaultFilter());
+
+  // R177-2: references with a DOI but no resolved title render as "Untitled".
+  const [resolving, setResolving] = useState(false);
+  const unresolvedCount = useMemo(
+    () => outCitations.filter((c) => Boolean(c.targetDoi) && !c.targetTitle?.trim()).length,
+    [outCitations]
+  );
+
+  const resolveTitles = useCallback(async () => {
+    setResolving(true);
+    try {
+      const user = getFirebaseAuth().currentUser;
+      if (!user) throw new Error('no auth');
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/papers/${paperId}/resolve-citations`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('resolve_failed');
+      const data = (await res.json()) as { attempted: number; resolved: number };
+      // Live onSnapshot updates the list; just report the outcome.
+      toast.success(t('resolveDone', { resolved: data.resolved, total: data.attempted }));
+    } catch {
+      toast.error(t('resolveFailed'));
+    } finally {
+      setResolving(false);
+    }
+  }, [paperId, t]);
 
   // R237cn #5: drop the paper's OWN doi from its reference list (a paper does not
   // cite itself — that entry is extraction noise). Then sort in document order.
@@ -160,20 +190,37 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
               </span>
             )}
           </h3>
-          {outFiltered.length > COLLAPSED_LIMIT && (
-            <button
-              type='button'
-              onClick={() => setOutExpanded((v) => !v)}
-              className='inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
-            >
-              {outExpanded ? (
-                <IconChevronDown className='size-3' aria-hidden />
-              ) : (
-                <IconChevronRight className='size-3' aria-hidden />
-              )}
-              {outExpanded ? t('showLess') : t('showAllCitations', { count: outFiltered.length })}
-            </button>
-          )}
+          <div className='flex shrink-0 items-center gap-3'>
+            {unresolvedCount > 0 && !outLoading && (
+              <button
+                type='button'
+                onClick={resolveTitles}
+                disabled={resolving}
+                className='inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50'
+              >
+                {resolving ? (
+                  <IconLoader2 className='size-3 animate-spin' aria-hidden />
+                ) : (
+                  <IconRefresh className='size-3' aria-hidden />
+                )}
+                {resolving ? t('resolving') : t('resolveTitlesCount', { count: unresolvedCount })}
+              </button>
+            )}
+            {outFiltered.length > COLLAPSED_LIMIT && (
+              <button
+                type='button'
+                onClick={() => setOutExpanded((v) => !v)}
+                className='inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
+              >
+                {outExpanded ? (
+                  <IconChevronDown className='size-3' aria-hidden />
+                ) : (
+                  <IconChevronRight className='size-3' aria-hidden />
+                )}
+                {outExpanded ? t('showLess') : t('showAllCitations', { count: outFiltered.length })}
+              </button>
+            )}
+          </div>
         </div>
 
         {outLoading ? (

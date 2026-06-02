@@ -95,3 +95,73 @@ export async function lookupDoi(
   // Fallback to OpenAlex
   return lookupDoiOpenalex(doi, signal);
 }
+
+/** OpenAlex allows up to 50 OR-values in a single `filter=doi:a|b|...` query. */
+const OA_BATCH_SIZE = 50;
+
+function normalizeDoiKey(raw: string): string {
+  return raw.replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '').toLowerCase();
+}
+
+/**
+ * Resolve many DOIs in one shot via OpenAlex's OR-filter (50 per request).
+ *
+ * For N DOIs this is ceil(N/50) HTTP calls instead of N sequential lookups —
+ * e.g. 381 references → 8 calls (~seconds) vs ~76s at 200ms/DOI. OpenAlex-only:
+ * Crossref has no comparable batch-by-DOI endpoint.
+ *
+ * Returns a Map keyed by lowercased bare DOI. DOIs not found in OpenAlex are
+ * simply absent from the map (caller decides what to do).
+ */
+export async function lookupDoiBatch(
+  dois: string[],
+  signal?: AbortSignal
+): Promise<Map<string, CitationMetadata>> {
+  const out = new Map<string, CitationMetadata>();
+  const unique = [...new Set(dois.map(normalizeDoiKey).filter(Boolean))];
+
+  for (let i = 0; i < unique.length; i += OA_BATCH_SIZE) {
+    if (signal?.aborted) break;
+    const chunk = unique.slice(i, i + OA_BATCH_SIZE);
+    const filter = `doi:${chunk.join('|')}`;
+    const url = `${OPENALEX_API_BASE}?filter=${encodeURIComponent(filter)}&per-page=${OA_BATCH_SIZE}&mailto=${encodeURIComponent(POLITE_MAILTO)}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    signal?.addEventListener('abort', () => controller.abort(), { once: true });
+
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal
+      });
+      if (!res.ok) continue; // skip this chunk; others still resolve
+      const json = (await res.json()) as { results?: Record<string, unknown>[] };
+      for (const work of json.results ?? []) {
+        const rawDoi = typeof work.doi === 'string' ? work.doi : '';
+        const key = normalizeDoiKey(rawDoi);
+        if (!key) continue;
+        out.set(key, {
+          doi: key,
+          title:
+            typeof work.title === 'string'
+              ? work.title
+              : typeof work.display_name === 'string'
+                ? work.display_name
+                : undefined,
+          authors: extractAuthorsOA(work.authorships),
+          year: typeof work.publication_year === 'number' ? work.publication_year : undefined,
+          journal: extractJournalOA(work.primary_location),
+          isRetracted: Boolean(work.is_retracted),
+          source: 'openalex'
+        });
+      }
+    } catch {
+      // network/abort on one chunk shouldn't sink the whole batch
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  return out;
+}

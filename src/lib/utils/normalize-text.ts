@@ -18,7 +18,9 @@ const TAG_RE = /<\/?[a-zA-Z][^>]*>/g;
 // em-dash (U+2014) and minus sign (U+2212), which carry meaning in titles and
 // chemical formulae (e.g. "structure–property", "WO3−x").
 const HYPHEN_LIKE_RE = /[\u2010\u2011\u2012\u2043\uFE58\uFE63\uFF0D]/g;
-const ZERO_WIDTH_RE = /[\u00AD\u200B\u200C\u200D\u2060\uFEFF]/g;
+// Alternation (not a character class) — a class containing the zero-width
+// joiner/non-joiner trips eslint/no-misleading-character-class.
+const ZERO_WIDTH_RE = /\u00AD|\u200B|\u200C|\u200D|\u2060|\uFEFF/g;
 const ODD_SPACE_RE = /[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g;
 
 const NAMED_ENTITIES: Record<string, string> = {

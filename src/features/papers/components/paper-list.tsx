@@ -383,6 +383,10 @@ function PaperRow({
   // row navigates via router on click, the title is a real <Link> (keyboard +
   // middle-click open-in-new-tab), and DOI is a standalone external <a>.
   const goToDetail = () => {
+    // The metadata editor (Sheet) is a React child of this row, so its clicks
+    // (and a backdrop click) bubble here through the React tree even though the
+    // DOM is portaled. Don't navigate while it's open.
+    if (editOpen) return;
     openTab(paper.id, cleanText(paper.title) ?? undefined);
     router.push(href);
   };

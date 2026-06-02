@@ -1485,5 +1485,34 @@
       "delete": "Xóa",
       "deleted": "Đã xóa"
     }
+  },
+  "manuscript": {
+    "title": "Bản thảo",
+    "subtitle": "Soạn bản thảo có dẫn nguồn từ dữ liệu & papers của lab",
+    "newManuscript": "Bản thảo mới",
+    "needCollection": "Tạo một collection trước — đó là nguồn của bản thảo.",
+    "loading": "Đang tải…",
+    "empty": "Chưa có bản thảo",
+    "selectOrCreate": "Chọn một bản thảo, hoặc tạo mới.",
+    "titlePlaceholder": "Tiêu đề bản thảo",
+    "pickCollection": "Collection nguồn",
+    "cancel": "Hủy",
+    "create": "Tạo",
+    "createFailed": "Không tạo được bản thảo.",
+    "generate": "Sinh",
+    "regenerate": "Sinh lại",
+    "generating": "Đang sinh…",
+    "notGenerated": "Chưa sinh.",
+    "sectionDone": "Đã soạn section",
+    "generateFailed": "Sinh thất bại.",
+    "groundingWarn": "{count} cảnh báo dẫn nguồn — kiểm tra trước khi tin.",
+    "groundingDetail": "{cites} trích dẫn chưa kiểm chứng, {nums} số chưa kiểm chứng",
+    "citeCount": "{count} trích dẫn",
+    "sectionAbstract": "Tóm tắt",
+    "sectionIntroduction": "Giới thiệu",
+    "sectionMaterials": "Vật liệu",
+    "sectionMethods": "Phương pháp",
+    "sectionResultsDiscussion": "Kết quả & Thảo luận",
+    "sectionConclusion": "Kết luận"
   }
 }

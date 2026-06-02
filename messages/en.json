@@ -1485,5 +1485,34 @@
       "delete": "Delete",
       "deleted": "Fact deleted"
     }
+  },
+  "manuscript": {
+    "title": "Manuscripts",
+    "subtitle": "Draft grounded manuscripts from your lab's data and papers",
+    "newManuscript": "New manuscript",
+    "needCollection": "Create a collection first — it is the manuscript's source.",
+    "loading": "Loading…",
+    "empty": "No manuscripts yet",
+    "selectOrCreate": "Select a manuscript, or create one.",
+    "titlePlaceholder": "Manuscript title",
+    "pickCollection": "Source collection",
+    "cancel": "Cancel",
+    "create": "Create",
+    "createFailed": "Couldn't create the manuscript.",
+    "generate": "Generate",
+    "regenerate": "Regenerate",
+    "generating": "Generating…",
+    "notGenerated": "Not generated yet.",
+    "sectionDone": "Section drafted",
+    "generateFailed": "Generation failed.",
+    "groundingWarn": "{count} grounding warning(s) — review before trusting.",
+    "groundingDetail": "{cites} unverified citation(s), {nums} unverified number(s)",
+    "citeCount": "{count} citation(s)",
+    "sectionAbstract": "Abstract",
+    "sectionIntroduction": "Introduction",
+    "sectionMaterials": "Materials",
+    "sectionMethods": "Methods",
+    "sectionResultsDiscussion": "Results & Discussion",
+    "sectionConclusion": "Conclusion"
   }
 }

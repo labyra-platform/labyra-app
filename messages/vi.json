@@ -40,7 +40,8 @@
       "labResources": "Tài nguyên Lab",
       "ai": "AI",
       "admin": "Quản trị",
-      "superadmin": "Quản trị cao cấp"
+      "superadmin": "Quản trị cao cấp",
+      "aiScience": "AI Science"
     },
     "employee": "Nhân viên",
     "debugAuth": "Debug Auth",
@@ -57,7 +58,8 @@
     "superadminEvals": "Đánh giá chất lượng",
     "superadminDrift": "Sai lệch chi phí",
     "aiPreferences": "Tùy chỉnh AI",
-    "labContext": "Bối cảnh Lab"
+    "labContext": "Bối cảnh Lab",
+    "manuscripts": "Bản thảo"
   },
   "groups": {
     "title": "Nhóm nghiên cứu",

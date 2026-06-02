@@ -40,7 +40,8 @@
       "labResources": "Lab Resources",
       "ai": "AI",
       "admin": "Admin",
-      "superadmin": "Superadmin"
+      "superadmin": "Superadmin",
+      "aiScience": "AI Science"
     },
     "employee": "Employee",
     "debugAuth": "Auth Debug",
@@ -57,7 +58,8 @@
     "superadminEvals": "Quality Evals",
     "superadminDrift": "Cost Drift",
     "aiPreferences": "AI Preferences",
-    "labContext": "Lab Context"
+    "labContext": "Lab Context",
+    "manuscripts": "Manuscripts"
   },
   "groups": {
     "title": "Research Groups",

@@ -178,6 +178,20 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
+    label: 'AI Science',
+    labelKey: 'nav.groups.aiScience',
+    items: [
+      {
+        title: 'Manuscripts',
+        titleKey: 'nav.manuscripts',
+        url: '/dashboard/manuscripts',
+        icon: 'manuscripts',
+        shortcut: ['m', 's'],
+        items: []
+      }
+    ]
+  },
+  {
     label: 'Admin',
     labelKey: 'nav.groups.admin',
     items: [

@@ -102,6 +102,7 @@ import {
   IconUsersGroup,
   IconUserX,
   IconVideo,
+  IconWriting,
   IconX
 } from '@tabler/icons-react';
 
@@ -293,6 +294,7 @@ export const Icons = {
   bookings: IconCalendarEvent,
   members: IconUsers,
   papers: IconFileText,
+  manuscripts: IconWriting,
   references: IconCards,
   aiAssistant: IconSparkles,
   // Superadmin

@@ -58,11 +58,12 @@ export function CitationCard({ citation }: { citation: Citation }) {
   const conf = CONFIDENCE_STYLES[citation.confidence];
   const ConfIcon = conf.icon;
 
-  // R237cn: show the cited paper's TITLE (truncated), never the DOI. formatSciNode
-  // is applied ONLY to a real title (so "TiO2" → "TiO₂"); a raw-text/Untitled
-  // fallback is rendered plain so DOI-like digits never get subscripted (#4).
+  // R237cn: prefer the cited paper's resolved TITLE (formatSciNode only on a real
+  // title so "TiO2"→"TiO₂"). R314: when a title couldn't be resolved, show the DOI
+  // (identifiable, links out) instead of a bare "Untitled" — rendered plain so its
+  // digits never get subscripted. citationUntitled only when neither is present.
   const realTitle = cleanText(citation.targetTitle);
-  const displayTitle = realTitle || citation.rawText?.trim() || t('citationUntitled');
+  const displayTitle = realTitle || citation.targetDoi?.trim() || t('citationUntitled');
   // First author + et al · year · journal — all on one line.
   const meta = [formatAuthors(citation.targetAuthors), citation.targetYear, citation.targetJournal]
     .filter(Boolean)

@@ -99,6 +99,7 @@ export interface SpectrumMetadata {
   zeroShift?: number; // R161-phase-E: 2θ offset correction (°) // user-provided for citation lookup (e.g. 'WO3')
   anode?: string; // X-ray anode for XRD: Cu/Mo/Co/Cr/Fe/Ag (default Cu)
   monochromator?: string; // XRD monochromator: none/ni_filter/graphite/ge111/johansson/si220
+  laserWavelength?: number; // Raman excitation laser wavelength (nm): e.g. 532/633/785/1064
 
   // Type
   spectrumType: SpectrumType;

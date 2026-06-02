@@ -9,8 +9,8 @@
  *   1. `characterization` — one structured fact line per measurement, injected
  *      into the Writer prompt so the Characterization paragraph is grounded in
  *      the lab's own setup (technique · instrument · radiation/excitation).
- *   2. `whitelist` — normalized acquisition numbers (XRD λ in Å) so genuine
- *      instrument settings are not mistaken for fabrications (R276).
+ *   2. `whitelist` — normalized acquisition numbers (XRD λ in Å, Raman excitation
+ *      nm) so genuine instrument settings are not mistaken for fabrications (R276).
  *
  * Scope: the equipment/characterization half of Methods. The procedure half
  * (synthesis steps, temperature/time/atmosphere) is owned by protocol instances
@@ -95,6 +95,10 @@ function characterizationFact(meta: SpectrumMetadata, parsed: SpectrumParsedData
     }
     const mono = monochromatorLabel(meta.monochromator);
     if (mono) parts.push(mono);
+  } else if (type === 'raman') {
+    if (typeof meta.laserWavelength === 'number') {
+      parts.push(`${meta.laserWavelength} nm excitation`);
+    }
   }
 
   const name = techniqueName(type);
@@ -104,10 +108,13 @@ function characterizationFact(meta: SpectrumMetadata, parsed: SpectrumParsedData
 }
 
 /** Acquisition numbers worth whitelisting (so grounding does not flag them). */
-function acquisitionMetrics(parsed: SpectrumParsedData | null): Record<string, number> {
+function acquisitionMetrics(
+  meta: SpectrumMetadata,
+  parsed: SpectrumParsedData | null
+): Record<string, number> {
   const v: Record<string, number> = {};
-  if (!parsed) return v;
-  if (parsed.spectrum_type === 'xrd' && typeof parsed.wavelength_angstrom === 'number') {
+  if (typeof meta.laserWavelength === 'number') v.raman_laser_nm = meta.laserWavelength;
+  if (parsed && parsed.spectrum_type === 'xrd' && typeof parsed.wavelength_angstrom === 'number') {
     v.xrd_lambda_angstrom = parsed.wavelength_angstrom;
   }
   return v;
@@ -133,7 +140,7 @@ export async function loadMethodsContext(
 
     characterization.push(characterizationFact(meta, parsed));
 
-    const values = acquisitionMetrics(parsed);
+    const values = acquisitionMetrics(meta, parsed);
     if (Object.keys(values).length > 0) metrics.push({ measurementId: id, values });
   }
 

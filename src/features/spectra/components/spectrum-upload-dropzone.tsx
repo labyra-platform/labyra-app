@@ -67,6 +67,7 @@ interface UploadItem {
   chemicalFormula: string;
   anode: string;
   monochromator: string;
+  laserWavelength: string;
   profileFunction: string;
   zeroShift: number;
   status: ItemStatus;
@@ -92,8 +93,16 @@ async function uploadOneFile(
   sampleLabel: string | undefined,
   updateStatus: (id: string, status: ItemStatus) => void
 ): Promise<string> {
-  const { file, spectrumType, chemicalFormula, anode, monochromator, profileFunction, zeroShift } =
-    item;
+  const {
+    file,
+    spectrumType,
+    chemicalFormula,
+    anode,
+    monochromator,
+    laserWavelength,
+    profileFunction,
+    zeroShift
+  } = item;
   if (!spectrumType) throw new Error('no_type_selected');
 
   const config = SPECTRA_CONFIG[spectrumType];
@@ -175,6 +184,7 @@ async function uploadOneFile(
       chemicalFormula: chemicalFormula || undefined,
       anode: anode || 'Cu',
       monochromator: monochromator || 'none',
+      laserWavelength: laserWavelength ? Number(laserWavelength) : undefined,
       profileFunction: profileFunction || 'pseudo_voigt',
       zeroShift: zeroShift || 0,
       measuredAt: Date.now()
@@ -240,6 +250,7 @@ export function SpectrumUploadDropzone({
       chemicalFormula: initialDemo.formula,
       anode: initialDemo.anode,
       monochromator: initialDemo.monochromator,
+      laserWavelength: '',
       profileFunction: 'pseudo_voigt',
       zeroShift: 0,
       status: { phase: 'pending' }
@@ -263,6 +274,7 @@ export function SpectrumUploadDropzone({
       chemicalFormula: '',
       anode: 'Cu',
       monochromator: 'none',
+      laserWavelength: '',
       profileFunction: 'pseudo_voigt',
       zeroShift: 0,
       status: { phase: 'pending' }
@@ -296,6 +308,10 @@ export function SpectrumUploadDropzone({
 
   const changeMonochromator = (id: string, monochromator: string) => {
     updateItem(id, { monochromator });
+  };
+
+  const changeLaserWavelength = (id: string, laserWavelength: string) => {
+    updateItem(id, { laserWavelength });
   };
 
   const changeProfileFunction = (id: string, profileFunction: string) => {
@@ -381,6 +397,7 @@ export function SpectrumUploadDropzone({
                 chemicalFormula: prefilled.formula,
                 anode: prefilled.anode,
                 monochromator: prefilled.monochromator,
+                laserWavelength: '',
                 profileFunction: 'pseudo_voigt',
                 zeroShift: 0,
                 status: { phase: 'pending' as const }
@@ -421,6 +438,7 @@ export function SpectrumUploadDropzone({
                   onFormulaChange={(f) => changeFormula(item.id, f)}
                   onAnodeChange={(a) => changeAnode(item.id, a)}
                   onMonochromatorChange={(m) => changeMonochromator(item.id, m)}
+                  onLaserWavelengthChange={(l) => changeLaserWavelength(item.id, l)}
                   onProfileFunctionChange={(p) => changeProfileFunction(item.id, p)}
                   onZeroShiftChange={(z) => changeZeroShift(item.id, z)}
                   onRemove={() => removeItem(item.id)}
@@ -466,6 +484,7 @@ interface UploadRowProps {
   onFormulaChange: (formula: string) => void;
   onAnodeChange: (anode: string) => void;
   onMonochromatorChange: (monochromator: string) => void;
+  onLaserWavelengthChange: (laserWavelength: string) => void;
   onProfileFunctionChange: (profile: string) => void;
   onZeroShiftChange: (zeroShift: number) => void;
   onRemove: () => void;
@@ -484,6 +503,7 @@ function UploadRow({
   onFormulaChange,
   onAnodeChange,
   onMonochromatorChange,
+  onLaserWavelengthChange,
   onProfileFunctionChange,
   onZeroShiftChange,
   onRemove
@@ -492,6 +512,7 @@ function UploadRow({
   const chemicalFormula = item.chemicalFormula;
   const anode = item.anode;
   const monochromator = item.monochromator;
+  const laserWavelength = item.laserWavelength;
   const profileFunction = item.profileFunction;
   const zeroShift = item.zeroShift;
   const spectrumType = item.spectrumType;
@@ -611,6 +632,18 @@ function UploadRow({
               title='Zero shift correction (°)'
             />
           </>
+        )}
+        {spectrumType === 'raman' && (
+          <Input
+            type='number'
+            step='1'
+            value={laserWavelength}
+            onChange={(e) => onLaserWavelengthChange(e.target.value)}
+            disabled={!canEdit || disabled}
+            className='w-24 text-xs'
+            placeholder='λ (nm)'
+            title='Excitation laser wavelength (nm)'
+          />
         )}
       </div>
 

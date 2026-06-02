@@ -1520,6 +1520,7 @@
     "nodeSource": "Tài liệu tham khảo",
     "nodeTemplate": "Mẫu",
     "nodeExport": "Xuất bản",
-    "nodeExportSoon": "Định dạng theo nhà xuất bản + export — sắp có"
+    "nodeExportSoon": "Định dạng theo nhà xuất bản + export — sắp có",
+    "resetView": "Đặt lại bố cục"
   }
 }

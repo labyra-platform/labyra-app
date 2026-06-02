@@ -21,15 +21,17 @@ import {
   Controls,
   Handle,
   Position,
+  Panel,
   ReactFlow,
   useEdgesState,
   useNodesState,
+  useReactFlow,
   type Edge,
   type Node,
   type NodeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { IconRefresh, IconSparkles } from '@tabler/icons-react';
+import { IconLayoutColumns, IconRefresh, IconSparkles } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { createContext, useContext, useState } from 'react';
@@ -56,7 +58,7 @@ const SECTION_LABEL_KEY: Record<ManuscriptSectionType, string> = {
   conclusion: 'sectionConclusion'
 };
 
-const NODE_GAP_Y = 150;
+const NODE_GAP_X = 300;
 
 const CanvasContext = createContext<Manuscript | null>(null);
 function useManuscript(): Manuscript {
@@ -79,7 +81,7 @@ function StartNode() {
       <p className='truncate text-xs text-muted-foreground'>
         {t('nodeTemplate')}: {manuscript.journalProfileId}
       </p>
-      <Handle type='source' position={Position.Bottom} />
+      <Handle type='source' position={Position.Right} />
     </div>
   );
 }
@@ -139,7 +141,7 @@ function SectionNode({ data }: NodeProps) {
 
   return (
     <div className='w-64 rounded-lg border bg-card p-3 shadow-sm'>
-      <Handle type='target' position={Position.Top} />
+      <Handle type='target' position={Position.Left} />
       <div className='mb-1.5 flex items-center justify-between gap-2'>
         <span className='truncate text-sm font-medium'>{t(SECTION_LABEL_KEY[sectionType])}</span>
         {section && (
@@ -161,7 +163,7 @@ function SectionNode({ data }: NodeProps) {
         {section ? <IconRefresh className='size-3.5' /> : <IconSparkles className='size-3.5' />}
         {section ? t('regenerate') : t('generate')}
       </Button>
-      <Handle type='source' position={Position.Bottom} />
+      <Handle type='source' position={Position.Right} />
     </div>
   );
 }
@@ -170,10 +172,32 @@ function EndNode() {
   const t = useTranslations('manuscript');
   return (
     <div className='w-64 rounded-lg border-2 border-dashed p-3 text-center'>
-      <Handle type='target' position={Position.Top} />
+      <Handle type='target' position={Position.Left} />
       <div className='text-sm font-semibold'>{t('nodeExport')}</div>
       <p className='mt-1 text-xs text-muted-foreground'>{t('nodeExportSoon')}</p>
     </div>
+  );
+}
+
+function ResetViewButton({ onReset }: { onReset: () => void }) {
+  const { fitView } = useReactFlow();
+  const t = useTranslations('manuscript');
+  return (
+    <Panel position='top-right'>
+      <Button
+        size='sm'
+        variant='outline'
+        onClick={() => {
+          onReset();
+          requestAnimationFrame(() => {
+            void fitView({ duration: 300 });
+          });
+        }}
+      >
+        <IconLayoutColumns className='size-3.5' />
+        {t('resetView')}
+      </Button>
+    </Panel>
   );
 }
 
@@ -185,14 +209,14 @@ const INITIAL_NODES: Node[] = [
     (type, i): Node => ({
       id: type,
       type: 'section',
-      position: { x: 0, y: (i + 1) * NODE_GAP_Y },
+      position: { x: (i + 1) * NODE_GAP_X, y: 0 },
       data: { sectionType: type }
     })
   ),
   {
     id: 'end',
     type: 'end',
-    position: { x: 0, y: (IMRAD_ORDER.length + 1) * NODE_GAP_Y },
+    position: { x: (IMRAD_ORDER.length + 1) * NODE_GAP_X, y: 0 },
     data: {}
   }
 ];
@@ -213,7 +237,7 @@ function buildPipelineEdges(): Edge[] {
 const INITIAL_EDGES: Edge[] = buildPipelineEdges();
 
 export function ManuscriptCanvas({ manuscript }: { manuscript: Manuscript }) {
-  const [nodes, , onNodesChange] = useNodesState(INITIAL_NODES);
+  const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
   const [edges, , onEdgesChange] = useEdgesState(INITIAL_EDGES);
 
   return (
@@ -227,6 +251,7 @@ export function ManuscriptCanvas({ manuscript }: { manuscript: Manuscript }) {
           nodeTypes={nodeTypes}
           fitView
         >
+          <ResetViewButton onReset={() => setNodes(INITIAL_NODES)} />
           <Background />
           <Controls />
         </ReactFlow>

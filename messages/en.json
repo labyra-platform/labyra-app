@@ -1520,6 +1520,7 @@
     "nodeSource": "References",
     "nodeTemplate": "Template",
     "nodeExport": "Export",
-    "nodeExportSoon": "Publisher formatting + export — coming soon"
+    "nodeExportSoon": "Publisher formatting + export — coming soon",
+    "resetView": "Reset layout"
   }
 }

@@ -62,6 +62,13 @@ export interface WriterOptions {
   onSearchComplete?: (paperCount: number) => void;
   /** R-aiscience: scope RAG to a collection (manuscript curated source). */
   collectionId?: string | null;
+  /**
+   * R-aiscience-intro: topic-driven retrieval query, decoupled from the
+   * generation instruction. When set, RAG searches on THIS (e.g. the paper's
+   * topic + "background, prior work, gaps") instead of the literal "Draft the
+   * … section" instruction, which retrieves field literature far better.
+   */
+  retrievalQuery?: string;
   /** R-aiscience: prior-section running summary + glossary, for coherence. */
   priorContext?: string;
 }

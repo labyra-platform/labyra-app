@@ -36,19 +36,32 @@ function emptyCost(): AiCostBreakdown {
 }
 
 export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
-  const { userMessage, tenantId, onTextDelta, onSearchComplete, collectionId, priorContext } = opts;
+  const {
+    userMessage,
+    tenantId,
+    onTextDelta,
+    onSearchComplete,
+    collectionId,
+    priorContext,
+    retrievalQuery
+  } = opts;
   const startedAt = Date.now();
 
   // 1. Determine section
   const sectionType: SectionType = opts.sectionType ?? 'auto';
   const section = sectionType === 'auto' ? detectSection(userMessage) : sectionType;
 
-  // 2. RAG search papers
+  // 2. RAG search papers. The Introduction needs broad field coverage, so it
+  // retrieves more candidates and reranks to a larger set; other sections keep
+  // the default. The query is the topic-driven retrievalQuery when provided.
+  const isIntro = section === 'introduction';
+  const vectorTopK = isIntro ? 20 : TOP_K_PAPERS;
+  const topN = isIntro ? 14 : TOP_K_PAPERS;
   const searchResult = await searchPapers({
     tenantId,
-    query: userMessage,
-    vectorTopK: TOP_K_PAPERS,
-    topN: TOP_K_PAPERS,
+    query: retrievalQuery?.trim() || userMessage,
+    vectorTopK,
+    topN,
     collectionId
   });
 
@@ -68,7 +81,7 @@ export async function runWriter(opts: WriterOptions): Promise<WriterResult> {
   // nothing. Group chunks by paper first so each paper gets exactly one key.
   const orderedPaperIds: string[] = [];
   const chunksByPaper = new Map<string, { chunkId: string; text: string }[]>();
-  for (const p of papers.slice(0, TOP_K_PAPERS)) {
+  for (const p of papers.slice(0, topN)) {
     const paperId = String(p.paperId ?? '');
     if (!paperId) continue;
     if (!chunksByPaper.has(paperId)) {

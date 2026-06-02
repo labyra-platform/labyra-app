@@ -49,10 +49,25 @@ const SECTION_GUIDANCE: Record<Exclude<SectionType, 'auto'>, string> = {
 - Length: 800-2000 words typical.`,
 
   introduction: `Section: INTRODUCTION
-- Present tense for context, past for prior work.
-- Funnel: broad context → specific gap → this work's contribution.
-- Last paragraph: explicit objective + brief approach.
-- Length: 400-800 words typical.`,
+Write a literature-grounded introduction using the CARS "Create A Research Space"
+structure. 3-5 paragraphs, 450-800 words.
+
+MOVE 1 — Establish the territory: open with the broad context and why the
+problem matters. Ground every claim about the field in a cited source.
+MOVE 2 — Establish the niche (the gap): narrow to the specific sub-problem.
+Review what prior work has done AND, critically, what it has NOT resolved —
+state the gap explicitly (e.g. "however, … remains poorly understood"; "yet few
+studies have …"). Every statement about prior work MUST cite a source.
+MOVE 3 — Occupy the niche (this work): in the final paragraph state what THIS
+work does to address the gap, the approach in brief, and the explicit
+objectives. No citation needed for your own contribution.
+
+- Present tense for established facts/context; past tense for what specific
+  prior studies did.
+- Group multiple supporting sources together: [a2023][b2024].
+- The funnel must visibly narrow: broad field → specific gap → this work.
+- Do NOT cite any source you were not given. If the provided sources do not
+  support a claim, soften or drop it — never invent a citation to fill a gap.`,
 
   abstract: `Section: ABSTRACT
 - ONE paragraph, ~150-300 words, self-contained. No citations, no figure references.

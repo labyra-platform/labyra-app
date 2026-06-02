@@ -57,6 +57,29 @@ function buildSectionInstruction(
   return lines.join('\n');
 }
 
+/**
+ * Topic-driven RAG query — decoupled from the generation instruction. The
+ * Introduction must retrieve FIELD literature (background, prior approaches,
+ * gaps), so we query the topic (title + seed idea), not the literal "Draft the
+ * introduction…" instruction. Other sections retrieve fine from their
+ * instruction (which already carries the lab's measurement summaries), so they
+ * are left unchanged.
+ */
+function buildRetrievalQuery(
+  type: ManuscriptSectionType,
+  title: string,
+  instruction?: string
+): string | undefined {
+  if (type !== 'introduction') return undefined;
+  return [
+    title.trim(),
+    instruction?.trim(),
+    'background, prior approaches, limitations, motivation'
+  ]
+    .filter(Boolean)
+    .join('. ');
+}
+
 export async function generateManuscriptSection(
   input: GenerateSectionInput
 ): Promise<WriterResult> {
@@ -83,6 +106,7 @@ export async function generateManuscriptSection(
     ),
     sectionType: manuscriptToWriterSection(sectionType),
     collectionId: manuscript.collectionId || undefined,
+    retrievalQuery: buildRetrievalQuery(sectionType, manuscript.title, instruction),
     priorContext: priorContext || undefined,
     onTextDelta
   });

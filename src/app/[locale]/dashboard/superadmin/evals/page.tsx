@@ -4,7 +4,9 @@
  * @phase R172-6
  */
 import * as React from 'react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth/use-auth';
 
 interface EvalSummary {
@@ -27,6 +29,120 @@ interface FlaggedConv {
 interface EvalsResponse {
   summaries: EvalSummary[];
   flaggedConversations: FlaggedConv[];
+}
+
+interface RetrievalMetrics {
+  n: number;
+  chunkFound: number;
+  paperFound: number;
+  chunkRecall: Record<string, number>;
+  paperRecall: Record<string, number>;
+  chunkMRR: number;
+  paperMRR: number;
+  label?: string;
+  runId?: string;
+}
+
+/** On-demand retrieval golden-set eval (Contextual Retrieval A/B). */
+function RetrievalEvalCard() {
+  const { user } = useAuth();
+  const [tenantId, setTenantId] = React.useState('tenant-dev-001');
+  const [label, setLabel] = React.useState('off');
+  const [running, setRunning] = React.useState(false);
+  const [result, setResult] = React.useState<RetrievalMetrics | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function runEval() {
+    if (!user) return;
+    setRunning(true);
+    setError(null);
+    setResult(null);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/superadmin/evals/retrieval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tenantId, label })
+      });
+      const json = (await res.json()) as RetrievalMetrics & { error?: string };
+      if (!res.ok || json.error) setError(json.error ?? `HTTP ${res.status}`);
+      else setResult(json);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'request_failed');
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Retrieval eval — Contextual Retrieval A/B</CardTitle>
+      </CardHeader>
+      <CardContent className='space-y-4'>
+        <div className='flex flex-wrap items-end gap-3'>
+          <div className='text-xs'>
+            <span className='mb-1 block text-muted-foreground'>Tenant</span>
+            <Input
+              value={tenantId}
+              onChange={(e) => setTenantId(e.target.value)}
+              className='h-8 w-56'
+            />
+          </div>
+          <div className='text-xs'>
+            <span className='mb-1 block text-muted-foreground'>Label (e.g. off / on)</span>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} className='h-8 w-32' />
+          </div>
+          <Button onClick={() => void runEval()} disabled={running || !user} className='h-8'>
+            {running ? 'Running ~50 queries…' : 'Run eval'}
+          </Button>
+        </div>
+
+        {error && <p className='text-destructive text-sm'>Error: {error}</p>}
+
+        {result && (
+          <div className='space-y-2 text-xs'>
+            <div className='text-muted-foreground'>
+              run <span className='font-mono'>{result.label}</span> · n={result.n} · chunk found{' '}
+              {result.chunkFound} · paper found {result.paperFound}
+            </div>
+            <table className='w-full max-w-md'>
+              <thead>
+                <tr className='text-muted-foreground text-left'>
+                  <th className='p-1'>metric</th>
+                  <th className='p-1 text-right'>@5</th>
+                  <th className='p-1 text-right'>@10</th>
+                  <th className='p-1 text-right'>@20</th>
+                  <th className='p-1 text-right'>MRR</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className='border-t'>
+                  <td className='p-1'>chunk recall</td>
+                  <td className='p-1 text-right font-mono'>{result.chunkRecall['@5']}</td>
+                  <td className='p-1 text-right font-mono'>{result.chunkRecall['@10']}</td>
+                  <td className='p-1 text-right font-mono'>{result.chunkRecall['@20']}</td>
+                  <td className='p-1 text-right font-mono'>{result.chunkMRR}</td>
+                </tr>
+                <tr className='border-t'>
+                  <td className='p-1'>paper recall</td>
+                  <td className='p-1 text-right font-mono'>{result.paperRecall['@5']}</td>
+                  <td className='p-1 text-right font-mono'>{result.paperRecall['@10']}</td>
+                  <td className='p-1 text-right font-mono'>{result.paperRecall['@20']}</td>
+                  <td className='p-1 text-right font-mono'>{result.paperMRR}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className='text-muted-foreground'>
+              Saved as run <span className='font-mono'>{result.runId}</span>. After enabling
+              enrichment + re-indexing, run again with label <span className='font-mono'>on</span>{' '}
+              to compare.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function EvalsPage() {
@@ -52,6 +168,8 @@ export default function EvalsPage() {
   return (
     <div className='space-y-6 p-6'>
       <h1 className='text-2xl font-bold'>Quality Evaluation (Ragas)</h1>
+
+      <RetrievalEvalCard />
 
       <Card>
         <CardHeader>

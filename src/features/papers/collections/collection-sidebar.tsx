@@ -77,6 +77,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
   const { collections, tree, isLoading } = useCollections();
 
   const [edit, setEdit] = useState<EditState | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -84,6 +85,25 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
     return queryClient.invalidateQueries({
       queryKey: ['tenant-collection', tenantId, 'collections']
     });
+  }
+
+  // Inline rename (R317): edit the name in the row itself, not a modal.
+  async function submitRename(id: string, rawName: string) {
+    setRenamingId(null);
+    const name = rawName.trim();
+    const current = collections.find((c) => c.id === id);
+    if (!tenantId || !current || !name || name === current.name) return;
+    const parentId = current.parentId ?? null;
+    if (siblingNameExists(collections, parentId, name, id)) {
+      toast.error(t('duplicateName'));
+      return;
+    }
+    try {
+      await updateCollectionMeta(tenantId, id, { name });
+      await refresh();
+    } catch {
+      toast.error(t('saveFailed'));
+    }
   }
 
   async function submitEdit() {
@@ -236,7 +256,10 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
                 selection={selection}
                 onSelect={onSelect}
                 onCreateChild={(parentId) => setEdit({ mode: 'create', parentId, name: '' })}
-                onRename={(id, currentName) => setEdit({ mode: 'rename', id, name: currentName })}
+                onRename={(id) => setRenamingId(id)}
+                renamingId={renamingId}
+                onRenameCommit={submitRename}
+                onRenameCancel={() => setRenamingId(null)}
                 onDelete={(id, name) => setDeleteTarget({ id, name })}
                 onMoveToRoot={handleMoveToRoot}
                 onDropPaper={handleDropPaper}

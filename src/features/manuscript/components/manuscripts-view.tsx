@@ -18,7 +18,7 @@ import {
 } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -86,8 +86,7 @@ export function ManuscriptsView() {
   const [collectionId, setCollectionId] = useState('');
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [renameTarget, setRenameTarget] = useState<Manuscript | null>(null);
-  const [renameValue, setRenameValue] = useState('');
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const [moveTarget, setMoveTarget] = useState<Manuscript | null>(null);
   const [moveCollectionId, setMoveCollectionId] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Manuscript | null>(null);
@@ -123,18 +122,16 @@ export function ManuscriptsView() {
     });
   }
 
-  async function doRename() {
-    const next = renameValue.trim();
-    if (!tenantId || !renameTarget || !next) return;
-    setRowBusy(true);
+  async function submitManuscriptRename(id: string, rawName: string) {
+    setRenamingId(null);
+    const name = rawName.trim();
+    const current = manuscripts.find((mm) => mm.id === id);
+    if (!tenantId || !current || !name || name === current.title) return;
     try {
-      await updateManuscriptMeta(tenantId, renameTarget.id, { title: next });
+      await updateManuscriptMeta(tenantId, id, { title: name });
       await refreshList();
-      setRenameTarget(null);
     } catch {
       toast.error(t('saveFailed'));
-    } finally {
-      setRowBusy(false);
     }
   }
 
@@ -195,10 +192,10 @@ export function ManuscriptsView() {
                 paperCount={paperCount(m.collectionId)}
                 selected={selectedId === m.id}
                 onSelect={() => setSelectedId(m.id)}
-                onRename={() => {
-                  setRenameValue(m.title);
-                  setRenameTarget(m);
-                }}
+                onRename={() => setRenamingId(m.id)}
+                renaming={renamingId === m.id}
+                onRenameCommit={(name) => void submitManuscriptRename(m.id, name)}
+                onRenameCancel={() => setRenamingId(null)}
                 onChangeCollection={() => {
                   setMoveCollectionId(m.collectionId);
                   setMoveTarget(m);
@@ -251,29 +248,6 @@ export function ManuscriptsView() {
             </Button>
             <Button onClick={() => void create()} disabled={busy || !title.trim() || !collectionId}>
               {t('create')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('renameTitle')}</DialogTitle>
-          </DialogHeader>
-          <Input
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void doRename();
-            }}
-          />
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setRenameTarget(null)} disabled={rowBusy}>
-              {t('cancel')}
-            </Button>
-            <Button onClick={() => void doRename()} disabled={rowBusy || !renameValue.trim()}>
-              {t('save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -340,6 +314,9 @@ function ManuscriptRow({
   selected,
   onSelect,
   onRename,
+  renaming,
+  onRenameCommit,
+  onRenameCancel,
   onChangeCollection,
   onDelete
 }: {
@@ -348,10 +325,14 @@ function ManuscriptRow({
   selected: boolean;
   onSelect: () => void;
   onRename: () => void;
+  renaming: boolean;
+  onRenameCommit: (name: string) => void;
+  onRenameCancel: () => void;
   onChangeCollection: () => void;
   onDelete: () => void;
 }) {
   const t = useTranslations('manuscript');
+  const cancelledRef = useRef(false);
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -361,14 +342,50 @@ function ManuscriptRow({
             selected && 'bg-accent font-medium'
           )}
         >
-          <button
-            type='button'
-            onClick={onSelect}
-            className='flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left'
-          >
-            <IconFileText className='size-4 shrink-0 text-muted-foreground' />
-            <span className='truncate'>{m.title}</span>
-          </button>
+          {renaming ? (
+            <div className='flex min-w-0 flex-1 items-center gap-1.5 py-1.5'>
+              <IconFileText className='size-4 shrink-0 text-muted-foreground' />
+              <input
+                ref={(el) => {
+                  if (el) {
+                    el.focus();
+                    el.select();
+                  }
+                }}
+                defaultValue={m.title}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelledRef.current = true;
+                    e.currentTarget.blur();
+                  }
+                }}
+                onBlur={(e) => {
+                  if (cancelledRef.current) {
+                    cancelledRef.current = false;
+                    onRenameCancel();
+                    return;
+                  }
+                  onRenameCommit(e.currentTarget.value);
+                }}
+                aria-label={t('rename')}
+                className='min-w-0 flex-1 rounded-sm border bg-background px-1 py-0.5 text-sm outline-none ring-1 ring-primary/50'
+              />
+            </div>
+          ) : (
+            <button
+              type='button'
+              onClick={onSelect}
+              className='flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left'
+            >
+              <IconFileText className='size-4 shrink-0 text-muted-foreground' />
+              <span className='truncate'>{m.title}</span>
+            </button>
+          )}
           <Badge
             variant='secondary'
             className='shrink-0'

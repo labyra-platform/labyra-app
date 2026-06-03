@@ -21,7 +21,7 @@ import {
   IconTrash
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -53,6 +53,10 @@ export interface CollectionItemProps {
   onSelect: (selection: CollectionSelection) => void;
   onCreateChild: (parentId: string) => void;
   onRename: (id: string, currentName: string) => void;
+  /** R317 inline rename: which collection is being renamed in-place, + commit/cancel. */
+  renamingId: string | null;
+  onRenameCommit: (id: string, name: string) => void;
+  onRenameCancel: () => void;
   onDelete: (id: string, name: string) => void;
   onMoveToRoot: (id: string) => void;
   /** Drop a dragged paper into this collection. */
@@ -66,6 +70,9 @@ export function CollectionItem({
   onSelect,
   onCreateChild,
   onRename,
+  renamingId,
+  onRenameCommit,
+  onRenameCancel,
   onDelete,
   onMoveToRoot,
   onDropPaper
@@ -73,10 +80,20 @@ export function CollectionItem({
   const t = useTranslations('collections');
   const [open, setOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const cancelledRef = useRef(false);
   const { collection, children } = node;
   const hasChildren = children.length > 0;
   const isSelected = selection.kind === 'collection' && selection.collectionId === collection.id;
   const isNested = collection.parentId != null;
+  const isRenaming = renamingId === collection.id;
+
+  const icon = collection.color ? (
+    <span className='size-3 shrink-0 rounded-full' style={{ backgroundColor: collection.color }} />
+  ) : open && hasChildren ? (
+    <IconFolderOpen size={15} className='shrink-0 text-muted-foreground' />
+  ) : (
+    <IconFolder size={15} className='shrink-0 text-muted-foreground' />
+  );
 
   // The action set, rendered identically in the kebab menu and the right-click
   // context menu. Each renderer wraps these in its own item component.
@@ -150,23 +167,50 @@ export function CollectionItem({
               <span className='size-4 shrink-0' />
             )}
 
-            <button
-              type='button'
-              onClick={() => onSelect({ kind: 'collection', collectionId: collection.id })}
-              className='flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left'
-            >
-              {collection.color ? (
-                <span
-                  className='size-3 shrink-0 rounded-full'
-                  style={{ backgroundColor: collection.color }}
+            {isRenaming ? (
+              <div className='flex min-w-0 flex-1 items-center gap-1.5 py-1.5'>
+                {icon}
+                <input
+                  ref={(el) => {
+                    if (el) {
+                      el.focus();
+                      el.select();
+                    }
+                  }}
+                  defaultValue={collection.name}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      cancelledRef.current = true;
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (cancelledRef.current) {
+                      cancelledRef.current = false;
+                      onRenameCancel();
+                      return;
+                    }
+                    onRenameCommit(collection.id, e.currentTarget.value);
+                  }}
+                  aria-label={t('rename')}
+                  className='min-w-0 flex-1 rounded-sm border bg-background px-1 py-0.5 text-sm outline-none ring-1 ring-primary/50'
                 />
-              ) : open && hasChildren ? (
-                <IconFolderOpen size={15} className='shrink-0 text-muted-foreground' />
-              ) : (
-                <IconFolder size={15} className='shrink-0 text-muted-foreground' />
-              )}
-              <span className='truncate'>{collection.name}</span>
-            </button>
+              </div>
+            ) : (
+              <button
+                type='button'
+                onClick={() => onSelect({ kind: 'collection', collectionId: collection.id })}
+                className='flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left'
+              >
+                {icon}
+                <span className='truncate'>{collection.name}</span>
+              </button>
+            )}
 
             {collection.paperIds.length > 0 && (
               <Badge variant='secondary' className='h-4 px-1 text-[10px] tabular-nums'>
@@ -207,6 +251,9 @@ export function CollectionItem({
               onSelect={onSelect}
               onCreateChild={onCreateChild}
               onRename={onRename}
+              renamingId={renamingId}
+              onRenameCommit={onRenameCommit}
+              onRenameCancel={onRenameCancel}
               onDelete={onDelete}
               onMoveToRoot={onMoveToRoot}
               onDropPaper={onDropPaper}

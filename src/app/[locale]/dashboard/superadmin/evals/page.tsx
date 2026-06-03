@@ -41,6 +41,12 @@ interface RetrievalMetrics {
   paperMRR: number;
   label?: string;
   runId?: string;
+  timing?: {
+    refit: boolean;
+    prepMs: number;
+    totalMs: number;
+    searchLatencyMs: { min: number; median: number; p95: number; max: number };
+  };
 }
 
 /** On-demand retrieval golden-set eval (Contextual Retrieval A/B). */
@@ -48,6 +54,7 @@ function RetrievalEvalCard() {
   const { user } = useAuth();
   const [tenantId, setTenantId] = React.useState('tenant-dev-001');
   const [label, setLabel] = React.useState('off');
+  const [refit, setRefit] = React.useState(false);
   const [running, setRunning] = React.useState(false);
   const [result, setResult] = React.useState<RetrievalMetrics | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -64,7 +71,7 @@ function RetrievalEvalCard() {
       const res = await fetch('/api/superadmin/evals/retrieval', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ tenantId, label })
+        body: JSON.stringify({ tenantId, label, refit })
       });
       const json = (await res.json()) as RetrievalMetrics & { error?: string };
       if (!res.ok || json.error) setError(json.error ?? `HTTP ${res.status}`);
@@ -131,6 +138,16 @@ function RetrievalEvalCard() {
             <span className='mb-1 block text-muted-foreground'>Label (e.g. off / on)</span>
             <Input value={label} onChange={(e) => setLabel(e.target.value)} className='h-8 w-32' />
           </div>
+          <label className='flex items-center gap-1.5 text-xs'>
+            <input
+              type='checkbox'
+              checked={refit}
+              onChange={(e) => setRefit(e.target.checked)}
+              aria-label='refit BM25 before eval'
+              className='h-3.5 w-3.5'
+            />
+            refit BM25
+          </label>
           <Button onClick={() => void runEval()} disabled={running || !user} className='h-8'>
             {running ? 'Running ~50 queries…' : 'Run eval'}
           </Button>
@@ -185,6 +202,14 @@ function RetrievalEvalCard() {
               enrichment + re-indexing, run again with label <span className='font-mono'>on</span>{' '}
               to compare.
             </p>
+            {result.timing && (
+              <p className='text-muted-foreground'>
+                timing — prep {result.timing.prepMs}ms · search median{' '}
+                {result.timing.searchLatencyMs.median}ms · p95 {result.timing.searchLatencyMs.p95}ms
+                · max {result.timing.searchLatencyMs.max}ms · total {result.timing.totalMs}ms
+                {result.timing.refit ? ' (refit)' : ''}
+              </p>
+            )}
           </div>
         )}
       </CardContent>

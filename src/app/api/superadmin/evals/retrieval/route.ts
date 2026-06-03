@@ -19,7 +19,7 @@ import { requireSuperadmin } from '@/lib/auth/superadmin-guard';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { searchPapers } from '@/lib/ai/rag/search';
 import type { SearchHit } from '@/lib/ai/rag/search-types';
-import { refitTenant } from '@/lib/ai/rag/sparse/bm25-manager';
+import { refitTenant, getBM25ForTenant } from '@/lib/ai/rag/sparse/bm25-manager';
 import { mapWithConcurrency } from '@/lib/utils/concurrency';
 
 export const dynamic = 'force-dynamic';
@@ -42,6 +42,13 @@ interface PerQuery {
   /** 1-based rank of the gold chunk in the final ranked hits, null if not in top-N */
   chunkRank: number | null;
   paperRank: number | null;
+  /** searchPapers self-reported latency (ms) */
+  latencyMs: number;
+}
+
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
 }
 
 function firstRank(hits: SearchHit[], match: (h: SearchHit) => boolean): number | null {
@@ -73,14 +80,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   const guard = await requireSuperadmin(request);
   if (!guard.allowed) return guard.response!;
 
-  let body: { tenantId?: string; label?: string };
+  let body: { tenantId?: string; label?: string; refit?: boolean };
   try {
-    body = (await request.json()) as { tenantId?: string; label?: string };
+    body = (await request.json()) as { tenantId?: string; label?: string; refit?: boolean };
   } catch {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
   }
   const tenantId = (body.tenantId ?? '').trim();
   const label = (body.label ?? 'run').trim();
+  const doRefit = body.refit === true;
+  const tStart = Date.now();
   if (!tenantId) return NextResponse.json({ error: 'tenantId_required' }, { status: 400 });
 
   const db = getAdminFirestoreService();
@@ -98,11 +107,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'empty_golden_set' }, { status: 400 });
   }
 
-  // Rebuild BM25 from the current Firestore corpus once, up front: ensures the
-  // sparse side reflects the latest chunks (e.g. contextualText after a
-  // re-index) and warms the cache so the concurrent queries below don't each
-  // trigger a cold-start refit.
-  await refitTenant(tenantId);
+  // BM25 prep. refit=true → full rebuild from Firestore (use after a re-index so
+  // the sparse side picks up contextualText). refit=false → just warm the cache
+  // once (cheap if already warm; one cold build otherwise) so the concurrent
+  // query workers below don't each trigger a cold-start build.
+  const tPrep = Date.now();
+  if (doRefit) await refitTenant(tenantId);
+  else await getBM25ForTenant(tenantId);
+  const prepMs = Date.now() - tPrep;
 
   const perQuery = await mapWithConcurrency<GoldenItem, PerQuery>(
     items,
@@ -121,16 +133,21 @@ export async function POST(request: Request): Promise<NextResponse> {
         return {
           id: it.id,
           chunkRank: firstRank(hits, (h) => `${h.paperId}-${h.chunkIdx}` === goldChunkId),
-          paperRank: firstRank(hits, (h) => h.paperId === it.paperId)
+          paperRank: firstRank(hits, (h) => h.paperId === it.paperId),
+          latencyMs: res.latencyMs
         };
       } catch {
-        return { id: it.id, chunkRank: null, paperRank: null };
+        return { id: it.id, chunkRank: null, paperRank: null, latencyMs: 0 };
       }
     }
   );
 
   const chunkRanks = perQuery.map((p) => p.chunkRank);
   const paperRanks = perQuery.map((p) => p.paperRank);
+  const latencies = perQuery
+    .map((p) => p.latencyMs)
+    .filter((n) => n > 0)
+    .toSorted((a, b) => a - b);
 
   const metrics = {
     n: items.length,
@@ -142,6 +159,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     paperMRR: meanReciprocalRank(paperRanks)
   };
 
+  const timing = {
+    refit: doRefit,
+    prepMs, // BM25 refit (refit=true) or cache warm/cold-build (refit=false)
+    totalMs: Date.now() - tStart,
+    searchLatencyMs: {
+      min: latencies[0] ?? 0,
+      median: percentile(latencies, 0.5),
+      p95: percentile(latencies, 0.95),
+      max: latencies[latencies.length - 1] ?? 0
+    }
+  };
+
   const ranAt = Date.now();
   const runRef = await db.collection(`tenants/${tenantId}/_evalRetrievalRuns`).add({
     label,
@@ -149,8 +178,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     vectorTopK: VECTOR_TOP_K,
     topN: TOP_N,
     metrics,
+    timing,
     perQuery
   });
 
-  return NextResponse.json({ ok: true, runId: runRef.id, label, ranAt, ...metrics });
+  return NextResponse.json({ ok: true, runId: runRef.id, label, ranAt, ...metrics, timing });
 }

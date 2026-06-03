@@ -424,6 +424,14 @@ function TabItem({
   onRemoveFromGroup: (paperId: string) => void;
 }) {
   const otherGroups = groups.filter((g) => g.id !== tab.groupId);
+  const setTitle = usePaperTabsStore((s) => s.setTitle);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(tab.title ?? '');
+  const commitTabRename = () => {
+    const next = draft.trim();
+    if (next) setTitle(tab.paperId, next);
+    setEditing(false);
+  };
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: tab.paperId
   });
@@ -479,9 +487,28 @@ function TabItem({
           style={style}
         >
           <Icons.pdfFile className='size-4 shrink-0' />
-          <span className='min-w-0 flex-1 truncate'>
-            {tab.title ? formatSciNode(tab.title) : t('untitled')}
-          </span>
+          {editing ? (
+            <input
+              ref={(el) => el?.focus()}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onBlur={commitTabRename}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') commitTabRename();
+                else if (e.key === 'Escape') setEditing(false);
+              }}
+              aria-label={t('renameTab')}
+              className='min-w-0 flex-1 rounded-sm bg-background px-1 text-xs text-foreground outline-none ring-1 ring-primary/50'
+            />
+          ) : (
+            <span className='min-w-0 flex-1 truncate'>
+              {tab.title ? formatSciNode(tab.title) : t('untitled')}
+            </span>
+          )}
           <button
             type='button'
             onClick={(e) => onClose(e, tab.paperId)}
@@ -498,6 +525,15 @@ function TabItem({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className='w-52'>
+        <ContextMenuItem
+          onSelect={() => {
+            setDraft(tab.title ?? '');
+            setEditing(true);
+          }}
+        >
+          {t('renameTab')}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => onNewGroup(tab.paperId)}>
           {t('tabGroupAddNew')}
         </ContextMenuItem>

@@ -546,7 +546,11 @@
     "filterPublisherCount": "{count} publishers",
     "showOriginal": "Show original",
     "showTranslation": "Show translation",
-    "conclusion": "Conclusion"
+    "conclusion": "Conclusion",
+    "referencesSubcount": "{count} references",
+    "referencesShownOfTotal": "{shown} of {total}",
+    "renameTab": "Rename",
+    "searchScholar": "Search on Google Scholar"
   },
   "collections": {
     "title": "Collections",

@@ -1,6 +1,12 @@
 'use client';
 import { formatSciNode } from '@/features/spectra/utils/format-units';
-import { IconCheck, IconExternalLink, IconQuestionMark, IconQuote } from '@tabler/icons-react';
+import {
+  IconCheck,
+  IconExternalLink,
+  IconQuestionMark,
+  IconQuote,
+  IconSearch
+} from '@tabler/icons-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 /**
@@ -75,7 +81,17 @@ export function CitationCard({ citation }: { citation: Citation }) {
     ? `/${locale}/dashboard/papers/${citation.targetPaperId}`
     : null;
   const doiHref = citation.targetDoi ? `https://doi.org/${citation.targetDoi}` : null;
-  const openHref = internalHref ?? doiHref;
+  // Non-DOI references (books, conference proceedings, theses) can't deep-link.
+  // Fall back to a Google Scholar title search so EVERY entry stays actionable
+  // instead of a dead end.
+  const scholarHref =
+    !internalHref && !doiHref && realTitle
+      ? `https://scholar.google.com/scholar?q=${encodeURIComponent(realTitle)}`
+      : null;
+  const openHref = internalHref ?? doiHref ?? scholarHref;
+  // A DOI / in-library link opens the paper directly; the Scholar fallback is a
+  // SEARCH, so signal that honestly with a magnifier rather than the link glyph.
+  const OpenIcon = scholarHref ? IconSearch : IconExternalLink;
 
   const card = (
     <div className='flex items-start gap-2'>
@@ -94,7 +110,7 @@ export function CitationCard({ citation }: { citation: Citation }) {
             <ConfIcon className={cn('size-3.5', conf.iconClass)} aria-hidden />
           </span>
           {openHref && (
-            <IconExternalLink
+            <OpenIcon
               className='mt-px size-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover/cite:text-foreground'
               aria-hidden
             />
@@ -130,6 +146,19 @@ export function CitationCard({ citation }: { citation: Citation }) {
         rel='noopener noreferrer'
         className={cn(baseClass, 'hover:border-primary/40 hover:bg-muted/40')}
         title={t('openDoiNewTab')}
+      >
+        {card}
+      </a>
+    );
+  }
+  if (scholarHref) {
+    return (
+      <a
+        href={scholarHref}
+        target='_blank'
+        rel='noopener noreferrer'
+        className={cn(baseClass, 'hover:border-primary/40 hover:bg-muted/40')}
+        title={t('searchScholar')}
       >
         {card}
       </a>

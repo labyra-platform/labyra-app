@@ -546,7 +546,11 @@
     "filterPublisherCount": "{count} nhà xuất bản",
     "showOriginal": "Xem bản gốc",
     "showTranslation": "Xem bản dịch",
-    "conclusion": "Kết luận"
+    "conclusion": "Kết luận",
+    "referencesSubcount": "{count} tài liệu",
+    "referencesShownOfTotal": "{shown} / {total}",
+    "renameTab": "Đổi tên",
+    "searchScholar": "Tìm trên Google Scholar"
   },
   "collections": {
     "title": "Bộ sưu tập",

@@ -32,6 +32,17 @@ const FUSE_OPTIONS: ConstructorParameters<typeof Fuse<Paper>>[1] = {
 export function searchPapers(papers: Paper[], query: string): Paper[] {
   const q = query.trim();
   if (!q) return papers;
+
+  // A single character falls below Fuse's minMatchCharLength: the fuzzy bitap
+  // then returns noise (e.g. typing "c" surfaces papers that merely contain a
+  // 'c' mid-word instead of the ones whose title starts with C). For 1-char
+  // queries do a deterministic title-prefix match — exactly "papers starting
+  // with C". Two+ characters keep the fuzzy multi-field search (typo tolerance).
+  if (q.length < 2) {
+    const lc = q.toLowerCase();
+    return papers.filter((p) => (p.title ?? '').trimStart().toLowerCase().startsWith(lc));
+  }
+
   const fuse = new Fuse(papers, FUSE_OPTIONS);
   return fuse.search(q).map((r) => r.item);
 }

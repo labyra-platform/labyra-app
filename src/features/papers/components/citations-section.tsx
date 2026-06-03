@@ -115,14 +115,28 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
   // R237cn #5: drop the paper's OWN doi from its reference list (a paper does not
   // cite itself — that entry is extraction noise). Then sort in document order.
   const selfDoi = (paper?.doi ?? '').trim().toLowerCase();
-  const outSorted = useMemo(
-    () =>
-      outCitations
-        .filter((c) => !selfDoi || (c.targetDoi ?? '').trim().toLowerCase() !== selfDoi)
-        .slice()
-        .sort(byNumberThenConfidence),
-    [outCitations, selfDoi]
-  );
+  const outSorted = useMemo(() => {
+    const sorted = outCitations
+      .filter((c) => !selfDoi || (c.targetDoi ?? '').trim().toLowerCase() !== selfDoi)
+      .toSorted(byNumberThenConfidence);
+    // De-duplicate: reprocessing with a different extraction source can leave a
+    // SECOND citation row for the same reference (its generated id changed),
+    // which surfaces in the UI as a repeated sequence number. Keep the first
+    // (best-sorted) per DOI, else per title. (Root fix belongs in the worker —
+    // delete stale citations on reprocess — this just stops the visible dupes.)
+    const seen = new Set<string>();
+    const deduped: typeof sorted = [];
+    for (const c of sorted) {
+      const key =
+        (c.targetDoi ?? '').trim().toLowerCase() ||
+        (c.targetTitle ?? '').trim().toLowerCase() ||
+        c.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(c);
+    }
+    return deduped;
+  }, [outCitations, selfDoi]);
   const inSorted = useMemo(() => inCitations.slice().sort(byConfidence), [inCitations]);
 
   // R237cp: distinct publishers across both lists, by frequency, for the filter.
@@ -181,15 +195,20 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
       {/* Outbound — this paper's reference list */}
       <div className='space-y-2 rounded-lg border p-4'>
         <div className='flex items-center justify-between gap-2'>
-          <h3 className='flex items-center gap-1.5 text-sm font-medium'>
-            <IconBookmark className='size-3.5 text-muted-foreground' aria-hidden />
-            {t('referencesTitle', { count: outSorted.length })}
-            {filterOn && outFiltered.length !== outSorted.length && (
-              <span className='ml-1 font-normal text-muted-foreground'>
-                {t('filteredCount', { count: outFiltered.length })}
-              </span>
-            )}
-          </h3>
+          <div className='min-w-0'>
+            <h3 className='flex items-center gap-1.5 text-sm font-medium'>
+              <IconBookmark className='size-3.5 text-muted-foreground' aria-hidden />
+              {t('referencesTitle')}
+            </h3>
+            <p className='mt-0.5 pl-[1.375rem] text-xs font-normal text-muted-foreground'>
+              {filterOn && outFiltered.length !== outSorted.length
+                ? t('referencesShownOfTotal', {
+                    shown: outFiltered.length,
+                    total: outSorted.length
+                  })
+                : t('referencesSubcount', { count: outSorted.length })}
+            </p>
+          </div>
           <div className='flex shrink-0 items-center gap-3'>
             {unresolvedCount > 0 && !outLoading && (
               <button

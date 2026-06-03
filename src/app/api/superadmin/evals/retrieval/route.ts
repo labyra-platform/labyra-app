@@ -19,6 +19,7 @@ import { requireSuperadmin } from '@/lib/auth/superadmin-guard';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { searchPapers } from '@/lib/ai/rag/search';
 import type { SearchHit } from '@/lib/ai/rag/search-types';
+import { refitTenant } from '@/lib/ai/rag/sparse/bm25-manager';
 import { mapWithConcurrency } from '@/lib/utils/concurrency';
 
 export const dynamic = 'force-dynamic';
@@ -96,6 +97,12 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (items.length === 0) {
     return NextResponse.json({ error: 'empty_golden_set' }, { status: 400 });
   }
+
+  // Rebuild BM25 from the current Firestore corpus once, up front: ensures the
+  // sparse side reflects the latest chunks (e.g. contextualText after a
+  // re-index) and warms the cache so the concurrent queries below don't each
+  // trigger a cold-start refit.
+  await refitTenant(tenantId);
 
   const perQuery = await mapWithConcurrency<GoldenItem, PerQuery>(
     items,

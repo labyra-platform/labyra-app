@@ -51,6 +51,8 @@ function RetrievalEvalCard() {
   const [running, setRunning] = React.useState(false);
   const [result, setResult] = React.useState<RetrievalMetrics | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [reindexing, setReindexing] = React.useState(false);
+  const [reindexMsg, setReindexMsg] = React.useState<string | null>(null);
 
   async function runEval() {
     if (!user) return;
@@ -71,6 +73,42 @@ function RetrievalEvalCard() {
       setError(e instanceof Error ? e.message : 'request_failed');
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function runReindex() {
+    if (!user) return;
+    if (
+      !window.confirm(
+        `Re-index ALL indexed papers for "${tenantId}"?\n\n` +
+          'This deletes + rebuilds every chunk and costs ~$0.12/paper of enrichment. ' +
+          'Make sure ENABLE_ENRICHMENT=true is deployed on the worker FIRST. ' +
+          'Processing runs async over several minutes.'
+      )
+    ) {
+      return;
+    }
+    setReindexing(true);
+    setReindexMsg(null);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/superadmin/reindex', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tenantId })
+      });
+      const json = (await res.json()) as { enqueued?: number; total?: number; error?: string };
+      if (!res.ok || json.error) {
+        setReindexMsg(`Error: ${json.error ?? `HTTP ${res.status}`}`);
+      } else {
+        setReindexMsg(
+          `Enqueued ${json.enqueued}/${json.total} papers. Wait for all to reach "indexed", then Run eval with label "on".`
+        );
+      }
+    } catch (e) {
+      setReindexMsg(e instanceof Error ? e.message : 'request_failed');
+    } finally {
+      setReindexing(false);
     }
   }
 
@@ -96,9 +134,18 @@ function RetrievalEvalCard() {
           <Button onClick={() => void runEval()} disabled={running || !user} className='h-8'>
             {running ? 'Running ~50 queries…' : 'Run eval'}
           </Button>
+          <Button
+            onClick={() => void runReindex()}
+            disabled={reindexing || !user}
+            variant='outline'
+            className='h-8'
+          >
+            {reindexing ? 'Enqueuing…' : 'Re-index (enrichment)'}
+          </Button>
         </div>
 
         {error && <p className='text-destructive text-sm'>Error: {error}</p>}
+        {reindexMsg && <p className='text-muted-foreground text-sm'>{reindexMsg}</p>}
 
         {result && (
           <div className='space-y-2 text-xs'>

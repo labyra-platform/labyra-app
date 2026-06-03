@@ -463,6 +463,13 @@ function TabItem({
             }
           }}
           onClick={() => onOpen(tab.paperId)}
+          onDoubleClick={(e) => {
+            // Double-click the tab to rename it in place (the active tab won't
+            // navigate — goToTab early-returns when it's already current).
+            e.stopPropagation();
+            setDraft(tab.title ?? '');
+            setEditing(true);
+          }}
           onAuxClick={(e) => {
             if (e.button === 1) {
               e.preventDefault();
@@ -493,6 +500,7 @@ function TabItem({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               onBlur={commitTabRename}

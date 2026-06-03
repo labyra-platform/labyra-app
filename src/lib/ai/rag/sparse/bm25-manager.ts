@@ -105,7 +105,12 @@ async function getCorpus(tenantId: string): Promise<string[]> {
   for (const chunks of chunkSnaps) {
     for (const chunk of chunks.docs) {
       const data = chunk.data() as PaperChunkDoc;
-      if (data.text) corpus.push(data.text);
+      // Contextual Retrieval: index the context-prepended text so the sparse
+      // (BM25) side benefits from enrichment the same way the dense embedding
+      // does. Falls back to raw text when enrichment is off (contextualText
+      // empty), so this is a no-op until ENABLE_ENRICHMENT is turned on.
+      const text = data.contextualText || data.text;
+      if (text) corpus.push(text);
     }
   }
   return corpus;

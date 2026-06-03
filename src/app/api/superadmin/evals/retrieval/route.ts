@@ -44,6 +44,8 @@ interface PerQuery {
   paperRank: number | null;
   /** searchPapers self-reported latency (ms) */
   latencyMs: number;
+  /** per-step cumulative timing marks (ms from start) */
+  marks?: Record<string, number>;
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -134,7 +136,8 @@ export async function POST(request: Request): Promise<NextResponse> {
           id: it.id,
           chunkRank: firstRank(hits, (h) => `${h.paperId}-${h.chunkIdx}` === goldChunkId),
           paperRank: firstRank(hits, (h) => h.paperId === it.paperId),
-          latencyMs: res.latencyMs
+          latencyMs: res.latencyMs,
+          marks: res.marks
         };
       } catch {
         return { id: it.id, chunkRank: null, paperRank: null, latencyMs: 0 };
@@ -168,7 +171,18 @@ export async function POST(request: Request): Promise<NextResponse> {
       median: percentile(latencies, 0.5),
       p95: percentile(latencies, 0.95),
       max: latencies[latencies.length - 1] ?? 0
-    }
+    },
+    // per-step cumulative-from-start medians (ms): the big jump = the bottleneck.
+    stepMedians: ['parallel_embed_and_bm25_load', 'vector_query', 'bm25_retrieve', 'rerank'].reduce<
+      Record<string, number>
+    >((acc, key) => {
+      const vals = perQuery
+        .map((p) => p.marks?.[key])
+        .filter((v): v is number => typeof v === 'number')
+        .toSorted((a, b) => a - b);
+      if (vals.length > 0) acc[key] = percentile(vals, 0.5);
+      return acc;
+    }, {})
   };
 
   const ranAt = Date.now();

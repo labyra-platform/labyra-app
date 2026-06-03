@@ -51,4 +51,6 @@ export interface SearchResponse {
     rerank: number;
   };
   latencyMs: number;
+  /** R188-4 per-step cumulative timing marks (ms from start), for diagnostics */
+  marks?: Record<string, number>;
 }

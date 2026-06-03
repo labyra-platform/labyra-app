@@ -317,7 +317,8 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
       embed: embedTokens,
       rerank: rerankResult.tokensUsed
     },
-    latencyMs: Date.now() - startedAt
+    latencyMs: Date.now() - startedAt,
+    marks: _marks
   };
 }
 

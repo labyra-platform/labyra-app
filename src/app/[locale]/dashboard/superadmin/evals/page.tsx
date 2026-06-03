@@ -46,6 +46,7 @@ interface RetrievalMetrics {
     prepMs: number;
     totalMs: number;
     searchLatencyMs: { min: number; median: number; p95: number; max: number };
+    stepMedians?: Record<string, number>;
   };
 }
 
@@ -208,6 +209,14 @@ function RetrievalEvalCard() {
                 {result.timing.searchLatencyMs.median}ms · p95 {result.timing.searchLatencyMs.p95}ms
                 · max {result.timing.searchLatencyMs.max}ms · total {result.timing.totalMs}ms
                 {result.timing.refit ? ' (refit)' : ''}
+              </p>
+            )}
+            {result.timing?.stepMedians && (
+              <p className='text-muted-foreground font-mono'>
+                step medians (cumulative ms):{' '}
+                {Object.entries(result.timing.stepMedians)
+                  .map(([k, v]) => `${k}=${v}`)
+                  .join(' · ')}
               </p>
             )}
           </div>

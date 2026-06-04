@@ -42,7 +42,10 @@
       "admin": "Quản trị",
       "superadmin": "Quản trị cao cấp",
       "aiScience": "AI Science",
-      "researchWorkspace": "Nghiên cứu"
+      "researchWorkspace": "Nghiên cứu",
+      "dataAssets": "Dữ liệu",
+      "research": "Nghiên cứu",
+      "insights": "Phân tích"
     },
     "employee": "Nhân viên",
     "debugAuth": "Debug Auth",
@@ -53,7 +56,7 @@
     "spectra": "Phổ đo",
     "referenceCards": "Thư viện reference",
     "measurements": "Đo phổ",
-    "references": "Tham chiếu",
+    "references": "Trích dẫn",
     "superadmin": "Quản trị cao cấp",
     "superadminCosts": "Tổng quan chi phí",
     "superadminEvals": "Đánh giá chất lượng",
@@ -61,6 +64,12 @@
     "aiPreferences": "Tùy chỉnh AI",
     "labContext": "Bối cảnh Lab",
     "manuscripts": "Bản thảo",
+    "protocol": "Quy trình",
+    "computation": "Tính toán",
+    "spectralStandards": "Phổ chuẩn",
+    "protocolTemplates": "Mẫu quy trình",
+    "studio": "Studio",
+    "projects": "Đề tài",
     "aiScience": "AI Science"
   },
   "groups": {

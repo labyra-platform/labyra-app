@@ -42,7 +42,10 @@
       "admin": "Admin",
       "superadmin": "Superadmin",
       "aiScience": "AI Science",
-      "researchWorkspace": "Research workspace"
+      "researchWorkspace": "Research workspace",
+      "dataAssets": "Data Assets",
+      "research": "Research",
+      "insights": "Insights"
     },
     "employee": "Employee",
     "debugAuth": "Auth Debug",
@@ -61,6 +64,12 @@
     "aiPreferences": "AI Preferences",
     "labContext": "Lab Context",
     "manuscripts": "Manuscripts",
+    "protocol": "Protocol",
+    "computation": "Computation",
+    "spectralStandards": "Spectral Standards",
+    "protocolTemplates": "Protocol Templates",
+    "studio": "Studio",
+    "projects": "Projects",
     "aiScience": "AI Science"
   },
   "groups": {

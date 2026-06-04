@@ -3,20 +3,14 @@ import type { NavGroup } from '@/types';
 /**
  * Navigation configuration with RBAC support.
  *
- * Groups:
- *   - Workspace: primary research workflow surfaces
- *   - Lab Resources: inventory + booking + lineage views
- *   - AI: AI Assistant (differentiator, intentionally standalone)
- *   - Admin: members + account settings
- *
- * Used for both the sidebar navigation and Cmd+K bar.
+ * R262: restructured to the Labyra IA spec (labyra-ia-sidebar-spec.md) — six
+ * groups (Workspace / Data Assets / Lab Resources / Research / Insights /
+ * Admin) + Superadmin. Principle: data viewed where it is produced; group
+ * labels are NOT entities; names distinguished by nature (Protocol Templates,
+ * Spectral Standards) not by suffix. Items whose feature routes are not built
+ * yet point at "Coming soon" placeholders so the tree is navigable.
  *
  * RBAC: each item may declare an `access` property — see types/index.ts.
- * Examples:
- *   access: { requireOrg: true }
- *   access: { permission: 'org:teams:manage' }
- *   access: { plan: 'pro' }
- *   access: { role: 'admin' }
  */
 const SUPERADMIN_GROUP: NavGroup = {
   label: 'Superadmin',
@@ -74,36 +68,70 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        // Experiments = container entity; Protocol/Samples/Measurements/Computation
+        // are viewed in context here (data viewed where produced). DFT is NOT a
+        // separate tab — it is a job type inside Computation.
         title: 'Experiments',
         titleKey: 'nav.experiments',
         url: '/dashboard/experiments',
         icon: 'experiments',
-        shortcut: ['e', 'x'],
-        items: []
-      },
+        isActive: true,
+        items: [
+          {
+            title: 'Protocol',
+            titleKey: 'nav.protocol',
+            url: '/dashboard/experiments/protocol',
+            icon: 'protocol',
+            items: []
+          },
+          {
+            title: 'Samples',
+            titleKey: 'nav.samples',
+            url: '/dashboard/samples',
+            icon: 'samples',
+            items: []
+          },
+          {
+            // URL kept as /spectra for backward compat (renamed Spectra→Measurements R164).
+            title: 'Measurements',
+            titleKey: 'nav.measurements',
+            url: '/dashboard/spectra',
+            icon: 'spectra',
+            items: []
+          },
+          {
+            title: 'Computation',
+            titleKey: 'nav.computation',
+            url: '/dashboard/computation',
+            icon: 'computation',
+            items: []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    // Group LABEL only (not an entity). Holds imported/standard data + the
+    // cross-experiment "view all" entry to Measurements.
+    label: 'Data Assets',
+    labelKey: 'nav.groups.dataAssets',
+    items: [
       {
-        title: 'Samples',
-        titleKey: 'nav.samples',
-        url: '/dashboard/samples',
-        icon: 'samples',
-        shortcut: ['s', 'a'],
-        items: []
-      },
-      {
-        // R165-phase-8-sidebar: renamed Spectra → Measurements (R164). URL kept for backward compat.
         title: 'Measurements',
         titleKey: 'nav.measurements',
-        url: '/dashboard/spectra',
-        icon: 'spectra',
-        shortcut: ['s', 'p'],
+        url: '/dashboard/data-assets',
+        icon: 'dataAssets',
+        shortcut: ['d', 'm'],
         items: []
       },
       {
-        title: 'Data Assets',
-        titleKey: 'nav.dataAssets',
-        url: '/dashboard/data-assets',
-        icon: 'dataAssets',
-        shortcut: ['d', 'a'],
+        // Was "Reference cards" — renamed Spectral Standards (reference spectra
+        // for comparison: FTIR/XRD/Raman...). Distinct from References (citations).
+        title: 'Spectral Standards',
+        titleKey: 'nav.spectralStandards',
+        url: '/dashboard/reference-cards',
+        icon: 'spectralStandards',
+        shortcut: ['s', 's'],
         items: []
       }
     ]
@@ -137,24 +165,25 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Lineage',
-        titleKey: 'nav.lineage',
-        url: '/dashboard/lineage',
-        icon: 'lineage',
-        shortcut: ['l', 'i'],
+        // Reusable protocol templates (≠ Protocol instance under an Experiment).
+        title: 'Protocol Templates',
+        titleKey: 'nav.protocolTemplates',
+        url: '/dashboard/protocol-templates',
+        icon: 'protocolTemplates',
+        shortcut: ['p', 't'],
         items: []
       }
     ]
   },
   {
-    label: 'Research workspace',
-    labelKey: 'nav.groups.researchWorkspace',
+    label: 'Research',
+    labelKey: 'nav.groups.research',
     items: [
       {
-        // R165-phase-8-sidebar: References entry (R164 — was buried under Spectra UI)
+        // Citations / BibTeX (≠ Spectral Standards). Frozen citation schema.
         title: 'References',
         titleKey: 'nav.references',
-        url: '/dashboard/reference-cards',
+        url: '/dashboard/references',
         icon: 'references',
         shortcut: ['r', 'e'],
         items: []
@@ -176,6 +205,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        // "AI generates" hub: Manuscripts + Figure Studio.
         title: 'AI Science',
         titleKey: 'nav.aiScience',
         url: '/dashboard/manuscripts',
@@ -187,7 +217,13 @@ export const navGroups: NavGroup[] = [
             titleKey: 'nav.manuscripts',
             url: '/dashboard/manuscripts',
             icon: 'manuscripts',
-            shortcut: ['m', 's'],
+            items: []
+          },
+          {
+            title: 'Studio',
+            titleKey: 'nav.studio',
+            url: '/dashboard/studio',
+            icon: 'studio',
             items: []
           }
         ]
@@ -195,9 +231,33 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
+    // Provenance cuts across every entity → its own group.
+    label: 'Insights',
+    labelKey: 'nav.groups.insights',
+    items: [
+      {
+        title: 'Lineage',
+        titleKey: 'nav.lineage',
+        url: '/dashboard/lineage',
+        icon: 'lineage',
+        shortcut: ['l', 'i'],
+        items: []
+      }
+    ]
+  },
+  {
     label: 'Admin',
     labelKey: 'nav.groups.admin',
     items: [
+      {
+        // Project = WHAT (research topic) ⟂ Group = WHO. MVP lives in Admin.
+        title: 'Projects',
+        titleKey: 'nav.projects',
+        url: '/dashboard/projects',
+        icon: 'projects',
+        shortcut: ['p', 'r'],
+        items: []
+      },
       {
         title: 'Research Groups',
         titleKey: 'nav.researchGroups',

@@ -3,16 +3,12 @@
  * @phase R160-ai-5d-2 (upgraded from ai-5d-1 vector+rerank only)
  */
 import 'server-only';
-// R188-4-phase1-tool-timeout
-import { getAdminFirestoreService } from '@/lib/firebase/admin';
-import { mapWithConcurrency } from '@/lib/utils/concurrency';
-import type { PaperChunkDoc } from '@/types/papers';
 import { resolveCollectionPaperIds } from './collection-scope';
 import { getEmbeddingProvider } from './embedding';
 import { reciprocalRankFusion, toRankedList } from './fusion/rrf';
 import { getRerankProvider } from './rerank';
 import type { SearchHit, SearchRequest, SearchResponse } from './search-types';
-import { getBM25ForTenant } from './sparse/bm25-manager';
+import { getBM25ForTenant, getBM25Corpus, type BM25ChunkLite } from './sparse/bm25-manager';
 import { getVectorStore } from './vector-store';
 import type { PaperChunkMetadata } from './vector-store/pinecone';
 
@@ -23,8 +19,6 @@ const DEFAULT_TOP_N = 5;
 // ADR-033 T-4: BM25 fail-soft budget. The scan-all-chunks path is the slow one
 // at scale; beyond this, fall back to vector-only instead of timing out search.
 const BM25_TIMEOUT_MS = 5000;
-// R238c: cap concurrent per-paper chunk reads (parallelized from a serial N+1).
-const CHUNK_FETCH_CONCURRENCY = 25;
 
 // Sections to exclude from retrieval (boilerplate, citations, low-info)
 // References dense with keywords cause BM25 to surface them in top results.
@@ -122,7 +116,7 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   // Fail-soft (ADR-033 T-4): the BM25 path scans all chunks in the tenant, so at
   // scale it can dominate latency. Cap it with a timeout and fall back to
   // vector-only (≈70-80% quality) rather than letting a slow BM25 time out search.
-  const bm25HitsPromise: Promise<{ chunkId: string; score: number; chunk: PaperChunkDoc }[]> =
+  const bm25HitsPromise: Promise<{ chunkId: string; score: number; chunk: BM25ChunkLite }[]> =
     bm25Encoder
       ? (async () => {
           let bm25Timer: ReturnType<typeof setTimeout> | undefined;
@@ -157,7 +151,7 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
             if (bm25Timer) clearTimeout(bm25Timer);
           }
         })()
-      : Promise.resolve<{ chunkId: string; score: number; chunk: PaperChunkDoc }[]>([]);
+      : Promise.resolve<{ chunkId: string; score: number; chunk: BM25ChunkLite }[]>([]);
 
   const [vectorMatches, bm25Hits] = await Promise.all([vectorPromise, bm25HitsPromise]);
 
@@ -335,25 +329,12 @@ async function retrieveBM25(
   viewerGroupId?: string | null,
   isPrivileged?: boolean,
   collectionPaperIds?: Set<string> | null
-): Promise<{ chunkId: string; score: number; chunk: PaperChunkDoc }[]> {
-  const db = getAdminFirestoreService();
-  // ADR-034 TEAM-5: group scope. status uses '==' so adding one 'in' is allowed.
-  let papersQuery: FirebaseFirestore.Query = db
-    .collection(`tenants/${tenantId}/papers`)
-    .where('status', '==', 'indexed');
-  if (!isPrivileged && viewerGroupId !== undefined) {
-    papersQuery = papersQuery.where('groupId', 'in', [viewerGroupId, 'lab-shared']);
-  }
-  const papers = await papersQuery.get();
-  // R-collection-2: collection scope — keep only member papers (in-memory; a
-  // Firestore `in` caps at 30, collections may hold more).
-  let scopedPapers = papers.docs;
-  if (collectionPaperIds != null) {
-    const ids = collectionPaperIds;
-    scopedPapers = papers.docs.filter((p) => ids.has(p.id));
-  }
+): Promise<{ chunkId: string; score: number; chunk: BM25ChunkLite }[]> {
+  // Corpus is cached alongside the encoder (built once), so this no longer
+  // re-reads every chunk from Firestore on each query — the prior hot-path cost.
+  const corpus = await getBM25Corpus(tenantId);
+  if (corpus.length === 0) return [];
 
-  const allChunks: { chunkId: string; chunk: PaperChunkDoc }[] = [];
   const excludedSet = new Set([
     'References',
     'REFERENCES',
@@ -363,26 +344,37 @@ async function retrieveBM25(
     'ASSOCIATED CONTENT',
     'Terms and Conditions'
   ]);
-  // R238c: parallelize per-paper chunk reads (was serial N+1 — one RTT/paper).
-  const chunkSnaps = await mapWithConcurrency(scopedPapers, CHUNK_FETCH_CONCURRENCY, (paper) =>
-    paper.ref.collection('chunks').get()
-  );
-  for (const chunks of chunkSnaps) {
-    for (const c of chunks.docs) {
-      const data = c.data() as PaperChunkDoc;
-      // Skip excluded sections
-      if (data.section && excludedSet.has(data.section)) continue;
-      allChunks.push({ chunkId: data.id, chunk: data });
+
+  const scoped = corpus.filter((e) => {
+    // ADR-034 group scope (in-memory, mirrors the previous Firestore filter).
+    if (!isPrivileged && viewerGroupId !== undefined) {
+      if (e.groupId !== viewerGroupId && e.groupId !== 'lab-shared') return false;
     }
-  }
+    // R-collection-2 collection scope.
+    if (collectionPaperIds != null && !collectionPaperIds.has(e.paperId)) return false;
+    // Skip excluded (non-content) sections.
+    if (e.chunk.section && excludedSet.has(e.chunk.section)) return false;
+    return true;
+  });
 
-  if (allChunks.length === 0) return [];
+  if (scoped.length === 0) return [];
 
-  const texts = allChunks.map((c) => c.chunk.text);
-  const scores = encoder.score(query, texts);
+  // R251: score against precomputed doc vectors (built once at fit) instead of
+  // re-encoding every chunk per query — the prior ~10s hot-path cost. Falls back
+  // to live re-encoding only for entries missing a precomputed vec.
+  const needsEncode = scoped.some((e) => e.vec === undefined);
+  const scores = needsEncode
+    ? encoder.score(
+        query,
+        scoped.map((e) => e.scoreText)
+      )
+    : encoder.scorePreEncoded(
+        query,
+        scoped.map((e) => e.vec as import('./sparse').SparseVector)
+      );
 
-  return allChunks
-    .map((c, i) => ({ ...c, score: scores[i] }))
+  return scoped
+    .map((e, i) => ({ chunkId: e.chunkId, score: scores[i], chunk: e.chunk }))
     .filter((c) => c.score > 0)
     .toSorted((a, b) => b.score - a.score)
     .slice(0, topK);

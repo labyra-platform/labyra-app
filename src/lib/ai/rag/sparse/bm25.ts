@@ -124,6 +124,37 @@ export class BM25Encoder implements SparseEncoder {
     });
   }
 
+  /**
+   * Like score(), but scores against document vectors that were already
+   * produced by encode() (e.g. precomputed once at fit time). This avoids
+   * re-encoding the whole corpus on every query — the hot-path cost. The query
+   * is still encoded per call. Result is identical to score(query, docs) when
+   * docVecs[i] === encode(docs[i]).
+   */
+  scorePreEncoded(query: string, docVecs: SparseVector[]): number[] {
+    if (!this.isFitted()) {
+      throw new Error('BM25Encoder not fitted yet');
+    }
+    const queryVec = this.encode(query);
+    if (queryVec.indices.length === 0) return docVecs.map(() => 0);
+
+    const queryMap = new Map<number, number>();
+    for (let i = 0; i < queryVec.indices.length; i++) {
+      queryMap.set(queryVec.indices[i], queryVec.values[i]);
+    }
+
+    return docVecs.map((docVec) => {
+      let dot = 0;
+      for (let i = 0; i < docVec.indices.length; i++) {
+        const qWeight = queryMap.get(docVec.indices[i]);
+        if (qWeight !== undefined) {
+          dot += qWeight * docVec.values[i];
+        }
+      }
+      return dot;
+    });
+  }
+
   getParams(): BM25Params | null {
     return this.params;
   }

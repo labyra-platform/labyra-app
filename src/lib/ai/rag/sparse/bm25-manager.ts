@@ -16,9 +16,32 @@ import type { PaperChunkDoc } from '@/types/papers';
 import { BM25Encoder } from './bm25';
 import { loadBM25State, saveBM25State } from './firestore-store';
 import { getHybridTokenizer } from './hybrid-tokenizer';
+import type { SparseVector } from './types';
+
+/** Slim chunk shape — only the fields search.ts reads off a BM25 hit. */
+export interface BM25ChunkLite {
+  paperId: string;
+  chunkIdx: number;
+  text: string;
+  pages: number[];
+  section: string;
+}
+
+export interface BM25CorpusEntry {
+  chunkId: string;
+  paperId: string;
+  groupId: string;
+  /** contextualText || text — used for BOTH fit and scoring (R318 consistency) */
+  scoreText: string;
+  chunk: BM25ChunkLite;
+  /** R251: doc vector precomputed once at fit so per-query scoring skips re-encoding */
+  vec?: SparseVector;
+}
 
 interface CachedEntry {
   encoder: BM25Encoder;
+  /** corpus cached with the encoder so per-query retrieval needs no Firestore read */
+  corpus: BM25CorpusEntry[];
   loadedAt: number;
   corpusSize: number;
 }
@@ -72,8 +95,9 @@ export async function getBM25ForTenant(tenantId: string): Promise<BM25Encoder | 
       return null;
     }
     const encoder = new BM25Encoder(getHybridTokenizer());
-    await encoder.fit(corpus);
-    cache.set(tenantId, { encoder, loadedAt: Date.now(), corpusSize: corpus.length });
+    await encoder.fit(corpus.map((e) => e.scoreText));
+    precomputeCorpusVecs(encoder, corpus);
+    cache.set(tenantId, { encoder, corpus, loadedAt: Date.now(), corpusSize: corpus.length });
     return encoder;
   }
 
@@ -88,29 +112,44 @@ export async function getBM25ForTenant(tenantId: string): Promise<BM25Encoder | 
 }
 
 /**
- * Fetch all chunks for a tenant (for fitting BM25).
+ * Fetch all indexed chunks for a tenant as structured corpus entries. Pairs
+ * each chunk with its parent paper's id + groupId (for in-memory scoping at
+ * query time) and carries scoreText (contextualText||text) used for both
+ * fitting and scoring so the sparse side is consistent (R318).
  */
-async function getCorpus(tenantId: string): Promise<string[]> {
+async function getCorpus(tenantId: string): Promise<BM25CorpusEntry[]> {
   const db = getAdminFirestoreService();
   const papers = await db
     .collection(`tenants/${tenantId}/papers`)
     .where('status', '==', 'indexed')
     .get();
 
-  const corpus: string[] = [];
-  // R238c: parallelize per-paper chunk reads (was a serial N+1 — one RTT/paper).
+  // R238c: parallelize per-paper chunk reads. Snaps come back in papers.docs order.
   const chunkSnaps = await mapWithConcurrency(papers.docs, CHUNK_FETCH_CONCURRENCY, (paperDoc) =>
     paperDoc.ref.collection('chunks').get()
   );
-  for (const chunks of chunkSnaps) {
-    for (const chunk of chunks.docs) {
+
+  const corpus: BM25CorpusEntry[] = [];
+  for (let i = 0; i < papers.docs.length; i += 1) {
+    const paper = papers.docs[i];
+    const groupId = ((paper.data().groupId as string | undefined) ?? '').trim();
+    for (const chunk of chunkSnaps[i].docs) {
       const data = chunk.data() as PaperChunkDoc;
-      // Contextual Retrieval: index the context-prepended text so the sparse
-      // (BM25) side benefits from enrichment the same way the dense embedding
-      // does. Falls back to raw text when enrichment is off (contextualText
-      // empty), so this is a no-op until ENABLE_ENRICHMENT is turned on.
-      const text = data.contextualText || data.text;
-      if (text) corpus.push(text);
+      const scoreText = data.contextualText || data.text;
+      if (!scoreText) continue;
+      corpus.push({
+        chunkId: data.id,
+        paperId: paper.id,
+        groupId,
+        scoreText,
+        chunk: {
+          paperId: paper.id,
+          chunkIdx: data.chunkIdx,
+          text: data.text,
+          pages: data.pages ?? [],
+          section: data.section ?? ''
+        }
+      });
     }
   }
   return corpus;
@@ -120,6 +159,13 @@ async function getCorpus(tenantId: string): Promise<string[]> {
  * Refit BM25 for tenant on current corpus.
  * Used by: cold start, daily cron, manual refit.
  */
+/** R251: encode each corpus doc once so per-query scoring skips re-encoding. */
+function precomputeCorpusVecs(encoder: BM25Encoder, corpus: BM25CorpusEntry[]): void {
+  for (const e of corpus) {
+    e.vec = encoder.encode(e.scoreText);
+  }
+}
+
 export async function refitTenant(tenantId: string): Promise<BM25Encoder | null> {
   const corpus = await getCorpus(tenantId);
   if (corpus.length === 0) {
@@ -127,7 +173,8 @@ export async function refitTenant(tenantId: string): Promise<BM25Encoder | null>
   }
 
   const encoder = new BM25Encoder(getHybridTokenizer());
-  await encoder.fit(corpus);
+  await encoder.fit(corpus.map((e) => e.scoreText));
+  precomputeCorpusVecs(encoder, corpus);
 
   const params = encoder.getParams();
   if (!params) return null;
@@ -138,7 +185,7 @@ export async function refitTenant(tenantId: string): Promise<BM25Encoder | null>
   });
 
   const cache = getCache();
-  cache.set(tenantId, { encoder, loadedAt: Date.now(), corpusSize: corpus.length });
+  cache.set(tenantId, { encoder, corpus, loadedAt: Date.now(), corpusSize: corpus.length });
 
   // eslint-disable-next-line no-console -- structured logging for audit
   console.log(
@@ -158,4 +205,14 @@ export async function refitTenant(tenantId: string): Promise<BM25Encoder | null>
 /** Invalidate cache for a tenant (after refit) */
 export function invalidateCache(tenantId: string): void {
   getCache().delete(tenantId);
+}
+
+/**
+ * Cached corpus for a tenant (built + cached alongside the encoder). Ensures the
+ * encoder/corpus are loaded/fresh, then returns the in-memory corpus so per-query
+ * BM25 retrieval needs no Firestore read.
+ */
+export async function getBM25Corpus(tenantId: string): Promise<BM25CorpusEntry[]> {
+  await getBM25ForTenant(tenantId);
+  return getCache().get(tenantId)?.corpus ?? [];
 }

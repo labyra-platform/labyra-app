@@ -34,7 +34,12 @@ export function countOccurrences(str: string, query: string, caseSensitive: bool
 
 /** Return HTML for a text item with every match wrapped in <mark class="psm">.
  *  Non-match text is HTML-escaped. With no query, returns the escaped string. */
-export function highlightItem(str: string, query: string, caseSensitive: boolean): string {
+export function highlightItemClass(
+  str: string,
+  query: string,
+  caseSensitive: boolean,
+  className: string
+): string {
   if (!query) return escapeHtml(str);
   const re = new RegExp(escapeRegExp(query), caseSensitive ? 'g' : 'gi');
   let out = '';
@@ -42,11 +47,16 @@ export function highlightItem(str: string, query: string, caseSensitive: boolean
   let m: RegExpExecArray | null = re.exec(str);
   while (m) {
     out += escapeHtml(str.slice(last, m.index));
-    out += `<mark class="psm">${escapeHtml(m[0])}</mark>`;
+    out += `<mark class="${className}">${escapeHtml(m[0])}</mark>`;
     last = m.index + m[0].length;
     if (m.index === re.lastIndex) re.lastIndex++;
     m = re.exec(str);
   }
   out += escapeHtml(str.slice(last));
   return out;
+}
+
+/** Ctrl+F search highlight — wraps matches in `<mark class="psm">` (R237be). */
+export function highlightItem(str: string, query: string, caseSensitive: boolean): string {
+  return highlightItemClass(str, query, caseSensitive, 'psm');
 }

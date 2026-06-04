@@ -41,6 +41,17 @@ import {
  *  caret, underscore, brace, equality, operator), otherwise fall back to a
  *  plain inline span. This makes the panel robust to a model that occasionally
  *  wraps prose in <math> by accident. */
+/**
+ * R260: derive a short, distinctive phrase from a citation snippet to flash on
+ * the PDF page. The PDF text layer matches per text-item, so a long multi-line
+ * snippet won't match — we take the first few words (capped) which usually sit
+ * within one line/item and are enough to draw the eye to the cited passage.
+ */
+function citationPhrase(snippet: string): string {
+  const cleaned = snippet.replace(/\s+/g, ' ').trim();
+  return cleaned.split(' ').slice(0, 7).join(' ').slice(0, 56).trim();
+}
+
 function looksLikeMath(raw: string): boolean {
   const s = raw.normalize('NFC');
   // Quick ASCII signal — if it's pure ASCII it's most likely real LaTeX.
@@ -152,7 +163,7 @@ function TrustChip({ score, noAnswer }: { score: number; noAnswer: boolean }) {
 interface AskAiTabProps {
   paperId: string;
   /** Called when a citation chip is clicked — viewer jumps to that page. */
-  onJumpToPage: (page: number) => void;
+  onJumpToPage: (page: number, y?: number, highlight?: string) => void;
   /** Optional Ctrl+drag selection text the user pinned to the next question. */
   pinnedSelection?: string;
   /** Clear the pinned selection after a question is sent. */
@@ -197,7 +208,7 @@ export function AskAiTab({
       if (!btn || !msg.citations) return;
       const n = Number.parseInt(btn.dataset.cite ?? '0', 10);
       const cite = msg.citations.find((c) => c.idx === n);
-      if (cite) onJumpToPage(cite.page);
+      if (cite) onJumpToPage(cite.page, undefined, citationPhrase(cite.snippet));
     },
     [onJumpToPage]
   );
@@ -443,7 +454,7 @@ function AssistantBubble({
 }: {
   message: AskMessage;
   onAnswerClick: (e: React.MouseEvent<HTMLDivElement>) => void;
-  onJumpToPage: (page: number) => void;
+  onJumpToPage: (page: number, y?: number, highlight?: string) => void;
 }) {
   const html = useMemo(() => renderAnswerHtml(message.content), [message.content]);
   const [copied, setCopied] = useState(false);
@@ -523,7 +534,7 @@ function CitationList({
   onJumpToPage
 }: {
   citations: AskCitation[];
-  onJumpToPage: (page: number) => void;
+  onJumpToPage: (page: number, y?: number, highlight?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -544,7 +555,7 @@ function CitationList({
           <button
             key={c.chunkId}
             type='button'
-            onClick={() => onJumpToPage(c.page)}
+            onClick={() => onJumpToPage(c.page, undefined, citationPhrase(c.snippet))}
             className='flex w-full gap-2 rounded p-1 text-left transition-colors hover:bg-muted'
             title={`Tới trang ${c.page}`}
           >

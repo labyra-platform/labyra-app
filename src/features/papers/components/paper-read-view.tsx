@@ -22,7 +22,7 @@ export function PaperReadView({
 }: {
   paperId: string;
   active: boolean;
-  jumpRequest?: { page: number; nonce: number };
+  jumpRequest?: { page: number; y?: number; highlight?: string; nonce: number };
 }) {
   const { paper } = usePaper(paperId);
 

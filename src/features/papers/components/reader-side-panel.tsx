@@ -119,7 +119,7 @@ interface ReaderSidePanelProps {
   paperId: string;
   /** Called when an Ask AI citation chip is clicked; the workspace forwards
    *  it down to the active PdfViewer via PaperReadView's jumpRequest prop. */
-  onJumpToPage: (page: number, y?: number) => void;
+  onJumpToPage: (page: number, y?: number, highlight?: string) => void;
 }
 
 export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps) {
@@ -434,7 +434,7 @@ function HighlightsTab({
   onJumpToPage
 }: {
   paperId: string;
-  onJumpToPage: (page: number, y?: number) => void;
+  onJumpToPage: (page: number, y?: number, highlight?: string) => void;
 }) {
   const t = useTranslations('papers');
   const tenantId = useTenantId();
@@ -542,7 +542,7 @@ function TranslationsTab({
   onJumpToPage
 }: {
   paperId: string;
-  onJumpToPage: (page: number, y?: number) => void;
+  onJumpToPage: (page: number, y?: number, highlight?: string) => void;
 }) {
   const t = useTranslations('papers');
   const items = usePaperTranslationsStore((s) => s.byPaper[paperId] ?? EMPTY_TRANSLATIONS);

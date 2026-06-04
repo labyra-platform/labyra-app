@@ -68,7 +68,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
 import { PdfHighlightLayer } from '@/features/papers/components/pdf-highlight-layer';
-import { countOccurrences, highlightItem } from '@/features/papers/lib/pdf-search';
+import {
+  countOccurrences,
+  highlightItem,
+  highlightItemClass
+} from '@/features/papers/lib/pdf-search';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PdfDrawLayer } from '@/features/papers/components/pdf-draw-layer';
 import { PdfTranslateLayer } from '@/features/papers/components/pdf-translate-layer';
@@ -250,8 +254,10 @@ export function PdfViewer({
   active?: boolean;
   /** R237am: external request to scroll to a specific page (e.g. from an Ask AI
    *  citation chip). Change the nonce to re-trigger even if the page is the
-   *  same one the user is already on. */
-  jumpRequest?: { page: number; y?: number; nonce: number };
+   *  same one the user is already on. R260: `highlight` is a short phrase from
+   *  the cited chunk — when set, the matching text on that page is briefly
+   *  flashed (`.pcm`) so the reader sees exactly what was cited. */
+  jumpRequest?: { page: number; y?: number; highlight?: string; nonce: number };
 }) {
   const t = useTranslations('papers');
   const { paper, loading: paperLoading } = usePaper(paperId);
@@ -323,6 +329,12 @@ export function PdfViewer({
   const pageItemsRef = useRef<Map<number, string[]>>(new Map());
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  // R260: transient citation flash. Set from a jumpRequest carrying a phrase
+  // from the cited chunk; the matching text on the jumped page is marked
+  // (`.pcm`) for a few seconds, then cleared. Separate from Ctrl+F search.
+  const [citeHighlight, setCiteHighlight] = useState<string | null>(null);
+  const citeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -791,9 +803,38 @@ export function PdfViewer({
   // re-jumps (handy when the user has scrolled away between clicks).
   useEffect(() => {
     if (!jumpRequest) return;
-    setCurrentPage(jumpRequest.page);
-    requestAnimationFrame(() => scrollToPageAt(jumpRequest.page, jumpRequest.y ?? null));
+    const { page, y, highlight } = jumpRequest;
+    setCurrentPage(page);
+    requestAnimationFrame(() => scrollToPageAt(page, y ?? null));
+    if (!highlight) return;
+    // R260: flash the cited phrase, then clear after a few seconds.
+    setCiteHighlight(highlight);
+    if (citeTimerRef.current) clearTimeout(citeTimerRef.current);
+    citeTimerRef.current = setTimeout(() => setCiteHighlight(null), 4500);
+    // The text layer paints the `.pcm` mark a frame or two after the page is
+    // in view; poll briefly, then center the first match so it isn't off-screen.
+    let tries = 0;
+    const center = () => {
+      const root = pagesContainerRef.current;
+      const mark = root
+        ?.querySelector<HTMLElement>(`[data-page-index="${page}"]`)
+        ?.querySelector<HTMLElement>('.pcm');
+      if (mark) {
+        mark.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } else if (tries++ < 12) {
+        setTimeout(center, 70);
+      }
+    };
+    setTimeout(center, 90);
   }, [jumpRequest, scrollToPageAt]);
+
+  // R260: clear any pending citation-flash timer on unmount.
+  useEffect(
+    () => () => {
+      if (citeTimerRef.current) clearTimeout(citeTimerRef.current);
+    },
+    []
+  );
 
   // R237be: build the per-page text index once when search first opens.
   useEffect(() => {
@@ -891,9 +932,14 @@ export function PdfViewer({
 
   // customTextRenderer for <Page>: highlight matches in the text layer. Memoized
   // so the text layer only re-renders when the query / case option changes.
+  // R260: while a citation flash is active it takes precedence (its own `.pcm`
+  // class); otherwise the Ctrl+F search marks (`.psm`) render as before.
   const renderSearchText = useCallback(
-    (item: { str: string }) => highlightItem(item.str, searchQuery, searchCaseSensitive),
-    [searchQuery, searchCaseSensitive]
+    (item: { str: string }) =>
+      citeHighlight
+        ? highlightItemClass(item.str, citeHighlight, false, 'pcm')
+        : highlightItem(item.str, searchQuery, searchCaseSensitive),
+    [citeHighlight, searchQuery, searchCaseSensitive]
   );
 
   const goPrev = useCallback(() => {
@@ -1677,7 +1723,9 @@ export function PdfViewer({
                             rotate={rotation}
                             renderTextLayer
                             renderAnnotationLayer
-                            customTextRenderer={searchQuery ? renderSearchText : undefined}
+                            customTextRenderer={
+                              searchQuery || citeHighlight ? renderSearchText : undefined
+                            }
                             onLoadSuccess={(page) => {
                               // R235: store the UNROTATED aspect (h/w at rotation 0);
                               // aspectFor() inverts it for 90/270 placeholders.

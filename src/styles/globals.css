@@ -369,3 +369,23 @@
 .lb-paper-scroll [data-slot='scroll-area-viewport'] > div {
   display: block !important;
 }
+
+/* ── R260: citation jump-to-source flash ────────────────────────────────────
+   Clicking an Ask AI citation scrolls the PDF to the cited page and briefly
+   marks the cited phrase so the reader sees EXACTLY what was cited (Trust >
+   Coverage). Amber + ring distinguishes it from the Ctrl+F search marks
+   (`.psm`, default yellow); it auto-clears after ~4.5s (see pdf-viewer). */
+mark.pcm {
+  background-color: hsl(45 93% 60% / 0.85);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1.5px hsl(38 92% 50% / 0.7);
+  animation: pcm-flash 0.4s ease-out;
+}
+@keyframes pcm-flash {
+  from {
+    background-color: hsl(45 96% 64% / 0.95);
+  }
+  to {
+    background-color: hsl(45 93% 60% / 0.85);
+  }
+}

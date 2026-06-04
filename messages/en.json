@@ -1573,5 +1573,59 @@
     "exportMd": "Markdown (.md)",
     "exportTex": "LaTeX (.tex)",
     "exportBib": "BibTeX (.bib)"
+  },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Research projects (topics) — group experiments, computations and manuscripts toward one goal.",
+    "new": "New project",
+    "newTitle": "New project",
+    "editTitle": "Edit project",
+    "formHint": "A project is the goal (thesis, grant); it links work but doesn't own shared resources.",
+    "empty": "No projects yet",
+    "emptyHint": "Create a project to group experiments, computations and manuscripts.",
+    "actions": "Actions",
+    "edit": "Edit",
+    "archive": "Archive",
+    "archived": "Project archived",
+    "name": "Name",
+    "namePlaceholder": "e.g. PhD thesis on WO₃ photoanodes",
+    "type": "Type",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional — scope, goals, notes.",
+    "grantLevel": "Grant level",
+    "grantLevelPlaceholder": "Select level",
+    "grantCode": "Grant code",
+    "grantCodePlaceholder": "e.g. NQ57-2026-001",
+    "startDate": "Start date",
+    "dueDate": "Due date",
+    "status": "Status",
+    "create": "Create",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "created": "Project created",
+    "updated": "Project updated",
+    "saveFailed": "Could not save the project.",
+    "dueBy": "Due {date}",
+    "types": {
+      "course": "Course project",
+      "graduation": "Graduation thesis",
+      "master": "Master's thesis",
+      "phd": "PhD dissertation",
+      "funded": "Funded project"
+    },
+    "statuses": {
+      "planning": "Planning",
+      "active": "Active",
+      "writing": "Writing",
+      "completed": "Completed",
+      "archived": "Archived"
+    },
+    "grantLevels": {
+      "university": "University",
+      "provincial": "Provincial",
+      "ministry": "Ministry",
+      "national": "National"
+    }
   }
 }

@@ -1573,5 +1573,59 @@
     "exportMd": "Markdown (.md)",
     "exportTex": "LaTeX (.tex)",
     "exportBib": "BibTeX (.bib)"
+  },
+  "projects": {
+    "title": "Đề tài",
+    "subtitle": "Đề tài nghiên cứu — gom thí nghiệm, tính toán và bản thảo cho một mục tiêu.",
+    "new": "Đề tài mới",
+    "newTitle": "Đề tài mới",
+    "editTitle": "Sửa đề tài",
+    "formHint": "Đề tài là mục tiêu (luận án, đề tài tài trợ); nó liên kết công việc nhưng không sở hữu tài nguyên dùng chung.",
+    "empty": "Chưa có đề tài",
+    "emptyHint": "Tạo đề tài để gom thí nghiệm, tính toán và bản thảo.",
+    "actions": "Thao tác",
+    "edit": "Sửa",
+    "archive": "Lưu trữ",
+    "archived": "Đã lưu trữ đề tài",
+    "name": "Tên",
+    "namePlaceholder": "vd: Luận án TS về quang anode WO₃",
+    "type": "Loại",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Tùy chọn — phạm vi, mục tiêu, ghi chú.",
+    "grantLevel": "Cấp đề tài",
+    "grantLevelPlaceholder": "Chọn cấp",
+    "grantCode": "Mã đề tài",
+    "grantCodePlaceholder": "vd: NQ57-2026-001",
+    "startDate": "Ngày bắt đầu",
+    "dueDate": "Hạn hoàn thành",
+    "status": "Trạng thái",
+    "create": "Tạo",
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "cancel": "Hủy",
+    "created": "Đã tạo đề tài",
+    "updated": "Đã cập nhật đề tài",
+    "saveFailed": "Không lưu được đề tài.",
+    "dueBy": "Hạn {date}",
+    "types": {
+      "course": "Đồ án môn học",
+      "graduation": "Đồ án tốt nghiệp",
+      "master": "Luận văn ThS",
+      "phd": "Luận án TS",
+      "funded": "Đề tài tài trợ"
+    },
+    "statuses": {
+      "planning": "Lên kế hoạch",
+      "active": "Đang thực hiện",
+      "writing": "Đang viết",
+      "completed": "Hoàn thành",
+      "archived": "Đã lưu trữ"
+    },
+    "grantLevels": {
+      "university": "Cấp trường",
+      "provincial": "Cấp tỉnh",
+      "ministry": "Cấp bộ",
+      "national": "Cấp quốc gia"
+    }
   }
 }

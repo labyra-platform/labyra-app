@@ -811,21 +811,25 @@ export function PdfViewer({
     setCiteHighlight(highlight);
     if (citeTimerRef.current) clearTimeout(citeTimerRef.current);
     citeTimerRef.current = setTimeout(() => setCiteHighlight(null), 4500);
-    // The text layer paints the `.pcm` mark a frame or two after the page is
-    // in view; poll briefly, then center the first match so it isn't off-screen.
+    // The text layer paints the `.pcm` mark a frame or two after the page is in
+    // view; poll briefly, then bring the cited line to the TOP of the viewport
+    // (R261 — same top-landing math as TOC jumps, ~8px below the top) so the
+    // reader lands right on it rather than hunting mid-page.
     let tries = 0;
-    const center = () => {
+    const alignToMark = () => {
       const root = pagesContainerRef.current;
-      const mark = root
-        ?.querySelector<HTMLElement>(`[data-page-index="${page}"]`)
-        ?.querySelector<HTMLElement>('.pcm');
-      if (mark) {
-        mark.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const pageEl = root?.querySelector<HTMLElement>(`[data-page-index="${page}"]`);
+      const mark = pageEl?.querySelector<HTMLElement>('.pcm');
+      if (pageEl && mark && pageEl.offsetHeight > 0) {
+        const yRatio =
+          (mark.getBoundingClientRect().top - pageEl.getBoundingClientRect().top) /
+          pageEl.offsetHeight;
+        scrollToPageAt(page, yRatio);
       } else if (tries++ < 12) {
-        setTimeout(center, 70);
+        setTimeout(alignToMark, 70);
       }
     };
-    setTimeout(center, 90);
+    setTimeout(alignToMark, 90);
   }, [jumpRequest, scrollToPageAt]);
 
   // R260: clear any pending citation-flash timer on unmount.

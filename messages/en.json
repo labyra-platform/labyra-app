@@ -1626,6 +1626,15 @@
       "provincial": "Provincial",
       "ministry": "Ministry",
       "national": "National"
-    }
+    },
+    "selectPlaceholder": "Select a project",
+    "none": "No project",
+    "overviewSubtitle": "Project overview — linked work + details.",
+    "linkedCollections": "Collections",
+    "linkedManuscripts": "Manuscripts",
+    "noLinked": "Nothing linked yet.",
+    "paperCount": "{count, plural, one {# paper} other {# papers}}",
+    "notFound": "Project not found",
+    "notFoundHint": "It may have been deleted, or you may not have access."
   }
 }

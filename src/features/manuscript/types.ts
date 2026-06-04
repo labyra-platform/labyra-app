@@ -92,6 +92,9 @@ export interface Manuscript extends ProvBase {
   // updatedBy?, updatedAt?, lifecycleStatus, ...
   title: string;
   journalProfileId: string;
+  /** R265: optional link to a Project (Đề tài). projectType seeds the template
+   *  (course/grad/master/phd/funded) — wired in R265c. */
+  projectId?: string;
   /** Curated papers source (collection-scoped RAG). */
   collectionId: string;
   /** Curated data source chosen up front (provenance + number registry). */

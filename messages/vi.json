@@ -1626,6 +1626,15 @@
       "provincial": "Cấp tỉnh",
       "ministry": "Cấp bộ",
       "national": "Cấp quốc gia"
-    }
+    },
+    "selectPlaceholder": "Chọn đề tài",
+    "none": "Không thuộc đề tài",
+    "overviewSubtitle": "Tổng quan đề tài — công việc liên kết + chi tiết.",
+    "linkedCollections": "Bộ sưu tập",
+    "linkedManuscripts": "Bản thảo",
+    "noLinked": "Chưa có liên kết.",
+    "paperCount": "{count, plural, other {# bài}}",
+    "notFound": "Không tìm thấy đề tài",
+    "notFoundHint": "Có thể đã bị xóa, hoặc bạn không có quyền truy cập."
   }
 }

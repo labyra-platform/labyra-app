@@ -39,6 +39,10 @@ export interface Experiment extends ProvBase {
   description?: string;
   hypothesis?: string; // R164: added per PROV-O scientific record
 
+  /** R265: optional link to a Project (Đề tài). The WHAT axis, independent of
+   *  ownership (WHO). Samples/measurements inherit it via this experiment. */
+  projectId?: string;
+
   // Type
   experimentType: ExperimentType;
 

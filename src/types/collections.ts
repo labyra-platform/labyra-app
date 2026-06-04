@@ -25,6 +25,12 @@ export interface PaperCollection extends ProvBase {
   /** Parent collection for nesting; null/undefined = root. */
   parentId?: string | null;
   /**
+   * R265: optional link to a Project (Đề tài). Cross-cutting — the collection
+   * stays visible at its origin AND in the project overview (Benchling Studies);
+   * not duplicated. Resources (papers) themselves are not project-scoped.
+   */
+  projectId?: string;
+  /**
    * Auto-managed bucket holding papers orphaned when a sibling subcollection is
    * deleted ("Chưa phân loại"). Not user-created; identified by this flag.
    */

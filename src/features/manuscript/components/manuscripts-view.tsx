@@ -373,7 +373,7 @@ function ManuscriptRow({
                   onRenameCommit(e.currentTarget.value);
                 }}
                 aria-label={t('rename')}
-                className='min-w-0 flex-1 rounded-sm border bg-background px-1 py-0.5 text-sm outline-none ring-1 ring-primary/50'
+                className='min-w-0 max-w-xs flex-1 rounded-sm border bg-background px-1 py-0.5 text-sm outline-none ring-1 ring-primary/50'
               />
             </div>
           ) : (

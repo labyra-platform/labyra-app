@@ -19,6 +19,7 @@ import { useParams } from 'next/navigation';
  */
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cleanText } from '@/lib/utils/normalize-text';
 import type { Citation, CitationConfidence } from '@/types/citations';
 
@@ -106,9 +107,19 @@ export function CitationCard({ citation }: { citation: Citation }) {
           <span className='line-clamp-2 flex-1 text-[13px] font-medium leading-snug'>
             {realTitle ? formatSciNode(displayTitle) : displayTitle}
           </span>
-          <span title={t(conf.i18nKey)} className='mt-px shrink-0'>
-            <ConfIcon className={cn('size-3.5', conf.iconClass)} aria-hidden />
-          </span>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className='mt-px shrink-0' aria-label={t(conf.i18nKey)}>
+                  <ConfIcon className={cn('size-3.5', conf.iconClass)} aria-hidden />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side='top' className='max-w-[240px]'>
+                <p className='font-medium'>{t(conf.i18nKey)}</p>
+                <p className='text-muted-foreground mt-0.5'>{t(`${conf.i18nKey}Tip`)}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {openHref && (
             <OpenIcon
               className='mt-px size-3.5 shrink-0 text-muted-foreground/50 transition-colors group-hover/cite:text-foreground'

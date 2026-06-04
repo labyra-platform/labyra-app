@@ -3,14 +3,28 @@ import type { NavGroup } from '@/types';
 /**
  * Navigation configuration with RBAC support.
  *
- * R262: restructured to the Labyra IA spec (labyra-ia-sidebar-spec.md) — six
- * groups (Workspace / Data Assets / Lab Resources / Research / Insights /
- * Admin) + Superadmin. Principle: data viewed where it is produced; group
- * labels are NOT entities; names distinguished by nature (Protocol Templates,
- * Spectral Standards) not by suffix. Items whose feature routes are not built
- * yet point at "Coming soon" placeholders so the tree is navigable.
+ * Groups (R262 — IA spec):
+ *   - Workspace:     primary research workflow surfaces
+ *   - Data Assets:   ingested / standard data (Spectral Standards). Group label
+ *                    only — measurements/DFT output are viewed where they are
+ *                    produced, not dumped here.
+ *   - Lab Resources: reusable lab inventory + booking
+ *   - Research:      Papers (RAG), AI Assistant, AI Science (Manuscripts)
+ *   - Insights:      cross-cutting provenance (Lineage)
+ *   - Admin:         groups, preferences, members, account
+ *
+ * Used for both the sidebar navigation and Cmd+K bar.
  *
  * RBAC: each item may declare an `access` property — see types/index.ts.
+ * Examples:
+ *   access: { requireOrg: true }
+ *   access: { permission: 'org:teams:manage' }
+ *   access: { plan: 'pro' }
+ *   access: { role: 'admin' }
+ *
+ * DEFERRED (need new routes — see ia-sidebar-spec): Experiments nesting
+ * (Protocol/Samples/Measurements/Computation→DFT), Protocol Templates, Studio,
+ * Projects, References (citations), Measurements all-view under Data Assets.
  */
 const SUPERADMIN_GROUP: NavGroup = {
   label: 'Superadmin',
@@ -68,69 +82,45 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        // Experiments = container entity; Protocol/Samples/Measurements/Computation
-        // are viewed in context here (data viewed where produced). DFT is NOT a
-        // separate tab — it is a job type inside Computation.
         title: 'Experiments',
         titleKey: 'nav.experiments',
         url: '/dashboard/experiments',
         icon: 'experiments',
-        isActive: true,
-        items: [
-          {
-            title: 'Protocol',
-            titleKey: 'nav.protocol',
-            url: '/dashboard/experiments/protocol',
-            icon: 'protocol',
-            items: []
-          },
-          {
-            title: 'Samples',
-            titleKey: 'nav.samples',
-            url: '/dashboard/samples',
-            icon: 'samples',
-            items: []
-          },
-          {
-            // URL kept as /spectra for backward compat (renamed Spectra→Measurements R164).
-            title: 'Measurements',
-            titleKey: 'nav.measurements',
-            url: '/dashboard/spectra',
-            icon: 'spectra',
-            items: []
-          },
-          {
-            title: 'Computation',
-            titleKey: 'nav.computation',
-            url: '/dashboard/computation',
-            icon: 'computation',
-            items: []
-          }
-        ]
+        shortcut: ['e', 'x'],
+        items: []
+      },
+      {
+        title: 'Samples',
+        titleKey: 'nav.samples',
+        url: '/dashboard/samples',
+        icon: 'samples',
+        shortcut: ['s', 'a'],
+        items: []
+      },
+      {
+        // R164: renamed Spectra → Measurements. URL kept (/spectra) for back-compat.
+        title: 'Measurements',
+        titleKey: 'nav.measurements',
+        url: '/dashboard/spectra',
+        icon: 'spectra',
+        shortcut: ['s', 'p'],
+        items: []
       }
     ]
   },
   {
-    // Group LABEL only (not an entity). Holds imported/standard data + the
-    // cross-experiment "view all" entry to Measurements.
+    // R262: Data Assets = group label (ingested/standard data). Not an entity.
     label: 'Data Assets',
     labelKey: 'nav.groups.dataAssets',
     items: [
       {
-        title: 'Measurements',
-        titleKey: 'nav.measurements',
-        url: '/dashboard/data-assets',
-        icon: 'dataAssets',
-        shortcut: ['d', 'm'],
-        items: []
-      },
-      {
-        // Was "Reference cards" — renamed Spectral Standards (reference spectra
-        // for comparison: FTIR/XRD/Raman...). Distinct from References (citations).
+        // R262: was "References" — this list is the spectral reference cards
+        // (FTIR/XRD standards), renamed to Spectral Standards per the IA spec.
+        // URL kept (/reference-cards) to avoid a route rename. icon ti-cards.
         title: 'Spectral Standards',
         titleKey: 'nav.spectralStandards',
         url: '/dashboard/reference-cards',
-        icon: 'spectralStandards',
+        icon: 'references',
         shortcut: ['s', 's'],
         items: []
       }
@@ -163,31 +153,14 @@ export const navGroups: NavGroup[] = [
         icon: 'bookings',
         shortcut: ['b', 'o'],
         items: []
-      },
-      {
-        // Reusable protocol templates (≠ Protocol instance under an Experiment).
-        title: 'Protocol Templates',
-        titleKey: 'nav.protocolTemplates',
-        url: '/dashboard/protocol-templates',
-        icon: 'protocolTemplates',
-        shortcut: ['p', 't'],
-        items: []
       }
     ]
   },
   {
+    // R262: "Research workspace" → "Research".
     label: 'Research',
     labelKey: 'nav.groups.research',
     items: [
-      {
-        // Citations / BibTeX (≠ Spectral Standards). Frozen citation schema.
-        title: 'References',
-        titleKey: 'nav.references',
-        url: '/dashboard/references',
-        icon: 'references',
-        shortcut: ['r', 'e'],
-        items: []
-      },
       {
         title: 'Papers',
         titleKey: 'nav.papers',
@@ -205,7 +178,6 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        // "AI generates" hub: Manuscripts + Figure Studio.
         title: 'AI Science',
         titleKey: 'nav.aiScience',
         url: '/dashboard/manuscripts',
@@ -217,13 +189,7 @@ export const navGroups: NavGroup[] = [
             titleKey: 'nav.manuscripts',
             url: '/dashboard/manuscripts',
             icon: 'manuscripts',
-            items: []
-          },
-          {
-            title: 'Studio',
-            titleKey: 'nav.studio',
-            url: '/dashboard/studio',
-            icon: 'studio',
+            shortcut: ['m', 's'],
             items: []
           }
         ]
@@ -231,7 +197,7 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
-    // Provenance cuts across every entity → its own group.
+    // R262: Insights = cross-cutting provenance (Lineage moved out of Lab Resources).
     label: 'Insights',
     labelKey: 'nav.groups.insights',
     items: [
@@ -250,7 +216,7 @@ export const navGroups: NavGroup[] = [
     labelKey: 'nav.groups.admin',
     items: [
       {
-        // Project = WHAT (research topic) ⟂ Group = WHO. MVP lives in Admin.
+        // R264: Project entity (Đề tài). MVP lives in Admin; v2 = switcher.
         title: 'Projects',
         titleKey: 'nav.projects',
         url: '/dashboard/projects',

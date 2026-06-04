@@ -155,6 +155,18 @@ service cloud.firestore {
           && resource.data.createdBy == request.auth.uid;
       }
 
+      // Projects (Đề tài) — shared research-org entity (Benchling Studies).
+      // Tenant members read; writers (member+) create/edit; admins delete.
+      // Fine-grained project access (owner/members/advisor ∩ group RBAC) is v2.
+      match /projects/{projectId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow create: if isWriter(tenantId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.tenantId == tenantId;
+        allow update: if isWriter(tenantId) || isSuperAdmin();
+        allow delete: if isAdmin(tenantId) || isSuperAdmin();
+      }
+
       // ---------- Client-readable, Admin-SDK-write-only ----------
       // Lifecycle managed by server pipelines (ingestion, analysis,
       // citation resolver, RAG processor). Any client write would

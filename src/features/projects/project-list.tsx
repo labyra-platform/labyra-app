@@ -19,7 +19,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { ProjectForm } from '@/features/projects/project-form';
 import { useProjects } from '@/features/projects/use-projects';
-import { Link } from '@/i18n/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -93,12 +92,7 @@ export function ProjectList() {
             <li key={p.id} className='flex items-center gap-3 px-4 py-3'>
               <div className='min-w-0 flex-1'>
                 <div className='flex items-center gap-2'>
-                  <Link
-                    href={`/dashboard/projects/${p.id}`}
-                    className='truncate text-sm font-medium hover:underline'
-                  >
-                    {p.name}
-                  </Link>
+                  <span className='truncate text-sm font-medium'>{p.name}</span>
                   <Badge variant='outline'>{t(`types.${p.type}`)}</Badge>
                   <Badge variant={p.status === 'archived' ? 'outline' : 'secondary'}>
                     {t(`statuses.${p.status}`)}

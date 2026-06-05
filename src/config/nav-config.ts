@@ -82,29 +82,44 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        // R266: Experiments ▾ — per IA spec §1 the experiment workflow owns its
+        // sub-entities, so Samples + Measurements nest in as children (their
+        // routes already exist). A collapsible parent only TOGGLES (does not
+        // navigate, same as AI Science▾), so the first child "All experiments"
+        // preserves the list view. Protocol + Computation→DFT join here once
+        // their routes are built — omitted now to avoid dead links.
         title: 'Experiments',
         titleKey: 'nav.experiments',
         url: '/dashboard/experiments',
         icon: 'experiments',
         shortcut: ['e', 'x'],
-        items: []
-      },
-      {
-        title: 'Samples',
-        titleKey: 'nav.samples',
-        url: '/dashboard/samples',
-        icon: 'samples',
-        shortcut: ['s', 'a'],
-        items: []
-      },
-      {
-        // R164: renamed Spectra → Measurements. URL kept (/spectra) for back-compat.
-        title: 'Measurements',
-        titleKey: 'nav.measurements',
-        url: '/dashboard/spectra',
-        icon: 'spectra',
-        shortcut: ['s', 'p'],
-        items: []
+        isActive: true,
+        items: [
+          {
+            title: 'All experiments',
+            titleKey: 'nav.experimentsAll',
+            url: '/dashboard/experiments',
+            icon: 'experiments',
+            items: []
+          },
+          {
+            title: 'Samples',
+            titleKey: 'nav.samples',
+            url: '/dashboard/samples',
+            icon: 'samples',
+            shortcut: ['s', 'a'],
+            items: []
+          },
+          {
+            // R164: renamed Spectra → Measurements. URL kept (/spectra) for back-compat.
+            title: 'Measurements',
+            titleKey: 'nav.measurements',
+            url: '/dashboard/spectra',
+            icon: 'spectra',
+            shortcut: ['s', 'p'],
+            items: []
+          }
+        ]
       }
     ]
   },
@@ -116,11 +131,13 @@ export const navGroups: NavGroup[] = [
       {
         // R262: was "References" — this list is the spectral reference cards
         // (FTIR/XRD standards), renamed to Spectral Standards per the IA spec.
-        // URL kept (/reference-cards) to avoid a route rename. icon ti-cards.
+        // URL kept (/reference-cards) to avoid a route rename. icon ti-cards
+        // (R266: was 'references' = IconQuote — that quote glyph is for the
+        // future References/citations item; standards use the cards glyph).
         title: 'Spectral Standards',
         titleKey: 'nav.spectralStandards',
         url: '/dashboard/reference-cards',
-        icon: 'references',
+        icon: 'spectralStandards',
         shortcut: ['s', 's'],
         items: []
       }

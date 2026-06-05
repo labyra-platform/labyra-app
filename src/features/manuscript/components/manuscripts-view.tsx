@@ -65,6 +65,7 @@ import { ManuscriptCanvas } from '@/features/manuscript/components/manuscript-ca
 import type { Manuscript } from '@/features/manuscript/types';
 import { useManuscripts } from '@/features/manuscript/use-manuscripts';
 import { useCollections } from '@/features/papers/collections/use-collections';
+import { ProjectSelect } from '@/features/projects/project-select';
 import { useTenantId } from '@/lib/auth';
 import {
   createManuscript,
@@ -84,6 +85,7 @@ export function ManuscriptsView() {
   const [createOpen, setCreateOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [collectionId, setCollectionId] = useState('');
+  const [projectId, setProjectId] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -99,7 +101,7 @@ export function ManuscriptsView() {
     if (!tenantId || !trimmed || !collectionId) return;
     setBusy(true);
     try {
-      const id = await createManuscript(tenantId, { title: trimmed, collectionId });
+      const id = await createManuscript(tenantId, { title: trimmed, collectionId, projectId });
       await queryClient.invalidateQueries({
         queryKey: ['tenant-collection', tenantId, 'manuscripts']
       });
@@ -107,6 +109,7 @@ export function ManuscriptsView() {
       setCreateOpen(false);
       setTitle('');
       setCollectionId('');
+      setProjectId(undefined);
     } catch {
       toast.error(t('createFailed'));
     } finally {
@@ -242,6 +245,7 @@ export function ManuscriptsView() {
               ))}
             </SelectContent>
           </Select>
+          <ProjectSelect value={projectId} onChange={setProjectId} disabled={busy} />
           <DialogFooter>
             <Button variant='outline' onClick={() => setCreateOpen(false)} disabled={busy}>
               {t('cancel')}

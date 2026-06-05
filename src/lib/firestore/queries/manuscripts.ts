@@ -37,6 +37,8 @@ export interface CreateManuscriptInput {
   collectionId: string;
   journalProfileId?: string;
   selectedMeasurementIds?: string[];
+  /** R265c: optional link to a Project (Đề tài). */
+  projectId?: string;
 }
 
 /** Create an empty manuscript owned by the current user. Returns the new id. */
@@ -65,7 +67,9 @@ export async function createManuscript(
     glossary: [],
     numberRegistry: [],
     status: 'drafting',
-    version: 1
+    version: 1,
+    // R265c: only write projectId when set — Firestore rejects undefined fields.
+    ...(input.projectId ? { projectId: input.projectId } : {})
   };
   await setDoc(ref, payload);
   return ref.id;

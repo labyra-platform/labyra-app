@@ -39,7 +39,9 @@ const ExperimentCoreFields = {
   temperature: z.number().optional(),
   pressure: z.number().nonnegative().optional(),
   duration: z.number().nonnegative().optional(),
-  results: z.record(z.string(), z.unknown()).optional()
+  results: z.record(z.string(), z.unknown()).optional(),
+  // R265e: optional link to a Project (Đề tài).
+  projectId: z.string().min(1).optional()
 };
 
 export const CreateExperimentSchema = ProvBaseCreateInputSchema.extend(ExperimentCoreFields);

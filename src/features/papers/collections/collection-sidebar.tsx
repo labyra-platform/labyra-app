@@ -52,6 +52,7 @@ import {
   type CollectionSelection,
   useCollections
 } from '@/features/papers/collections/use-collections';
+import { ProjectSelect } from '@/features/projects/project-select';
 import {
   addPapersToCollection,
   createCollection,
@@ -68,7 +69,14 @@ interface CollectionSidebarProps {
   onSelect: (selection: CollectionSelection) => void;
 }
 
-type EditState = { mode: 'create' | 'rename'; id?: string; parentId?: string | null; name: string };
+type EditState = {
+  mode: 'create' | 'rename';
+  id?: string;
+  parentId?: string | null;
+  name: string;
+  /** R265d: project link, create mode only (rename leaves it untouched). */
+  projectId?: string;
+};
 
 export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProps) {
   const t = useTranslations('collections');
@@ -122,7 +130,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
     setBusy(true);
     try {
       if (edit.mode === 'create') {
-        await createCollection(tenantId, { name, parentId });
+        await createCollection(tenantId, { name, parentId, projectId: edit.projectId });
       } else if (edit.id) {
         await updateCollectionMeta(tenantId, edit.id, { name });
       }
@@ -255,7 +263,15 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
                 depth={0}
                 selection={selection}
                 onSelect={onSelect}
-                onCreateChild={(parentId) => setEdit({ mode: 'create', parentId, name: '' })}
+                onCreateChild={(parentId) =>
+                  setEdit({
+                    mode: 'create',
+                    parentId,
+                    name: '',
+                    // R265d: default a sub-collection to its parent's project.
+                    projectId: collections.find((c) => c.id === parentId)?.projectId
+                  })
+                }
                 onRename={(id) => setRenamingId(id)}
                 renamingId={renamingId}
                 onRenameCommit={submitRename}
@@ -284,6 +300,13 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
               if (e.key === 'Enter') void submitEdit();
             }}
           />
+          {edit?.mode === 'create' && (
+            <ProjectSelect
+              value={edit.projectId}
+              onChange={(projectId) => setEdit((prev) => (prev ? { ...prev, projectId } : prev))}
+              disabled={busy}
+            />
+          )}
           <DialogFooter>
             <Button variant='outline' onClick={() => setEdit(null)} disabled={busy}>
               {t('cancel')}

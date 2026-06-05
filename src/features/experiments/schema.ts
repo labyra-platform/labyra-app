@@ -10,7 +10,9 @@ export const experimentFormSchema = z.object({
   temperature: z.coerce.number().optional(),
   pressure: z.coerce.number().optional(),
   duration: z.coerce.number().min(0).optional(),
-  notes: z.string().max(5000).optional()
+  notes: z.string().max(5000).optional(),
+  /** R265e: optional link to a Project (Đề tài). */
+  projectId: z.string().optional()
 });
 
 export type ExperimentFormValues = z.infer<typeof experimentFormSchema>;

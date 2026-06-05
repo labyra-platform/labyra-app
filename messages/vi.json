@@ -797,6 +797,7 @@
       "description": "Mô tả",
       "type": "Loại",
       "status": "Trạng thái",
+      "project": "Đề tài",
       "temperature": "Nhiệt độ (°C)",
       "pressure": "Áp suất",
       "duration": "Thời lượng (phút)",

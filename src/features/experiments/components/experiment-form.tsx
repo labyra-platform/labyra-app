@@ -23,6 +23,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { ProjectSelect } from '@/features/projects/project-select';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { Experiment } from '@/types/experiments';
 import { type ExperimentFormValues, experimentFormSchema } from '../schema';
@@ -63,7 +64,8 @@ export function ExperimentForm({
       temperature: defaultValues?.temperature,
       pressure: defaultValues?.pressure,
       duration: defaultValues?.duration,
-      notes: defaultValues?.notes ?? ''
+      notes: defaultValues?.notes ?? '',
+      projectId: defaultValues?.projectId
     }
   });
 
@@ -230,6 +232,22 @@ export function ExperimentForm({
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name='projectId'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('project')}</FormLabel>
+              <ProjectSelect
+                value={field.value}
+                onChange={(value) => field.onChange(value)}
+                disabled={submitting}
+              />
               <FormMessage />
             </FormItem>
           )}

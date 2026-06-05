@@ -45,6 +45,8 @@ export interface CreateCollectionInput {
   parentId?: string | null;
   color?: string;
   description?: string;
+  /** R265d: optional link to a Project (Đề tài). */
+  projectId?: string;
 }
 
 /** Create a collection owned by the current user. Returns the new id. */
@@ -69,7 +71,8 @@ export async function createCollection(
     paperIds: [],
     parentId: input.parentId ?? null,
     ...(input.color !== undefined ? { color: input.color } : {}),
-    ...(input.description !== undefined ? { description: input.description } : {})
+    ...(input.description !== undefined ? { description: input.description } : {}),
+    ...(input.projectId ? { projectId: input.projectId } : {})
   };
   await setDoc(ref, payload);
   return ref.id;

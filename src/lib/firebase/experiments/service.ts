@@ -60,7 +60,9 @@ export async function createExperiment(
     temperature: input.temperature,
     pressure: input.pressure,
     duration: input.duration,
-    results: input.results
+    results: input.results,
+    // R265e: optional Project link (ignoreUndefinedProperties drops it when unset)
+    projectId: input.projectId
   };
 
   await db.collection('tenants').doc(ctx.tenantId).collection(COLLECTION).doc(id).set(exp);

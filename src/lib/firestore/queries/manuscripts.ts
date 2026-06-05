@@ -39,6 +39,8 @@ export interface CreateManuscriptInput {
   selectedMeasurementIds?: string[];
   /** R265c: optional link to a Project (Đề tài). */
   projectId?: string;
+  /** R267: seed the section pipeline (e.g. lab-report layout for a course). */
+  pipelineSections?: ManuscriptSectionType[];
 }
 
 /** Create an empty manuscript owned by the current user. Returns the new id. */
@@ -69,7 +71,11 @@ export async function createManuscript(
     status: 'drafting',
     version: 1,
     // R265c: only write projectId when set — Firestore rejects undefined fields.
-    ...(input.projectId ? { projectId: input.projectId } : {})
+    ...(input.projectId ? { projectId: input.projectId } : {}),
+    // R267: seed section pipeline when the project template specifies one.
+    ...(input.pipelineSections && input.pipelineSections.length > 0
+      ? { pipelineSections: input.pipelineSections }
+      : {})
   };
   await setDoc(ref, payload);
   return ref.id;

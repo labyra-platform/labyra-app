@@ -1525,6 +1525,8 @@
     "selectOrCreate": "Select a manuscript, or create one.",
     "titlePlaceholder": "Manuscript title",
     "pickCollection": "Source collection",
+    "templateLabReport": "Lab-report layout — Intro · Materials · Methods · Results & Discussion · Conclusion (no abstract).",
+    "templateFullImrad": "Full IMRaD layout (with abstract).",
     "cancel": "Cancel",
     "create": "Create",
     "createFailed": "Couldn't create the manuscript.",

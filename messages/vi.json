@@ -1525,6 +1525,8 @@
     "selectOrCreate": "Chọn một bản thảo, hoặc tạo mới.",
     "titlePlaceholder": "Tiêu đề bản thảo",
     "pickCollection": "Collection nguồn",
+    "templateLabReport": "Bố cục báo cáo thí nghiệm — Mở đầu · Vật liệu · Phương pháp · Kết quả & Thảo luận · Kết luận (không abstract).",
+    "templateFullImrad": "Bố cục IMRaD đầy đủ (có abstract).",
     "cancel": "Hủy",
     "create": "Tạo",
     "createFailed": "Không tạo được bản thảo.",

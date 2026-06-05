@@ -66,6 +66,8 @@ import type { Manuscript } from '@/features/manuscript/types';
 import { useManuscripts } from '@/features/manuscript/use-manuscripts';
 import { useCollections } from '@/features/papers/collections/use-collections';
 import { ProjectSelect } from '@/features/projects/project-select';
+import { pipelineSectionsForProjectType } from '@/features/projects/manuscript-template';
+import { useProjects } from '@/features/projects/use-projects';
 import { useTenantId } from '@/lib/auth';
 import {
   createManuscript,
@@ -80,6 +82,7 @@ export function ManuscriptsView() {
   const queryClient = useQueryClient();
   const { manuscripts, isLoading } = useManuscripts();
   const { collections } = useCollections();
+  const { projects } = useProjects();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -95,13 +98,22 @@ export function ManuscriptsView() {
   const [rowBusy, setRowBusy] = useState(false);
 
   const selected = manuscripts.find((m) => m.id === selectedId) ?? null;
+  const selectedProject = projectId ? (projects.find((p) => p.id === projectId) ?? null) : null;
 
   async function create() {
     const trimmed = title.trim();
     if (!tenantId || !trimmed || !collectionId) return;
     setBusy(true);
     try {
-      const id = await createManuscript(tenantId, { title: trimmed, collectionId, projectId });
+      const pipelineSections = selectedProject
+        ? pipelineSectionsForProjectType(selectedProject.type)
+        : undefined;
+      const id = await createManuscript(tenantId, {
+        title: trimmed,
+        collectionId,
+        projectId,
+        pipelineSections
+      });
       await queryClient.invalidateQueries({
         queryKey: ['tenant-collection', tenantId, 'manuscripts']
       });
@@ -246,6 +258,11 @@ export function ManuscriptsView() {
             </SelectContent>
           </Select>
           <ProjectSelect value={projectId} onChange={setProjectId} disabled={busy} />
+          {selectedProject && (
+            <p className='text-xs text-muted-foreground'>
+              {selectedProject.type === 'course' ? t('templateLabReport') : t('templateFullImrad')}
+            </p>
+          )}
           <DialogFooter>
             <Button variant='outline' onClick={() => setCreateOpen(false)} disabled={busy}>
               {t('cancel')}

@@ -52,6 +52,15 @@ function citationPhrase(snippet: string): string {
   return cleaned.split(' ').slice(0, 7).join(' ').slice(0, 56).trim();
 }
 
+/**
+ * R268: a slightly longer preview of the cited chunk for the hover popover
+ * (§11 L2). Capped at 15 words so it stays a glance, not a wall of text.
+ */
+function citationExcerpt(snippet: string): string {
+  const words = snippet.replace(/\s+/g, ' ').trim().split(' ');
+  return words.length <= 15 ? words.join(' ') : `${words.slice(0, 15).join(' ')}…`;
+}
+
 function looksLikeMath(raw: string): boolean {
   const s = raw.normalize('NFC');
   // Quick ASCII signal — if it's pure ASCII it's most likely real LaTeX.
@@ -458,6 +467,39 @@ function AssistantBubble({
 }) {
   const html = useMemo(() => renderAnswerHtml(message.content), [message.content]);
   const [copied, setCopied] = useState(false);
+  const [citeHover, setCiteHover] = useState<{
+    idx: number;
+    excerpt: string;
+    page: number;
+    section: string;
+    top: number;
+    left: number;
+  } | null>(null);
+  const handleAnswerHover = useCallback(
+    (e: React.MouseEvent<HTMLDivElement> | React.FocusEvent<HTMLDivElement>) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-cite]');
+      if (!btn || !message.citations) {
+        setCiteHover(null);
+        return;
+      }
+      const n = Number(btn.dataset.cite);
+      setCiteHover((prev) => {
+        if (prev?.idx === n) return prev;
+        const cite = message.citations?.find((c) => c.idx === n);
+        if (!cite) return null;
+        const rect = btn.getBoundingClientRect();
+        return {
+          idx: n,
+          excerpt: citationExcerpt(cite.snippet),
+          page: cite.page,
+          section: cite.section,
+          top: rect.bottom + 6,
+          left: rect.left
+        };
+      });
+    },
+    [message.citations]
+  );
   const handleCopy = useCallback(() => {
     if (!message.content) return;
     void copyPapersRich(message.content);
@@ -473,6 +515,10 @@ function AssistantBubble({
           // citation buttons; KaTeX produces its own safe HTML for <math>.
           // Citation clicks bubble up to the parent listener.
           onClick={onAnswerClick}
+          onMouseOver={handleAnswerHover}
+          onMouseLeave={() => setCiteHover(null)}
+          onFocus={handleAnswerHover}
+          onBlur={() => setCiteHover(null)}
           className={cn(
             'whitespace-pre-wrap text-sm leading-relaxed text-foreground',
             '[&_sub]:align-sub [&_sub]:text-[0.75em]',
@@ -501,6 +547,17 @@ function AssistantBubble({
               : '<span class="inline-flex items-center gap-1"><span class="ask-dot">●</span> Đang tìm trong paper…</span>'
           }}
         />
+        {citeHover && (
+          <div
+            className='pointer-events-none fixed z-50 max-w-[280px] rounded-md border bg-popover px-2.5 py-1.5 text-popover-foreground shadow-md'
+            style={{ top: citeHover.top, left: citeHover.left }}
+          >
+            <p className='line-clamp-4 text-xs leading-snug'>{citeHover.excerpt}</p>
+            <p className='mt-1 text-[10px] text-muted-foreground'>
+              {citeHover.section ? `${citeHover.section} · ` : ''}p. {citeHover.page}
+            </p>
+          </div>
+        )}
         <div className='mt-1 flex items-center gap-2'>
           {(message.trustScore !== undefined || message.noAnswer) && (
             <TrustChip score={message.trustScore ?? 0} noAnswer={message.noAnswer ?? false} />

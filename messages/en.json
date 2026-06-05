@@ -1634,6 +1634,7 @@
     "overviewSubtitle": "Project overview — linked work + details.",
     "linkedCollections": "Collections",
     "linkedManuscripts": "Manuscripts",
+    "linkedExperiments": "Experiments",
     "noLinked": "Nothing linked yet.",
     "paperCount": "{count, plural, one {# paper} other {# papers}}",
     "notFound": "Project not found",

@@ -1634,6 +1634,7 @@
     "overviewSubtitle": "Tổng quan đề tài — công việc liên kết + chi tiết.",
     "linkedCollections": "Bộ sưu tập",
     "linkedManuscripts": "Bản thảo",
+    "linkedExperiments": "Thí nghiệm",
     "noLinked": "Chưa có liên kết.",
     "paperCount": "{count, plural, other {# bài}}",
     "notFound": "Không tìm thấy đề tài",

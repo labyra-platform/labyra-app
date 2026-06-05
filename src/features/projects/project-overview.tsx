@@ -2,18 +2,18 @@
 
 /**
  * Project overview (Benchling-Studies style): the project's details plus the
- * entities linked to it. Collections + manuscripts are filtered client-side
- * from the existing per-user hooks (no extra index). Experiments appear once a
- * tenant-wide read exists (R265c). Entities are linked via projectId (R265c
- * wires the picker into their forms) — until then these sections are empty.
+ * entities linked to it. Collections, manuscripts, and experiments are filtered
+ * client-side from their existing hooks (no extra index) by projectId. The
+ * pickers that set projectId live in each entity's create form (R265c–R265e).
  *
- * @phase R265 — Project overview
+ * @phase R265f — experiments added to overview
  */
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useManuscripts } from '@/features/manuscript/use-manuscripts';
 import { useCollections } from '@/features/papers/collections/use-collections';
+import { useExperiments } from '@/lib/firestore/queries/experiments';
 import type { Project } from '@/types/project';
 
 function LinkedSection({
@@ -50,9 +50,11 @@ export function ProjectOverview({ project }: { project: Project }) {
   const t = useTranslations('projects');
   const { collections } = useCollections();
   const { manuscripts } = useManuscripts();
+  const { experiments } = useExperiments();
 
   const linkedCollections = collections.filter((c) => c.projectId === project.id);
   const linkedManuscripts = manuscripts.filter((m) => m.projectId === project.id);
+  const linkedExperiments = experiments.filter((e) => e.projectId === project.id);
 
   return (
     <div className='space-y-6'>
@@ -92,6 +94,21 @@ export function ProjectOverview({ project }: { project: Project }) {
           </dl>
         )}
       </section>
+
+      <LinkedSection
+        title={t('linkedExperiments')}
+        count={linkedExperiments.length}
+        empty={t('noLinked')}
+      >
+        {linkedExperiments.map((e) => (
+          <li key={e.id} className='flex items-center justify-between gap-3 px-4 py-2.5 text-sm'>
+            <span className='truncate'>{e.title}</span>
+            <Badge variant='secondary' className='shrink-0'>
+              {e.workflowStatus}
+            </Badge>
+          </li>
+        ))}
+      </LinkedSection>
 
       <LinkedSection
         title={t('linkedCollections')}

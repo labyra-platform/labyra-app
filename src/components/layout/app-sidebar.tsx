@@ -19,6 +19,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -89,16 +90,44 @@ export default function AppSidebar() {
                     className='group/collapsible'
                   >
                     <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          tooltip={resolveLabel(item.titleKey, item.title)}
-                          isActive={pathname === item.url}
-                        >
-                          {item.icon && <Icon />}
-                          <span>{resolveLabel(item.titleKey, item.title)}</span>
-                          <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
+                      {item.url && item.url !== '#' ? (
+                        // R271b: navigable parent — the label links to the
+                        // section index while a separate chevron toggles the
+                        // sub-tree (matches the mockup; removes the need for an
+                        // "All …" first child).
+                        <>
+                          <SidebarMenuButton
+                            asChild
+                            tooltip={resolveLabel(item.titleKey, item.title)}
+                            isActive={pathname === item.url}
+                          >
+                            <Link href={item.url}>
+                              {item.icon && <Icon />}
+                              <span>{resolveLabel(item.titleKey, item.title)}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuAction>
+                              <Icons.chevronRight className='transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                              <span className='sr-only'>
+                                {resolveLabel(item.titleKey, item.title)}
+                              </span>
+                            </SidebarMenuAction>
+                          </CollapsibleTrigger>
+                        </>
+                      ) : (
+                        // Toggle-only parent (no standalone page, e.g. url '#').
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton
+                            tooltip={resolveLabel(item.titleKey, item.title)}
+                            isActive={pathname === item.url}
+                          >
+                            {item.icon && <Icon />}
+                            <span>{resolveLabel(item.titleKey, item.title)}</span>
+                            <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                      )}
                       <CollapsibleContent>
                         <SidebarMenuSub>
                           {item.items?.map((subItem) => (

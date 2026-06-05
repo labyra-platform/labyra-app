@@ -84,12 +84,10 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        // R266: Experiments ▾ — per IA spec §1 the experiment workflow owns its
-        // sub-entities, so Samples + Measurements nest in as children (their
-        // routes already exist). A collapsible parent only TOGGLES (does not
-        // navigate, same as AI Science▾), so the first child "All experiments"
-        // preserves the list view. Protocol + Computation→DFT join here once
-        // their routes are built — omitted now to avoid dead links.
+        // R266/R271: Experiments ▾ owns its sub-entities (Protocol / Samples /
+        // Measurements / Computation). R271b makes the parent itself navigate to
+        // the experiments list (label links, a separate chevron toggles), so the
+        // old "All experiments" first child is no longer needed.
         title: 'Experiments',
         titleKey: 'nav.experiments',
         url: '/dashboard/experiments',
@@ -97,13 +95,6 @@ export const navGroups: NavGroup[] = [
         shortcut: ['e', 'x'],
         isActive: true,
         items: [
-          {
-            title: 'All experiments',
-            titleKey: 'nav.experimentsAll',
-            url: '/dashboard/experiments',
-            icon: 'experiments',
-            items: []
-          },
           {
             title: 'Protocol',
             titleKey: 'nav.protocol',

@@ -22,9 +22,11 @@ import type { NavGroup } from '@/types';
  *   access: { plan: 'pro' }
  *   access: { role: 'admin' }
  *
- * DEFERRED (need new routes — see ia-sidebar-spec): Experiments nesting
- * (Protocol/Samples/Measurements/Computation→DFT), Protocol Templates, Studio,
- * Projects, References (citations), Measurements all-view under Data Assets.
+ * R271: wired the mockup-target items whose routes now exist — Protocol +
+ * Computation under Experiments ▾, Measurements (all-view) under Data Assets,
+ * Protocol Templates under Lab Resources, References + Studio under Research.
+ * Still pending real features: Computation ▾ → DFT/MD/ML split (only the
+ * combined /computation stub exists today) and Protocol-instance per experiment.
  */
 const SUPERADMIN_GROUP: NavGroup = {
   label: 'Superadmin',
@@ -103,6 +105,13 @@ export const navGroups: NavGroup[] = [
             items: []
           },
           {
+            title: 'Protocol',
+            titleKey: 'nav.protocol',
+            url: '/dashboard/experiments/protocol',
+            icon: 'protocol',
+            items: []
+          },
+          {
             title: 'Samples',
             titleKey: 'nav.samples',
             url: '/dashboard/samples',
@@ -118,6 +127,15 @@ export const navGroups: NavGroup[] = [
             icon: 'spectra',
             shortcut: ['s', 'p'],
             items: []
+          },
+          {
+            // R271: leaf → /computation (DFT/MD/ML combined stub). Becomes ▾ with
+            // DFT/MD/ML children once those get their own routes.
+            title: 'Computation',
+            titleKey: 'nav.computation',
+            url: '/dashboard/computation',
+            icon: 'computation',
+            items: []
           }
         ]
       }
@@ -128,6 +146,16 @@ export const navGroups: NavGroup[] = [
     label: 'Data Assets',
     labelKey: 'nav.groups.dataAssets',
     items: [
+      {
+        // R271: all-measurements entry (same /spectra list, also reachable scoped
+        // under Experiments ▾). Per the IA spec, Data Assets is the lateral
+        // "view everything" entry point — no shortcut (avoids the s,p dup).
+        title: 'Measurements',
+        titleKey: 'nav.measurements',
+        url: '/dashboard/spectra',
+        icon: 'spectra',
+        items: []
+      },
       {
         // R262: was "References" — this list is the spectral reference cards
         // (FTIR/XRD standards), renamed to Spectral Standards per the IA spec.
@@ -170,6 +198,15 @@ export const navGroups: NavGroup[] = [
         icon: 'bookings',
         shortcut: ['b', 'o'],
         items: []
+      },
+      {
+        // R271: reusable protocol library (R270b) — Lab Resources per the mockup.
+        title: 'Protocol Templates',
+        titleKey: 'nav.protocolTemplates',
+        url: '/dashboard/protocol-templates',
+        icon: 'protocolTemplates',
+        shortcut: ['p', 't'],
+        items: []
       }
     ]
   },
@@ -178,6 +215,15 @@ export const navGroups: NavGroup[] = [
     label: 'Research',
     labelKey: 'nav.groups.research',
     items: [
+      {
+        // R271: literature References (citations) — route now exists.
+        title: 'References',
+        titleKey: 'nav.references',
+        url: '/dashboard/references',
+        icon: 'references',
+        shortcut: ['r', 'e'],
+        items: []
+      },
       {
         title: 'Papers',
         titleKey: 'nav.papers',
@@ -207,6 +253,15 @@ export const navGroups: NavGroup[] = [
             url: '/dashboard/manuscripts',
             icon: 'manuscripts',
             shortcut: ['m', 's'],
+            items: []
+          },
+          {
+            // R271: Figure Studio (R209–R219) now wired under AI Science ▾.
+            title: 'Studio',
+            titleKey: 'nav.studio',
+            url: '/dashboard/studio',
+            icon: 'studio',
+            shortcut: ['s', 't'],
             items: []
           }
         ]

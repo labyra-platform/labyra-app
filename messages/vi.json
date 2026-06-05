@@ -1671,6 +1671,23 @@
     "notFoundHint": "Có thể đã bị lưu trữ hoặc xóa.",
     "stepCount": "{count, plural, other {# bước}}",
     "emptyGraph": "Chưa có bước nào",
-    "emptyGraphHint": "Trình chỉnh sửa sơ đồ sắp ra mắt."
+    "emptyGraphHint": "Trình chỉnh sửa sơ đồ sắp ra mắt.",
+    "editGraph": "Sửa sơ đồ",
+    "done": "Xong",
+    "addStep": "Thêm bước",
+    "addData": "Thêm dữ liệu",
+    "autoLayout": "Tự sắp xếp",
+    "saveGraph": "Lưu sơ đồ",
+    "graphSaved": "Đã lưu sơ đồ",
+    "newStep": "Bước mới",
+    "editorHint": "Kéo từ mép phải của node để nối. Bấm node để sửa; dùng icon thùng rác để xóa.",
+    "stepDetails": "Bước",
+    "deleteStep": "Xóa bước",
+    "nodeLabel": "Nhãn",
+    "nodeKind": "Loại",
+    "kindProcess": "Quy trình",
+    "kindData": "Dữ liệu",
+    "nodeSubtitle": "Chi tiết",
+    "nodeSubtitlePlaceholder": "vd: khuấy · 30 phút"
   }
 }

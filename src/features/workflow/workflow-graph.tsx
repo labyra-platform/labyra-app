@@ -24,7 +24,7 @@ const STATUS_RING: Record<WorkflowNodeStatus, string> = {
 };
 
 /** One node card. Process = solid card; data = dashed + muted (AiiDA principle). */
-function WorkflowNodeCard({ data }: NodeProps<WfNode>) {
+export function WorkflowNodeCard({ data }: NodeProps<WfNode>) {
   const isData = data.kind === 'data';
   const ring = data.status ? STATUS_RING[data.status] : 'ring-border';
   return (
@@ -46,7 +46,7 @@ function WorkflowNodeCard({ data }: NodeProps<WfNode>) {
 }
 
 // Defined at module scope so React Flow doesn't see a new object each render.
-const nodeTypes = { workflow: WorkflowNodeCard };
+export const nodeTypes = { workflow: WorkflowNodeCard };
 
 export function WorkflowGraph({
   nodes,

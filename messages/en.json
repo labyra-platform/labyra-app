@@ -1671,6 +1671,23 @@
     "notFoundHint": "It may have been archived or removed.",
     "stepCount": "{count, plural, =0 {no steps} one {# step} other {# steps}}",
     "emptyGraph": "No steps yet",
-    "emptyGraphHint": "The graph editor is coming soon."
+    "emptyGraphHint": "The graph editor is coming soon.",
+    "editGraph": "Edit graph",
+    "done": "Done",
+    "addStep": "Add step",
+    "addData": "Add data",
+    "autoLayout": "Auto-layout",
+    "saveGraph": "Save graph",
+    "graphSaved": "Graph saved",
+    "newStep": "New step",
+    "editorHint": "Drag from a node's right edge to connect. Click a node to edit it; use the trash icon to delete.",
+    "stepDetails": "Step",
+    "deleteStep": "Delete step",
+    "nodeLabel": "Label",
+    "nodeKind": "Kind",
+    "kindProcess": "Process",
+    "kindData": "Data",
+    "nodeSubtitle": "Detail",
+    "nodeSubtitlePlaceholder": "e.g. stir · 30 min"
   }
 }

@@ -167,6 +167,17 @@ service cloud.firestore {
         allow delete: if isAdmin(tenantId) || isSuperAdmin();
       }
 
+      // Protocol templates (reusable node-graph procedures, R270) — same access
+      // model as projects: tenant-readable, writer-writable, admin-deletable.
+      match /protocolTemplates/{protocolTemplateId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow create: if isWriter(tenantId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.tenantId == tenantId;
+        allow update: if isWriter(tenantId) || isSuperAdmin();
+        allow delete: if isAdmin(tenantId) || isSuperAdmin();
+      }
+
       // ---------- Client-readable, Admin-SDK-write-only ----------
       // Lifecycle managed by server pipelines (ingestion, analysis,
       // citation resolver, RAG processor). Any client write would

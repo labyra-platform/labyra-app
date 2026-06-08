@@ -1689,5 +1689,23 @@
     "kindData": "Dữ liệu",
     "nodeSubtitle": "Chi tiết",
     "nodeSubtitlePlaceholder": "vd: khuấy · 30 phút"
+  },
+  "computation": {
+    "description": "Tác vụ tính toán DFT / MD / ML-potential và kết quả.",
+    "noWorkflows": "Chưa có workflow tính toán nào.",
+    "noResults": "Đang chờ kết quả — tính toán đang chạy.",
+    "bandGap": "Vùng cấm",
+    "direct": "Trực tiếp",
+    "indirect": "Gián tiếp",
+    "vbm": "VBM",
+    "cbm": "CBM",
+    "relaxedStructure": "Cấu trúc tối ưu",
+    "totalEnergy": "Tổng năng lượng",
+    "pipeline": "Pipeline",
+    "status": {
+      "running": "Đang chạy",
+      "completed": "Hoàn thành",
+      "failed": "Thất bại"
+    }
   }
 }

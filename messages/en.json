@@ -1689,5 +1689,23 @@
     "kindData": "Data",
     "nodeSubtitle": "Detail",
     "nodeSubtitlePlaceholder": "e.g. stir · 30 min"
+  },
+  "computation": {
+    "description": "DFT / MD / ML-potential computation jobs and their results.",
+    "noWorkflows": "No computation workflows yet.",
+    "noResults": "Results pending — computation in progress.",
+    "bandGap": "Band Gap",
+    "direct": "Direct",
+    "indirect": "Indirect",
+    "vbm": "VBM",
+    "cbm": "CBM",
+    "relaxedStructure": "Relaxed Structure",
+    "totalEnergy": "Total Energy",
+    "pipeline": "Pipeline",
+    "status": {
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed"
+    }
   }
 }

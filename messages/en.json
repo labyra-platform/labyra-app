@@ -1706,6 +1706,19 @@
       "running": "Running",
       "completed": "Completed",
       "failed": "Failed"
+    },
+    "submitSoon": "Submitting from the UI is coming soon — workflows are currently launched via the compute API.",
+    "tabs": {
+      "workflows": "Workflows",
+      "submit": "Submit",
+      "templates": "Templates"
+    },
+    "template": {
+      "hubbard": "Hubbard U",
+      "vdw": "vdW",
+      "cutoff": "Cutoff (Ry)",
+      "kpoints": "k-grid",
+      "steps": "Steps"
     }
   }
 }

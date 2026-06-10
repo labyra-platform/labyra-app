@@ -1,23 +1,16 @@
 /**
- * POST /api/dft/submit — launch a verified DFT preset on the compute backend.
+ * POST /api/dft/submit — launch a user-composed DFT workflow on the backend.
  *
- * Safe-by-construction: requires auth + a tenant, and only accepts the two
- * known template ids (no arbitrary structure → no arbitrary paid jobs). The
- * full validated workflow JSON lives server-side; the client only names the run.
+ * Requires auth + a tenant. The body is the editor's serialized workflow
+ * (structure + global + units); the worker validates QE specifics and runs it
+ * on Cloud Batch.
  *
- * @phase R240-dft-submit
+ * @phase R245-dag-editor-b4-serialize
  */
 import { NextResponse } from 'next/server';
-import ws2Payload from '@/features/computation/payloads/2h-ws2-bulk-vdw.json';
-import hWo3Payload from '@/features/computation/payloads/h-wo3-bulk-pbeu.json';
 import { getCurrentTenantId, getCurrentUser } from '@/lib/auth/server';
 import { submitWorkflowToWorker } from '@/lib/dft/worker-client';
 import { dftSubmitSchema } from '@/lib/schemas/dft-submit-schema';
-
-const PAYLOADS: Record<string, unknown> = {
-  'h-wo3-bulk-pbeu': hWo3Payload,
-  '2h-ws2-bulk-vdw': ws2Payload
-};
 
 const MAX_RUN_SEC = 10800;
 
@@ -40,12 +33,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { templateId, workflowId, machinePreset } = parsed.data;
-  const workflow = PAYLOADS[templateId];
-  if (!workflow) {
-    return NextResponse.json({ error: 'Unknown template' }, { status: 400 });
-  }
-
+  const { workflowId, machinePreset, workflow } = parsed.data;
   try {
     const result = await submitWorkflowToWorker({
       tenantId,

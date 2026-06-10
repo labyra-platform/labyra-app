@@ -1,16 +1,13 @@
 /**
  * DFT worker client — server-to-server call to the Cloud Run worker.
  *
- * Auth is ISOLATED here so the mechanism can be swapped without touching the
- * route. Default: Cloud Run IAM via a minted ID token (google-auth-library),
- * matching the worker's current `--no-allow-unauthenticated` setting.
+ * Auth isolated here. Default: Cloud Run IAM via a minted ID token
+ * (google-auth-library), matching the worker's authenticated invoker setting.
  *
- * Setup (verify before relying on this):
- *   - env DFT_WORKER_URL = https://spectra-worker-...run.app
- *   - the app runtime identity must hold roles/run.invoker on the worker
- *   - google-auth-library must resolve (transitive via firebase-admin, or add it)
+ * Setup: env DFT_WORKER_URL; the app runtime identity needs roles/run.invoker
+ * on the worker; google-auth-library must resolve (transitive via firebase-admin).
  *
- * @phase R240-dft-submit
+ * @phase R245-dag-editor-b4-serialize
  */
 import 'server-only';
 import { GoogleAuth } from 'google-auth-library';

@@ -1,12 +1,12 @@
 /**
- * Computation page — DFT workflows, templates, and (soon) submission.
+ * Computation page — DFT workflows, node-DAG builder, and templates.
  *
  * Path: /[locale]/dashboard/computation
  *
  * Server Component: reads tenants/{tenantId}/dftWorkflows via the server-only
  * service. Tab chrome is a client wrapper; server-rendered content is slotted in.
  *
- * @phase R239-computation-tabs
+ * @phase R241-dag-editor
  */
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -56,9 +56,8 @@ export default async function ComputationPage() {
       <ComputationTabs
         labels={{
           workflows: t('tabs.workflows'),
-          submit: t('tabs.submit'),
-          templates: t('tabs.templates'),
-          submitSoon: t('submitSoon')
+          builder: t('tabs.builder'),
+          templates: t('tabs.templates')
         }}
         workflowsSlot={workflowsSlot}
         templatesSlot={templatesSlot}

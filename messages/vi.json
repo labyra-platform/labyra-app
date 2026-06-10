@@ -1711,7 +1711,8 @@
     "tabs": {
       "workflows": "Workflow",
       "submit": "Gửi",
-      "templates": "Mẫu"
+      "templates": "Mẫu",
+      "builder": "Trình dựng"
     },
     "template": {
       "hubbard": "Hubbard U",
@@ -1719,6 +1720,14 @@
       "cutoff": "Cutoff (Ry)",
       "kpoints": "Lưới k",
       "steps": "Số bước"
-    }
+    },
+    "submitTemplate": "Mẫu",
+    "submitWorkflowId": "Mã chạy",
+    "submitWorkflowIdHint": "Chữ thường, số, gạch nối — phải duy nhất.",
+    "submitPreset": "Máy",
+    "submitButton": "Khởi chạy",
+    "submitting": "Đang gửi…",
+    "submitOk": "Đã gửi {id} — sẽ xuất hiện ở tab Workflow sau giây lát.",
+    "submitError": "Gửi thất bại. Kiểm tra mã chạy có trùng không rồi thử lại."
   }
 }

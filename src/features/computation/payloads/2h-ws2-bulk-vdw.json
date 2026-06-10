@@ -1,0 +1,314 @@
+{
+  "structure": {
+    "ibrav": 4,
+    "celldm": {
+      "1": 6.0296188,
+      "3": 4.4511446
+    },
+    "cellParameters": null,
+    "nat": 6,
+    "ntyp": 2,
+    "atomicSpecies": [
+      {
+        "element": "W",
+        "mass": 183.84,
+        "pseudoFile": "W.pbe-spn-kjpaw_psl.1.0.0.UPF"
+      },
+      {
+        "element": "S",
+        "mass": 32.06,
+        "pseudoFile": "S.pbe-n-kjpaw_psl.1.0.0.UPF"
+      }
+    ],
+    "atomicPositions": [
+      {
+        "element": "W",
+        "x": 0.66666667,
+        "y": 0.33333333,
+        "z": 0.75
+      },
+      {
+        "element": "W",
+        "x": 0.33333333,
+        "y": 0.66666667,
+        "z": 0.25
+      },
+      {
+        "element": "S",
+        "x": 0.66666667,
+        "y": 0.33333333,
+        "z": 0.139241
+      },
+      {
+        "element": "S",
+        "x": 0.33333333,
+        "y": 0.66666667,
+        "z": 0.639241
+      },
+      {
+        "element": "S",
+        "x": 0.66666667,
+        "y": 0.33333333,
+        "z": 0.360759
+      },
+      {
+        "element": "S",
+        "x": 0.33333333,
+        "y": 0.66666667,
+        "z": 0.860759
+      }
+    ],
+    "positionsType": "crystal"
+  },
+  "global": {
+    "ecutwfc": 60.0,
+    "ecutrho": 720.0,
+    "functional": "pbe",
+    "prefix": "2H-WS2_bulk",
+    "hubbard": [
+      {
+        "manifold": "W-5d",
+        "value": 6.2
+      }
+    ]
+  },
+  "units": [
+    {
+      "id": "vc-relax",
+      "calcType": "vc-relax",
+      "dependsOn": [],
+      "npool": 8,
+      "params": {
+        "calculation": "vc-relax",
+        "occupations": "smearing",
+        "smearing": "gaussian",
+        "degauss": 0.007,
+        "convThr": 1e-08,
+        "diagoDavidNdim": 8,
+        "tstress": true,
+        "tprnfor": true,
+        "vdwCorr": "grimme-d3",
+        "dftd3Version": 3,
+        "dftd3Threebody": true,
+        "kPoints": {
+          "type": "automatic",
+          "grid": [
+            15,
+            15,
+            4
+          ],
+          "shift": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "scf",
+      "calcType": "scf",
+      "dependsOn": [
+        "vc-relax"
+      ],
+      "npool": 16,
+      "params": {
+        "calculation": "scf",
+        "occupations": "fixed",
+        "nbnd": 40,
+        "convThr": 1e-09,
+        "diagoDavidNdim": 12,
+        "tstress": true,
+        "tprnfor": true,
+        "vdwCorr": "grimme-d3",
+        "kPoints": {
+          "type": "automatic",
+          "grid": [
+            15,
+            15,
+            4
+          ],
+          "shift": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "nscf",
+      "calcType": "nscf",
+      "dependsOn": [
+        "scf"
+      ],
+      "npool": 16,
+      "params": {
+        "calculation": "nscf",
+        "occupations": "fixed",
+        "nbnd": 60,
+        "convThr": 1e-10,
+        "diagoDavidNdim": 12,
+        "tstress": false,
+        "tprnfor": false,
+        "vdwCorr": "grimme-d3",
+        "kPoints": {
+          "type": "automatic",
+          "grid": [
+            15,
+            15,
+            4
+          ],
+          "shift": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "id": "bands",
+      "calcType": "bands",
+      "dependsOn": [
+        "scf"
+      ],
+      "npool": 16,
+      "params": {
+        "calculation": "bands",
+        "occupations": "fixed",
+        "nbnd": 60,
+        "convThr": 1e-10,
+        "diagoDavidNdim": 12,
+        "electronMaxstep": 500,
+        "tstress": false,
+        "tprnfor": false,
+        "kPoints": {
+          "type": "crystal_b",
+          "path": [
+            {
+              "coords": [
+                0,
+                0,
+                0
+              ],
+              "label": "GAMMA",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0.5,
+                0,
+                0
+              ],
+              "label": "M",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0.3333333333333333,
+                0.3333333333333333,
+                0
+              ],
+              "label": "K",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0,
+                0,
+                0
+              ],
+              "label": "GAMMA",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0,
+                0,
+                0.5
+              ],
+              "label": "A",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0.5,
+                0,
+                0.5
+              ],
+              "label": "L",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0.3333333333333333,
+                0.3333333333333333,
+                0.5
+              ],
+              "label": "H",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0,
+                0,
+                0.5
+              ],
+              "label": "A",
+              "npoints": 1
+            },
+            {
+              "coords": [
+                0.5,
+                0,
+                0
+              ],
+              "label": "M",
+              "npoints": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "dos",
+      "calcType": "dos",
+      "dependsOn": [
+        "nscf"
+      ],
+      "params": {
+        "Emin": 0.0,
+        "Emax": 22.0,
+        "DeltaE": 0.01,
+        "ngauss": -1,
+        "name": "PBE_2H-WS2_bulk"
+      }
+    },
+    {
+      "id": "pdos",
+      "calcType": "pdos",
+      "dependsOn": [
+        "nscf"
+      ],
+      "params": {
+        "Emin": 0.0,
+        "Emax": 22.0,
+        "DeltaE": 0.01,
+        "ngauss": -1,
+        "name": "PBE_2H-WS2_bulk"
+      }
+    },
+    {
+      "id": "ppbands",
+      "calcType": "ppbands",
+      "dependsOn": [
+        "bands"
+      ],
+      "params": {
+        "lsym": true,
+        "name": "PBE_2H-WS2_bulk"
+      }
+    }
+  ]
+}

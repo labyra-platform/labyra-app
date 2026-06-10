@@ -1,0 +1,354 @@
+{
+  "structure": {
+    "ibrav": 4,
+    "celldm": {
+      "1": 13.989520622535487,
+      "3": 0.5141730661544789
+    },
+    "cellParameters": null,
+    "nat": 12,
+    "ntyp": 2,
+    "atomicSpecies": [
+      {
+        "element": "W",
+        "mass": 183.84,
+        "pseudoFile": "W.pbe-spn-kjpaw_psl.1.0.0.UPF"
+      },
+      {
+        "element": "O",
+        "mass": 15.9994,
+        "pseudoFile": "O.pbe-n-kjpaw_psl.1.0.0.UPF"
+      }
+    ],
+    "atomicPositions": [
+      {
+        "element": "W",
+        "x": 0.0,
+        "y": 0.5,
+        "z": 0.0
+      },
+      {
+        "element": "W",
+        "x": 0.5,
+        "y": 0.5,
+        "z": 0.0
+      },
+      {
+        "element": "W",
+        "x": 0.5,
+        "y": 0.0,
+        "z": 0.0
+      },
+      {
+        "element": "O",
+        "x": 0.21422776,
+        "y": 0.42845552,
+        "z": 0.0
+      },
+      {
+        "element": "O",
+        "x": 0.78577224,
+        "y": 0.57154448,
+        "z": 0.0
+      },
+      {
+        "element": "O",
+        "x": 0.57154448,
+        "y": 0.78577224,
+        "z": 0.0
+      },
+      {
+        "element": "O",
+        "x": 0.42845552,
+        "y": 0.21422776,
+        "z": 0.0
+      },
+      {
+        "element": "O",
+        "x": 0.21422776,
+        "y": 0.78577224,
+        "z": 0.0
+      },
+      {
+        "element": "O",
+        "x": 0.78577224,
+        "y": 0.21422776,
+        "z": 0.0
+      },
+      {
+        "element": "O",
+        "x": 0.0,
+        "y": 0.5,
+        "z": 0.5
+      },
+      {
+        "element": "O",
+        "x": 0.5,
+        "y": 0.5,
+        "z": 0.5
+      },
+      {
+        "element": "O",
+        "x": 0.5,
+        "y": 0.0,
+        "z": 0.5
+      }
+    ],
+    "positionsType": "crystal",
+    "spaceGroup": "P6/mmm (#191)",
+    "verified": true,
+    "note": "ibrav=4 (\u0111\u00e3 verify round-trip)"
+  },
+  "global": {
+    "ecutwfc": 60.0,
+    "ecutrho": 720.0,
+    "functional": "pbe",
+    "hubbard": [
+      {
+        "manifold": "W-5d",
+        "value": 6.2
+      },
+      {
+        "manifold": "O-2p",
+        "value": 9.0
+      }
+    ],
+    "prefix": "h-WO3_bulk"
+  },
+  "units": [
+    {
+      "id": "vc-relax",
+      "calcType": "vc-relax",
+      "dependsOn": [],
+      "params": {
+        "calculation": "vc-relax",
+        "occupations": "smearing",
+        "smearing": "gaussian",
+        "degauss": 0.007,
+        "convThr": 1e-08,
+        "kPoints": {
+          "type": "automatic",
+          "grid": [
+            3,
+            3,
+            6
+          ],
+          "shift": [
+            0,
+            0,
+            0
+          ]
+        },
+        "tstress": true,
+        "tprnfor": true,
+        "diagoDavidNdim": 4
+      },
+      "npool": 8
+    },
+    {
+      "id": "scf",
+      "calcType": "scf",
+      "dependsOn": [
+        "vc-relax"
+      ],
+      "params": {
+        "calculation": "scf",
+        "occupations": "fixed",
+        "nbnd": 60,
+        "convThr": 1e-09,
+        "kPoints": {
+          "type": "automatic",
+          "grid": [
+            6,
+            6,
+            12
+          ],
+          "shift": [
+            0,
+            0,
+            0
+          ]
+        },
+        "tstress": false,
+        "tprnfor": true,
+        "diagoDavidNdim": 8,
+        "electronMaxstep": 500
+      },
+      "npool": 8
+    },
+    {
+      "id": "nscf",
+      "calcType": "nscf",
+      "dependsOn": [
+        "scf"
+      ],
+      "params": {
+        "calculation": "nscf",
+        "occupations": "fixed",
+        "nbnd": 100,
+        "convThr": 1e-10,
+        "kPoints": {
+          "type": "automatic",
+          "grid": [
+            8,
+            8,
+            16
+          ],
+          "shift": [
+            0,
+            0,
+            0
+          ]
+        },
+        "tstress": false,
+        "tprnfor": false,
+        "diagoDavidNdim": 12,
+        "electronMaxstep": 200
+      },
+      "npool": 16
+    },
+    {
+      "id": "bands",
+      "calcType": "bands",
+      "dependsOn": [
+        "scf"
+      ],
+      "params": {
+        "calculation": "bands",
+        "occupations": "fixed",
+        "nbnd": 100,
+        "convThr": 1e-10,
+        "kPoints": {
+          "type": "crystal_b",
+          "path": [
+            {
+              "coords": [
+                0,
+                0,
+                0
+              ],
+              "label": "GAMMA",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0.5,
+                0,
+                0
+              ],
+              "label": "M",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0.3333333333333333,
+                0.3333333333333333,
+                0
+              ],
+              "label": "K",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0,
+                0,
+                0
+              ],
+              "label": "GAMMA",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0,
+                0,
+                0.5
+              ],
+              "label": "A",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0.5,
+                0,
+                0.5
+              ],
+              "label": "L",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0.3333333333333333,
+                0.3333333333333333,
+                0.5
+              ],
+              "label": "H",
+              "npoints": 60
+            },
+            {
+              "coords": [
+                0,
+                0,
+                0.5
+              ],
+              "label": "A",
+              "npoints": 1
+            },
+            {
+              "coords": [
+                0.5,
+                0,
+                0
+              ],
+              "label": "M",
+              "npoints": 1
+            }
+          ]
+        },
+        "tstress": false,
+        "tprnfor": false,
+        "diagoDavidNdim": 12,
+        "electronMaxstep": 500
+      },
+      "npool": 16
+    },
+    {
+      "id": "dos",
+      "calcType": "dos",
+      "dependsOn": [
+        "nscf"
+      ],
+      "params": {
+        "Emin": -5.0,
+        "Emax": 13.0,
+        "DeltaE": 0.01,
+        "ngauss": -1,
+        "name": "PBE_h-WO3_bulk"
+      }
+    },
+    {
+      "id": "pdos",
+      "calcType": "pdos",
+      "dependsOn": [
+        "nscf"
+      ],
+      "params": {
+        "Emin": -5.0,
+        "Emax": 13.0,
+        "DeltaE": 0.01,
+        "ngauss": -1,
+        "name": "PBE_h-WO3_bulk"
+      }
+    },
+    {
+      "id": "ppbands",
+      "calcType": "ppbands",
+      "dependsOn": [
+        "bands"
+      ],
+      "params": {
+        "lsym": true,
+        "name": "PBE_h-WO3_bulk"
+      }
+    }
+  ]
+}

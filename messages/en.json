@@ -1711,7 +1711,8 @@
     "tabs": {
       "workflows": "Workflows",
       "submit": "Submit",
-      "templates": "Templates"
+      "templates": "Templates",
+      "builder": "Builder"
     },
     "template": {
       "hubbard": "Hubbard U",
@@ -1719,6 +1720,14 @@
       "cutoff": "Cutoff (Ry)",
       "kpoints": "k-grid",
       "steps": "Steps"
-    }
+    },
+    "submitTemplate": "Template",
+    "submitWorkflowId": "Run ID",
+    "submitWorkflowIdHint": "Lowercase letters, digits, hyphens — must be unique.",
+    "submitPreset": "Machine",
+    "submitButton": "Launch",
+    "submitting": "Submitting…",
+    "submitOk": "Submitted {id} — it will appear under Workflows shortly.",
+    "submitError": "Submission failed. Check the run ID is unique and try again."
   }
 }

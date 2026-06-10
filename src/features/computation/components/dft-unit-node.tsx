@@ -1,16 +1,11 @@
 /**
- * Custom React Flow node for a DFT calc unit — Mat3ra-style INLINE editing.
+ * Custom React Flow node for a DFT calc unit — Mat3ra-style inline editing.
  *
- * The node expands to edit its own params right on the canvas (no side panel).
- * Edits persist into node.data.params via React Flow's updateNodeData, ready
- * for serialization at submit time.
+ * Node shell (handles + header + expand toggle); the editable params render
+ * inline via PwFields / PostprocFields and persist into node.data.params
+ * through updateNodeData.
  *
- *  - pw calc types (vc-relax/scf/nscf/bands): k-grid + conv_thr
- *  - postproc (dos/pdos/ppbands): Emin / Emax
- *
- * Interactive elements carry `nodrag` so editing doesn't drag the node.
- *
- * @phase R243-dag-editor-b3-inline
+ * @phase R244-dag-editor-b3b
  */
 'use client';
 
@@ -18,6 +13,7 @@ import { Handle, Position, useReactFlow } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { useState } from 'react';
+import { PostprocFields, PwFields } from '@/features/computation/components/dft-node-fields';
 
 const TYPE_LABEL: Record<string, string> = {
   'vc-relax': 'Relax (cell + ions)',
@@ -30,7 +26,6 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const PW_TYPES = new Set(['vc-relax', 'scf', 'nscf', 'bands']);
-const INPUT_CLS = 'bg-background nodrag rounded border px-1 py-0.5 text-xs tabular-nums';
 
 export function DftUnitNode({ id, data }: NodeProps) {
   const { updateNodeData } = useReactFlow();
@@ -41,8 +36,6 @@ export function DftUnitNode({ id, data }: NodeProps) {
   const params = (data.params ?? {}) as Record<string, unknown>;
   const setParam = (key: string, value: unknown) =>
     updateNodeData(id, { params: { ...params, [key]: value } });
-
-  const kgrid = (params.kgrid as number[] | undefined) ?? [6, 6, 6];
 
   return (
     <div className='bg-card min-w-44 rounded-md border shadow-sm'>
@@ -67,54 +60,9 @@ export function DftUnitNode({ id, data }: NodeProps) {
       {open ? (
         <div className='space-y-2 border-t px-3 py-2'>
           {PW_TYPES.has(calcType) ? (
-            <>
-              <div className='space-y-0.5'>
-                <span className='text-muted-foreground text-[10px] uppercase'>k-grid</span>
-                <div className='flex gap-1'>
-                  {[0, 1, 2].map((i) => (
-                    <input
-                      key={i}
-                      type='number'
-                      min={1}
-                      value={kgrid[i] ?? 1}
-                      onChange={(e) => {
-                        const next = [...kgrid];
-                        next[i] = Number(e.target.value);
-                        setParam('kgrid', next);
-                      }}
-                      className={`${INPUT_CLS} w-12`}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className='space-y-0.5'>
-                <span className='text-muted-foreground text-[10px] uppercase'>conv_thr</span>
-                <input
-                  type='text'
-                  value={String(params.convThr ?? '1e-8')}
-                  onChange={(e) => setParam('convThr', e.target.value)}
-                  className={`${INPUT_CLS} w-full`}
-                />
-              </div>
-            </>
+            <PwFields params={params} setParam={setParam} />
           ) : (
-            <div className='space-y-0.5'>
-              <span className='text-muted-foreground text-[10px] uppercase'>Emin / Emax (eV)</span>
-              <div className='flex gap-1'>
-                <input
-                  type='number'
-                  value={Number(params.emin ?? 0)}
-                  onChange={(e) => setParam('emin', Number(e.target.value))}
-                  className={`${INPUT_CLS} w-16`}
-                />
-                <input
-                  type='number'
-                  value={Number(params.emax ?? 20)}
-                  onChange={(e) => setParam('emax', Number(e.target.value))}
-                  className={`${INPUT_CLS} w-16`}
-                />
-              </div>
-            </div>
+            <PostprocFields params={params} setParam={setParam} />
           )}
         </div>
       ) : null}

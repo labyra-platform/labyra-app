@@ -1728,6 +1728,9 @@
     "submitButton": "Launch",
     "submitting": "Submitting…",
     "submitOk": "Submitted {id} — it will appear under Workflows shortly.",
-    "submitError": "Submission failed. Check the run ID is unique and try again."
+    "submitError": "Submission failed. Check the run ID is unique and try again.",
+    "builderAddUnit": "Add unit:",
+    "builderReset": "Reset",
+    "builderHint": "Drag handle to handle to connect · select a node and press Delete to remove · scroll to zoom."
   }
 }

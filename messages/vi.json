@@ -1728,6 +1728,9 @@
     "submitButton": "Khởi chạy",
     "submitting": "Đang gửi…",
     "submitOk": "Đã gửi {id} — sẽ xuất hiện ở tab Workflow sau giây lát.",
-    "submitError": "Gửi thất bại. Kiểm tra mã chạy có trùng không rồi thử lại."
+    "submitError": "Gửi thất bại. Kiểm tra mã chạy có trùng không rồi thử lại.",
+    "builderAddUnit": "Thêm node:",
+    "builderReset": "Mặc định",
+    "builderHint": "Kéo từ chấm bên này sang chấm bên kia để nối · chọn node rồi nhấn Delete để xóa · cuộn để zoom."
   }
 }

@@ -1,13 +1,14 @@
 /**
- * Default DFT workflow topology — the verified 7-unit DAG used as the editor's
- * starting graph. Topology only (params attach in the config phase).
+ * Default DFT workflow topology + the calc types available in the builder.
  *
  *   vc-relax → scf → nscf → {dos, pdos}
  *                  ↘ bands → ppbands
  *
- * @phase R241-dag-editor
+ * @phase R242-dag-editor-b2
  */
 import type { DagUnit } from '@/features/computation/dag-layout';
+
+export const CALC_TYPES = ['vc-relax', 'scf', 'nscf', 'bands', 'dos', 'pdos', 'ppbands'] as const;
 
 export const DEFAULT_DFT_DAG: DagUnit[] = [
   { id: 'vc-relax', calcType: 'vc-relax', dependsOn: [] },

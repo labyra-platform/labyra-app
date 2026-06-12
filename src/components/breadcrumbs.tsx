@@ -11,22 +11,23 @@ import {
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
 import { type BreadcrumbItem as BcItem, useBreadcrumbs } from '@/hooks/use-breadcrumbs';
-
 export function Breadcrumbs() {
   const items = useBreadcrumbs();
   const t = useTranslations();
-
-  // Resolve titleKey if present; gracefully fall back to literal title if the
-  // key is missing from messages (prevents runtime errors on unknown routes).
+  // Resolve titleKey if present; fall back to the literal title when the key is
+  // missing OR resolves to a namespace (object). next-intl's t.has() returns true
+  // for namespaces like 'nav.groups', but t() THROWS on them (INSUFFICIENT_PATH) —
+  // so a try/catch is required, not a .has() check. Guards every route (deeper
+  // nested paths can surface namespace keys).
   const resolveTitle = (item: BcItem): string => {
-    if (!item.titleKey) return item.title;
-    // Use .has() to avoid triggering MISSING_MESSAGE error events
-    // for auto-generated keys like 'nav.exp-003' from dynamic route segments.
-    return t.has(item.titleKey) ? t(item.titleKey) : item.title;
+    if (!item.titleKey || !t.has(item.titleKey)) return item.title;
+    try {
+      return t(item.titleKey);
+    } catch {
+      return item.title;
+    }
   };
-
   if (items.length === 0) return null;
-
   return (
     <Breadcrumb>
       <BreadcrumbList>

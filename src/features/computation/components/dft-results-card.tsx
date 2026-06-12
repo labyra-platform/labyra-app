@@ -1,37 +1,27 @@
 /**
  * DFT results card — read-only summary of one computation workflow.
  *
- * Renders the worker-extracted `results` (band gap with direct/indirect
- * character + VBM/CBM k-positions, relaxed cell, total energy) plus the
- * per-unit pipeline status. Server Component (static data).
+ * Band gap (direct/indirect + VBM/CBM k-positions), relaxed cell, total energy,
+ * plus the pipeline as an LR status DAG. The title links to the workflow
+ * workspace. Server Component; the DAG is a client island.
  *
- * @phase R238-dft-results-ui
+ * @phase R259-link-card-to-workspace
  */
 import { IconActivity, IconAtom2, IconChartHistogram } from '@tabler/icons-react';
 import { getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import type { DftOverallStatus, DftUnitStatus, DftWorkflow } from '@/types/dft';
-
-// canonical 7-unit DAG order
-const UNIT_ORDER = ['vc-relax', 'scf', 'nscf', 'bands', 'dos', 'pdos', 'ppbands'] as const;
+import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
+import { Link } from '@/i18n/navigation';
+import type { DftOverallStatus, DftWorkflow } from '@/types/dft';
 
 function fmt(n: number | null | undefined, digits = 4): string {
   return typeof n === 'number' ? n.toFixed(digits) : '—';
 }
-
 function fmtK(k: [number, number, number] | null): string {
   return k ? `(${k.map((x) => x.toFixed(3)).join(', ')})` : '—';
 }
-
-const STATUS_VARIANT: Record<DftUnitStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-  completed: 'default',
-  running: 'secondary',
-  queued: 'outline',
-  pending: 'outline',
-  failed: 'destructive'
-};
 
 const OVERALL_VARIANT: Record<DftOverallStatus, 'default' | 'secondary' | 'destructive'> = {
   completed: 'default',
@@ -48,13 +38,14 @@ export async function DftResultsCard({ workflow }: Props) {
   const r = workflow.results;
   const g = workflow.global;
   const overall = workflow.overallStatus;
-
   return (
     <Card>
       <CardHeader className='flex flex-row items-center justify-between gap-2 space-y-0'>
         <CardTitle className='flex items-center gap-2 text-base'>
-          <IconAtom2 className='size-4' aria-hidden />
-          {g?.prefix ?? workflow.id}
+          <IconAtom2 className='size-4 shrink-0' aria-hidden />
+          <Link href={`/dashboard/computation/${workflow.id}`} className='truncate hover:underline'>
+            {g?.prefix ?? workflow.id}
+          </Link>
           {g?.functional ? (
             <span className='text-muted-foreground text-xs uppercase'>{g.functional}</span>
           ) : null}
@@ -69,7 +60,6 @@ export async function DftResultsCard({ workflow }: Props) {
           </Badge>
         ) : null}
       </CardHeader>
-
       <CardContent className='space-y-4'>
         {r?.bandGap ? (
           <section className='space-y-1'>
@@ -96,7 +86,6 @@ export async function DftResultsCard({ workflow }: Props) {
             </p>
           </section>
         ) : null}
-
         {r?.relaxedStructure ? (
           <>
             <Separator />
@@ -122,32 +111,19 @@ export async function DftResultsCard({ workflow }: Props) {
             </section>
           </>
         ) : null}
-
         {typeof r?.totalEnergyRy === 'number' ? (
           <p className='text-muted-foreground text-xs tabular-nums'>
             {t('totalEnergy')} <span className='text-foreground'>{fmt(r.totalEnergyRy, 4)} Ry</span>
           </p>
         ) : null}
-
         {!r ? <p className='text-muted-foreground text-sm'>{t('noResults')}</p> : null}
-
         <Separator />
         <section className='space-y-1.5'>
           <h3 className='flex items-center gap-1.5 text-sm font-medium'>
             <IconActivity className='size-4' aria-hidden />
             {t('pipeline')}
           </h3>
-          <ul className='flex flex-wrap gap-1.5'>
-            {UNIT_ORDER.map((u) => {
-              const unit = workflow.snapshot[u];
-              if (!unit) return null;
-              return (
-                <li key={u}>
-                  <Badge variant={STATUS_VARIANT[unit.status]}>{u}</Badge>
-                </li>
-              );
-            })}
-          </ul>
+          <DftWorkflowGraph workflow={workflow} className='h-[240px]' />
         </section>
       </CardContent>
     </Card>

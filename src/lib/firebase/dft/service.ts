@@ -6,7 +6,11 @@
  * Written by the Python worker (Cloud Run + Cloud Batch); the app only reads.
  * Server-only — uses Firebase Admin and scopes every query by tenantId path.
  *
- * @phase R250-dft-graph-mount
+ * NOTE: the worker stores `structure` as a JSON STRING (nested arrays like
+ * cellParameters aren't valid Firestore entities), so we decode it on read —
+ * mirroring the worker's own load(). `units`/`global` are stored as native maps.
+ *
+ * @phase R260-parse-structure-json
  */
 import 'server-only';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
@@ -20,13 +24,28 @@ import type {
   DftWorkflowGlobal
 } from '@/types/dft';
 const COLLECTION = 'dftWorkflows';
+
+/** Structure is persisted as a JSON string by the worker; decode it. */
+function parseStructure(raw: unknown): DftStructure | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw === 'string') {
+    if (raw.length === 0) return undefined;
+    try {
+      return JSON.parse(raw) as DftStructure;
+    } catch {
+      return undefined;
+    }
+  }
+  return raw as DftStructure;
+}
+
 function toWorkflow(id: string, data: Record<string, unknown>): DftWorkflow {
   return {
     id,
     overallStatus: (data.overallStatus as DftOverallStatus | undefined) ?? null,
     results: (data.results as DftResults | undefined) ?? null,
     snapshot: (data.snapshot as Record<string, DftUnitSnapshot> | undefined) ?? {},
-    structure: data.structure as DftStructure | undefined,
+    structure: parseStructure(data.structure),
     global: data.global as DftWorkflowGlobal | undefined,
     units: data.units as DftUnit[] | undefined
   };

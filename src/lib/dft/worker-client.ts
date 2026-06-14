@@ -1,18 +1,35 @@
 /**
  * DFT worker client — server-to-server calls to the Cloud Run worker.
  *
- * Auth isolated here. Default: Cloud Run IAM via a minted ID token
- * (google-auth-library), matching the worker's authenticated invoker setting.
+ * Auth: a minted Cloud Run ID token. Credentials resolve in this order:
+ *   1. GCP_SA_KEY env (a service-account key JSON, one var) — works on Vercel,
+ *      where Application Default Credentials are unavailable.
+ *   2. Application Default Credentials (GCP runtime, or a local
+ *      GOOGLE_APPLICATION_CREDENTIALS file).
+ * The worker stays IAM-locked (--no-allow-unauthenticated); the app identity (or
+ * the GCP_SA_KEY service account) needs roles/run.invoker on the worker.
  *
- * Setup: env DFT_WORKER_URL; the app runtime identity needs roles/run.invoker
- * on the worker; google-auth-library must resolve (transitive via firebase-admin).
+ * Setup: env DFT_WORKER_URL (+ GCP_SA_KEY on Vercel).
  *
- * @phase R253-dft-preview
+ * @phase R261-sa-key-auth
  */
 import 'server-only';
 import { GoogleAuth } from 'google-auth-library';
 
 const WORKER_URL = process.env.DFT_WORKER_URL;
+
+/** Use an explicit SA key (Vercel) when present; else fall back to ADC. */
+function makeAuth(): GoogleAuth {
+  const raw = process.env.GCP_SA_KEY;
+  if (raw && raw.trim().length > 0) {
+    try {
+      return new GoogleAuth({ credentials: JSON.parse(raw) as Record<string, unknown> });
+    } catch {
+      // malformed key → fall back to ADC below
+    }
+  }
+  return new GoogleAuth();
+}
 
 export interface WorkerResult {
   ok: boolean;
@@ -24,7 +41,7 @@ async function callWorker(path: string, body: unknown): Promise<WorkerResult> {
   if (!WORKER_URL) {
     throw new Error('DFT_WORKER_URL is not configured');
   }
-  const auth = new GoogleAuth();
+  const auth = makeAuth();
   const client = await auth.getIdTokenClient(WORKER_URL);
   const resp = await client.request({
     url: `${WORKER_URL}${path}`,

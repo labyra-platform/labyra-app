@@ -1754,6 +1754,7 @@
     "computeLaunching": "Đang chạy…",
     "computeLaunchOk": "Đã chạy {id} — xem danh sách workflow.",
     "computeLaunchError": "Chạy lỗi — kiểm tra cấu hình worker và mã chạy có trùng không.",
-    "paramAdvanced": "Nâng cao"
+    "paramAdvanced": "Nâng cao",
+    "pseudopotentials": "Giả thế"
   }
 }

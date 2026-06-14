@@ -1754,6 +1754,7 @@
     "computeLaunching": "Launching…",
     "computeLaunchOk": "Launched {id} — see the workflow list.",
     "computeLaunchError": "Launch failed — check worker config and that the run ID is unique.",
-    "paramAdvanced": "Advanced"
+    "paramAdvanced": "Advanced",
+    "pseudopotentials": "Pseudopotentials"
   }
 }

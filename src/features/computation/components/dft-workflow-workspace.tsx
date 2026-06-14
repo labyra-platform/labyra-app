@@ -1,15 +1,16 @@
 /**
  * DFT workflow workspace — 3-zone layout (report DFT §10.1).
- *   left rail (units) | canvas tabs [Overview|Settings|Compute] | node panel.
- * Selection syncs between the rail, the canvas, and the panel.
+ *   left rail (units + pseudopotentials) | canvas tabs [Overview|Settings|Compute]
+ *   | node panel. Selection syncs between the rail, the canvas, and the panel.
  *
  * Overview = LR status DAG. Settings = read-only globals. Compute = backend +
- * Launch (§10.5). Node panel = Details + INPUT preview.
+ * Launch (§10.5). Node panel = Details + grouped params + auto .in preview.
  *
- * @phase R255-dft-compute-launch
+ * @phase R263-left-rail-pseudo
  */
 'use client';
 
+import { IconCircleCheck } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
     [units, selectedId]
   );
   const g = workflow.global;
+  const species = workflow.structure?.atomicSpecies ?? [];
 
   return (
     <div className='flex h-[78vh] overflow-hidden rounded-lg border'>
@@ -74,6 +76,29 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
             })}
           </ul>
         </div>
+        {species.length > 0 ? (
+          <div className='border-t p-2'>
+            <p className='text-muted-foreground px-1 pb-1 text-xs font-medium'>
+              {t('pseudopotentials')}
+            </p>
+            <ul className='space-y-0.5'>
+              {species.map((sp) => (
+                <li key={sp.element} className='flex items-center gap-2 px-2 py-1 text-sm'>
+                  <IconCircleCheck
+                    className='size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400'
+                    aria-hidden
+                  />
+                  <span className='font-medium'>{sp.element}</span>
+                  {sp.pseudoFile ? (
+                    <span className='text-muted-foreground truncate font-mono text-[10px]'>
+                      {sp.pseudoFile}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </aside>
 
       <div className='flex min-w-0 flex-1 flex-col'>

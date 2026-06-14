@@ -1,18 +1,18 @@
 /**
  * DFT node panel — "Unit settings" (report DFT §10.4, Mat3ra-style).
  *
- * Read-only Details (engine/executable/cutoff/k-grid) + grouped params (§4.4:
- * Basic A+D with baseline ✓/⚠/⛔ | Advanced B | Locked C) + an INPUT section that
- * renders the exact QE .in via /api/dft/preview (catches a 1-char error before
- * launch). TEMPLATE (editable Jinja) + Next + Edit/Clone/Output come next.
+ * Read-only Details + grouped params (§4.4) + an INPUT section that AUTO-renders
+ * the exact QE .in via /api/dft/preview when a node is selected (no button).
+ * A small refresh icon re-renders. The panel is keyed per unit (parent), so each
+ * selection mounts fresh and fires its own preview.
  *
- * @phase R256-dft-param-baseline
+ * @phase R262-panel-auto-preview
  */
 'use client';
 
-import { IconFileText, IconLoader2, IconX } from '@tabler/icons-react';
+import { IconRefresh, IconX } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DftParamList } from '@/features/computation/components/dft-param-list';
@@ -53,14 +53,14 @@ export function DftNodePanel({
 }: DftNodePanelProps) {
   const t = useTranslations('computation');
   const [preview, setPreview] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const params = unit.params ?? {};
   const grid = params.kPoints?.grid;
   const exe = executableOf(unit);
 
-  async function runPreview() {
+  const runPreview = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -71,7 +71,7 @@ export function DftNodePanel({
           calcType: unit.calcType,
           structure,
           global: globalConfig,
-          params
+          params: unit.params ?? {}
         })
       });
       const data: { input?: string; error?: string } = await res.json();
@@ -85,7 +85,11 @@ export function DftNodePanel({
     } finally {
       setLoading(false);
     }
-  }
+  }, [unit.calcType, unit.params, structure, globalConfig, t]);
+
+  useEffect(() => {
+    void runPreview();
+  }, [runPreview]);
 
   return (
     <aside className='flex w-80 shrink-0 flex-col overflow-y-auto border-l'>
@@ -149,22 +153,25 @@ export function DftNodePanel({
           <div className='flex items-center justify-between gap-2 pb-1.5'>
             <p className='text-muted-foreground text-xs font-medium uppercase'>{t('panelInput')}</p>
             <Button
-              size='sm'
-              variant='outline'
-              className='h-7'
-              onClick={runPreview}
+              variant='ghost'
+              size='icon'
+              className='size-6'
+              onClick={() => void runPreview()}
               disabled={loading}
+              aria-label={t('previewButton')}
             >
-              {loading ? (
-                <IconLoader2 className='size-3.5 animate-spin' aria-hidden />
-              ) : (
-                <IconFileText className='size-3.5' aria-hidden />
-              )}
-              {loading ? t('previewLoading') : t('previewButton')}
+              <IconRefresh className={`size-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden />
             </Button>
           </div>
-          {error ? <p className='text-destructive text-xs'>{error}</p> : null}
-          {preview != null ? (
+          {loading ? (
+            <div className='space-y-1'>
+              <div className='bg-muted h-3 w-full animate-pulse rounded' />
+              <div className='bg-muted h-3 w-5/6 animate-pulse rounded' />
+              <div className='bg-muted h-3 w-2/3 animate-pulse rounded' />
+            </div>
+          ) : error ? (
+            <p className='text-destructive text-xs'>{error}</p>
+          ) : preview != null ? (
             <pre className='bg-muted/40 max-h-72 overflow-auto rounded-md border p-2 font-mono text-[11px] leading-relaxed'>
               {preview}
             </pre>

@@ -84,6 +84,8 @@ export interface Paper extends ProvBase {
   /** R237cc: false when the DOI didn't resolve at Crossref/OpenAlex (likely an
    * OCR error). undefined for papers processed before this check existed. */
   doiVerified?: boolean;
+  /** R282: 'manual' = user-corrected (worker preserves it across reprocess). */
+  doiSource?: 'manual' | 'extracted';
   abstract: string;
   pageCount: number;
 

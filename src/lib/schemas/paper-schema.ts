@@ -38,6 +38,9 @@ const PaperPatchFields = {
   // a successful "Resolve from DOI", clearing the amber unverified-DOI triangle
   // without a full worker reprocess. The editor only ever sends `true`.
   doiVerified: z.boolean().optional(),
+  // R282: DOI provenance. The editor sets 'manual' when the user corrects the
+  // DOI so the worker preserves it across reprocess instead of re-extracting.
+  doiSource: z.literal('manual').optional(),
   abstract: z.string().max(10000).optional(),
   // R177-1e: book/document-type fields. Lenient ISBN format (worker
   // does strict checksum); empty string allowed for non-book papers.

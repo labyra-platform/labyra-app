@@ -125,7 +125,14 @@ export function PaperMetadataEditor({
         .map((a) => a.trim())
         .filter(Boolean),
       ...(yNum && yNum >= 1800 && yNum <= 2100 ? { year: yNum } : {}),
-      ...(d ? { doi: d, ...(verified ? { doiVerified: true } : {}) } : {})
+      // R282: flag a CHANGED doi as manual so the worker keeps it on reprocess.
+      ...(d
+        ? {
+            doi: d,
+            ...(d !== (paper.doi ?? '') ? { doiSource: 'manual' as const } : {}),
+            ...(verified ? { doiVerified: true } : {})
+          }
+        : {})
     };
     setSaving(true);
     try {

@@ -22,7 +22,7 @@ import {
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createEmptyPaperFilter,
   type PaperFilterValue,
@@ -124,6 +124,24 @@ export function PaperList({
   const params = useParams();
   const locale = params.locale as string;
   const { papers, loading } = usePapers();
+  // R283d: toast when a paper becomes a DOI duplicate. Existing duplicates at
+  // mount are remembered silently so only newly-detected ones notify.
+  const tDup = useTranslations('papers');
+  const seenDuplicatesRef = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (seenDuplicatesRef.current === null) {
+      seenDuplicatesRef.current = new Set(
+        papers.filter((p) => p.status === 'duplicate').map((p) => p.id)
+      );
+      return;
+    }
+    for (const p of papers) {
+      if (p.status === 'duplicate' && p.id && !seenDuplicatesRef.current.has(p.id)) {
+        seenDuplicatesRef.current.add(p.id);
+        toast.error(tDup('duplicateDetected'), { description: p.title || undefined });
+      }
+    }
+  }, [papers, tDup]);
   const [filter, setFilter] = useState<PaperFilterValue>(() => createEmptyPaperFilter());
   const [sort, setSort] = useState<SortKey>('recent');
   const [view, setView] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen

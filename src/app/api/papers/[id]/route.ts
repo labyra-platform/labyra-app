@@ -61,6 +61,16 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     );
   }
 
+  // R283: reject a DOI that already belongs to another paper (client shows a toast).
+  if (parsed.data.doi) {
+    const existing = await findPaperByDoi(auth.tenantId, parsed.data.doi);
+    if (existing && existing.id !== id) {
+      return NextResponse.json(
+        { error: 'doi_duplicate', paperId: existing.id, title: existing.title },
+        { status: 409 }
+      );
+    }
+  }
   try {
     const updated = await updatePaperMetadata(id, parsed.data, {
       tenantId: auth.tenantId,

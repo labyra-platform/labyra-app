@@ -21,13 +21,15 @@ export type PaperStatus =
   | 'indexed'
   | 'failed'
   | 'cancelling'
-  | 'cancelled';
+  | 'cancelled'
+  | 'duplicate';
 
 /** Terminal states — processing has stopped */
 export const TERMINAL_STATUSES: ReadonlySet<PaperStatus> = new Set([
   'indexed',
   'failed',
-  'cancelled'
+  'cancelled',
+  'duplicate'
 ]);
 
 /** States where cancellation is meaningful */
@@ -86,6 +88,8 @@ export interface Paper extends ProvBase {
   doiVerified?: boolean;
   /** R282: 'manual' = user-corrected (worker preserves it across reprocess). */
   doiSource?: 'manual' | 'extracted';
+  /** R283: id of the original paper when this one is a duplicate-DOI. */
+  duplicateOf?: string;
   abstract: string;
   pageCount: number;
 

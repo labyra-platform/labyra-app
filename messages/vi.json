@@ -291,7 +291,8 @@
       "indexed": "Đã index",
       "failed": "Thất bại",
       "cancelling": "Đang hủy",
-      "cancelled": "Đã hủy"
+      "cancelled": "Đã hủy",
+      "duplicate": "Trùng DOI"
     },
     "title": "Thư viện paper",
     "subtitle": "Nguồn kiến thức trong lab của bạn",
@@ -511,6 +512,7 @@
     "metadataTitleRequired": "Tiêu đề không được để trống",
     "metadataDoiInvalidSave": "Để trống hoặc nhập đúng 10.xxxx/yyyy",
     "metadataSaved": "Đã lưu thông tin",
+    "metadataDoiDuplicate": "DOI đã thuộc về paper khác",
     "metadataSaveFailed": "Lưu thất bại",
     "metadataDoiResolveError": "Lỗi tra DOI",
     "metadataFetchFromDoi": "Lấy từ DOI",

@@ -145,6 +145,12 @@ export function PaperMetadataEditor({
         },
         body: JSON.stringify(patch)
       });
+      // R283: DOI already on another paper → server 409; toast and keep the sheet open.
+      if (res.status === 409) {
+        const info = (await res.json().catch(() => ({}))) as { title?: string };
+        toast.error(t('metadataDoiDuplicate'), { description: info.title || undefined });
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       toast.success(t('metadataSaved'));
       onOpenChange(false);

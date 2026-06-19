@@ -32,7 +32,8 @@ const STEP_ORDER: Record<PaperStatus, number> = {
   indexed: 7,
   failed: -1,
   cancelling: -1,
-  cancelled: -1
+  cancelled: -1,
+  duplicate: -1
 };
 
 export function ProcessingTimeline({ paper }: { paper: Paper }) {

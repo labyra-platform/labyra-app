@@ -511,6 +511,7 @@
     "metadataTitleRequired": "Title cannot be empty",
     "metadataDoiInvalidSave": "Leave blank or enter a valid 10.xxxx/yyyy",
     "metadataSaved": "Info saved",
+    "metadataDoiDuplicate": "DOI already belongs to another paper",
     "metadataSaveFailed": "Save failed",
     "metadataDoiResolveError": "DOI lookup error",
     "metadataFetchFromDoi": "Fetch from DOI",

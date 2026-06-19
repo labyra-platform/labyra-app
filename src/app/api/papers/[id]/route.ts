@@ -5,7 +5,12 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
-import { deprecatePaper, getPaper, updatePaperMetadata } from '@/lib/firebase/papers/service';
+import {
+  deprecatePaper,
+  findPaperByDoi,
+  getPaper,
+  updatePaperMetadata
+} from '@/lib/firebase/papers/service';
 import { UpdatePaperMetadataSchema } from '@/lib/schemas/paper-schema';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 

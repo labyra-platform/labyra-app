@@ -79,7 +79,8 @@ const STATUS_BADGE: Partial<Record<PaperStatus, string>> = {
   extracting_citations: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 animate-pulse',
   failed: 'bg-destructive/10 text-destructive',
   cancelling: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  cancelled: 'bg-muted text-muted-foreground'
+  cancelled: 'bg-muted text-muted-foreground',
+  duplicate: 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
   // 'indexed' deliberately omitted — see comment above.
 };
 

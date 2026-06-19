@@ -558,7 +558,7 @@ function PaperRowMenu({
 }) {
   const t = useTranslations('papers');
   const [busy, setBusy] = useState(false);
-  const canReprocess = TERMINAL_STATUSES.has(status);
+  const canReprocess = TERMINAL_STATUSES.has(status) || status === 'queued'; // R281
   const tc = useTranslations('collections');
   const tenantId = useTenantId();
   const queryClient = useQueryClient();

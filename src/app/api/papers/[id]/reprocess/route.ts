@@ -9,7 +9,7 @@ import { getVectorStore } from '@/lib/ai/rag/vector-store';
 import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
-import { type Paper, TERMINAL_STATUSES } from '@/types/papers';
+import { type Paper, type PaperStatus, TERMINAL_STATUSES } from '@/types/papers';
 
 export const runtime = 'nodejs';
 
@@ -66,12 +66,19 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const paper = snap.data() as Paper;
-  if (!TERMINAL_STATUSES.has(paper.status)) {
+  // R281: 'queued' papers stuck in the waiting queue are reprocessable too —
+  // the worker pipeline is idempotent + status-guarded (no version gating), so
+  // re-enqueueing is safe. Actively-processing statuses still require cancel first.
+  const REPROCESSABLE: ReadonlySet<PaperStatus> = new Set<PaperStatus>([
+    ...TERMINAL_STATUSES,
+    'queued'
+  ]);
+  if (!REPROCESSABLE.has(paper.status)) {
     return new Response(
       JSON.stringify({
-        error: 'not_terminal',
+        error: 'not_reprocessable',
         currentStatus: paper.status,
-        hint: 'cancel first then reprocess'
+        hint: 'cancel the in-progress paper first, then reprocess'
       }),
       { status: 409 }
     );

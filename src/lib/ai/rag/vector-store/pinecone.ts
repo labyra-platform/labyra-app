@@ -226,11 +226,21 @@ export async function pineconeQuery(
 export async function pineconeDeleteByPaperId(tenantId: string, paperId: string): Promise<void> {
   const index = getIndex();
   const ns = index.namespace(tenantId);
-  // Pinecone serverless: delete by metadata filter
-  // 404 returned when namespace is empty — treat as no-op
+  // R284: serverless indexes do NOT support delete-by-metadata-filter (the old
+  // deleteMany({ filter }) was a silent no-op). Vector ids follow the worker
+  // convention `${paperId}-${chunkIdx}`, so list by that prefix and delete by id.
+  const prefix = `${paperId}-`;
+  // 404 (PineconeNotFoundError) when the namespace is empty — treat as no-op.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await ns.deleteMany({ filter: { paperId } } as any);
+    let paginationToken: string | undefined;
+    do {
+      const page = await ns.listPaginated({ prefix, paginationToken });
+      const ids = (page.vectors ?? [])
+        .map((v) => v.id)
+        .filter((id): id is string => typeof id === 'string');
+      if (ids.length > 0) await ns.deleteMany(ids);
+      paginationToken = page.pagination?.next;
+    } while (paginationToken);
   } catch (err) {
     const errName = (err as { name?: string }).name;
     if (errName === 'PineconeNotFoundError') return;

@@ -40,6 +40,14 @@ interface Group {
   id: string;
   name: string;
 }
+interface Member {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: string;
+  groupId: string;
+  isGroupLead: boolean;
+}
 
 async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
   const user = getFirebaseAuth().currentUser;
@@ -71,6 +79,8 @@ export default function MembersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupId, setGroupId] = useState<string>('');
+  const [members, setMembers] = useState<Member[]>([]);
+  const [movingUid, setMovingUid] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,6 +98,16 @@ export default function MembersPage() {
         }
       } catch {
         // non-fatal — invite still works without group assignment
+      }
+      // R285: load tenant members for the management section.
+      try {
+        const mRes = await authedFetch('/api/members');
+        if (mRes.ok) {
+          const mData = (await mRes.json()) as { items: Member[] };
+          setMembers(mData.items);
+        }
+      } catch {
+        // non-fatal — invite list still works
       }
     } catch {
       toast.error('Failed to load invites');
@@ -143,6 +163,23 @@ export default function MembersPage() {
     }
   }
 
+  async function handleMoveMember(uid: string, newGroupId: string) {
+    if (!newGroupId) return;
+    setMovingUid(uid);
+    try {
+      const res = await authedFetch(`/api/members/${uid}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ groupId: newGroupId })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success('Member moved — they must sign out and back in for it to apply.');
+      void load();
+    } catch {
+      toast.error('Failed to move member');
+    } finally {
+      setMovingUid(null);
+    }
+  }
   if (!isAdmin) {
     return (
       <PageContainer pageTitle='Members' pageDescription='Manage lab members and invitations'>
@@ -244,6 +281,60 @@ export default function MembersPage() {
               })}
             </ul>
           )}
+        </div>
+        {/* Members — group assignment */}
+        <div>
+          <h2 className='mb-3 text-sm font-medium'>Members</h2>
+          {loading ? (
+            <div className='text-muted-foreground py-8 text-center text-sm'>Loading…</div>
+          ) : members.length === 0 ? (
+            <div className='text-muted-foreground py-8 text-center text-sm'>No members yet.</div>
+          ) : (
+            <ul className='divide-border divide-y rounded-lg border border-input'>
+              {members.map((m) => {
+                const groupName =
+                  groups.find((g) => g.id === m.groupId)?.name ??
+                  (m.groupId ? m.groupId : 'No group');
+                const selectValue = groups.some((g) => g.id === m.groupId) ? m.groupId : undefined;
+                return (
+                  <li key={m.uid} className='flex items-center justify-between gap-3 px-4 py-3'>
+                    <div className='min-w-0'>
+                      <div className='truncate text-sm font-medium'>{m.displayName || m.email}</div>
+                      <div className='text-muted-foreground text-xs capitalize'>
+                        {m.role || 'member'} · {groupName}
+                        {m.isGroupLead ? ' · lead' : ''}
+                      </div>
+                    </div>
+                    {groups.length > 0 && (
+                      <Select
+                        value={selectValue}
+                        onValueChange={(v) => void handleMoveMember(m.uid, v)}
+                        disabled={movingUid === m.uid}
+                      >
+                        <SelectTrigger
+                          className='w-44 shrink-0'
+                          aria-label={`Move ${m.email} to a group`}
+                        >
+                          <SelectValue placeholder='Move to group' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {groups.map((g) => (
+                            <SelectItem key={g.id} value={g.id}>
+                              {g.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p className='text-muted-foreground mt-2 text-xs'>
+            Moving a member changes their group. They must sign out and back in for it to take
+            effect.
+          </p>
         </div>
       </div>
     </PageContainer>

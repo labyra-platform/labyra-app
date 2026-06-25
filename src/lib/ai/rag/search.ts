@@ -10,6 +10,7 @@ import { getRerankProvider } from './rerank';
 import type { SearchHit, SearchRequest, SearchResponse } from './search-types';
 import { getBM25ForTenant, getBM25Corpus, type BM25ChunkLite } from './sparse/bm25-manager';
 import { getVectorStore } from './vector-store';
+import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { PaperChunkMetadata } from './vector-store/pinecone';
 
 const DEFAULT_VECTOR_TOP_K = 20;
@@ -31,6 +32,31 @@ const EXCLUDED_SECTIONS = [
   'ASSOCIATED CONTENT',
   'Terms and Conditions'
 ];
+
+/**
+ * R286 (B2): return the subset of paperIds whose paper must be EXCLUDED from
+ * retrieval — deprecated/retracted (lifecycleStatus !== 'active') or a DOI
+ * duplicate (status === 'duplicate'). One batched read; missing docs are not
+ * excluded (fail-open so a transient read miss never blanks search).
+ */
+async function findExcludedPaperIds(tenantId: string, paperIds: string[]): Promise<Set<string>> {
+  const excluded = new Set<string>();
+  if (paperIds.length === 0) return excluded;
+  const db = getAdminFirestoreService();
+  const refs = paperIds.map((id) =>
+    db.collection('tenants').doc(tenantId).collection('papers').doc(id)
+  );
+  const snaps = await db.getAll(...refs);
+  for (const snap of snaps) {
+    if (!snap.exists) continue;
+    const data = snap.data() as { lifecycleStatus?: string; status?: string };
+    const inactive = data.lifecycleStatus !== undefined && data.lifecycleStatus !== 'active';
+    if (inactive || data.status === 'duplicate') {
+      excluded.add(snap.id);
+    }
+  }
+  return excluded;
+}
 
 interface HitCandidate {
   chunkId: string;
@@ -218,9 +244,17 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   const fused = reciprocalRankFusion([vectorList, bm25List]).slice(0, DEFAULT_FUSED_TOP_K);
 
   // ─── STEP 4: Rerank top-K from fusion ────────────────────────────
-  const fusedCandidates = fused
+  const fusedCandidatesRaw = fused
     .map((f) => candidates.get(f.id))
     .filter((c): c is HitCandidate => c !== undefined);
+  // R286 (B2): drop chunks whose paper is deprecated/retracted or a DOI duplicate
+  // (post-fusion, pre-rerank — rerank never sees them; vectors are NOT deleted).
+  const excludedPaperIds = await findExcludedPaperIds(
+    req.tenantId,
+    Array.from(new Set(fusedCandidatesRaw.map((c) => c.paperId)))
+  );
+  const fusedCandidates = fusedCandidatesRaw.filter((c) => !excludedPaperIds.has(c.paperId));
+  _mark('paper_status_filter');
 
   // AI-6 fix: if fusion produced no usable candidates, skip rerank entirely —
   // reranking an empty document list then indexing by result index crashes.

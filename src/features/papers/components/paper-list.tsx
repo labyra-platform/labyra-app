@@ -620,6 +620,27 @@ function PaperRowMenu({
       setBusy(false);
     }
   };
+  const share = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/papers/${paperId}/share`, {
+        method: 'POST',
+        headers: await paperAuthHeader()
+      });
+      if (res.status === 403) {
+        toast.error(t('shareForbidden'));
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast.success(t('shareSuccess'));
+    } catch (e) {
+      toast.error(t('shareFailed'), {
+        description: e instanceof Error ? e.message : 'unknown'
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const archive = async () => {
     if (!confirm(t('archiveConfirm'))) return;
@@ -705,6 +726,16 @@ function PaperRowMenu({
             {t('reprocess')}
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem
+          disabled={busy}
+          onClick={(e) => {
+            e.preventDefault();
+            void share();
+          }}
+        >
+          <Icons.share className='size-4' />
+          {t('shareToGroup')}
+        </DropdownMenuItem>
         <DropdownMenuItem
           disabled={busy}
           onClick={(e) => {

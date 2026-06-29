@@ -1753,6 +1753,8 @@
     "bandsZoomIn": "Phóng to (năng lượng)",
     "bandsZoomOut": "Thu nhỏ (năng lượng)",
     "bandsReset": "Đặt lại",
+    "bandsHideDos": "Ẩn cột DOS",
+    "bandsShowDos": "Hiện cột DOS",
     "computePlaceholder": "Cấu hình backend và chạy — sắp tới.",
     "functional": "Hàm",
     "panelClose": "Đóng",

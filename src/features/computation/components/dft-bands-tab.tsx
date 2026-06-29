@@ -7,7 +7,13 @@
  * @phase R291-dft-bands-zoom
  */
 'use client';
-import { IconZoomIn, IconZoomOut, IconRefresh } from '@tabler/icons-react';
+import {
+  IconLayoutSidebarRightCollapse,
+  IconLayoutSidebarRightExpand,
+  IconRefresh,
+  IconZoomIn,
+  IconZoomOut
+} from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BandStructurePlot, type BandsData } from './band-structure-plot';
@@ -30,6 +36,7 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
   const [error, setError] = useState<string | null>(null);
   const [eRange, setERange] = useState<[number, number]>([-5, 5]);
   const plotRef = useRef<HTMLDivElement>(null);
+  const [showDos, setShowDos] = useState(true);
 
   const defaultWindow = useCallback(
     (d: BandsData) => Math.max(5, (d.gap?.band_gap_ev ?? 0) + 2),
@@ -163,6 +170,21 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
         ) : null}
         {data ? (
           <div className='ml-auto flex items-center gap-1'>
+            {dos ? (
+              <Button
+                variant='outline'
+                size='icon'
+                className='size-7'
+                onClick={() => setShowDos((v) => !v)}
+                aria-label={showDos ? t('bandsHideDos') : t('bandsShowDos')}
+              >
+                {showDos ? (
+                  <IconLayoutSidebarRightCollapse className='size-4' />
+                ) : (
+                  <IconLayoutSidebarRightExpand className='size-4' />
+                )}
+              </Button>
+            ) : null}
             <span className='text-muted-foreground mr-1 hidden text-xs sm:inline'>
               {t('bandsZoomHint')}
             </span>
@@ -217,7 +239,7 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
             <div className='min-w-0 flex-[3]'>
               <BandStructurePlot data={data} eMin={eRange[0]} eMax={eRange[1]} />
             </div>
-            {dos ? (
+            {dos && showDos ? (
               <div className='min-w-0 flex-[1] border-l pl-3'>
                 <DosPdosPanel data={dos} zero={zero} eMin={eRange[0]} eMax={eRange[1]} />
               </div>

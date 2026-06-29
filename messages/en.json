@@ -1752,6 +1752,8 @@
     "bandsZoomIn": "Zoom in (energy)",
     "bandsZoomOut": "Zoom out (energy)",
     "bandsReset": "Reset view",
+    "bandsHideDos": "Hide DOS panel",
+    "bandsShowDos": "Show DOS panel",
     "computePlaceholder": "Backend configuration and launch — coming next.",
     "functional": "Functional",
     "panelClose": "Close",

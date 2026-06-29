@@ -90,3 +90,12 @@ export interface FetchBandsBody {
 export function fetchDftBands(body: FetchBandsBody): Promise<WorkerResult> {
   return callWorker('/dft/bands', body);
 }
+
+export interface FetchDosBody {
+  tenantId: string;
+  workflowId: string;
+}
+/** Total + projected DOS for a workflow's dos/pdos units — for the Bands tab. */
+export function fetchDftDos(body: FetchDosBody): Promise<WorkerResult> {
+  return callWorker('/dft/dos', body);
+}

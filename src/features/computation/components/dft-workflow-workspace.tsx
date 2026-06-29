@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
 import { DftComputeTab } from '@/features/computation/components/dft-compute-tab';
 import { DftNodePanel } from '@/features/computation/components/dft-node-panel';
 import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
@@ -108,6 +109,7 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
               <TabsTrigger value='overview'>{t('tabOverview')}</TabsTrigger>
               <TabsTrigger value='settings'>{t('tabSettings')}</TabsTrigger>
               <TabsTrigger value='compute'>{t('tabCompute')}</TabsTrigger>
+              <TabsTrigger value='bands'>{t('tabBands')}</TabsTrigger>
             </TabsList>
           </div>
 

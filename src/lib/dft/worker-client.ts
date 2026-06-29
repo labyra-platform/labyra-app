@@ -80,3 +80,13 @@ export interface PreviewInputBody {
 export function previewDftInput(body: PreviewInputBody): Promise<WorkerResult> {
   return callWorker('/dft/preview', body);
 }
+
+export interface FetchBandsBody {
+  tenantId: string;
+  workflowId: string;
+  unitId: string;
+}
+/** Band-structure plot data for one bands unit (no re-run) — for the Bands tab. */
+export function fetchDftBands(body: FetchBandsBody): Promise<WorkerResult> {
+  return callWorker('/dft/bands', body);
+}

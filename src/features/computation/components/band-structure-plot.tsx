@@ -1,13 +1,12 @@
 /**
  * BandStructurePlot — interactive QE band structure from /api/dft/bands.
  *
- * Energy is relative to a zero reference (Fermi if known, else VBM). Features:
- *   • hover tooltip: k-position + the bands closest to the gap at that k
- *   • VBM/CBM markers at their k-points + shaded forbidden gap region
- *   • adaptive energy window so the CBM is always visible (wide-gap oxides)
- * 60 bands × 422 k-points → thin, dot-less, non-animated lines.
+ * Energy relative to a zero reference (Fermi if known, else VBM). Hover tooltip
+ * (k + bands near the gap), VBM/CBM markers, shaded gap. The visible energy
+ * window is controlled by the parent via eMin/eMax (pan/zoom); falls back to an
+ * adaptive ±window when not supplied.
  *
- * @phase R289-dft-bands-interactive
+ * @phase R291-dft-bands-zoom
  */
 'use client';
 import { useMemo } from 'react';
@@ -75,15 +74,25 @@ function BandTooltip({
   );
 }
 
-export function BandStructurePlot({ data }: { data: BandsData }) {
+export function BandStructurePlot({
+  data,
+  eMin,
+  eMax
+}: {
+  data: BandsData;
+  eMin?: number;
+  eMax?: number;
+}) {
   const zero = data.fermiEv ?? data.gap?.vbm_ev ?? 0;
   const gap = data.gap;
-  const windowEv = Math.max(5, (gap?.band_gap_ev ?? 0) + 2);
+  const defW = Math.max(5, (gap?.band_gap_ev ?? 0) + 2);
+  const lo = eMin ?? -defW;
+  const hi = eMax ?? defW;
 
   const { rows, keptBandKeys } = useMemo(() => {
     const kept: number[] = [];
     for (let b = 0; b < data.bands.length; b++) {
-      if (data.bands[b].some((e) => Math.abs(e - zero) <= windowEv)) kept.push(b);
+      if (data.bands[b].some((e) => e - zero >= lo && e - zero <= hi)) kept.push(b);
     }
     const r = data.kdist.map((k, i) => {
       const row: Record<string, number> = { k };
@@ -94,9 +103,8 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
       return row;
     });
     return { rows: r, keptBandKeys: kept.map((b) => `b${b}`) };
-  }, [data, zero, windowEv]);
+  }, [data, zero, lo, hi]);
 
-  // Locate the VBM/CBM k-points by matching their energies in the grid.
   const extrema = useMemo(() => {
     if (!gap) return null;
     let vbmI = 0;
@@ -155,7 +163,8 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
               className='text-muted-foreground'
             />
             <YAxis
-              domain={[-windowEv, windowEv]}
+              domain={[lo, hi]}
+              allowDataOverflow
               tick={{ fontSize: 11 }}
               stroke='currentColor'
               className='text-muted-foreground'
@@ -171,7 +180,6 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
               content={<BandTooltip />}
               cursor={{ stroke: 'currentColor', strokeOpacity: 0.3 }}
             />
-            {/* shaded forbidden gap region (VBM=0 → CBM) */}
             {gap ? (
               <ReferenceArea
                 y1={0}
@@ -181,7 +189,6 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
                 className='text-primary'
               />
             ) : null}
-            {/* high-symmetry verticals */}
             {data.ticks.map((tk, i) => (
               <ReferenceLine
                 key={`tick-${i}`}
@@ -190,7 +197,6 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
                 strokeOpacity={0.25}
               />
             ))}
-            {/* VBM (zero) + CBM reference lines */}
             <ReferenceLine y={0} strokeDasharray='4 4' stroke='currentColor' strokeOpacity={0.5} />
             {gap ? (
               <ReferenceLine
@@ -213,7 +219,6 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
                 connectNulls
               />
             ))}
-            {/* VBM / CBM markers */}
             {extrema ? (
               <ReferenceDot
                 x={extrema.vbm.kdist}

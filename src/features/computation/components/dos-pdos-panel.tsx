@@ -1,11 +1,9 @@
 /**
  * DosPdosPanel — total DOS + element/orbital-projected DOS from /api/dft/dos.
+ * Rotated (energy axis vertical) and sharing the band plot's energy window via
+ * eMin/eMax so the two panels stay aligned under pan/zoom.
  *
- * Drawn rotated (vertical layout) so the energy axis is vertical and aligns
- * with the band-structure plot beside it: same zero reference + same window,
- * both supplied by the parent so the two panels share an energy axis.
- *
- * @phase R290-dft-dos-ui
+ * @phase R291-dft-dos-zoom
  */
 'use client';
 import { useMemo } from 'react';
@@ -72,18 +70,20 @@ function DosTooltip({
 export function DosPdosPanel({
   data,
   zero,
-  windowEv
+  eMin,
+  eMax
 }: {
   data: DosData;
   zero: number;
-  windowEv: number;
+  eMin: number;
+  eMax: number;
 }) {
   const { rows, labels } = useMemo(() => {
     const n = data.energies.length;
     const r: Record<string, number>[] = [];
     for (let i = 0; i < n; i++) {
       const e = data.energies[i] - zero;
-      if (Math.abs(e) > windowEv) continue;
+      if (e < eMin || e > eMax) continue;
       const row: Record<string, number> = { e };
       if (data.total && data.total[i] !== undefined) row.total = data.total[i];
       for (const p of data.pdos) {
@@ -92,7 +92,7 @@ export function DosPdosPanel({
       r.push(row);
     }
     return { rows: r, labels: data.pdos.map((p) => p.label) };
-  }, [data, zero, windowEv]);
+  }, [data, zero, eMin, eMax]);
 
   return (
     <div className='flex h-full flex-col'>
@@ -114,7 +114,8 @@ export function DosPdosPanel({
             <YAxis
               type='number'
               dataKey='e'
-              domain={[-windowEv, windowEv]}
+              domain={[eMin, eMax]}
+              allowDataOverflow
               tick={{ fontSize: 11 }}
               stroke='currentColor'
               className='text-muted-foreground'

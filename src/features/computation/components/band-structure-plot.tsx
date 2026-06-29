@@ -57,7 +57,7 @@ function BandTooltip({
   const k = typeof label === 'number' ? label : 0;
   const near = payload
     .filter((p) => typeof p.value === 'number' && Math.abs(p.value as number) <= 2)
-    .sort((a, b) => Math.abs(a.value as number) - Math.abs(b.value as number))
+    .toSorted((a, b) => Math.abs(a.value as number) - Math.abs(b.value as number))
     .slice(0, 6);
   return (
     <div className='bg-popover rounded-md border px-2 py-1.5 text-xs shadow-md'>

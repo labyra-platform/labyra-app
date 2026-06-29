@@ -1,12 +1,13 @@
 /**
- * BandStructurePlot — render QE band structure from /api/dft/bands.
+ * BandStructurePlot — interactive QE band structure from /api/dft/bands.
  *
- * Energy is plotted relative to a zero reference: the Fermi level when known,
- * else the VBM (standard for semiconductors). Bands outside a ±window around
- * zero are dropped so the gap region is legible. 60 bands × 422 k-points is a
- * lot of points, so lines are thin, dot-less, and non-animated.
+ * Energy is relative to a zero reference (Fermi if known, else VBM). Features:
+ *   • hover tooltip: k-position + the bands closest to the gap at that k
+ *   • VBM/CBM markers at their k-points + shaded forbidden gap region
+ *   • adaptive energy window so the CBM is always visible (wide-gap oxides)
+ * 60 bands × 422 k-points → thin, dot-less, non-animated lines.
  *
- * @phase R288-dft-bands-ui
+ * @phase R289-dft-bands-interactive
  */
 'use client';
 import { useMemo } from 'react';
@@ -14,8 +15,11 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceArea,
+  ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis
 } from 'recharts';
@@ -36,18 +40,50 @@ export interface BandsData {
   gap: BandGap | null;
 }
 
-const WINDOW_EV = 5; // show ±5 eV around the zero reference
+interface TooltipPayloadItem {
+  dataKey?: string | number;
+  value?: number;
+}
+function BandTooltip({
+  active,
+  payload,
+  label
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: number;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const k = typeof label === 'number' ? label : 0;
+  const near = payload
+    .filter((p) => typeof p.value === 'number' && Math.abs(p.value as number) <= 2)
+    .sort((a, b) => Math.abs(a.value as number) - Math.abs(b.value as number))
+    .slice(0, 6);
+  return (
+    <div className='bg-popover rounded-md border px-2 py-1.5 text-xs shadow-md'>
+      <div className='font-medium'>k = {k.toFixed(3)}</div>
+      {near.length > 0 ? (
+        near.map((p) => (
+          <div key={String(p.dataKey)} className='text-muted-foreground tabular-nums'>
+            {String(p.dataKey).replace('b', 'band ')}: {(p.value as number).toFixed(3)} eV
+          </div>
+        ))
+      ) : (
+        <div className='text-muted-foreground'>no bands within ±2 eV</div>
+      )}
+    </div>
+  );
+}
 
 export function BandStructurePlot({ data }: { data: BandsData }) {
   const zero = data.fermiEv ?? data.gap?.vbm_ev ?? 0;
+  const gap = data.gap;
+  const windowEv = Math.max(5, (gap?.band_gap_ev ?? 0) + 2);
 
-  // Pivot to per-k rows: { k, b0, b1, ... }; keep only bands that enter the window.
   const { rows, keptBandKeys } = useMemo(() => {
     const kept: number[] = [];
     for (let b = 0; b < data.bands.length; b++) {
-      const series = data.bands[b];
-      const inWindow = series.some((e) => Math.abs(e - zero) <= WINDOW_EV);
-      if (inWindow) kept.push(b);
+      if (data.bands[b].some((e) => Math.abs(e - zero) <= windowEv)) kept.push(b);
     }
     const r = data.kdist.map((k, i) => {
       const row: Record<string, number> = { k };
@@ -58,17 +94,44 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
       return row;
     });
     return { rows: r, keptBandKeys: kept.map((b) => `b${b}`) };
-  }, [data, zero]);
+  }, [data, zero, windowEv]);
 
-  const gap = data.gap;
+  // Locate the VBM/CBM k-points by matching their energies in the grid.
+  const extrema = useMemo(() => {
+    if (!gap) return null;
+    let vbmI = 0;
+    let vbmDiff = Infinity;
+    let cbmI = 0;
+    let cbmDiff = Infinity;
+    for (let b = 0; b < data.bands.length; b++) {
+      const series = data.bands[b];
+      for (let i = 0; i < series.length; i++) {
+        const dv = Math.abs(series[i] - gap.vbm_ev);
+        if (dv < vbmDiff) {
+          vbmDiff = dv;
+          vbmI = i;
+        }
+        const dc = Math.abs(series[i] - gap.cbm_ev);
+        if (dc < cbmDiff) {
+          cbmDiff = dc;
+          cbmI = i;
+        }
+      }
+    }
+    return {
+      vbm: { kdist: data.kdist[vbmI], y: gap.vbm_ev - zero },
+      cbm: { kdist: data.kdist[cbmI], y: gap.cbm_ev - zero }
+    };
+  }, [data, gap, zero]);
+
   const zeroLabel = data.fermiEv != null ? 'E_F' : 'VBM';
 
   return (
     <div className='flex h-full flex-col'>
       <div className='mb-2 flex flex-wrap items-center gap-2'>
         {gap ? (
-          <span className='inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary'>
-            E<sub>g</sub>= {gap.band_gap_ev.toFixed(2)} eV ({gap.direct ? 'direct' : 'indirect'})
+          <span className='bg-primary/10 text-primary inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium'>
+            E<sub>g</sub> = {gap.band_gap_ev.toFixed(2)} eV ({gap.direct ? 'direct' : 'indirect'})
           </span>
         ) : null}
         <span className='text-muted-foreground text-xs'>
@@ -92,7 +155,7 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
               className='text-muted-foreground'
             />
             <YAxis
-              domain={[-WINDOW_EV, WINDOW_EV]}
+              domain={[-windowEv, windowEv]}
               tick={{ fontSize: 11 }}
               stroke='currentColor'
               className='text-muted-foreground'
@@ -104,6 +167,20 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
               }}
               width={56}
             />
+            <Tooltip
+              content={<BandTooltip />}
+              cursor={{ stroke: 'currentColor', strokeOpacity: 0.3 }}
+            />
+            {/* shaded forbidden gap region (VBM=0 → CBM) */}
+            {gap ? (
+              <ReferenceArea
+                y1={0}
+                y2={gap.band_gap_ev}
+                fill='currentColor'
+                fillOpacity={0.06}
+                className='text-primary'
+              />
+            ) : null}
             {/* high-symmetry verticals */}
             {data.ticks.map((tk, i) => (
               <ReferenceLine
@@ -113,8 +190,16 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
                 strokeOpacity={0.25}
               />
             ))}
-            {/* zero reference (Fermi / VBM) */}
+            {/* VBM (zero) + CBM reference lines */}
             <ReferenceLine y={0} strokeDasharray='4 4' stroke='currentColor' strokeOpacity={0.5} />
+            {gap ? (
+              <ReferenceLine
+                y={gap.band_gap_ev}
+                strokeDasharray='4 4'
+                stroke='currentColor'
+                strokeOpacity={0.35}
+              />
+            ) : null}
             {keptBandKeys.map((key) => (
               <Line
                 key={key}
@@ -128,6 +213,33 @@ export function BandStructurePlot({ data }: { data: BandsData }) {
                 connectNulls
               />
             ))}
+            {/* VBM / CBM markers */}
+            {extrema ? (
+              <ReferenceDot
+                x={extrema.vbm.kdist}
+                y={extrema.vbm.y}
+                r={4}
+                fill='#2563eb'
+                stroke='white'
+                strokeWidth={1}
+                label={{
+                  value: 'VBM',
+                  position: 'bottom',
+                  style: { fontSize: 10, fill: '#2563eb' }
+                }}
+              />
+            ) : null}
+            {extrema ? (
+              <ReferenceDot
+                x={extrema.cbm.kdist}
+                y={extrema.cbm.y}
+                r={4}
+                fill='#dc2626'
+                stroke='white'
+                strokeWidth={1}
+                label={{ value: 'CBM', position: 'top', style: { fontSize: 10, fill: '#dc2626' } }}
+              />
+            ) : null}
           </LineChart>
         </ResponsiveContainer>
       </div>

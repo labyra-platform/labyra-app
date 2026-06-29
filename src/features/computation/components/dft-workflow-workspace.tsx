@@ -150,6 +150,9 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
           <TabsContent value='compute' className='m-0 flex-1 overflow-y-auto p-4'>
             <DftComputeTab workflow={workflow} />
           </TabsContent>
+          <TabsContent value='bands' className='m-0 flex-1 overflow-y-auto p-4'>
+            <DftBandsTab workflow={workflow} />
+          </TabsContent>
         </Tabs>
       </div>
 

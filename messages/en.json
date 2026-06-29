@@ -1744,6 +1744,8 @@
     "tabSettings": "Settings",
     "tabCompute": "Compute",
     "tabBands": "Bands",
+    "railCollapse": "Collapse panel",
+    "railExpand": "Expand panel",
     "bandsLoading": "Loading band structure…",
     "bandsError": "Failed to load band structure",
     "bandsNoUnit": "This workflow has no bands calculation yet.",

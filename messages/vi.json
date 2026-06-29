@@ -1745,6 +1745,8 @@
     "tabSettings": "Cài đặt",
     "tabCompute": "Tính toán",
     "tabBands": "Cấu trúc vùng",
+    "railCollapse": "Thu gọn bảng",
+    "railExpand": "Mở rộng bảng",
     "bandsLoading": "Đang tải cấu trúc vùng…",
     "bandsError": "Không tải được cấu trúc vùng",
     "bandsNoUnit": "Workflow này chưa có tính toán bands.",

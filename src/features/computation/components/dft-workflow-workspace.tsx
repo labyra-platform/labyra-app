@@ -10,10 +10,15 @@
  */
 'use client';
 
-import { IconCircleCheck } from '@tabler/icons-react';
+import {
+  IconCircleCheck,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand
+} from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
 import { DftComputeTab } from '@/features/computation/components/dft-compute-tab';
@@ -32,6 +37,7 @@ const STATUS_DOT: Record<string, string> = {
 export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
   const t = useTranslations('computation');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showRail, setShowRail] = useState(true);
   const units = useMemo(() => workflow.units ?? [], [workflow.units]);
   const selectedUnit = useMemo(
     () => units.find((u) => u.id === selectedId) ?? null,
@@ -42,7 +48,9 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
 
   return (
     <div className='flex h-[78vh] overflow-hidden rounded-lg border'>
-      <aside className='flex w-56 shrink-0 flex-col overflow-y-auto border-r'>
+      <aside
+        className={showRail ? 'flex w-56 shrink-0 flex-col overflow-y-auto border-r' : 'hidden'}
+      >
         <div className='border-b p-3'>
           <p className='truncate text-sm font-medium'>{g?.prefix ?? workflow.id}</p>
           {workflow.overallStatus ? (
@@ -104,7 +112,20 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
 
       <div className='flex min-w-0 flex-1 flex-col'>
         <Tabs defaultValue='overview' className='flex flex-1 flex-col gap-0'>
-          <div className='border-b px-2'>
+          <div className='flex items-center gap-1 border-b px-2'>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='size-7'
+              onClick={() => setShowRail((v) => !v)}
+              aria-label={showRail ? t('railCollapse') : t('railExpand')}
+            >
+              {showRail ? (
+                <IconLayoutSidebarLeftCollapse className='size-4' />
+              ) : (
+                <IconLayoutSidebarLeftExpand className='size-4' />
+              )}
+            </Button>
             <TabsList className='h-9 bg-transparent'>
               <TabsTrigger value='overview'>{t('tabOverview')}</TabsTrigger>
               <TabsTrigger value='settings'>{t('tabSettings')}</TabsTrigger>

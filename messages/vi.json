@@ -1861,6 +1861,8 @@
     "newBase": "Workflow nguồn",
     "newNoBase": "Chưa có workflow nào để nhân bản.",
     "newLaunch": "Khởi chạy",
-    "newError": "Khởi chạy thất bại — kiểm tra Run ID chưa trùng và thử lại."
+    "newError": "Khởi chạy thất bại — kiểm tra Run ID chưa trùng và thử lại.",
+    "newHubbard": "Hubbard U (eV)",
+    "newHubbardHint": "Ghi đè U từng manifold cho run này — vd quét U để hiệu chỉnh DFT+U."
   }
 }

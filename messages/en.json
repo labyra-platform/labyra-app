@@ -1860,6 +1860,8 @@
     "newBase": "Base workflow",
     "newNoBase": "No existing workflow to duplicate yet.",
     "newLaunch": "Launch",
-    "newError": "Launch failed — check the run ID is unique and try again."
+    "newError": "Launch failed — check the run ID is unique and try again.",
+    "newHubbard": "Hubbard U (eV)",
+    "newHubbardHint": "Override U per manifold for this run — e.g. to sweep U for DFT+U calibration."
   }
 }

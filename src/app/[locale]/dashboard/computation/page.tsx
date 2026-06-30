@@ -34,7 +34,11 @@ export default async function ComputationPage() {
   }
   const workflows = await listDftWorkflows(tenantId);
   const rows = workflows.map(toWorkflowRow);
-  const bases = workflows.map((w) => ({ id: w.id, name: w.global?.prefix ?? w.id }));
+  const bases = workflows.map((w) => ({
+    id: w.id,
+    name: w.global?.prefix ?? w.id,
+    hubbard: w.global?.hubbard ?? []
+  }));
 
   return (
     <PageContainer pageTitle={tNav('computation')} pageDescription={t('description')}>

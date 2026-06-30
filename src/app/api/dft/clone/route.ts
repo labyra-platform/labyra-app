@@ -25,7 +25,9 @@ const cloneSchema = z.object({
     .min(3)
     .max(64)
     .regex(/^[a-z0-9][a-z0-9-]*$/, 'Lowercase letters, digits and hyphens only.'),
-  machinePreset: z.enum(DFT_MACHINE_PRESETS)
+  machinePreset: z.enum(DFT_MACHINE_PRESETS),
+  /** Per-manifold Hubbard U overrides; applied only to manifolds the base has. */
+  hubbard: z.array(z.object({ manifold: z.string(), value: z.number().min(0) })).optional()
 });
 
 export async function POST(request: Request) {
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  const { baseWorkflowId, newRunId, machinePreset } = parsed.data;
+  const { baseWorkflowId, newRunId, machinePreset, hubbard } = parsed.data;
 
   if (newRunId === baseWorkflowId) {
     return NextResponse.json({ error: 'New run id must differ from the base.' }, { status: 400 });
@@ -53,11 +55,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Base workflow not found or incomplete.' }, { status: 404 });
   }
 
+  // Apply U overrides per manifold (never introduce manifolds the base lacks).
+  const overrides = new Map((hubbard ?? []).map((h) => [h.manifold, h.value]));
+  const mergedGlobal = {
+    ...base.global,
+    hubbard: (base.global.hubbard ?? []).map((h) => ({
+      ...h,
+      value: overrides.get(h.manifold) ?? h.value
+    }))
+  };
+
   try {
     const result = await submitWorkflowToWorker({
       tenantId,
       workflowId: newRunId,
-      workflow: { structure: base.structure, global: base.global, units: base.units },
+      workflow: { structure: base.structure, global: mergedGlobal, units: base.units },
       machinePreset,
       maxRunSec: MAX_RUN_SEC
     });

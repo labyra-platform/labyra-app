@@ -32,12 +32,20 @@ import {
 } from '@/components/ui/select';
 import { useRouter } from '@/i18n/navigation';
 import { DFT_MACHINE_PRESETS } from '@/lib/schemas/dft-submit-schema';
+import type { HubbardParam } from '@/types/dft';
 
 interface Base {
   id: string;
   name: string;
+  hubbard: HubbardParam[];
 }
 type Feedback = { ok: boolean; text: string } | null;
+
+function initU(base: Base | undefined): Record<string, string> {
+  const m: Record<string, string> = {};
+  for (const h of base?.hubbard ?? []) m[h.manifold] = String(h.value);
+  return m;
+}
 
 export function DftNewWorkflowDialog({ bases }: { bases: Base[] }) {
   const t = useTranslations('computation');
@@ -46,11 +54,24 @@ export function DftNewWorkflowDialog({ bases }: { bases: Base[] }) {
   const [baseId, setBaseId] = useState(bases[0]?.id ?? '');
   const [runId, setRunId] = useState('');
   const [preset, setPreset] = useState<string>(DFT_MACHINE_PRESETS[0]);
+  const [uValues, setUValues] = useState<Record<string, string>>(() => initU(bases[0]));
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
 
+  const selectedBase = bases.find((b) => b.id === baseId);
+
+  function selectBase(id: string) {
+    setBaseId(id);
+    setUValues(initU(bases.find((b) => b.id === id)));
+  }
+
+  const hubbardOut = (selectedBase?.hubbard ?? []).map((h) => ({
+    manifold: h.manifold,
+    value: Number(uValues[h.manifold] ?? h.value)
+  }));
+  const hubbardValid = hubbardOut.every((h) => Number.isFinite(h.value) && h.value >= 0);
   const validId = /^[a-z0-9][a-z0-9-]{2,63}$/.test(runId);
-  const canLaunch = validId && baseId !== '' && runId !== baseId && !busy;
+  const canLaunch = validId && baseId !== '' && runId !== baseId && hubbardValid && !busy;
 
   async function launch() {
     if (!canLaunch) return;
@@ -60,7 +81,12 @@ export function DftNewWorkflowDialog({ bases }: { bases: Base[] }) {
       const res = await fetch('/api/dft/clone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseWorkflowId: baseId, newRunId: runId, machinePreset: preset })
+        body: JSON.stringify({
+          baseWorkflowId: baseId,
+          newRunId: runId,
+          machinePreset: preset,
+          hubbard: hubbardOut
+        })
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -96,7 +122,7 @@ export function DftNewWorkflowDialog({ bases }: { bases: Base[] }) {
           <div className='space-y-3'>
             <div className='space-y-1.5'>
               <Label>{t('newBase')}</Label>
-              <Select value={baseId} onValueChange={setBaseId}>
+              <Select value={baseId} onValueChange={selectBase}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -134,6 +160,31 @@ export function DftNewWorkflowDialog({ bases }: { bases: Base[] }) {
                 </SelectContent>
               </Select>
             </div>
+            {selectedBase && selectedBase.hubbard.length > 0 ? (
+              <div className='space-y-1.5'>
+                <Label>{t('newHubbard')}</Label>
+                <div className='grid grid-cols-2 gap-2'>
+                  {selectedBase.hubbard.map((h) => (
+                    <div key={h.manifold} className='flex items-center gap-2'>
+                      <span className='text-muted-foreground shrink-0 text-xs'>
+                        U({h.manifold})
+                      </span>
+                      <Input
+                        type='number'
+                        step='0.1'
+                        min='0'
+                        value={uValues[h.manifold] ?? String(h.value)}
+                        onChange={(e) =>
+                          setUValues((v) => ({ ...v, [h.manifold]: e.target.value }))
+                        }
+                        className='h-8'
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className='text-muted-foreground text-xs'>{t('newHubbardHint')}</p>
+              </div>
+            ) : null}
             {feedback ? (
               <p className={feedback.ok ? 'text-xs text-emerald-600' : 'text-destructive text-xs'}>
                 {feedback.text}

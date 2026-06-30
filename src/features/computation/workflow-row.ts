@@ -11,7 +11,13 @@
  *
  * @phase R301-computation-list
  */
-import type { DftUnit, DftUnitStatus, DftWorkflow, DftWorkflowGlobal } from '@/types/dft';
+import type {
+  DftUnit,
+  DftUnitSnapshot,
+  DftUnitStatus,
+  DftWorkflow,
+  DftWorkflowGlobal
+} from '@/types/dft';
 
 export type StatusKind = 'completed' | 'running' | 'failed' | 'queued' | 'pending';
 
@@ -20,6 +26,8 @@ export interface StepDot {
   /** Short calc label, e.g. 'vc-relax' | 'scf' | 'bands'. */
   label: string;
   status: DftUnitStatus | undefined;
+  /** Wall-clock seconds for this step (finishedAt − startedAt); null if unknown. */
+  durationSec: number | null;
 }
 
 export type ResultCell =
@@ -44,6 +52,26 @@ export function methodLabel(g: DftWorkflowGlobal | undefined): string {
   return hasU ? `${func}+U` : func;
 }
 
+/** Per-step wall-clock seconds from the snapshot timestamps; null if unknown. */
+function stepDuration(s: DftUnitSnapshot | undefined): number | null {
+  if (!s || s.startedAt == null || s.finishedAt == null) return null;
+  const d = s.finishedAt - s.startedAt;
+  return d >= 0 ? d : null;
+}
+
+/** Compact duration: "45s", "2m13s", "1h04m". null/negative → null. */
+export function formatDuration(sec: number | null | undefined): string | null {
+  if (sec == null || !Number.isFinite(sec) || sec < 0) return null;
+  const s = Math.round(sec);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rs = s % 60;
+  if (m < 60) return rs ? `${m}m${rs}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  return rm ? `${h}h${String(rm).padStart(2, '0')}m` : `${h}h`;
+}
+
 function orderedUnits(units: DftUnit[]): DftUnit[] {
   return units
     .map((u, i) => ({ u, key: u.order ?? i + 1 }))
@@ -66,7 +94,8 @@ function deriveResult(wf: DftWorkflow, status: StatusKind): ResultCell {
   const r = wf.results;
   if (status === 'failed') {
     const failed = (wf.units ?? []).find((u) => wf.snapshot?.[u.id]?.status === 'failed');
-    return { kind: 'failed', reason: failed ? (wf.snapshot?.[failed.id]?.error ?? null) : null };
+    const snap = failed ? wf.snapshot?.[failed.id] : undefined;
+    return { kind: 'failed', reason: snap?.errorMessage ?? snap?.error ?? null };
   }
   if (status === 'running' || status === 'queued') {
     const active = (wf.units ?? []).find((u) => wf.snapshot?.[u.id]?.status === 'running');
@@ -87,11 +116,15 @@ function deriveResult(wf: DftWorkflow, status: StatusKind): ResultCell {
 
 export function toWorkflowRow(wf: DftWorkflow): WorkflowRow {
   const status = deriveStatus(wf);
-  const steps: StepDot[] = orderedUnits(wf.units ?? []).map((u) => ({
-    id: u.id,
-    label: u.calcType,
-    status: wf.snapshot?.[u.id]?.status
-  }));
+  const steps: StepDot[] = orderedUnits(wf.units ?? []).map((u) => {
+    const snap = wf.snapshot?.[u.id];
+    return {
+      id: u.id,
+      label: u.calcType,
+      status: snap?.status,
+      durationSec: stepDuration(snap)
+    };
+  });
   return {
     id: wf.id,
     name: wf.global?.prefix ?? wf.id,

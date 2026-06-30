@@ -12,6 +12,7 @@ import {
   IconLoader2
 } from '@tabler/icons-react';
 import type { StepDot } from '@/features/computation/workflow-row';
+import { formatDuration } from '@/features/computation/workflow-row';
 import { cn } from '@/lib/utils';
 import type { DftUnitStatus } from '@/types/dft';
 
@@ -53,19 +54,31 @@ export function WorkflowPipelineMini({ steps, className }: Props) {
   if (steps.length === 0) {
     return <span className='text-muted-foreground text-xs'>—</span>;
   }
+  const totalSec = steps.reduce((acc, s) => acc + (s.durationSec ?? 0), 0);
+  const total = totalSec > 0 ? formatDuration(totalSec) : null;
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      {steps.map((s, i) => (
-        <div
-          key={s.id}
-          className='flex items-center gap-1'
-          title={`${s.label}: ${s.status ?? 'pending'}`}
-        >
-          {i > 0 ? <span className='bg-border h-px w-3' aria-hidden /> : null}
-          <DotIcon status={s.status} />
-          <span className='text-muted-foreground hidden text-[11px] lg:inline'>{s.label}</span>
-        </div>
-      ))}
+      {steps.map((s, i) => {
+        const dur = formatDuration(s.durationSec);
+        const title = dur
+          ? `${s.label}: ${s.status ?? 'pending'} · ${dur}`
+          : `${s.label}: ${s.status ?? 'pending'}`;
+        return (
+          <div key={s.id} className='flex items-center gap-1' title={title}>
+            {i > 0 ? <span className='bg-border h-px w-3' aria-hidden /> : null}
+            <DotIcon status={s.status} />
+            <span className='text-muted-foreground hidden text-[11px] lg:inline'>
+              {s.label}
+              {dur ? <span className='text-muted-foreground/70'> {dur}</span> : null}
+            </span>
+          </div>
+        );
+      })}
+      {total ? (
+        <span className='text-muted-foreground/70 ml-1 hidden text-[11px] tabular-nums md:inline'>
+          Σ {total}
+        </span>
+      ) : null}
     </div>
   );
 }

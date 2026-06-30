@@ -245,6 +245,12 @@ export interface DftResults {
 
 export interface DftUnitSnapshot {
   status: DftUnitStatus;
+  /** Epoch seconds (worker `time.time()`) when the unit started running. */
+  startedAt?: number | null;
+  /** Epoch seconds when the unit reached a terminal state (completed/failed). */
+  finishedAt?: number | null;
+  /** The worker writes `errorMessage`; `error` kept for older documents. */
+  errorMessage?: string | null;
   error?: string | null;
 }
 

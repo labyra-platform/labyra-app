@@ -1851,6 +1851,9 @@
     "noFilterMatch": "No workflows match the filters.",
     "noParsedResults": "Completed — no parsed results",
     "resultRunningUnit": "Running: {unit}",
-    "atoms": "Atoms"
+    "atoms": "Atoms",
+    "export": "Export",
+    "exportBands": "Band structure",
+    "exportDos": "DOS / PDOS"
   }
 }

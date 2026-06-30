@@ -21,6 +21,14 @@ import { BandStructurePlot, type BandsData } from './band-structure-plot';
 import { exportPng, exportSvg } from './chart-export';
 import { DosPdosPanel, type DosData } from './dos-pdos-panel';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import type { DftWorkflow } from '@/types/dft';
 
 const E_SPAN_MIN = 0.5;
@@ -40,6 +48,8 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
   const [kRange, setKRange] = useState<[number, number] | null>(null);
   const kFullRef = useRef<[number, number] | null>(null);
   const plotRef = useRef<HTMLDivElement>(null);
+  const bandRef = useRef<HTMLDivElement>(null);
+  const dosRef = useRef<HTMLDivElement>(null);
   const [showDos, setShowDos] = useState(true);
 
   const defaultWindow = useCallback(
@@ -189,13 +199,16 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
       if (kFullRef.current) setKRange(kFullRef.current);
     }
   };
-  const exportPlot = (fmt: 'svg' | 'png') => {
-    const svg = plotRef.current?.querySelector('svg');
-    if (!svg) return;
-    const name = `${workflow.id}-bands`;
-    if (fmt === 'svg') exportSvg(svg as SVGSVGElement, `${name}.svg`);
-    else void exportPng(svg as SVGSVGElement, `${name}.png`, 2);
-  };
+  const exportFrom = useCallback(
+    (ref: React.RefObject<HTMLDivElement | null>, suffix: string, fmt: 'svg' | 'png') => {
+      const svg = ref.current?.querySelector('svg');
+      if (!svg) return;
+      const name = `${workflow.id}-${suffix}`;
+      if (fmt === 'svg') exportSvg(svg as SVGSVGElement, `${name}.svg`);
+      else void exportPng(svg as SVGSVGElement, `${name}.png`, 2);
+    },
+    [workflow.id]
+  );
 
   if (bandsUnits.length === 0) {
     return (
@@ -226,24 +239,35 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
         ) : null}
         {data ? (
           <div className='ml-auto flex items-center gap-1'>
-            <Button
-              variant='outline'
-              size='sm'
-              className='h-7 px-2 text-xs'
-              onClick={() => exportPlot('svg')}
-            >
-              <IconDownload className='mr-1 size-3.5' />
-              SVG
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              className='h-7 px-2 text-xs'
-              onClick={() => exportPlot('png')}
-            >
-              <IconDownload className='mr-1 size-3.5' />
-              PNG
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant='outline' size='sm' className='h-7 px-2 text-xs'>
+                  <IconDownload className='mr-1 size-3.5' />
+                  {t('export')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end'>
+                <DropdownMenuLabel>{t('exportBands')}</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => exportFrom(bandRef, 'bands', 'svg')}>
+                  SVG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportFrom(bandRef, 'bands', 'png')}>
+                  PNG
+                </DropdownMenuItem>
+                {dos && showDos ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>{t('exportDos')}</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => exportFrom(dosRef, 'dos', 'svg')}>
+                      SVG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportFrom(dosRef, 'dos', 'png')}>
+                      PNG
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
             {dos ? (
               <Button
                 variant='outline'
@@ -310,7 +334,7 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
           >
-            <div className='min-w-0 flex-[3]'>
+            <div ref={bandRef} className='min-w-0 flex-[3]'>
               <BandStructurePlot
                 data={data}
                 eMin={eRange[0]}
@@ -320,7 +344,7 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
               />
             </div>
             {dos && showDos ? (
-              <div className='min-w-0 flex-[1] border-l pl-3'>
+              <div ref={dosRef} className='min-w-0 flex-[1] border-l pl-3'>
                 <DosPdosPanel data={dos} zero={zero} eMin={eRange[0]} eMax={eRange[1]} />
               </div>
             ) : null}

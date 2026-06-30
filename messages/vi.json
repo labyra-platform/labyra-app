@@ -1852,6 +1852,9 @@
     "noFilterMatch": "Không có workflow khớp bộ lọc.",
     "noParsedResults": "Hoàn thành — chưa có kết quả phân tích",
     "resultRunningUnit": "Đang chạy: {unit}",
-    "atoms": "Số nguyên tử"
+    "atoms": "Số nguyên tử",
+    "export": "Xuất",
+    "exportBands": "Cấu trúc vùng",
+    "exportDos": "DOS / PDOS"
   }
 }

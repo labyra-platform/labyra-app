@@ -227,6 +227,8 @@ export interface DftRelaxedStructure {
   coa: number | null;
   volumeAng3: number | null;
   nAtoms: number | null;
+  /** Crystal density g/cm³ (Σ atomic mass / cell volume); null if undetermined. */
+  density?: number | null;
 }
 
 export interface DftResults {

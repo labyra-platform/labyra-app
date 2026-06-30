@@ -1869,6 +1869,8 @@
     "compareSelectHint": "Chọn các run ở trên để so sánh.",
     "compareNoData": "Chưa run nào được chọn có band gap.",
     "compareUAxis": "U({manifold}) (eV)",
-    "compareGapAxis": "Band gap (eV)"
+    "compareGapAxis": "Band gap (eV)",
+    "density": "Mật độ",
+    "computeTime": "Thời gian tính"
   }
 }

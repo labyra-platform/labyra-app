@@ -170,6 +170,9 @@ export function DftResultsTab({ workflow }: { workflow: DftWorkflow }) {
               {relaxed.volumeAng3 != null ? `${relaxed.volumeAng3.toFixed(2)} Å³` : '—'}
             </Row>
             {relaxed.nAtoms != null ? <Row label={t('atoms')}>{relaxed.nAtoms}</Row> : null}
+            {relaxed.density != null ? (
+              <Row label={t('density')}>{relaxed.density.toFixed(3)} g/cm³</Row>
+            ) : null}
           </Section>
         ) : null}
 

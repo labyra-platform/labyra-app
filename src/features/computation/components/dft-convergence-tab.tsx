@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
+import { formatDuration } from '@/features/computation/workflow-row';
 import type { DftWorkflow } from '@/types/dft';
 
 interface IonicStep {
@@ -32,6 +33,8 @@ interface ConvergenceData {
   bfgs_steps: number | null;
   final_force: number | null;
   final_scf_accuracy: number | null;
+  /** Total QE wall-clock seconds (compute time) from the unit's .out footer. */
+  wallSeconds?: number | null;
 }
 
 interface TipItem {
@@ -140,6 +143,11 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
           {t('ionicStepsLabel', { n: data.n_ionic_steps })}
           {data.bfgs_steps != null ? ` · ${t('bfgsLabel', { n: data.bfgs_steps })}` : ''}
         </span>
+        {formatDuration(data.wallSeconds) ? (
+          <span className='text-muted-foreground text-xs'>
+            {t('computeTime')} {formatDuration(data.wallSeconds)}
+          </span>
+        ) : null}
       </div>
 
       {scfRows.length > 0 ? (

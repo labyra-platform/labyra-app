@@ -1868,6 +1868,8 @@
     "compareSelectHint": "Select runs above to compare.",
     "compareNoData": "No selected run has a band gap yet.",
     "compareUAxis": "U({manifold}) (eV)",
-    "compareGapAxis": "Band gap (eV)"
+    "compareGapAxis": "Band gap (eV)",
+    "density": "Density",
+    "computeTime": "Compute time"
   }
 }

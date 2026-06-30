@@ -136,7 +136,7 @@ export function BandStructurePlot({
 
   return (
     <div className='flex h-full flex-col'>
-      <div className='mb-2 flex flex-wrap items-center gap-2'>
+      <div className='mb-2 flex h-6 items-center gap-2 overflow-hidden'>
         {gap ? (
           <span className='bg-primary/10 text-primary inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium'>
             E<sub>g</sub> = {gap.band_gap_ev.toFixed(2)} eV ({gap.direct ? 'direct' : 'indirect'})
@@ -158,13 +158,14 @@ export function BandStructurePlot({
               tickFormatter={(v: number) =>
                 data.ticks.find((tk) => Math.abs(tk.dist - v) < 1e-6)?.label ?? ''
               }
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 11 }}
               stroke='currentColor'
               className='text-muted-foreground'
             />
             <YAxis
               domain={[lo, hi]}
               allowDataOverflow
+              tickFormatter={(v: number) => v.toFixed(1)}
               tick={{ fontSize: 11 }}
               stroke='currentColor'
               className='text-muted-foreground'

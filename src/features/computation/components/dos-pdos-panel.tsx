@@ -8,7 +8,6 @@
 'use client';
 import { useMemo } from 'react';
 import {
-  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -96,8 +95,10 @@ export function DosPdosPanel({
 
   return (
     <div className='flex h-full flex-col'>
-      <div className='text-muted-foreground mb-2 text-xs'>DOS / PDOS (states/eV)</div>
-      <div className='min-h-0 flex-1'>
+      <div className='text-muted-foreground mb-2 flex h-6 items-center text-xs'>
+        DOS / PDOS (states/eV)
+      </div>
+      <div className='relative min-h-0 flex-1'>
         <ResponsiveContainer width='100%' height='100%'>
           <LineChart
             layout='vertical'
@@ -109,13 +110,14 @@ export function DosPdosPanel({
               tick={{ fontSize: 10 }}
               stroke='currentColor'
               className='text-muted-foreground'
-              tickFormatter={(v: number) => (v === 0 ? '0' : v.toPrecision(2))}
+              tickFormatter={(v: number) => String(Math.round(v * 10) / 10)}
             />
             <YAxis
               type='number'
               dataKey='e'
               domain={[eMin, eMax]}
               allowDataOverflow
+              tickFormatter={(v: number) => v.toFixed(1)}
               tick={{ fontSize: 11 }}
               stroke='currentColor'
               className='text-muted-foreground'
@@ -145,9 +147,25 @@ export function DosPdosPanel({
                 isAnimationActive={false}
               />
             ))}
-            <Legend wrapperStyle={{ fontSize: 10 }} iconSize={8} />
           </LineChart>
         </ResponsiveContainer>
+        <div className='pointer-events-none absolute top-1 right-2 flex flex-col gap-0.5 text-[10px]'>
+          {data.total ? (
+            <span className='flex items-center gap-1'>
+              <span className='bg-foreground/40 inline-block size-2 rounded-[1px]' />
+              total
+            </span>
+          ) : null}
+          {labels.map((lab, i) => (
+            <span key={lab} className='flex items-center gap-1'>
+              <span
+                className='inline-block size-2 rounded-[1px]'
+                style={{ backgroundColor: PALETTE[i % PALETTE.length] }}
+              />
+              {lab}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -1855,6 +1855,12 @@
     "atoms": "Số nguyên tử",
     "export": "Xuất",
     "exportBands": "Cấu trúc vùng",
-    "exportDos": "DOS / PDOS"
+    "exportDos": "DOS / PDOS",
+    "newWorkflow": "Tính toán mới",
+    "newDescription": "Khởi chạy run mới từ định nghĩa của một workflow đã có, dưới Run ID mới.",
+    "newBase": "Workflow nguồn",
+    "newNoBase": "Chưa có workflow nào để nhân bản.",
+    "newLaunch": "Khởi chạy",
+    "newError": "Khởi chạy thất bại — kiểm tra Run ID chưa trùng và thử lại."
   }
 }

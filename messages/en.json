@@ -1854,6 +1854,12 @@
     "atoms": "Atoms",
     "export": "Export",
     "exportBands": "Band structure",
-    "exportDos": "DOS / PDOS"
+    "exportDos": "DOS / PDOS",
+    "newWorkflow": "New computation",
+    "newDescription": "Launch a new run from an existing workflow's definition under a fresh run ID.",
+    "newBase": "Base workflow",
+    "newNoBase": "No existing workflow to duplicate yet.",
+    "newLaunch": "Launch",
+    "newError": "Launch failed — check the run ID is unique and try again."
   }
 }

@@ -8,6 +8,7 @@
  */
 'use client';
 import {
+  IconDownload,
   IconLayoutSidebarRightCollapse,
   IconLayoutSidebarRightExpand,
   IconRefresh,
@@ -17,6 +18,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BandStructurePlot, type BandsData } from './band-structure-plot';
+import { exportPng, exportSvg } from './chart-export';
 import { DosPdosPanel, type DosData } from './dos-pdos-panel';
 import { Button } from '@/components/ui/button';
 import type { DftWorkflow } from '@/types/dft';
@@ -187,6 +189,13 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
       if (kFullRef.current) setKRange(kFullRef.current);
     }
   };
+  const exportPlot = (fmt: 'svg' | 'png') => {
+    const svg = plotRef.current?.querySelector('svg');
+    if (!svg) return;
+    const name = `${workflow.id}-bands`;
+    if (fmt === 'svg') exportSvg(svg as SVGSVGElement, `${name}.svg`);
+    else void exportPng(svg as SVGSVGElement, `${name}.png`, 2);
+  };
 
   if (bandsUnits.length === 0) {
     return (
@@ -217,6 +226,24 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
         ) : null}
         {data ? (
           <div className='ml-auto flex items-center gap-1'>
+            <Button
+              variant='outline'
+              size='sm'
+              className='h-7 px-2 text-xs'
+              onClick={() => exportPlot('svg')}
+            >
+              <IconDownload className='mr-1 size-3.5' />
+              SVG
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              className='h-7 px-2 text-xs'
+              onClick={() => exportPlot('png')}
+            >
+              <IconDownload className='mr-1 size-3.5' />
+              PNG
+            </Button>
             {dos ? (
               <Button
                 variant='outline'

@@ -24,6 +24,7 @@ import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
 import { DftConvergenceTab } from '@/features/computation/components/dft-convergence-tab';
 import { DftResultsTab } from '@/features/computation/components/dft-results-tab';
 import { DftComputeTab } from '@/features/computation/components/dft-compute-tab';
+import { DftPrelaunchChecklist } from '@/features/computation/components/dft-prelaunch-checklist';
 import { DftNodePanel } from '@/features/computation/components/dft-node-panel';
 import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
 import type { DftWorkflow } from '@/types/dft';
@@ -173,6 +174,7 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
           </TabsContent>
 
           <TabsContent value='compute' className='m-0 flex-1 overflow-y-auto p-4'>
+            <DftPrelaunchChecklist workflow={workflow} />
             <DftComputeTab workflow={workflow} />
           </TabsContent>
           <TabsContent value='bands' className='m-0 flex-1 overflow-y-auto p-4'>

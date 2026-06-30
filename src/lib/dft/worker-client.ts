@@ -99,3 +99,8 @@ export interface FetchDosBody {
 export function fetchDftDos(body: FetchDosBody): Promise<WorkerResult> {
   return callWorker('/dft/dos', body);
 }
+
+/** Consolidated scientific summary (gap/DOS/PDOS/spin/energy) — Results tab. */
+export function fetchDftResults(body: FetchDosBody): Promise<WorkerResult> {
+  return callWorker('/dft/results', body);
+}

@@ -116,6 +116,7 @@ export function DosPdosPanel({
               type='number'
               dataKey='e'
               domain={[eMin, eMax]}
+              reversed
               allowDataOverflow
               tickFormatter={(v: number) => v.toFixed(1)}
               tick={{ fontSize: 11 }}

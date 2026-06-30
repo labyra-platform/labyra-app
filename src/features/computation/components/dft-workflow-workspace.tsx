@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
+import { DftConvergenceTab } from '@/features/computation/components/dft-convergence-tab';
 import { DftResultsTab } from '@/features/computation/components/dft-results-tab';
 import { DftComputeTab } from '@/features/computation/components/dft-compute-tab';
 import { DftNodePanel } from '@/features/computation/components/dft-node-panel';
@@ -133,6 +134,7 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
               <TabsTrigger value='compute'>{t('tabCompute')}</TabsTrigger>
               <TabsTrigger value='bands'>{t('tabBands')}</TabsTrigger>
               <TabsTrigger value='results'>{t('tabResults')}</TabsTrigger>
+              <TabsTrigger value='convergence'>{t('tabConvergence')}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -178,6 +180,9 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
           </TabsContent>
           <TabsContent value='results' className='m-0 flex-1 overflow-y-auto p-4'>
             <DftResultsTab workflow={workflow} />
+          </TabsContent>
+          <TabsContent value='convergence' className='m-0 flex-1 overflow-y-auto p-4'>
+            <DftConvergenceTab workflow={workflow} />
           </TabsContent>
         </Tabs>
       </div>

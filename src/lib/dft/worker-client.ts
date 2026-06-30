@@ -104,3 +104,13 @@ export function fetchDftDos(body: FetchDosBody): Promise<WorkerResult> {
 export function fetchDftResults(body: FetchDosBody): Promise<WorkerResult> {
   return callWorker('/dft/results', body);
 }
+
+export interface FetchConvergenceBody {
+  tenantId: string;
+  workflowId: string;
+  unitId?: string;
+}
+/** SCF + ionic-relaxation convergence history — for the Convergence tab. */
+export function fetchDftConvergence(body: FetchConvergenceBody): Promise<WorkerResult> {
+  return callWorker('/dft/convergence', body);
+}

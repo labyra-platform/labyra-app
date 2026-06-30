@@ -1,0 +1,268 @@
+/**
+ * DftConvergenceTab — SCF + ionic-relaxation convergence charts for a workflow.
+ *   • SCF accuracy per SCF step (log Y) — is each SCF cycle converging?
+ *   • Energy + |force| per ionic step (dual axis, force log) — is the geometry
+ *     relaxing to a minimum (energy plateau, force → 0)?
+ * Fetches /api/dft/convergence. @phase R298
+ */
+'use client';
+import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
+import type { DftWorkflow } from '@/types/dft';
+
+interface IonicStep {
+  energy_ry: number;
+  total_force: number;
+}
+interface ConvergenceData {
+  calcType?: string;
+  scf_accuracy: number[];
+  ionic_steps: IonicStep[];
+  n_ionic_steps: number;
+  converged: boolean;
+  bfgs_steps: number | null;
+  final_force: number | null;
+  final_scf_accuracy: number | null;
+}
+
+interface TipItem {
+  dataKey?: string | number;
+  name?: string;
+  value?: number;
+  color?: string;
+}
+function ConvTooltip({
+  active,
+  payload,
+  label
+}: {
+  active?: boolean;
+  payload?: TipItem[];
+  label?: number;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div className='bg-popover rounded-md border px-2 py-1.5 text-xs shadow-md'>
+      <div className='font-medium'>step {label}</div>
+      {payload.map((p) => {
+        const v = p.value;
+        const txt =
+          typeof v === 'number'
+            ? Math.abs(v) > 0 && Math.abs(v) < 0.01
+              ? v.toExponential(2)
+              : v.toFixed(4)
+            : String(v);
+        return (
+          <div key={String(p.dataKey)} className='tabular-nums' style={{ color: p.color }}>
+            {p.name ?? String(p.dataKey)}: {txt}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
+  const t = useTranslations('computation');
+  const [data, setData] = useState<ConvergenceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/dft/convergence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflowId: workflow.id })
+      });
+      const body = (await res.json().catch(() => ({}))) as ConvergenceData & { error?: string };
+      if (!res.ok) {
+        setError(body.error ?? t('convError'));
+        return;
+      }
+      setData(body);
+    } catch {
+      setError(t('convError'));
+    } finally {
+      setLoading(false);
+    }
+  }, [workflow.id, t]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (loading) {
+    return (
+      <div className='text-muted-foreground py-12 text-center text-sm'>{t('convLoading')}</div>
+    );
+  }
+  if (error) {
+    return <div className='text-destructive py-12 text-center text-sm'>{error}</div>;
+  }
+  if (!data) return null;
+
+  const scfRows = data.scf_accuracy.map((a, i) => ({ step: i + 1, acc: a }));
+  const ionicRows = data.ionic_steps.map((s, i) => ({
+    step: i + 1,
+    energy: s.energy_ry,
+    force: s.total_force
+  }));
+  const hasIonic = ionicRows.length > 1;
+
+  return (
+    <div className='mx-auto max-w-3xl space-y-4'>
+      <div className='flex flex-wrap items-center gap-2'>
+        <span
+          className={
+            data.converged
+              ? 'rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600'
+              : 'rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600'
+          }
+        >
+          {data.converged ? t('converged') : t('notConverged')}
+        </span>
+        {data.calcType ? (
+          <span className='text-muted-foreground text-xs'>{data.calcType}</span>
+        ) : null}
+        <span className='text-muted-foreground text-xs'>
+          {t('ionicStepsLabel', { n: data.n_ionic_steps })}
+          {data.bfgs_steps != null ? ` · ${t('bfgsLabel', { n: data.bfgs_steps })}` : ''}
+        </span>
+      </div>
+
+      {scfRows.length > 0 ? (
+        <div>
+          <p className='text-muted-foreground mb-1 text-xs'>{t('scfAccuracyTitle')}</p>
+          <div className='h-48'>
+            <ResponsiveContainer width='100%' height='100%'>
+              <LineChart data={scfRows} margin={{ top: 8, right: 16, bottom: 16, left: 0 }}>
+                <CartesianGrid strokeDasharray='3 3' className='stroke-border' />
+                <XAxis
+                  dataKey='step'
+                  type='number'
+                  domain={['dataMin', 'dataMax']}
+                  tick={{ fontSize: 11 }}
+                  stroke='currentColor'
+                  className='text-muted-foreground'
+                  label={{
+                    value: t('scfStep'),
+                    position: 'insideBottom',
+                    offset: -6,
+                    style: { fontSize: 10 }
+                  }}
+                />
+                <YAxis
+                  scale='log'
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: 10 }}
+                  stroke='currentColor'
+                  className='text-muted-foreground'
+                  tickFormatter={(v: number) => v.toExponential(0)}
+                  width={56}
+                />
+                <Tooltip content={<ConvTooltip />} />
+                <Line
+                  dataKey='acc'
+                  name={t('scfAccuracyShort')}
+                  type='monotone'
+                  stroke='#2563eb'
+                  strokeWidth={1}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      ) : null}
+
+      {hasIonic ? (
+        <div>
+          <p className='text-muted-foreground mb-1 text-xs'>{t('ionicTitle')}</p>
+          <div className='h-48'>
+            <ResponsiveContainer width='100%' height='100%'>
+              <LineChart data={ionicRows} margin={{ top: 8, right: 8, bottom: 16, left: 0 }}>
+                <CartesianGrid strokeDasharray='3 3' className='stroke-border' />
+                <XAxis
+                  dataKey='step'
+                  type='number'
+                  domain={['dataMin', 'dataMax']}
+                  tick={{ fontSize: 11 }}
+                  stroke='currentColor'
+                  className='text-muted-foreground'
+                  label={{
+                    value: t('ionicStep'),
+                    position: 'insideBottom',
+                    offset: -6,
+                    style: { fontSize: 10 }
+                  }}
+                />
+                <YAxis
+                  yAxisId='e'
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: 10 }}
+                  stroke='#2563eb'
+                  tickFormatter={(v: number) => v.toFixed(3)}
+                  width={72}
+                />
+                <YAxis
+                  yAxisId='f'
+                  orientation='right'
+                  scale='log'
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: 10 }}
+                  stroke='#dc2626'
+                  tickFormatter={(v: number) => v.toExponential(0)}
+                  width={56}
+                />
+                <Tooltip content={<ConvTooltip />} />
+                <Line
+                  yAxisId='e'
+                  dataKey='energy'
+                  name={t('energyRy')}
+                  type='monotone'
+                  stroke='#2563eb'
+                  strokeWidth={1.2}
+                  dot={{ r: 2 }}
+                  isAnimationActive={false}
+                />
+                <Line
+                  yAxisId='f'
+                  dataKey='force'
+                  name={t('forceRyBohr')}
+                  type='monotone'
+                  stroke='#dc2626'
+                  strokeWidth={1.2}
+                  dot={{ r: 2 }}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className='mt-1 flex gap-3 text-[10px]'>
+            <span className='flex items-center gap-1'>
+              <span className='inline-block size-2 rounded-[1px] bg-[#2563eb]' />
+              {t('energyRy')}
+            </span>
+            <span className='flex items-center gap-1'>
+              <span className='inline-block size-2 rounded-[1px] bg-[#dc2626]' />
+              {t('forceRyBohr')}
+            </span>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

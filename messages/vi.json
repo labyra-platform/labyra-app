@@ -1851,6 +1851,7 @@
     "searchPlaceholder": "Tìm job…",
     "noFilterMatch": "Không có workflow khớp bộ lọc.",
     "noParsedResults": "Hoàn thành — chưa có kết quả phân tích",
-    "resultRunningUnit": "Đang chạy: {unit}"
+    "resultRunningUnit": "Đang chạy: {unit}",
+    "atoms": "Số nguyên tử"
   }
 }

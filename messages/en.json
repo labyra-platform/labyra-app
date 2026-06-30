@@ -1850,6 +1850,7 @@
     "searchPlaceholder": "Search jobs…",
     "noFilterMatch": "No workflows match the filters.",
     "noParsedResults": "Completed — no parsed results",
-    "resultRunningUnit": "Running: {unit}"
+    "resultRunningUnit": "Running: {unit}",
+    "atoms": "Atoms"
   }
 }

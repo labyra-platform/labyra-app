@@ -122,8 +122,14 @@ export function DftResultsTab({ workflow }: { workflow: DftWorkflow }) {
 
   const bg = data.bandGap;
   const fermi = data.dos?.fermiEv ?? data.fermiEv ?? null;
+  const relaxed = workflow.results?.relaxedStructure;
   const empty =
-    !bg && !data.dos && !data.pdosCharacter && data.totalEnergyRy == null && !data.scfGap;
+    !bg &&
+    !data.dos &&
+    !data.pdosCharacter &&
+    data.totalEnergyRy == null &&
+    !data.scfGap &&
+    !relaxed;
   if (empty) {
     return (
       <div className='text-muted-foreground py-12 text-center text-sm'>{t('resultsEmpty')}</div>
@@ -155,6 +161,18 @@ export function DftResultsTab({ workflow }: { workflow: DftWorkflow }) {
       ) : null}
 
       <div className='grid gap-3 sm:grid-cols-2'>
+        {relaxed ? (
+          <Section title={t('relaxedStructure')}>
+            <Row label='a'>{relaxed.aAng != null ? `${relaxed.aAng.toFixed(4)} Å` : '—'}</Row>
+            <Row label='c'>{relaxed.cAng != null ? `${relaxed.cAng.toFixed(4)} Å` : '—'}</Row>
+            <Row label='c/a'>{relaxed.coa != null ? relaxed.coa.toFixed(4) : '—'}</Row>
+            <Row label='V'>
+              {relaxed.volumeAng3 != null ? `${relaxed.volumeAng3.toFixed(2)} Å³` : '—'}
+            </Row>
+            {relaxed.nAtoms != null ? <Row label={t('atoms')}>{relaxed.nAtoms}</Row> : null}
+          </Section>
+        ) : null}
+
         {data.pdosCharacter ? (
           <Section title={t('orbitalCharacter')}>
             <Row label='VBM'>

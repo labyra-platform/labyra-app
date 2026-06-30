@@ -1862,6 +1862,12 @@
     "newLaunch": "Launch",
     "newError": "Launch failed — check the run ID is unique and try again.",
     "newHubbard": "Hubbard U (eV)",
-    "newHubbardHint": "Override U per manifold for this run — e.g. to sweep U for DFT+U calibration."
+    "newHubbardHint": "Override U per manifold for this run — e.g. to sweep U for DFT+U calibration.",
+    "compareTitle": "Compare runs",
+    "compareDescription": "Overlay band gaps across runs — e.g. a Hubbard U sweep for DFT+U calibration.",
+    "compareSelectHint": "Select runs above to compare.",
+    "compareNoData": "No selected run has a band gap yet.",
+    "compareUAxis": "U({manifold}) (eV)",
+    "compareGapAxis": "Band gap (eV)"
   }
 }

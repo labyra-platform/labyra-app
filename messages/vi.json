@@ -1863,6 +1863,12 @@
     "newLaunch": "Khởi chạy",
     "newError": "Khởi chạy thất bại — kiểm tra Run ID chưa trùng và thử lại.",
     "newHubbard": "Hubbard U (eV)",
-    "newHubbardHint": "Ghi đè U từng manifold cho run này — vd quét U để hiệu chỉnh DFT+U."
+    "newHubbardHint": "Ghi đè U từng manifold cho run này — vd quét U để hiệu chỉnh DFT+U.",
+    "compareTitle": "So sánh run",
+    "compareDescription": "Chồng band gap qua các run — vd quét Hubbard U để hiệu chỉnh DFT+U.",
+    "compareSelectHint": "Chọn các run ở trên để so sánh.",
+    "compareNoData": "Chưa run nào được chọn có band gap.",
+    "compareUAxis": "U({manifold}) (eV)",
+    "compareGapAxis": "Band gap (eV)"
   }
 }

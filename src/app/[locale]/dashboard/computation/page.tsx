@@ -14,12 +14,15 @@
  *
  * @phase R251-computation-pivot
  */
+import { IconGitCompare } from '@tabler/icons-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
+import { Button } from '@/components/ui/button';
 import { DftNewWorkflowDialog } from '@/features/computation/components/dft-new-workflow-dialog';
 import { DftWorkflowTable } from '@/features/computation/components/dft-workflow-table';
 import { toWorkflowRow } from '@/features/computation/workflow-row';
+import { Link } from '@/i18n/navigation';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { listDftWorkflows } from '@/lib/firebase/dft/service';
 
@@ -43,7 +46,13 @@ export default async function ComputationPage() {
   return (
     <PageContainer pageTitle={tNav('computation')} pageDescription={t('description')}>
       <div className='space-y-4'>
-        <div className='flex justify-end'>
+        <div className='flex justify-end gap-2'>
+          <Button asChild variant='outline' size='sm'>
+            <Link href='/dashboard/computation/compare'>
+              <IconGitCompare className='mr-1 size-4' />
+              {t('compareTitle')}
+            </Link>
+          </Button>
           <DftNewWorkflowDialog bases={bases} />
         </div>
         {rows.length === 0 ? (

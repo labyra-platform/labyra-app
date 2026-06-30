@@ -67,8 +67,8 @@ export async function exportPng(svg: SVGSVGElement, filename: string, scale = 2)
   const url = `data:image/svg+xml;base64,${window.btoa(unescape(encodeURIComponent(data)))}`;
   const img = new Image();
   await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error('image load failed'));
+    img.addEventListener('load', () => resolve(), { once: true });
+    img.addEventListener('error', () => reject(new Error('image load failed')), { once: true });
     img.src = url;
   });
   const canvas = document.createElement('canvas');

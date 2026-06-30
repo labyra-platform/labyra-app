@@ -17,7 +17,8 @@
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
-import { DftResultsCard } from '@/features/computation/components/dft-results-card';
+import { DftWorkflowTable } from '@/features/computation/components/dft-workflow-table';
+import { toWorkflowRow } from '@/features/computation/workflow-row';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { listDftWorkflows } from '@/lib/firebase/dft/service';
 
@@ -31,18 +32,14 @@ export default async function ComputationPage() {
     notFound();
   }
   const workflows = await listDftWorkflows(tenantId);
-  const sorted = workflows.toSorted((a, b) => a.id.localeCompare(b.id));
+  const rows = workflows.map(toWorkflowRow);
 
   return (
     <PageContainer pageTitle={tNav('computation')} pageDescription={t('description')}>
-      {sorted.length === 0 ? (
+      {rows.length === 0 ? (
         <div className='text-muted-foreground py-12 text-center text-sm'>{t('noWorkflows')}</div>
       ) : (
-        <div className='grid gap-4 md:grid-cols-2'>
-          {sorted.map((wf) => (
-            <DftResultsCard key={wf.id} workflow={wf} />
-          ))}
-        </div>
+        <DftWorkflowTable rows={rows} />
       )}
     </PageContainer>
   );

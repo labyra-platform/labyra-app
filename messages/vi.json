@@ -1711,7 +1711,9 @@
     "status": {
       "running": "Đang chạy",
       "completed": "Hoàn thành",
-      "failed": "Thất bại"
+      "failed": "Thất bại",
+      "queued": "Trong hàng đợi",
+      "pending": "Chờ"
     },
     "submitSoon": "Gửi từ giao diện sắp có — hiện workflow được khởi chạy qua compute API.",
     "tabs": {
@@ -1800,7 +1802,6 @@
     "yes": "Có",
     "no": "Không",
     "energyConvergence": "Năng lượng & hội tụ",
-    "totalEnergy": "Tổng năng lượng",
     "electrons": "Số electron",
     "scfGapHl": "Gap SCF (HOMO/LUMO)",
     "scfIterations": "Số vòng SCF",
@@ -1831,6 +1832,25 @@
     "computeLaunchOk": "Đã chạy {id} — xem danh sách workflow.",
     "computeLaunchError": "Chạy lỗi — kiểm tra cấu hình worker và mã chạy có trùng không.",
     "paramAdvanced": "Nâng cao",
-    "pseudopotentials": "Giả thế"
+    "pseudopotentials": "Giả thế",
+    "table": {
+      "colStatus": "Trạng thái",
+      "colJob": "Job",
+      "colPipeline": "Pipeline",
+      "colResult": "Kết quả"
+    },
+    "filter": {
+      "all": "Tất cả",
+      "running": "Đang chạy",
+      "completed": "Hoàn thành",
+      "failed": "Thất bại"
+    },
+    "sortBy": "Sắp xếp",
+    "sortName": "Tên",
+    "sortStatus": "Trạng thái",
+    "searchPlaceholder": "Tìm job…",
+    "noFilterMatch": "Không có workflow khớp bộ lọc.",
+    "noParsedResults": "Hoàn thành — chưa có kết quả phân tích",
+    "resultRunningUnit": "Đang chạy: {unit}"
   }
 }

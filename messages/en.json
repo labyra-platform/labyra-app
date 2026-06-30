@@ -1705,12 +1705,14 @@
     "vbm": "VBM",
     "cbm": "CBM",
     "relaxedStructure": "Relaxed Structure",
-    "totalEnergy": "Total Energy",
+    "totalEnergy": "Total energy",
     "pipeline": "Pipeline",
     "status": {
       "running": "Running",
       "completed": "Completed",
-      "failed": "Failed"
+      "failed": "Failed",
+      "queued": "Queued",
+      "pending": "Pending"
     },
     "submitSoon": "Submitting from the UI is coming soon — workflows are currently launched via the compute API.",
     "tabs": {
@@ -1799,7 +1801,6 @@
     "yes": "Yes",
     "no": "No",
     "energyConvergence": "Energy & convergence",
-    "totalEnergy": "Total energy",
     "electrons": "Electrons",
     "scfGapHl": "SCF gap (HOMO/LUMO)",
     "scfIterations": "SCF iterations",
@@ -1830,6 +1831,25 @@
     "computeLaunchOk": "Launched {id} — see the workflow list.",
     "computeLaunchError": "Launch failed — check worker config and that the run ID is unique.",
     "paramAdvanced": "Advanced",
-    "pseudopotentials": "Pseudopotentials"
+    "pseudopotentials": "Pseudopotentials",
+    "table": {
+      "colStatus": "Status",
+      "colJob": "Job",
+      "colPipeline": "Pipeline",
+      "colResult": "Result"
+    },
+    "filter": {
+      "all": "All",
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "sortBy": "Sort",
+    "sortName": "Name",
+    "sortStatus": "Status",
+    "searchPlaceholder": "Search jobs…",
+    "noFilterMatch": "No workflows match the filters.",
+    "noParsedResults": "Completed — no parsed results",
+    "resultRunningUnit": "Running: {unit}"
   }
 }

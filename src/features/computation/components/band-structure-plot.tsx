@@ -77,11 +77,15 @@ function BandTooltip({
 export function BandStructurePlot({
   data,
   eMin,
-  eMax
+  eMax,
+  kMin,
+  kMax
 }: {
   data: BandsData;
   eMin?: number;
   eMax?: number;
+  kMin?: number;
+  kMax?: number;
 }) {
   const zero = data.fermiEv ?? data.gap?.vbm_ev ?? 0;
   const gap = data.gap;
@@ -153,7 +157,8 @@ export function BandStructurePlot({
             <XAxis
               dataKey='k'
               type='number'
-              domain={['dataMin', 'dataMax']}
+              domain={[kMin ?? 'dataMin', kMax ?? 'dataMax']}
+              allowDataOverflow
               ticks={data.ticks.map((tk) => tk.dist)}
               tickFormatter={(v: number) =>
                 data.ticks.find((tk) => Math.abs(tk.dist - v) < 1e-6)?.label ?? ''

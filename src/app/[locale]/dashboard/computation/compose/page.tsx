@@ -34,7 +34,8 @@ export default async function ComputationComposePage({
   const structureRefs = structures.map((c) => ({
     id: c.id,
     name: c.name,
-    formula: reducedFormula(c.structure)
+    formula: reducedFormula(c.structure),
+    mpId: c.mpId
   }));
   const { structure: initialStructureId } = await searchParams;
 

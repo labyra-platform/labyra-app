@@ -47,6 +47,7 @@ interface StructureRef {
   id: string;
   name: string;
   formula: string;
+  mpId?: string;
 }
 type SrcState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -223,7 +224,7 @@ export function DftComposeView({
                     <SelectLabel>{t('composeFromLibrary')}</SelectLabel>
                     {structures.map((s) => (
                       <SelectItem key={s.id} value={`cs:${s.id}`}>
-                        {s.formula} · {s.name}
+                        {s.mpId ? `${s.formula} · ${s.mpId}` : s.name}
                       </SelectItem>
                     ))}
                   </SelectGroup>

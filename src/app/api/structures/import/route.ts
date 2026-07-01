@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { reducedFormula } from '@/features/crystal-structures/structure-row';
 import { getCurrentTenantId, getCurrentUser } from '@/lib/auth/server';
-import { buildStructure } from '@/lib/dft/worker-client';
+import { buildStructure, buildStructureScene, type StructureScene } from '@/lib/dft/worker-client';
 import { createCrystalStructure } from '@/lib/firebase/crystal-structures/service';
 import type { DftStructure } from '@/types/dft';
 
@@ -64,13 +64,21 @@ export async function POST(request: Request) {
       name?.trim() ||
       `${reducedFormula(structure)}${structure.spaceGroup ? ` (${structure.spaceGroup})` : ''}`;
 
+    // Precompute the 3D render scene now (one worker call at import) so the viewer
+    // loads it straight from Firestore — no per-open worker round-trip. Non-fatal:
+    // if it fails, the scene route falls back to computing on demand.
+    let scene: StructureScene | undefined;
+    const sceneRes = await buildStructureScene(structure);
+    if (sceneRes.ok) scene = sceneRes.data as StructureScene;
+
     const created = await createCrystalStructure(
       {
         name: label,
         source,
         mpId: source === 'mp_id' ? mpId : undefined,
         verified: structure.verified,
-        structure
+        structure,
+        scene
       },
       { tenantId, createdBy: user.uid }
     );

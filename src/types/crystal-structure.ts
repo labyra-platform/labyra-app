@@ -11,6 +11,7 @@
  */
 import type { DftStructure } from './dft';
 import type { ProvBase } from './prov-base';
+import type { StructureScene } from '@/lib/dft/worker-client';
 
 export type StructureSource = 'cif' | 'poscar' | 'mp_id' | 'manual';
 
@@ -25,6 +26,9 @@ export interface CrystalStructure extends ProvBase {
   verified?: boolean;
   /** Computation-ready payload (matches §5.1 DftStructure). */
   structure: DftStructure;
+  /** Precomputed Three.js render scene (atoms + bonds), cached so the 3D viewer
+   *  loads from Firestore without a worker round-trip. Absent on legacy docs. */
+  scene?: StructureScene;
 }
 
 export interface CreateCrystalStructureInput {
@@ -33,4 +37,5 @@ export interface CreateCrystalStructureInput {
   mpId?: string;
   verified?: boolean;
   structure: DftStructure;
+  scene?: StructureScene;
 }

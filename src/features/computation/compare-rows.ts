@@ -16,10 +16,58 @@ export interface CompareRow {
   energyRy: number | null;
   vbmEv: number | null;
   cbmEv: number | null;
+  aAng: number | null;
+  cAng: number | null;
+  volumeAng3: number | null;
+  density: number | null;
+}
+
+/** Selectable Y-axis metric for the compare chart. */
+export type CompareMetric = 'gap' | 'a' | 'c' | 'volume' | 'density' | 'energy';
+
+export interface MetricMeta {
+  labelKey: string;
+  unit: string;
+  decimals: number;
+}
+
+export function metricMeta(m: CompareMetric): MetricMeta {
+  switch (m) {
+    case 'a':
+      return { labelKey: 'metricLatticeA', unit: 'Å', decimals: 4 };
+    case 'c':
+      return { labelKey: 'metricLatticeC', unit: 'Å', decimals: 4 };
+    case 'volume':
+      return { labelKey: 'metricVolume', unit: 'Å³', decimals: 2 };
+    case 'density':
+      return { labelKey: 'metricDensity', unit: 'g/cm³', decimals: 3 };
+    case 'energy':
+      return { labelKey: 'metricEnergy', unit: 'Ry', decimals: 4 };
+    default:
+      return { labelKey: 'metricGap', unit: 'eV', decimals: 3 };
+  }
+}
+
+export function metricValue(row: CompareRow, m: CompareMetric): number | null {
+  switch (m) {
+    case 'a':
+      return row.aAng;
+    case 'c':
+      return row.cAng;
+    case 'volume':
+      return row.volumeAng3;
+    case 'density':
+      return row.density;
+    case 'energy':
+      return row.energyRy;
+    default:
+      return row.gapEv;
+  }
 }
 
 export function toCompareRow(wf: DftWorkflow): CompareRow {
   const r = wf.results;
+  const rs = r?.relaxedStructure;
   return {
     id: wf.id,
     name: wf.global?.prefix ?? wf.id,
@@ -28,7 +76,11 @@ export function toCompareRow(wf: DftWorkflow): CompareRow {
     direct: r?.bandGap?.direct ?? null,
     energyRy: typeof r?.totalEnergyRy === 'number' ? r.totalEnergyRy : null,
     vbmEv: r?.bandGap?.vbm_ev ?? null,
-    cbmEv: r?.bandGap?.cbm_ev ?? null
+    cbmEv: r?.bandGap?.cbm_ev ?? null,
+    aAng: rs?.aAng ?? null,
+    cAng: rs?.cAng ?? null,
+    volumeAng3: rs?.volumeAng3 ?? null,
+    density: rs?.density ?? null
   };
 }
 

@@ -1871,6 +1871,13 @@
     "compareUAxis": "U({manifold}) (eV)",
     "compareGapAxis": "Band gap (eV)",
     "density": "Mật độ",
-    "computeTime": "Thời gian tính"
+    "computeTime": "Thời gian tính",
+    "compareMetric": "Trục Y",
+    "metricGap": "Band gap",
+    "metricLatticeA": "Hằng số a",
+    "metricLatticeC": "Hằng số c",
+    "metricVolume": "Thể tích ô",
+    "metricDensity": "Mật độ",
+    "metricEnergy": "Năng lượng tổng"
   }
 }

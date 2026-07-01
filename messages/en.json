@@ -1870,6 +1870,13 @@
     "compareUAxis": "U({manifold}) (eV)",
     "compareGapAxis": "Band gap (eV)",
     "density": "Density",
-    "computeTime": "Compute time"
+    "computeTime": "Compute time",
+    "compareMetric": "Y-axis",
+    "metricGap": "Band gap",
+    "metricLatticeA": "Lattice a",
+    "metricLatticeC": "Lattice c",
+    "metricVolume": "Cell volume",
+    "metricDensity": "Density",
+    "metricEnergy": "Total energy"
   }
 }

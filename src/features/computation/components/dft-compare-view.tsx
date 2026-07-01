@@ -11,6 +11,13 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -18,10 +25,12 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import type { CompareRow } from '@/features/computation/compare-rows';
-import { allManifolds, uOf } from '@/features/computation/compare-rows';
+import type { CompareMetric, CompareRow } from '@/features/computation/compare-rows';
+import { allManifolds, metricMeta, uOf } from '@/features/computation/compare-rows';
 import { Link } from '@/i18n/navigation';
-import { CompareGapChart } from './compare-gap-chart';
+import { CompareMetricChart } from './compare-metric-chart';
+
+const METRICS: CompareMetric[] = ['gap', 'a', 'c', 'volume', 'density', 'energy'];
 
 function fmt(n: number | null, d = 2): string {
   return n != null ? n.toFixed(d) : '—';
@@ -32,6 +41,7 @@ export function DftCompareView({ rows }: { rows: CompareRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(rows.filter((r) => r.gapEv != null).map((r) => r.id))
   );
+  const [metric, setMetric] = useState<CompareMetric>('gap');
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -64,8 +74,23 @@ export function DftCompareView({ rows }: { rows: CompareRow[] }) {
 
       {selectedRows.length > 0 ? (
         <>
+          <div className='flex items-center gap-2'>
+            <span className='text-muted-foreground text-sm'>{t('compareMetric')}</span>
+            <Select value={metric} onValueChange={(v) => setMetric(v as CompareMetric)}>
+              <SelectTrigger className='h-8 w-44'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {METRICS.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {t(metricMeta(m).labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className='h-72 rounded-lg border p-3'>
-            <CompareGapChart rows={selectedRows} />
+            <CompareMetricChart rows={selectedRows} metric={metric} />
           </div>
           <div className='overflow-hidden rounded-lg border'>
             <Table>

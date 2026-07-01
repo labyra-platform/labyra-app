@@ -52,6 +52,17 @@ export async function listCrystalStructures(tenantId: string): Promise<CrystalSt
     .filter((c) => c.lifecycleStatus !== 'retracted');
 }
 
+export async function getCrystalStructure(
+  tenantId: string,
+  id: string
+): Promise<CrystalStructure | null> {
+  const db = getAdminFirestoreService();
+  const snap = await db.collection('tenants').doc(tenantId).collection(COLLECTION).doc(id).get();
+  if (!snap.exists) return null;
+  const cs = snap.data() as CrystalStructure;
+  return cs.lifecycleStatus === 'retracted' ? null : cs;
+}
+
 export async function deleteCrystalStructure(tenantId: string, id: string): Promise<void> {
   const db = getAdminFirestoreService();
   await db.collection('tenants').doc(tenantId).collection(COLLECTION).doc(id).delete();

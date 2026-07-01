@@ -1974,6 +1974,16 @@
     "mpColDensity": "Density",
     "mpColVolume": "Volume (Å³)",
     "mpColAction": "Import",
-    "mpImportedToast": "Imported {id} into structures."
+    "mpImportedToast": "Imported {id} into structures.",
+    "clearSelection": "Clear",
+    "mpResultsHint": "Search to see materials.",
+    "sceneFailed": "Could not build the 3D scene. The structure may need re-importing.",
+    "viewerShow_atoms": "Atoms",
+    "viewerShow_bonds": "Bonds",
+    "viewerShow_cell": "Unit cell",
+    "viewerShow_axes": "Axes",
+    "backToLibrary": "Back to structures",
+    "atomCount": "{count} atoms",
+    "verified": "verified"
   }
 }

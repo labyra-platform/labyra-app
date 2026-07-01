@@ -18,7 +18,8 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
+import { formatSciNode } from '@/features/spectra/utils/format-units';
 import type { StructureRow } from '../structure-row';
 
 export function StructuresTable({ rows }: { rows: StructureRow[] }) {
@@ -54,7 +55,12 @@ export function StructuresTable({ rows }: { rows: StructureRow[] }) {
           {rows.map((r) => (
             <TableRow key={r.id}>
               <TableCell>
-                <span className='font-medium'>{r.formula}</span>
+                <Link
+                  href={`/dashboard/structures/${r.id}`}
+                  className='text-primary font-medium underline-offset-2 hover:underline'
+                >
+                  {formatSciNode(r.formula)}
+                </Link>
                 <span className='text-muted-foreground ml-2 text-xs'>{r.name}</span>
               </TableCell>
               <TableCell className='tabular-nums'>{r.unitCellFormula}</TableCell>

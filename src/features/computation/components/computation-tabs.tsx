@@ -36,16 +36,16 @@ const TABS: Tab[] = [
     isActive: (p) => p.endsWith('/dashboard/computation')
   },
   {
-    href: '/dashboard/structures',
-    labelKey: 'structuresTitle',
-    Icon: IconCube,
-    isActive: (p) => p.startsWith('/dashboard/structures')
-  },
-  {
     href: '/dashboard/computation/explore',
     labelKey: 'exploreMpTab',
     Icon: IconAtom,
     isActive: (p) => p.startsWith('/dashboard/computation/explore')
+  },
+  {
+    href: '/dashboard/structures',
+    labelKey: 'structuresTitle',
+    Icon: IconCube,
+    isActive: (p) => p.startsWith('/dashboard/structures')
   },
   {
     href: '/dashboard/computation/compose',
@@ -67,7 +67,7 @@ export function ComputationTabs({ rightSlot }: { rightSlot?: ReactNode }) {
 
   return (
     <div className='mb-4 flex items-center justify-between gap-4 border-b'>
-      <nav className='flex gap-1 overflow-x-auto'>
+      <nav className='flex gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
         {TABS.map(({ href, labelKey, Icon, isActive }) => {
           const active = isActive(pathname);
           return (

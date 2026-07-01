@@ -20,6 +20,13 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -186,18 +193,18 @@ export function DftWorkflowTable({ rows }: Props) {
           />
         </div>
         <div className='flex items-center gap-2'>
-          <div className='flex items-center gap-1'>
-            {filters.map((f) => (
-              <Button
-                key={f}
-                size='sm'
-                variant={filter === f ? 'default' : 'outline'}
-                onClick={() => setFilter(f)}
-              >
-                {t(`filter.${f}`)}
-              </Button>
-            ))}
-          </div>
+          <Select value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+            <SelectTrigger className='h-9 w-[150px]'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {filters.map((f) => (
+                <SelectItem key={f} value={f}>
+                  {t(`filter.${f}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
             size='sm'
             variant='ghost'

@@ -121,6 +121,34 @@ export function searchMaterials(query: string, limit = 30): Promise<WorkerResult
   return callWorker('/materials/search', { query, limit });
 }
 
+export interface SceneAtom {
+  el: string;
+  xyz: [number, number, number];
+  color: string;
+  radius: number;
+}
+export interface SceneBond {
+  from: [number, number, number];
+  to: [number, number, number];
+}
+export interface StructureScene {
+  formula: string;
+  lattice: number[][];
+  natoms: number;
+  atoms: SceneAtom[];
+  bonds: SceneBond[];
+}
+
+/** Reconstruct a stored DftStructure into a render scene (atoms + CrystalNN bonds). */
+export function buildStructureScene(structure: unknown): Promise<WorkerResult> {
+  return callWorker('/dft/structure/scene', { structure });
+}
+
+/** Emit CIF / POSCAR text for a stored DftStructure. */
+export function exportStructure(structure: unknown, fmt: 'cif' | 'poscar'): Promise<WorkerResult> {
+  return callWorker('/dft/structure/export', { structure, fmt });
+}
+
 export function fetchDftBands(body: FetchBandsBody): Promise<WorkerResult> {
   return callWorker('/dft/bands', body);
 }

@@ -1913,7 +1913,14 @@
     "structuresTitle": "Cấu trúc",
     "composeTabGraph": "Sơ đồ",
     "composeTabJson": "JSON",
-    "composeSelectNode": "Chọn một node để chỉnh tham số."
+    "composeSelectNode": "Chọn một node để chỉnh tham số.",
+    "rowActions": "Thao tác",
+    "rowOpen": "Mở",
+    "delete": "Xóa",
+    "selectAll": "Chọn tất cả",
+    "selectedCount": "Đã chọn {count}",
+    "clearSelection": "Bỏ chọn",
+    "deleteSelected": "Xóa ({count})"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

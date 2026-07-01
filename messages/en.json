@@ -1912,7 +1912,14 @@
     "structuresTitle": "Structures",
     "composeTabGraph": "Graph",
     "composeTabJson": "JSON",
-    "composeSelectNode": "Select a node to edit its parameters."
+    "composeSelectNode": "Select a node to edit its parameters.",
+    "rowActions": "Row actions",
+    "rowOpen": "Open",
+    "delete": "Delete",
+    "selectAll": "Select all",
+    "selectedCount": "{count} selected",
+    "clearSelection": "Clear",
+    "deleteSelected": "Delete ({count})"
   },
   "structures": {
     "importTitle": "Import structure",

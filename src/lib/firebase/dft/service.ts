@@ -69,3 +69,10 @@ export async function listDftWorkflows(tenantId: string): Promise<DftWorkflow[]>
   const qs = await db.collection('tenants').doc(tenantId).collection(COLLECTION).get();
   return qs.docs.map((d) => toWorkflow(d.id, d.data() ?? {}));
 }
+
+/** Hard-delete a workflow document (no lifecycle field on DftWorkflow). GCS
+ * artifacts are not touched here — they age out with the bucket lifecycle. */
+export async function deleteDftWorkflow(tenantId: string, id: string): Promise<void> {
+  const db = getAdminFirestoreService();
+  await db.collection('tenants').doc(tenantId).collection(COLLECTION).doc(id).delete();
+}

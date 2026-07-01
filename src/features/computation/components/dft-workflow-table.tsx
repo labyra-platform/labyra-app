@@ -1,21 +1,23 @@
 /**
- * Computation list — sortable/filterable table of DFT workflows (R301 redesign,
- * replacing the 2-col results-card grid). Each row links to the workflow
- * workspace. `md+` renders a shadcn table; below that, stacked cards.
+ * Computation list — sortable/filterable table of DFT workflows (R301 redesign).
+ * Each row links to the workflow workspace. `md+` renders a shadcn table; below
+ * that, stacked cards. Row kebab (Open / Delete) + bulk row-select with a
+ * "Delete selected" bar, matching the other list pages (R321).
  *
  * Columns map only to data the worker writes (status · job+method · pipeline ·
  * result). No Resource/duration column and no "recent" sort — the doc carries
  * no timing or `createdAt` (see workflow-row.ts).
  *
- * @phase R301-computation-list
+ * @phase R301-computation-list / R321-job-kebab-bulk
  */
 'use client';
 
-import { IconArrowsSort, IconSearch } from '@tabler/icons-react';
+import { IconArrowsSort, IconSearch, IconTrash } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -28,6 +30,7 @@ import {
 import type { ResultCell, StatusKind, WorkflowRow } from '@/features/computation/workflow-row';
 import { Link, useRouter } from '@/i18n/navigation';
 import { WorkflowPipelineMini } from './workflow-pipeline-mini';
+import { WorkflowRowActions } from './workflow-row-actions';
 
 const STATUS_VARIANT: Record<StatusKind, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   completed: 'default',
@@ -105,6 +108,8 @@ export function DftWorkflowTable({ rows }: Props) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('name');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const view = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -123,6 +128,47 @@ export function DftWorkflowTable({ rows }: Props) {
   }, [rows, query, filter, sort]);
 
   const filters: Filter[] = ['all', 'running', 'completed', 'failed'];
+
+  const viewIds = view.map((r) => r.id);
+  const allSelected = viewIds.length > 0 && viewIds.every((id) => selected.has(id));
+  const someSelected = viewIds.some((id) => selected.has(id));
+  const headerState: boolean | 'indeterminate' = allSelected
+    ? true
+    : someSelected
+      ? 'indeterminate'
+      : false;
+
+  function toggleAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) viewIds.forEach((id) => next.delete(id));
+      else viewIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkDelete() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    try {
+      await Promise.allSettled(
+        ids.map((id) => fetch(`/api/dft/workflows/${id}`, { method: 'DELETE' }))
+      );
+      setSelected(new Set());
+      router.refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   return (
     <div className='space-y-4'>
@@ -164,6 +210,27 @@ export function DftWorkflowTable({ rows }: Props) {
         </div>
       </div>
 
+      {selected.size > 0 ? (
+        <div className='bg-muted/40 flex items-center justify-between gap-3 rounded-lg border px-3 py-2'>
+          <span className='text-sm'>{t('selectedCount', { count: selected.size })}</span>
+          <div className='flex items-center gap-2'>
+            <Button size='sm' variant='ghost' onClick={() => setSelected(new Set())}>
+              {t('clearSelection')}
+            </Button>
+            <Button
+              size='sm'
+              variant='outline'
+              disabled={bulkBusy}
+              onClick={() => void bulkDelete()}
+              className='border-destructive/40 text-destructive hover:bg-destructive/10'
+            >
+              <IconTrash className='mr-1 size-4' />
+              {t('deleteSelected', { count: selected.size })}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {view.length === 0 ? (
         <div className='text-muted-foreground py-12 text-center text-sm'>{t('noFilterMatch')}</div>
       ) : (
@@ -172,22 +239,38 @@ export function DftWorkflowTable({ rows }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className='w-10'>
+                    <Checkbox
+                      checked={headerState}
+                      onCheckedChange={toggleAll}
+                      aria-label={t('selectAll')}
+                    />
+                  </TableHead>
                   <TableHead className='w-[120px]'>{t('table.colStatus')}</TableHead>
                   <TableHead>{t('table.colJob')}</TableHead>
                   <TableHead>{t('table.colPipeline')}</TableHead>
                   <TableHead>{t('table.colResult')}</TableHead>
+                  <TableHead className='w-10' />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {view.map((r) => (
                   <TableRow
                     key={r.id}
+                    data-state={selected.has(r.id) ? 'selected' : undefined}
                     className='hover:bg-muted/50 cursor-pointer'
                     onClick={(e) => {
-                      if ((e.target as HTMLElement).closest('a')) return;
+                      if ((e.target as HTMLElement).closest('a,button')) return;
                       router.push(href(r.id));
                     }}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selected.has(r.id)}
+                        onCheckedChange={() => toggleOne(r.id)}
+                        aria-label={r.name}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[r.status]}>{t(`status.${r.status}`)}</Badge>
                     </TableCell>
@@ -208,6 +291,13 @@ export function DftWorkflowTable({ rows }: Props) {
                     <TableCell>
                       <ResultCellView cell={r.result} />
                     </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <WorkflowRowActions
+                        id={r.id}
+                        name={r.name}
+                        onDeleted={() => router.refresh()}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -216,14 +306,21 @@ export function DftWorkflowTable({ rows }: Props) {
 
           <div className='space-y-3 md:hidden'>
             {view.map((r) => (
-              <Link
-                key={r.id}
-                href={href(r.id)}
-                className='hover:bg-muted/50 block rounded-lg border p-3'
-              >
-                <div className='flex items-center justify-between gap-2'>
-                  <span className='truncate font-medium'>{r.name}</span>
+              <div key={r.id} className='rounded-lg border p-3'>
+                <div className='flex items-center gap-2'>
+                  <Checkbox
+                    checked={selected.has(r.id)}
+                    onCheckedChange={() => toggleOne(r.id)}
+                    aria-label={r.name}
+                  />
+                  <Link
+                    href={href(r.id)}
+                    className='min-w-0 flex-1 truncate font-medium hover:underline'
+                  >
+                    {r.name}
+                  </Link>
                   <Badge variant={STATUS_VARIANT[r.status]}>{t(`status.${r.status}`)}</Badge>
+                  <WorkflowRowActions id={r.id} name={r.name} onDeleted={() => router.refresh()} />
                 </div>
                 <div className='text-muted-foreground mt-0.5 text-xs uppercase'>{r.method}</div>
                 {r.hubbard.length > 0 ? (
@@ -235,7 +332,7 @@ export function DftWorkflowTable({ rows }: Props) {
                 <div className='mt-2'>
                   <ResultCellView cell={r.result} />
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </>

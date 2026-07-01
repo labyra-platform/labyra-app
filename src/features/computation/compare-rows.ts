@@ -20,6 +20,8 @@ export interface CompareRow {
   cAng: number | null;
   volumeAng3: number | null;
   density: number | null;
+  /** Unit id of the run's bands calc, for the band-overlay fetch (null if none). */
+  bandsUnitId: string | null;
 }
 
 /** Selectable Y-axis metric for the compare chart. */
@@ -80,7 +82,8 @@ export function toCompareRow(wf: DftWorkflow): CompareRow {
     aAng: rs?.aAng ?? null,
     cAng: rs?.cAng ?? null,
     volumeAng3: rs?.volumeAng3 ?? null,
-    density: rs?.density ?? null
+    density: rs?.density ?? null,
+    bandsUnitId: (wf.units ?? []).find((u) => u.calcType === 'bands')?.id ?? null
   };
 }
 

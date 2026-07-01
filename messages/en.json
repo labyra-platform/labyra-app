@@ -1878,6 +1878,11 @@
     "metricVolume": "Cell volume",
     "metricDensity": "Density",
     "metricEnergy": "Total energy",
-    "compareTarget": "Target"
+    "compareTarget": "Target",
+    "viewMetric": "Metric",
+    "viewBands": "Bands",
+    "overlayNoBands": "No selected run has band-structure data.",
+    "overlayLoading": "Loading band structures…",
+    "overlayFailed": "Could not load band structures for the selected runs."
   }
 }

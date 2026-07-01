@@ -1879,6 +1879,11 @@
     "metricVolume": "Thể tích ô",
     "metricDensity": "Mật độ",
     "metricEnergy": "Năng lượng tổng",
-    "compareTarget": "Mục tiêu"
+    "compareTarget": "Mục tiêu",
+    "viewMetric": "Chỉ số",
+    "viewBands": "Vùng năng lượng",
+    "overlayNoBands": "Chưa run nào được chọn có dữ liệu band.",
+    "overlayLoading": "Đang tải band structure…",
+    "overlayFailed": "Không tải được band structure cho các run đã chọn."
   }
 }

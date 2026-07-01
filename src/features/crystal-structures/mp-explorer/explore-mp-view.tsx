@@ -134,9 +134,24 @@ export function ExploreMpView() {
             overlay={
               <div className='flex w-full flex-col gap-2 pr-2'>
                 <div className='space-y-1'>
-                  <Label htmlFor='mp-text' className='text-xs'>
-                    {t('mpTextLabel')}
-                  </Label>
+                  <div className='flex items-center justify-between gap-2'>
+                    <Label htmlFor='mp-text' className='text-xs'>
+                      {t('mpTextLabel')}
+                    </Label>
+                    <Button
+                      size='sm'
+                      className='h-7'
+                      onClick={() => void search()}
+                      disabled={!canSearch}
+                    >
+                      {busy ? (
+                        <IconLoader2 className='mr-1 size-3.5 animate-spin' />
+                      ) : (
+                        <IconSearch className='mr-1 size-3.5' />
+                      )}
+                      {t('mpSearchAction')}
+                    </Button>
+                  </div>
                   <Input
                     id='mp-text'
                     value={text}
@@ -152,7 +167,6 @@ export function ExploreMpView() {
                   />
                 </div>
                 <div className='flex flex-wrap items-center gap-1'>
-                  <span className='text-muted-foreground text-xs'>{t('mpElementMatch')}</span>
                   <Button
                     size='sm'
                     variant={mode === 'only' ? 'default' : 'outline'}
@@ -192,15 +206,6 @@ export function ExploreMpView() {
             </div>
           ) : null}
         </div>
-
-        <Button onClick={() => void search()} disabled={!canSearch}>
-          {busy ? (
-            <IconLoader2 className='mr-1 size-4 animate-spin' />
-          ) : (
-            <IconSearch className='mr-1 size-4' />
-          )}
-          {t('mpSearchAction')}
-        </Button>
       </div>
 
       {/* Right — results */}
@@ -216,9 +221,9 @@ export function ExploreMpView() {
         ) : null}
 
         {results && results.length > 0 ? (
-          <div className='overflow-x-auto rounded-lg border'>
+          <div className='max-h-[70vh] overflow-auto rounded-lg border'>
             <Table>
-              <TableHeader>
+              <TableHeader className='bg-background sticky top-0 z-10'>
                 <TableRow>
                   <TableHead>{t('mpColId')}</TableHead>
                   <TableHead>{t('mpColFormula')}</TableHead>

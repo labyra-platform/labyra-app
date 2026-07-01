@@ -269,8 +269,8 @@ export function DftComposeView({
 
   return (
     <div className='space-y-4'>
-      <div className='flex flex-wrap items-end justify-between gap-x-6 gap-y-3'>
-        <div className='flex flex-wrap items-end gap-x-6 gap-y-3'>
+      <div className='flex flex-wrap items-start justify-between gap-x-6 gap-y-3'>
+        <div className='flex flex-wrap items-start gap-x-6 gap-y-3'>
           <div className='min-w-56 space-y-1.5'>
             <Label>{t('composeSource')}</Label>
             {runs.length === 0 && structures.length === 0 ? (
@@ -324,7 +324,7 @@ export function DftComposeView({
             </div>
           </div>
         </div>
-        <div className='flex flex-wrap items-end gap-3'>
+        <div className='flex flex-wrap items-start gap-3'>
           <div className='space-y-1.5'>
             <Label htmlFor='compose-run-id'>{t('computeRunId')}</Label>
             <Input
@@ -357,14 +357,19 @@ export function DftComposeView({
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={launch} disabled={!canLaunch}>
-            {busy ? (
-              <IconLoader2 className='mr-1 size-4 animate-spin' />
-            ) : (
-              <IconRocket className='mr-1 size-4' />
-            )}
-            {t('composeLaunch')}
-          </Button>
+          <div className='space-y-1.5'>
+            <Label className='invisible' aria-hidden>
+              {t('composeLaunch')}
+            </Label>
+            <Button onClick={launch} disabled={!canLaunch}>
+              {busy ? (
+                <IconLoader2 className='mr-1 size-4 animate-spin' />
+              ) : (
+                <IconRocket className='mr-1 size-4' />
+              )}
+              {t('composeLaunch')}
+            </Button>
+          </div>
         </div>
       </div>
       {feedback ? (

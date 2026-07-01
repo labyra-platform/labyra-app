@@ -161,6 +161,28 @@ export function nodesFor(archetype: Archetype): ComposeNode[] {
 const PW_TYPES = new Set<DftCalcType>(['vc-relax', 'relax', 'scf', 'nscf', 'bands', 'charge']);
 const POSTPROC_TYPES = new Set<DftCalcType>(['dos', 'pdos', 'ppbands']);
 
+/** calcType → QE executable (single source of truth for the graph + editor). */
+export const EXE_OF: Record<DftCalcType, string> = {
+  'vc-relax': 'pw.x',
+  relax: 'pw.x',
+  scf: 'pw.x',
+  nscf: 'pw.x',
+  bands: 'pw.x',
+  charge: 'pp.x',
+  ppbands: 'bands.x',
+  dos: 'dos.x',
+  pdos: 'projwfc.x'
+};
+
+/** Calc types offered in the node "execute" selector, grouped by executable. */
+export const CALC_GROUPS: { exe: string; types: DftCalcType[] }[] = [
+  { exe: 'pw.x', types: ['vc-relax', 'relax', 'scf', 'nscf', 'bands'] },
+  { exe: 'pp.x', types: ['charge'] },
+  { exe: 'bands.x', types: ['ppbands'] },
+  { exe: 'dos.x', types: ['dos'] },
+  { exe: 'projwfc.x', types: ['pdos'] }
+];
+
 function buildPwParams(
   calcType: DftCalcType,
   p: NodeParams,

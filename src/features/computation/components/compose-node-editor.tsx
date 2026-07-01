@@ -1,27 +1,34 @@
 /**
- * Composer node editor — renders the editable QE parameters for one pipeline
- * node. Basic params come from editableKeys(calcType); an "Advanced" reveal
- * exposes nbnd / smearing type / mixing_beta / electron_maxstep for pw.x nodes
- * (all verified against the worker pw.in.j2 template). Numeric fields are
- * controlled so the live JSON preview updates as you type.
+ * Composer node editor — the side panel for one pipeline node. Header carries the
+ * unit id, an "execute" selector (change calc type, grouped by QE executable) and
+ * clone / delete actions; the body renders the editable QE parameters for the
+ * node's calc type (editableKeys + an Advanced reveal for pw.x). Numeric fields
+ * are string-backed so scientific notation types cleanly.
  *
- * @phase R315-composer
+ * @phase R315-composer (R334 actions + execute selector)
  */
 'use client';
 
+import { IconCopy, IconTrash } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import type { DftCalcType } from '@/types/dft';
 import {
   advancedKeys,
+  CALC_GROUPS,
   editableKeys,
+  EXE_OF,
   type ComposeNode,
   type NodeParams,
   type SmearingType
@@ -29,7 +36,11 @@ import {
 
 interface Props {
   node: ComposeNode;
+  canDelete: boolean;
   onChange: (params: NodeParams) => void;
+  onChangeType: (calcType: DftCalcType) => void;
+  onClone: () => void;
+  onDelete: () => void;
 }
 
 const SMEARING: SmearingType[] = [
@@ -77,7 +88,14 @@ function NumberField({
   );
 }
 
-export function ComposeNodeEditor({ node, onChange }: Props) {
+export function ComposeNodeEditor({
+  node,
+  canDelete,
+  onChange,
+  onChangeType,
+  onClone,
+  onDelete
+}: Props) {
   const [adv, setAdv] = useState(false);
   const keys = editableKeys(node.calcType);
   const advKeys = advancedKeys(node.calcType);
@@ -92,21 +110,51 @@ export function ComposeNodeEditor({ node, onChange }: Props) {
   );
 
   return (
-    <div className='rounded-md border p-3'>
-      <div className='mb-2 flex items-center gap-2'>
+    <div className='space-y-3 rounded-lg border p-4'>
+      <div className='flex items-center gap-2'>
         <span className='bg-muted rounded px-1.5 py-0.5 font-mono text-xs'>{node.id}</span>
-        <span className='text-sm font-medium'>{node.calcType}</span>
-        {node.dependsOn.length > 0 ? (
-          <span className='text-muted-foreground text-xs'>← {node.dependsOn.join(', ')}</span>
-        ) : null}
+        <Select value={node.calcType} onValueChange={(v) => onChangeType(v as DftCalcType)}>
+          <SelectTrigger className='h-8 flex-1' aria-label='Execute'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CALC_GROUPS.map((g) => (
+              <SelectGroup key={g.exe}>
+                <SelectLabel className='font-mono text-xs'>{g.exe}</SelectLabel>
+                {g.types.map((ct) => (
+                  <SelectItem key={ct} value={ct}>
+                    {ct}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant='ghost' size='icon' className='size-8' onClick={onClone} aria-label='Clone'>
+          <IconCopy className='size-4' />
+        </Button>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='text-destructive size-8'
+          disabled={!canDelete}
+          onClick={onDelete}
+          aria-label='Delete'
+        >
+          <IconTrash className='size-4' />
+        </Button>
+      </div>
+      <div className='text-muted-foreground flex items-center justify-between text-xs'>
+        <span className='font-mono'>{EXE_OF[node.calcType]}</span>
+        {node.dependsOn.length > 0 ? <span>← {node.dependsOn.join(', ')}</span> : null}
       </div>
 
       {keys.length === 0 && advKeys.length === 0 ? (
-        <p className='text-muted-foreground text-xs'>No editable parameters.</p>
+        <p className='text-muted-foreground border-t pt-3 text-xs'>No editable parameters.</p>
       ) : (
-        <>
+        <div className='space-y-3 border-t pt-3'>
           {keys.length > 0 ? (
-            <div className='grid grid-cols-2 gap-x-3 gap-y-2'>
+            <div className='grid grid-cols-2 gap-x-3 gap-y-3'>
               {keys.includes('kgrid') ? (
                 <div className='col-span-2 space-y-1'>
                   <Label className='text-xs'>k-grid</Label>
@@ -184,7 +232,7 @@ export function ComposeNodeEditor({ node, onChange }: Props) {
           ) : null}
 
           {advKeys.length > 0 ? (
-            <div className='mt-2'>
+            <div className='mt-1'>
               <button
                 type='button'
                 onClick={() => setAdv((v) => !v)}
@@ -193,7 +241,7 @@ export function ComposeNodeEditor({ node, onChange }: Props) {
                 {adv ? '− Advanced' : '+ Advanced'}
               </button>
               {adv ? (
-                <div className='mt-2 grid grid-cols-2 gap-x-3 gap-y-2'>
+                <div className='mt-2 grid grid-cols-2 gap-x-3 gap-y-3'>
                   <div className='space-y-1'>
                     <Label className='text-xs'>nbnd (0 = auto)</Label>
                     {num('nbnd', p.nbnd)}
@@ -230,7 +278,7 @@ export function ComposeNodeEditor({ node, onChange }: Props) {
               ) : null}
             </div>
           ) : null}
-        </>
+        </div>
       )}
     </div>
   );

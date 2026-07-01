@@ -30,9 +30,11 @@ import { WorkflowGraph } from '@/features/workflow/components/workflow-graph';
 import type { WorkflowEdge, WorkflowNodeInput } from '@/features/workflow/types/workflow';
 import { useRouter } from '@/i18n/navigation';
 import { DFT_MACHINE_PRESETS } from '@/lib/schemas/dft-submit-schema';
+import type { DftCalcType } from '@/types/dft';
 import {
   ARCHETYPES,
   buildDefinition,
+  EXE_OF,
   nodesFor,
   type ComposeNode,
   type NodeParams
@@ -51,20 +53,8 @@ interface StructureRef {
 }
 type SrcState = 'idle' | 'loading' | 'ready' | 'error';
 
-const EXE: Record<string, string> = {
-  'vc-relax': 'pw.x',
-  relax: 'pw.x',
-  scf: 'pw.x',
-  nscf: 'pw.x',
-  bands: 'pw.x',
-  ppbands: 'bands.x',
-  dos: 'dos.x',
-  pdos: 'projwfc.x',
-  charge: 'pp.x'
-};
-
 function previewOf(n: ComposeNode): string {
-  const exe = EXE[n.calcType] ?? 'pw.x';
+  const exe = EXE_OF[n.calcType] ?? 'pw.x';
   if (exe === 'pw.x' && n.calcType !== 'bands') return `${exe} · ${n.params.kgrid.join('×')}`;
   return exe;
 }
@@ -155,6 +145,52 @@ export function DftComposeView({
 
   function updateNode(nodeId: string, params: NodeParams) {
     setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, params } : n)));
+  }
+
+  function changeNodeType(nodeId: string, calcType: DftCalcType) {
+    setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, calcType } : n)));
+  }
+
+  function cloneNode(nodeId: string) {
+    setNodes((ns) => {
+      const target = ns.find((n) => n.id === nodeId);
+      if (!target) return ns;
+      const used = new Set(ns.map((n) => n.id));
+      let k = ns.length + 1;
+      while (used.has(`u${k}`)) k += 1;
+      const copy: ComposeNode = {
+        ...target,
+        id: `u${k}`,
+        params: {
+          ...target.params,
+          kgrid: [...target.params.kgrid] as [number, number, number]
+        }
+      };
+      setSelectedId(copy.id);
+      return [...ns, copy];
+    });
+  }
+
+  function deleteNode(nodeId: string) {
+    setNodes((ns) => {
+      if (ns.length <= 1) return ns;
+      const target = ns.find((n) => n.id === nodeId);
+      if (!target) return ns;
+      const parents = target.dependsOn;
+      // Re-point anything that depended on the deleted node to its parents so the
+      // chain stays connected (e.g. delete scf → nscf now depends on vc-relax).
+      return ns
+        .filter((n) => n.id !== nodeId)
+        .map((n) =>
+          n.dependsOn.includes(nodeId)
+            ? {
+                ...n,
+                dependsOn: [...new Set([...n.dependsOn.filter((d) => d !== nodeId), ...parents])]
+              }
+            : n
+        );
+    });
+    setSelectedId((cur) => (cur === nodeId ? null : cur));
   }
 
   const graphNodes: WorkflowNodeInput[] = useMemo(
@@ -288,11 +324,19 @@ export function DftComposeView({
                 edges={graphEdges}
                 onNodeClick={setSelectedId}
                 selectedId={selectedId}
+                showMiniMap={false}
               />
             </div>
             <div className='shrink-0 lg:w-96'>
               {selNode ? (
-                <ComposeNodeEditor node={selNode} onChange={(p) => updateNode(selNode.id, p)} />
+                <ComposeNodeEditor
+                  node={selNode}
+                  canDelete={nodes.length > 1}
+                  onChange={(p) => updateNode(selNode.id, p)}
+                  onChangeType={(ct) => changeNodeType(selNode.id, ct)}
+                  onClone={() => cloneNode(selNode.id)}
+                  onDelete={() => deleteNode(selNode.id)}
+                />
               ) : (
                 <p className='text-muted-foreground p-3 text-sm'>{t('composeSelectNode')}</p>
               )}

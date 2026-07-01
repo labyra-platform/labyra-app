@@ -1941,6 +1941,15 @@
     "colSymmetry": "Symmetry",
     "colAtoms": "Atoms",
     "colSource": "Source",
-    "delete": "Delete"
+    "delete": "Delete",
+    "mpSearchLabel": "Or search Materials Project",
+    "mpSearchPlaceholder": "Formula, elements, or id — e.g. WO3, W-O, mp-1821",
+    "mpSearchEmpty": "No materials found.",
+    "mpSearchFailed": "Search failed. Check the MP key on the worker and try again.",
+    "mpColFormula": "Formula",
+    "mpColId": "Material ID",
+    "mpColSystem": "System",
+    "mpColSpaceGroup": "Space group",
+    "mpColGap": "Band gap"
   }
 }

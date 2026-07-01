@@ -101,6 +101,24 @@ export function buildStructure(body: BuildStructureBody): Promise<WorkerResult> 
   return callWorker('/dft/structure', body);
 }
 
+export interface MpSearchResult {
+  mpId: string;
+  formula: string;
+  crystalSystem: string;
+  spaceGroup: string;
+  spaceGroupNumber: number | null;
+  nsites: number | null;
+  energyAboveHull: number | null;
+  bandGap: number | null;
+  isGapDirect: boolean | null;
+  theoretical: boolean | null;
+}
+
+/** Search Materials Project (mp-id / chemsys / elements / formula) — import picker. */
+export function searchMaterials(query: string, limit = 30): Promise<WorkerResult> {
+  return callWorker('/materials/search', { query, limit });
+}
+
 export function fetchDftBands(body: FetchBandsBody): Promise<WorkerResult> {
   return callWorker('/dft/bands', body);
 }

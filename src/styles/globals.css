@@ -389,3 +389,17 @@ mark.pcm {
     background-color: hsl(45 93% 60% / 0.85);
   }
 }
+
+/* ── R323: hide number-input spinner arrows (▲▼) app-wide ────────────────────
+   The browser's default up/down spinners on <input type="number"> (e.g. the
+   Compare target value, composer per-node params) read as visual noise in this
+   UI; users type the value directly. Purely cosmetic — the input stays numeric. */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

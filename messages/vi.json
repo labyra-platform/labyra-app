@@ -1942,6 +1942,15 @@
     "colSymmetry": "Đối xứng",
     "colAtoms": "Số nguyên tử",
     "colSource": "Nguồn",
-    "delete": "Xóa"
+    "delete": "Xóa",
+    "mpSearchLabel": "Hoặc tìm trên Materials Project",
+    "mpSearchPlaceholder": "Công thức, nguyên tố hoặc id — vd WO3, W-O, mp-1821",
+    "mpSearchEmpty": "Không tìm thấy vật liệu.",
+    "mpSearchFailed": "Tìm kiếm thất bại. Kiểm tra MP key trên worker rồi thử lại.",
+    "mpColFormula": "Công thức",
+    "mpColId": "Material ID",
+    "mpColSystem": "Hệ",
+    "mpColSpaceGroup": "Nhóm không gian",
+    "mpColGap": "Vùng cấm"
   }
 }

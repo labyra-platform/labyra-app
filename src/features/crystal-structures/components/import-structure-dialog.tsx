@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { MpSearchPanel } from '@/features/crystal-structures/components/mp-search-panel';
 import { useRouter } from '@/i18n/navigation';
 
 type Source = 'mp_id' | 'cif' | 'poscar';
@@ -89,7 +90,7 @@ export function ImportStructureDialog() {
           {t('importTitle')}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className='sm:max-w-2xl'>
         <DialogHeader>
           <DialogTitle>{t('importTitle')}</DialogTitle>
           <DialogDescription>{t('importDescription')}</DialogDescription>
@@ -102,15 +103,27 @@ export function ImportStructureDialog() {
             <TabsTrigger value='poscar'>POSCAR</TabsTrigger>
           </TabsList>
 
-          <TabsContent value='mp_id' className='space-y-1.5'>
-            <Label htmlFor='mp-id'>{t('mpIdLabel')}</Label>
-            <Input
-              id='mp-id'
-              value={mpId}
-              onChange={(e) => setMpId(e.target.value)}
-              placeholder='mp-1821'
-            />
-            <p className='text-muted-foreground text-xs'>{t('mpIdHint')}</p>
+          <TabsContent value='mp_id' className='space-y-3'>
+            <div className='space-y-1.5'>
+              <Label htmlFor='mp-id'>{t('mpIdLabel')}</Label>
+              <Input
+                id='mp-id'
+                value={mpId}
+                onChange={(e) => setMpId(e.target.value)}
+                placeholder='mp-1821'
+              />
+              <p className='text-muted-foreground text-xs'>{t('mpIdHint')}</p>
+            </div>
+            <div className='space-y-1.5'>
+              <Label>{t('mpSearchLabel')}</Label>
+              <MpSearchPanel
+                selectedId={mpId.trim()}
+                onSelect={(id, formula) => {
+                  setMpId(id);
+                  if (name.trim() === '') setName(formula);
+                }}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value='cif' className='space-y-1.5'>

@@ -14,7 +14,20 @@
 import { HEX_BANDS_PATH } from '@/features/computation/bands-path';
 import type { DftCalcType } from '@/types/dft';
 
-export type ParamKey = 'kgrid' | 'occupations' | 'degauss' | 'convThr' | 'emin' | 'emax' | 'deltaE';
+export type ParamKey =
+  | 'kgrid'
+  | 'occupations'
+  | 'degauss'
+  | 'convThr'
+  | 'emin'
+  | 'emax'
+  | 'deltaE'
+  | 'nbnd'
+  | 'smearing'
+  | 'mixingBeta'
+  | 'electronMaxstep';
+
+export type SmearingType = 'gaussian' | 'methfessel-paxton' | 'marzari-vanderbilt' | 'fermi-dirac';
 
 export interface NodeParams {
   kgrid: [number, number, number];
@@ -24,6 +37,11 @@ export interface NodeParams {
   emin: number;
   emax: number;
   deltaE: number;
+  // advanced (all verified against the worker pw.in.j2 template)
+  nbnd: number;
+  smearing: SmearingType;
+  mixingBeta: number;
+  electronMaxstep: number;
 }
 
 export interface ComposeNode {
@@ -59,16 +77,30 @@ export const DEFAULT_PARAMS: NodeParams = {
   convThr: 1e-8,
   emin: 0,
   emax: 20,
-  deltaE: 0.01
+  deltaE: 0.01,
+  nbnd: 0,
+  smearing: 'gaussian',
+  mixingBeta: 0.2,
+  electronMaxstep: 0
 };
 
-/** Which params are meaningful (and thus editable) for a calc type. */
+/** Which basic params are meaningful (and thus editable) for a calc type. */
 export function editableKeys(calcType: DftCalcType): ParamKey[] {
   if (calcType === 'dos' || calcType === 'pdos') return ['emin', 'emax', 'deltaE'];
   if (calcType === 'ppbands') return [];
   if (calcType === 'bands') return ['occupations', 'degauss', 'convThr'];
   // vc-relax / relax / scf / nscf / charge
   return ['kgrid', 'occupations', 'degauss', 'convThr'];
+}
+
+/**
+ * Advanced params — only for pw.x calc types (the pw.in.j2 template interpolates
+ * nbnd / smearing / mixing_beta / electron_maxstep). Post-processing nodes have
+ * none. (npool is NOT here: the worker takes it request-level, not per-unit.)
+ */
+export function advancedKeys(calcType: DftCalcType): ParamKey[] {
+  if (POSTPROC_TYPES.has(calcType)) return [];
+  return ['nbnd', 'smearing', 'mixingBeta', 'electronMaxstep'];
 }
 
 export const ARCHETYPES: Archetype[] = [
@@ -117,7 +149,13 @@ export const ARCHETYPES: Archetype[] = [
 ];
 
 export function nodesFor(archetype: Archetype): ComposeNode[] {
-  return archetype.skeleton.map((s) => ({ ...s, params: { ...DEFAULT_PARAMS } }));
+  return archetype.skeleton.map((s) => ({
+    ...s,
+    params: {
+      ...DEFAULT_PARAMS,
+      ...(s.calcType === 'bands' ? { electronMaxstep: 500 } : {})
+    }
+  }));
 }
 
 const PW_TYPES = new Set<DftCalcType>(['vc-relax', 'relax', 'scf', 'nscf', 'bands', 'charge']);
@@ -133,15 +171,17 @@ function buildPwParams(
     calculation: calcType,
     occupations: p.occupations,
     convThr: p.convThr,
+    mixingBeta: p.mixingBeta,
     diagoDavidNdim: 8,
     tstress: stress,
     tprnfor: stress
   };
   if (p.occupations === 'smearing') {
-    params.smearing = 'gaussian';
+    params.smearing = p.smearing;
     params.degauss = p.degauss;
   }
-  if (calcType === 'bands') params.electronMaxstep = 500;
+  if (p.nbnd > 0) params.nbnd = p.nbnd;
+  if (p.electronMaxstep > 0) params.electronMaxstep = p.electronMaxstep;
   if (hasVdw) {
     params.vdwCorr = 'grimme-d3';
     params.dftd3Version = 3;

@@ -87,6 +87,20 @@ export interface FetchBandsBody {
   unitId: string;
 }
 /** Band-structure plot data for one bands unit (no re-run) — for the Bands tab. */
+export interface BuildStructureBody {
+  source: 'cif' | 'poscar' | 'mp_id';
+  cif_text?: string;
+  poscar_text?: string;
+  mp_id?: string;
+  use_primitive?: boolean;
+  prefer_ibrav?: boolean;
+}
+
+/** Build an ibrav-verified DftStructure from CIF / POSCAR / Materials Project id. */
+export function buildStructure(body: BuildStructureBody): Promise<WorkerResult> {
+  return callWorker('/dft/structure', body);
+}
+
 export function fetchDftBands(body: FetchBandsBody): Promise<WorkerResult> {
   return callWorker('/dft/bands', body);
 }

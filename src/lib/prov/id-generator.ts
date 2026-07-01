@@ -13,7 +13,13 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { FieldValue } from 'firebase-admin/firestore';
 
-export type EntityCollection = 'materials' | 'samples' | 'experiments' | 'papers' | 'references';
+export type EntityCollection =
+  | 'materials'
+  | 'samples'
+  | 'experiments'
+  | 'papers'
+  | 'references'
+  | 'crystalStructures';
 
 export type ActivityCollection = 'measurements' | 'analyses';
 
@@ -23,7 +29,8 @@ const PREFIX_MAP: Record<EntityCollection, string> = {
   samples: 'sam',
   experiments: 'exp',
   papers: 'pap',
-  references: 'ref'
+  references: 'ref',
+  crystalStructures: 'cst'
 };
 
 /**

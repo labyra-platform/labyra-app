@@ -14,7 +14,7 @@
  *
  * @phase R251-computation-pivot
  */
-import { IconGitCompare, IconTools } from '@tabler/icons-react';
+import { IconCube, IconGitCompare, IconTools } from '@tabler/icons-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
@@ -46,6 +46,12 @@ export default async function ComputationPage() {
     <PageContainer>
       <div className='space-y-4'>
         <div className='flex justify-end gap-2'>
+          <Button asChild variant='outline' size='sm'>
+            <Link href='/dashboard/structures'>
+              <IconCube className='mr-1 size-4' />
+              {t('structuresTitle')}
+            </Link>
+          </Button>
           <Button asChild variant='outline' size='sm'>
             <Link href='/dashboard/computation/compose'>
               <IconTools className='mr-1 size-4' />

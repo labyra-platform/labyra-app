@@ -1909,6 +1909,28 @@
     "archBands": "Bands",
     "archDosPdos": "DOS/PDOS",
     "archRelax": "Relax + SCF",
-    "archPhonon": "Phonon"
+    "archPhonon": "Phonon",
+    "structuresTitle": "Cấu trúc"
+  },
+  "structures": {
+    "importTitle": "Nhập cấu trúc",
+    "importDescription": "Dựng cell sẵn sàng tính toán từ Materials Project id, CIF, hoặc POSCAR.",
+    "importAction": "Nhập",
+    "importFailed": "Nhập thất bại.",
+    "tabMp": "Materials Project",
+    "mpIdLabel": "Materials Project id",
+    "mpIdHint": "vd. mp-1821 (2H-WS₂). Lấy bằng khóa MP đã cấu hình của workspace.",
+    "cifLabel": "CIF",
+    "poscarLabel": "POSCAR",
+    "nameLabel": "Tên (tùy chọn)",
+    "namePlaceholder": "mặc định là công thức + space group",
+    "empty": "Chưa có cấu trúc — nhập từ Materials Project, CIF, hoặc POSCAR.",
+    "colFormula": "Công thức",
+    "colUnitCell": "Ô đơn vị",
+    "colLattice": "Mạng",
+    "colSymmetry": "Đối xứng",
+    "colAtoms": "Số nguyên tử",
+    "colSource": "Nguồn",
+    "delete": "Xóa"
   }
 }

@@ -1908,6 +1908,28 @@
     "archBands": "Bands",
     "archDosPdos": "DOS/PDOS",
     "archRelax": "Relax + SCF",
-    "archPhonon": "Phonon"
+    "archPhonon": "Phonon",
+    "structuresTitle": "Structures"
+  },
+  "structures": {
+    "importTitle": "Import structure",
+    "importDescription": "Build a computation-ready cell from a Materials Project id, CIF, or POSCAR.",
+    "importAction": "Import",
+    "importFailed": "Import failed.",
+    "tabMp": "Materials Project",
+    "mpIdLabel": "Materials Project id",
+    "mpIdHint": "e.g. mp-1821 (2H-WS₂). Fetched with the workspace's configured MP key.",
+    "cifLabel": "CIF",
+    "poscarLabel": "POSCAR",
+    "nameLabel": "Name (optional)",
+    "namePlaceholder": "defaults to formula + space group",
+    "empty": "No structures yet — import one from Materials Project, CIF, or POSCAR.",
+    "colFormula": "Formula",
+    "colUnitCell": "Unit cell",
+    "colLattice": "Lattice",
+    "colSymmetry": "Symmetry",
+    "colAtoms": "Atoms",
+    "colSource": "Source",
+    "delete": "Delete"
   }
 }

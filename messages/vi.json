@@ -1910,7 +1910,10 @@
     "archDosPdos": "DOS/PDOS",
     "archRelax": "Relax + SCF",
     "archPhonon": "Phonon",
-    "structuresTitle": "Cấu trúc"
+    "structuresTitle": "Cấu trúc",
+    "composeTabGraph": "Sơ đồ",
+    "composeTabJson": "JSON",
+    "composeSelectNode": "Chọn một node để chỉnh tham số."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

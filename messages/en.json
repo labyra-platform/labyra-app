@@ -1909,7 +1909,10 @@
     "archDosPdos": "DOS/PDOS",
     "archRelax": "Relax + SCF",
     "archPhonon": "Phonon",
-    "structuresTitle": "Structures"
+    "structuresTitle": "Structures",
+    "composeTabGraph": "Graph",
+    "composeTabJson": "JSON",
+    "composeSelectNode": "Select a node to edit its parameters."
   },
   "structures": {
     "importTitle": "Import structure",

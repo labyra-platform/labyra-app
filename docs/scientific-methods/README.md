@@ -12,3 +12,9 @@
 | [phase-fraction-estimation.md](phase-fraction-estimation.md) | R185-7/7b | RIR, Direct Comparison, Raman qualitative |
 | [rietveld-refinement.md](rietveld-refinement.md) | R185-7c-1/2 | Caglioti+PV+Chebyshev Rietveld |
 
+## DFT / Quantum ESPRESSO
+
+| Doc | Phase | Methods |
+|-----|-------|---------|
+| [qe-pw-input.md](qe-pw-input.md) | R337 | pw.x input namelist reference (core/advanced tiers, emit policy, HUBBARD +U, ATOMIC_SPECIES UPF, slab/PEC) |
+

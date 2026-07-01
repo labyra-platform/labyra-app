@@ -106,6 +106,31 @@ export function advancedKeys(calcType: DftCalcType): ParamKey[] {
   return ['nbnd', 'smearing', 'mixingBeta', 'electronMaxstep'];
 }
 
+export interface NamelistBlock {
+  name: string;
+  keys: ParamKey[];
+}
+
+/**
+ * Group a calc type's editable params into QE input namelists / cards so the
+ * editor mirrors the .in structure (R341). Only blocks with content are returned;
+ * `bands` reads its k-path from the dedicated editor, so it has no K_POINTS block.
+ * All keys here are "core" (always shown) — advanced namelist variables arrive in
+ * a later round behind a per-block reveal.
+ */
+export function paramBlocks(calcType: DftCalcType): NamelistBlock[] {
+  if (calcType === 'dos' || calcType === 'pdos') {
+    return [{ name: '&DOS', keys: ['emin', 'emax', 'deltaE'] }];
+  }
+  if (calcType === 'ppbands' || calcType === 'charge') return [];
+  const blocks: NamelistBlock[] = [
+    { name: '&SYSTEM', keys: ['occupations', 'smearing', 'degauss', 'nbnd'] },
+    { name: '&ELECTRONS', keys: ['convThr', 'mixingBeta', 'electronMaxstep'] }
+  ];
+  if (calcType !== 'bands') blocks.push({ name: 'K_POINTS', keys: ['kgrid'] });
+  return blocks;
+}
+
 export const ARCHETYPES: Archetype[] = [
   {
     id: 'electronic',

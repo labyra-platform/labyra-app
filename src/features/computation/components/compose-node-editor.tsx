@@ -25,13 +25,13 @@ import {
 } from '@/components/ui/select';
 import type { DftCalcType } from '@/types/dft';
 import {
-  advancedKeys,
   CALC_GROUPS,
-  editableKeys,
   EXE_OF,
   FLAVORS,
+  paramBlocks,
   type ComposeNode,
   type NodeParams,
+  type ParamKey,
   type SmearingType
 } from '../compose-model';
 
@@ -99,9 +99,7 @@ export function ComposeNodeEditor({
   onClone,
   onDelete
 }: Props) {
-  const [adv, setAdv] = useState(false);
-  const keys = editableKeys(node.calcType);
-  const advKeys = advancedKeys(node.calcType);
+  const blocks = paramBlocks(node.calcType);
   const p = node.params;
   const set = (patch: Partial<NodeParams>) => onChange({ ...p, ...patch });
   const num = (key: keyof NodeParams, value: number) => (
@@ -111,6 +109,130 @@ export function ComposeNodeEditor({
       className='h-8'
     />
   );
+
+  function renderParam(key: ParamKey) {
+    switch (key) {
+      case 'kgrid':
+        return (
+          <div key='kgrid' className='col-span-2 space-y-1'>
+            <Label className='text-xs'>k-grid</Label>
+            <div className='flex gap-1'>
+              {[0, 1, 2].map((i) => (
+                <Input
+                  key={i}
+                  type='number'
+                  min='1'
+                  value={String(p.kgrid[i])}
+                  onChange={(e) => {
+                    const n = Math.round(Number(e.target.value));
+                    if (Number.isFinite(n) && n >= 1) {
+                      const g = [...p.kgrid] as [number, number, number];
+                      g[i] = n;
+                      set({ kgrid: g });
+                    }
+                  }}
+                  className='h-8 w-16'
+                />
+              ))}
+            </div>
+          </div>
+        );
+      case 'occupations':
+        return (
+          <div key='occupations' className='space-y-1'>
+            <Label className='text-xs'>occupations</Label>
+            <Select
+              value={p.occupations}
+              onValueChange={(v) => set({ occupations: v as NodeParams['occupations'] })}
+            >
+              <SelectTrigger className='h-8'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='fixed'>fixed</SelectItem>
+                <SelectItem value='smearing'>smearing</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      case 'smearing':
+        return p.occupations === 'smearing' ? (
+          <div key='smearing' className='space-y-1'>
+            <Label className='text-xs'>smearing</Label>
+            <Select value={p.smearing} onValueChange={(v) => set({ smearing: v as SmearingType })}>
+              <SelectTrigger className='h-8'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SMEARING.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null;
+      case 'degauss':
+        return p.occupations === 'smearing' ? (
+          <div key='degauss' className='space-y-1'>
+            <Label className='text-xs'>degauss (Ry)</Label>
+            {num('degauss', p.degauss)}
+          </div>
+        ) : null;
+      case 'convThr':
+        return (
+          <div key='convThr' className='space-y-1'>
+            <Label className='text-xs'>conv_thr</Label>
+            {num('convThr', p.convThr)}
+          </div>
+        );
+      case 'mixingBeta':
+        return (
+          <div key='mixingBeta' className='space-y-1'>
+            <Label className='text-xs'>mixing_beta</Label>
+            {num('mixingBeta', p.mixingBeta)}
+          </div>
+        );
+      case 'electronMaxstep':
+        return (
+          <div key='electronMaxstep' className='space-y-1'>
+            <Label className='text-xs'>electron_maxstep (0 = default)</Label>
+            {num('electronMaxstep', p.electronMaxstep)}
+          </div>
+        );
+      case 'nbnd':
+        return (
+          <div key='nbnd' className='space-y-1'>
+            <Label className='text-xs'>nbnd (0 = auto)</Label>
+            {num('nbnd', p.nbnd)}
+          </div>
+        );
+      case 'emin':
+        return (
+          <div key='emin' className='space-y-1'>
+            <Label className='text-xs'>Emin (eV)</Label>
+            {num('emin', p.emin)}
+          </div>
+        );
+      case 'emax':
+        return (
+          <div key='emax' className='space-y-1'>
+            <Label className='text-xs'>Emax (eV)</Label>
+            {num('emax', p.emax)}
+          </div>
+        );
+      case 'deltaE':
+        return (
+          <div key='deltaE' className='space-y-1'>
+            <Label className='text-xs'>DeltaE (eV)</Label>
+            {num('deltaE', p.deltaE)}
+          </div>
+        );
+      default:
+        return null;
+    }
+  }
 
   return (
     <div className='space-y-3 rounded-lg border p-4'>
@@ -170,136 +292,17 @@ export function ComposeNodeEditor({
         </div>
       ) : null}
 
-      {keys.length === 0 && advKeys.length === 0 ? (
+      {blocks.length === 0 ? (
         <p className='text-muted-foreground border-t pt-3 text-xs'>No editable parameters.</p>
       ) : (
-        <div className='space-y-3 border-t pt-3'>
-          {keys.length > 0 ? (
+        blocks.map((block) => (
+          <div key={block.name} className='space-y-2 border-t pt-3'>
+            <p className='text-muted-foreground font-mono text-xs font-medium'>{block.name}</p>
             <div className='grid grid-cols-2 gap-x-3 gap-y-3'>
-              {keys.includes('kgrid') ? (
-                <div className='col-span-2 space-y-1'>
-                  <Label className='text-xs'>k-grid</Label>
-                  <div className='flex gap-1'>
-                    {[0, 1, 2].map((i) => (
-                      <Input
-                        key={i}
-                        type='number'
-                        min='1'
-                        value={String(p.kgrid[i])}
-                        onChange={(e) => {
-                          const n = Math.round(Number(e.target.value));
-                          if (Number.isFinite(n) && n >= 1) {
-                            const g = [...p.kgrid] as [number, number, number];
-                            g[i] = n;
-                            set({ kgrid: g });
-                          }
-                        }}
-                        className='h-8 w-16'
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {keys.includes('occupations') ? (
-                <div className='space-y-1'>
-                  <Label className='text-xs'>occupations</Label>
-                  <Select
-                    value={p.occupations}
-                    onValueChange={(v) => set({ occupations: v as NodeParams['occupations'] })}
-                  >
-                    <SelectTrigger className='h-8'>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='fixed'>fixed</SelectItem>
-                      <SelectItem value='smearing'>smearing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : null}
-
-              {keys.includes('degauss') ? (
-                <div className='space-y-1'>
-                  <Label className='text-xs'>degauss (Ry)</Label>
-                  {num('degauss', p.degauss)}
-                </div>
-              ) : null}
-              {keys.includes('convThr') ? (
-                <div className='space-y-1'>
-                  <Label className='text-xs'>conv_thr</Label>
-                  {num('convThr', p.convThr)}
-                </div>
-              ) : null}
-              {keys.includes('emin') ? (
-                <div className='space-y-1'>
-                  <Label className='text-xs'>Emin (eV)</Label>
-                  {num('emin', p.emin)}
-                </div>
-              ) : null}
-              {keys.includes('emax') ? (
-                <div className='space-y-1'>
-                  <Label className='text-xs'>Emax (eV)</Label>
-                  {num('emax', p.emax)}
-                </div>
-              ) : null}
-              {keys.includes('deltaE') ? (
-                <div className='space-y-1'>
-                  <Label className='text-xs'>DeltaE (eV)</Label>
-                  {num('deltaE', p.deltaE)}
-                </div>
-              ) : null}
+              {block.keys.map((key) => renderParam(key))}
             </div>
-          ) : null}
-
-          {advKeys.length > 0 ? (
-            <div className='mt-1'>
-              <button
-                type='button'
-                onClick={() => setAdv((v) => !v)}
-                className='text-muted-foreground text-xs hover:underline'
-              >
-                {adv ? '− Advanced' : '+ Advanced'}
-              </button>
-              {adv ? (
-                <div className='mt-2 grid grid-cols-2 gap-x-3 gap-y-3'>
-                  <div className='space-y-1'>
-                    <Label className='text-xs'>nbnd (0 = auto)</Label>
-                    {num('nbnd', p.nbnd)}
-                  </div>
-                  {p.occupations === 'smearing' ? (
-                    <div className='space-y-1'>
-                      <Label className='text-xs'>smearing</Label>
-                      <Select
-                        value={p.smearing}
-                        onValueChange={(v) => set({ smearing: v as SmearingType })}
-                      >
-                        <SelectTrigger className='h-8'>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SMEARING.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {s}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : null}
-                  <div className='space-y-1'>
-                    <Label className='text-xs'>mixing_beta</Label>
-                    {num('mixingBeta', p.mixingBeta)}
-                  </div>
-                  <div className='space-y-1'>
-                    <Label className='text-xs'>electron_maxstep (0 = default)</Label>
-                    {num('electronMaxstep', p.electronMaxstep)}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+          </div>
+        ))
       )}
     </div>
   );

@@ -1856,7 +1856,7 @@
     "exportBands": "Band structure",
     "exportDos": "DOS / PDOS",
     "newWorkflow": "New computation",
-    "newDescription": "Launch a new run from an existing workflow's definition under a fresh run ID.",
+    "newDescription": "Launch a DFT run by cloning an existing workflow or importing a definition.",
     "newBase": "Base workflow",
     "newNoBase": "No existing workflow to duplicate yet.",
     "newLaunch": "Launch",
@@ -1883,6 +1883,11 @@
     "viewBands": "Bands",
     "overlayNoBands": "No selected run has band-structure data.",
     "overlayLoading": "Loading band structures…",
-    "overlayFailed": "Could not load band structures for the selected runs."
+    "overlayFailed": "Could not load band structures for the selected runs.",
+    "newTabClone": "Clone",
+    "newTabImport": "Import JSON",
+    "newImportLabel": "Workflow JSON",
+    "newImportHint": "Paste a workflow definition with structure, global and a non-empty units array.",
+    "newImportInvalid": "Invalid workflow JSON — needs structure, global and a non-empty units array."
   }
 }

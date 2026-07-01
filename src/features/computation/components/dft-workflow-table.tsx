@@ -51,6 +51,9 @@ type Sort = 'name' | 'status';
 
 const href = (id: string) => `/dashboard/computation/${id}`;
 
+/** Compact Hubbard-U summary, e.g. "W-5d 6.2 · O-2p 9". */
+const fmtU = (r: WorkflowRow) => r.hubbard.map((h) => `${h.manifold} ${h.value}`).join(' · ');
+
 function ResultCellView({ cell }: { cell: ResultCell }) {
   const t = useTranslations('computation');
   if (cell.kind === 'done') {
@@ -195,6 +198,9 @@ export function DftWorkflowTable({ rows }: Props) {
                       <span className='text-muted-foreground ml-2 text-xs uppercase'>
                         {r.method}
                       </span>
+                      {r.hubbard.length > 0 ? (
+                        <div className='text-muted-foreground text-xs tabular-nums'>{fmtU(r)}</div>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <WorkflowPipelineMini steps={r.steps} />
@@ -220,6 +226,9 @@ export function DftWorkflowTable({ rows }: Props) {
                   <Badge variant={STATUS_VARIANT[r.status]}>{t(`status.${r.status}`)}</Badge>
                 </div>
                 <div className='text-muted-foreground mt-0.5 text-xs uppercase'>{r.method}</div>
+                {r.hubbard.length > 0 ? (
+                  <div className='text-muted-foreground text-xs tabular-nums'>{fmtU(r)}</div>
+                ) : null}
                 <div className='mt-2'>
                   <WorkflowPipelineMini steps={r.steps} />
                 </div>

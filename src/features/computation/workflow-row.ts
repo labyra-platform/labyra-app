@@ -16,7 +16,8 @@ import type {
   DftUnitSnapshot,
   DftUnitStatus,
   DftWorkflow,
-  DftWorkflowGlobal
+  DftWorkflowGlobal,
+  HubbardParam
 } from '@/types/dft';
 
 export type StatusKind = 'completed' | 'running' | 'failed' | 'queued' | 'pending';
@@ -40,6 +41,8 @@ export interface WorkflowRow {
   id: string;
   name: string;
   method: string;
+  /** Hubbard U per manifold — distinguishes runs in a U sweep. */
+  hubbard: HubbardParam[];
   status: StatusKind;
   steps: StepDot[];
   result: ResultCell;
@@ -129,6 +132,7 @@ export function toWorkflowRow(wf: DftWorkflow): WorkflowRow {
     id: wf.id,
     name: wf.global?.prefix ?? wf.id,
     method: methodLabel(wf.global),
+    hubbard: wf.global?.hubbard ?? [],
     status,
     steps,
     result: deriveResult(wf, status)

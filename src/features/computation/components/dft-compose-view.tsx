@@ -34,6 +34,8 @@ import type { DftCalcType } from '@/types/dft';
 import {
   ARCHETYPES,
   buildDefinition,
+  buildUnitParams,
+  defaultFlavor,
   EXE_OF,
   nodesFor,
   type ComposeNode,
@@ -149,7 +151,13 @@ export function DftComposeView({
   }
 
   function changeNodeType(nodeId: string, calcType: DftCalcType) {
-    setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, calcType } : n)));
+    setNodes((ns) =>
+      ns.map((n) => (n.id === nodeId ? { ...n, calcType, flavor: defaultFlavor(calcType) } : n))
+    );
+  }
+
+  function changeNodeFlavor(nodeId: string, flavor: string) {
+    setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, flavor } : n)));
   }
 
   function cloneNode(nodeId: string) {
@@ -385,13 +393,14 @@ export function DftComposeView({
                     calcType={selNode.calcType}
                     structure={structure}
                     global={globalCfg}
-                    params={selNode.params}
+                    params={buildUnitParams(selNode, globalCfg)}
                   />
                   <ComposeNodeEditor
                     node={selNode}
                     canDelete={nodes.length > 1}
                     onChange={(p) => updateNode(selNode.id, p)}
                     onChangeType={(ct) => changeNodeType(selNode.id, ct)}
+                    onChangeFlavor={(f) => changeNodeFlavor(selNode.id, f)}
                     onClone={() => cloneNode(selNode.id)}
                     onDelete={() => deleteNode(selNode.id)}
                   />

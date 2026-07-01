@@ -49,6 +49,7 @@ export interface ComposeNode {
   calcType: DftCalcType;
   dependsOn: string[];
   params: NodeParams;
+  flavor?: string;
 }
 
 export interface Archetype {
@@ -89,7 +90,8 @@ export function editableKeys(calcType: DftCalcType): ParamKey[] {
   if (calcType === 'dos' || calcType === 'pdos') return ['emin', 'emax', 'deltaE'];
   if (calcType === 'ppbands') return [];
   if (calcType === 'bands') return ['occupations', 'degauss', 'convThr'];
-  // vc-relax / relax / scf / nscf / charge
+  if (calcType === 'charge') return [];
+  // vc-relax / relax / scf / nscf
   return ['kgrid', 'occupations', 'degauss', 'convThr'];
 }
 
@@ -122,6 +124,7 @@ export const ARCHETYPES: Archetype[] = [
 export function nodesFor(archetype: Archetype): ComposeNode[] {
   return archetype.skeleton.map((s) => ({
     ...s,
+    flavor: defaultFlavor(s.calcType),
     params: {
       ...DEFAULT_PARAMS,
       ...(s.calcType === 'bands' ? { electronMaxstep: 500 } : {})
@@ -129,8 +132,42 @@ export function nodesFor(archetype: Archetype): ComposeNode[] {
   }));
 }
 
-const PW_TYPES = new Set<DftCalcType>(['vc-relax', 'relax', 'scf', 'nscf', 'bands', 'charge']);
-const POSTPROC_TYPES = new Set<DftCalcType>(['dos', 'pdos', 'ppbands']);
+const PW_TYPES = new Set<DftCalcType>(['vc-relax', 'relax', 'scf', 'nscf', 'bands']);
+const POSTPROC_TYPES = new Set<DftCalcType>(['dos', 'pdos', 'ppbands', 'charge']);
+
+export interface FlavorOption {
+  id: string;
+  params: Record<string, unknown>;
+}
+
+/**
+ * Executable "flavors" (Mat3ra-style sub-modes) for calc types whose executable
+ * has real variants: bands.x can extract per-spin bands (spin_component); pp.x
+ * selects which 3D quantity to dump via plot_num. Calc types absent here have a
+ * single implicit flavor and show no selector.
+ */
+export const FLAVORS: Partial<Record<DftCalcType, FlavorOption[]>> = {
+  ppbands: [
+    { id: 'bands', params: {} },
+    { id: 'bands_spin_up', params: { spinComponent: 1 } },
+    { id: 'bands_spin_dn', params: { spinComponent: 2 } }
+  ],
+  charge: [
+    { id: 'pp_density', params: { plotNum: 0 } },
+    { id: 'pp_electrostatic_potential', params: { plotNum: 11 } },
+    { id: 'pp_wfn', params: { plotNum: 7, kpoint: 1, kband: 1 } }
+  ]
+};
+
+export function defaultFlavor(calcType: DftCalcType): string | undefined {
+  return FLAVORS[calcType]?.[0]?.id;
+}
+
+function flavorParams(calcType: DftCalcType, flavor: string | undefined): Record<string, unknown> {
+  const list = FLAVORS[calcType];
+  if (!list) return {};
+  return (list.find((f) => f.id === flavor) ?? list[0]).params;
+}
 
 /** calcType → QE executable (single source of truth for the graph + editor). */
 export const EXE_OF: Record<DftCalcType, string> = {
@@ -191,9 +228,12 @@ function buildPwParams(
 function buildPostprocParams(
   calcType: DftCalcType,
   p: NodeParams,
-  prefix: string
+  prefix: string,
+  flavor: string | undefined
 ): Record<string, unknown> {
-  if (calcType === 'ppbands') return { lsym: true, name: `PBE_${prefix}` };
+  const fp = flavorParams(calcType, flavor);
+  if (calcType === 'ppbands') return { lsym: true, name: `PBE_${prefix}`, ...fp };
+  if (calcType === 'charge') return { name: `PBE_${prefix}`, ...fp };
   return { Emin: p.emin, Emax: p.emax, DeltaE: p.deltaE, ngauss: -1, name: `PBE_${prefix}` };
 }
 
@@ -212,8 +252,24 @@ export function buildDefinition(
     params: PW_TYPES.has(n.calcType)
       ? buildPwParams(n.calcType, n.params, hasVdw)
       : POSTPROC_TYPES.has(n.calcType)
-        ? buildPostprocParams(n.calcType, n.params, prefix)
+        ? buildPostprocParams(n.calcType, n.params, prefix, n.flavor)
         : {}
   }));
   return { structure, global, units };
+}
+
+/**
+ * Build one unit's QE params exactly as sent to the worker — used by the compose
+ * preview so the rendered .in matches what will actually run (the worker preview
+ * takes params as-is, so they must be built client-side, flavor included).
+ */
+export function buildUnitParams(node: ComposeNode, global: unknown): Record<string, unknown> {
+  const g = (global ?? {}) as { prefix?: string; vdwCorr?: string };
+  const prefix = String(g.prefix ?? 'material');
+  const hasVdw = g.vdwCorr === 'grimme-d3';
+  if (PW_TYPES.has(node.calcType)) return buildPwParams(node.calcType, node.params, hasVdw);
+  if (POSTPROC_TYPES.has(node.calcType)) {
+    return buildPostprocParams(node.calcType, node.params, prefix, node.flavor);
+  }
+  return {};
 }

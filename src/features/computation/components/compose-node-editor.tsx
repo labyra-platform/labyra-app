@@ -29,6 +29,7 @@ import {
   CALC_GROUPS,
   editableKeys,
   EXE_OF,
+  FLAVORS,
   type ComposeNode,
   type NodeParams,
   type SmearingType
@@ -39,6 +40,7 @@ interface Props {
   canDelete: boolean;
   onChange: (params: NodeParams) => void;
   onChangeType: (calcType: DftCalcType) => void;
+  onChangeFlavor: (flavor: string) => void;
   onClone: () => void;
   onDelete: () => void;
 }
@@ -93,6 +95,7 @@ export function ComposeNodeEditor({
   canDelete,
   onChange,
   onChangeType,
+  onChangeFlavor,
   onClone,
   onDelete
 }: Props) {
@@ -148,6 +151,24 @@ export function ComposeNodeEditor({
         <span className='font-mono'>{EXE_OF[node.calcType]}</span>
         {node.dependsOn.length > 0 ? <span>← {node.dependsOn.join(', ')}</span> : null}
       </div>
+
+      {FLAVORS[node.calcType] ? (
+        <div className='space-y-1'>
+          <Label className='text-xs'>Flavor</Label>
+          <Select value={node.flavor ?? ''} onValueChange={onChangeFlavor}>
+            <SelectTrigger className='h-8' aria-label='Flavor'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {FLAVORS[node.calcType]?.map((f) => (
+                <SelectItem key={f.id} value={f.id}>
+                  {f.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       {keys.length === 0 && advKeys.length === 0 ? (
         <p className='text-muted-foreground border-t pt-3 text-xs'>No editable parameters.</p>

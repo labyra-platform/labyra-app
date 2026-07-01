@@ -9,7 +9,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -39,21 +39,54 @@ const SMEARING: SmearingType[] = [
   'fermi-dirac'
 ];
 
+/**
+ * Numeric field backed by a raw string so scientific notation (e.g. "1e-8") and
+ * partial decimals ("0.") type cleanly. A controlled type="number" input can't do
+ * this: the browser returns "" for an in-progress "1e", collapsing the value to 0.
+ * The model is only updated once the text parses to a finite number.
+ */
+function NumberField({
+  value,
+  onCommit,
+  className
+}: {
+  value: number;
+  onCommit: (n: number) => void;
+  className?: string;
+}) {
+  const [raw, setRaw] = useState(String(value));
+  useEffect(() => {
+    // Resync when the model value changes from outside (archetype switch / reset);
+    // leave the user's in-progress text alone when it already equals the value.
+    if (Number(raw) !== value) setRaw(String(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return (
+    <Input
+      type='text'
+      inputMode='text'
+      value={raw}
+      onChange={(e) => {
+        const s = e.target.value;
+        setRaw(s);
+        const n = Number(s);
+        if (s.trim() !== '' && Number.isFinite(n)) onCommit(n);
+      }}
+      className={className}
+    />
+  );
+}
+
 export function ComposeNodeEditor({ node, onChange }: Props) {
   const [adv, setAdv] = useState(false);
   const keys = editableKeys(node.calcType);
   const advKeys = advancedKeys(node.calcType);
   const p = node.params;
   const set = (patch: Partial<NodeParams>) => onChange({ ...p, ...patch });
-  const num = (key: keyof NodeParams, value: number, step: string) => (
-    <Input
-      type='number'
-      step={step}
-      value={String(value)}
-      onChange={(e) => {
-        const n = Number(e.target.value);
-        if (Number.isFinite(n)) set({ [key]: n } as Partial<NodeParams>);
-      }}
+  const num = (key: keyof NodeParams, value: number) => (
+    <NumberField
+      value={value}
+      onCommit={(n) => set({ [key]: n } as Partial<NodeParams>)}
       className='h-8'
     />
   );
@@ -120,31 +153,31 @@ export function ComposeNodeEditor({ node, onChange }: Props) {
               {keys.includes('degauss') ? (
                 <div className='space-y-1'>
                   <Label className='text-xs'>degauss (Ry)</Label>
-                  {num('degauss', p.degauss, '0.001')}
+                  {num('degauss', p.degauss)}
                 </div>
               ) : null}
               {keys.includes('convThr') ? (
                 <div className='space-y-1'>
                   <Label className='text-xs'>conv_thr</Label>
-                  {num('convThr', p.convThr, 'any')}
+                  {num('convThr', p.convThr)}
                 </div>
               ) : null}
               {keys.includes('emin') ? (
                 <div className='space-y-1'>
                   <Label className='text-xs'>Emin (eV)</Label>
-                  {num('emin', p.emin, '0.1')}
+                  {num('emin', p.emin)}
                 </div>
               ) : null}
               {keys.includes('emax') ? (
                 <div className='space-y-1'>
                   <Label className='text-xs'>Emax (eV)</Label>
-                  {num('emax', p.emax, '0.1')}
+                  {num('emax', p.emax)}
                 </div>
               ) : null}
               {keys.includes('deltaE') ? (
                 <div className='space-y-1'>
                   <Label className='text-xs'>DeltaE (eV)</Label>
-                  {num('deltaE', p.deltaE, '0.005')}
+                  {num('deltaE', p.deltaE)}
                 </div>
               ) : null}
             </div>
@@ -163,7 +196,7 @@ export function ComposeNodeEditor({ node, onChange }: Props) {
                 <div className='mt-2 grid grid-cols-2 gap-x-3 gap-y-2'>
                   <div className='space-y-1'>
                     <Label className='text-xs'>nbnd (0 = auto)</Label>
-                    {num('nbnd', p.nbnd, '1')}
+                    {num('nbnd', p.nbnd)}
                   </div>
                   {p.occupations === 'smearing' ? (
                     <div className='space-y-1'>
@@ -187,11 +220,11 @@ export function ComposeNodeEditor({ node, onChange }: Props) {
                   ) : null}
                   <div className='space-y-1'>
                     <Label className='text-xs'>mixing_beta</Label>
-                    {num('mixingBeta', p.mixingBeta, '0.05')}
+                    {num('mixingBeta', p.mixingBeta)}
                   </div>
                   <div className='space-y-1'>
                     <Label className='text-xs'>electron_maxstep (0 = default)</Label>
-                    {num('electronMaxstep', p.electronMaxstep, '1')}
+                    {num('electronMaxstep', p.electronMaxstep)}
                   </div>
                 </div>
               ) : null}

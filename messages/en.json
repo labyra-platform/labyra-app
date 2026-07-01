@@ -1931,7 +1931,8 @@
     "jobsTab": "Jobs",
     "exploreMpTab": "Explore MP",
     "composeFromLibrary": "From library",
-    "composeFromRun": "From a run"
+    "composeFromRun": "From a run",
+    "composeRunIdHint": "Lowercase letters, numbers and hyphens; 3–64 characters."
   },
   "structures": {
     "importTitle": "Import structure",

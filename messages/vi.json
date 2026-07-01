@@ -1932,7 +1932,8 @@
     "jobsTab": "Việc",
     "exploreMpTab": "Explore MP",
     "composeFromLibrary": "Từ thư viện",
-    "composeFromRun": "Từ run cũ"
+    "composeFromRun": "Từ run cũ",
+    "composeRunIdHint": "Chữ thường, số và gạch ngang; 3–64 ký tự."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

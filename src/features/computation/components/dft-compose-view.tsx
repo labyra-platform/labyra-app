@@ -69,6 +69,16 @@ function previewOf(n: ComposeNode): string {
   return exe;
 }
 
+/** Coerce free text into a valid run id: lowercase, non [a-z0-9-] → hyphen, no
+ *  leading hyphen, ≤64 chars. Matches the validId regex below. */
+function normalizeRunId(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+/, '')
+    .slice(0, 64);
+}
+
 export function DftComposeView({
   runs,
   structures,
@@ -302,10 +312,17 @@ export function DftComposeView({
           <Input
             id='compose-run-id'
             value={runId}
-            onChange={(e) => setRunId(e.target.value)}
+            onChange={(e) => setRunId(normalizeRunId(e.target.value))}
             placeholder='e.g. ws2-electronic-1'
             className='w-56'
           />
+          <p
+            className={
+              runId && !validId ? 'text-destructive text-xs' : 'text-muted-foreground text-xs'
+            }
+          >
+            {t('composeRunIdHint')}
+          </p>
         </div>
         <div className='space-y-1.5'>
           <Label>{t('computeMachine')}</Label>

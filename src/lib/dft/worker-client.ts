@@ -111,6 +111,8 @@ export interface MpSearchResult {
   energyAboveHull: number | null;
   bandGap: number | null;
   isGapDirect: boolean | null;
+  density: number | null;
+  volume: number | null;
   theoretical: boolean | null;
 }
 

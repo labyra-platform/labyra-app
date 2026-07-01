@@ -1929,7 +1929,8 @@
     "selectedCount": "Đã chọn {count}",
     "clearSelection": "Bỏ chọn",
     "deleteSelected": "Xóa ({count})",
-    "jobsTab": "Việc"
+    "jobsTab": "Việc",
+    "exploreMpTab": "Explore MP"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",
@@ -1959,6 +1960,21 @@
     "mpColId": "Material ID",
     "mpColSystem": "Hệ",
     "mpColSpaceGroup": "Nhóm không gian",
-    "mpColGap": "Vùng cấm"
+    "mpColGap": "Vùng cấm",
+    "mpModeOnly": "Chỉ nguyên tố",
+    "mpModeAtLeast": "Ít nhất",
+    "mpModeFormula": "Công thức",
+    "mpModeId": "MP id",
+    "mpModeOnlyHint": "Vật liệu chỉ gồm các nguyên tố đã chọn.",
+    "mpModeAtLeastHint": "Vật liệu chứa ít nhất các nguyên tố đã chọn.",
+    "mpFormulaPlaceholder": "vd WO3, Li3Fe, Fe2O3",
+    "mpIdPlaceholder": "vd mp-1821",
+    "mpSearchAction": "Tìm",
+    "mpColSites": "Sites",
+    "mpColHull": "E hull (eV)",
+    "mpColDensity": "Mật độ",
+    "mpColVolume": "Thể tích (Å³)",
+    "mpColAction": "Import",
+    "mpImportedToast": "Đã import {id} vào Structures."
   }
 }

@@ -1928,7 +1928,8 @@
     "selectedCount": "{count} selected",
     "clearSelection": "Clear",
     "deleteSelected": "Delete ({count})",
-    "jobsTab": "Jobs"
+    "jobsTab": "Jobs",
+    "exploreMpTab": "Explore MP"
   },
   "structures": {
     "importTitle": "Import structure",
@@ -1958,6 +1959,21 @@
     "mpColId": "Material ID",
     "mpColSystem": "System",
     "mpColSpaceGroup": "Space group",
-    "mpColGap": "Band gap"
+    "mpColGap": "Band gap",
+    "mpModeOnly": "Only elements",
+    "mpModeAtLeast": "At least",
+    "mpModeFormula": "Formula",
+    "mpModeId": "MP id",
+    "mpModeOnlyHint": "Materials containing only the selected elements.",
+    "mpModeAtLeastHint": "Materials containing at least the selected elements.",
+    "mpFormulaPlaceholder": "e.g. WO3, Li3Fe, Fe2O3",
+    "mpIdPlaceholder": "e.g. mp-1821",
+    "mpSearchAction": "Search",
+    "mpColSites": "Sites",
+    "mpColHull": "E hull (eV)",
+    "mpColDensity": "Density",
+    "mpColVolume": "Volume (Å³)",
+    "mpColAction": "Import",
+    "mpImportedToast": "Imported {id} into structures."
   }
 }

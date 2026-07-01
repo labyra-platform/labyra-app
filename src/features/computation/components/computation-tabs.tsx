@@ -9,6 +9,7 @@
 'use client';
 
 import {
+  IconAtom,
   IconCube,
   IconGitCompare,
   IconListDetails,
@@ -39,6 +40,12 @@ const TABS: Tab[] = [
     labelKey: 'structuresTitle',
     Icon: IconCube,
     isActive: (p) => p.startsWith('/dashboard/structures')
+  },
+  {
+    href: '/dashboard/computation/explore',
+    labelKey: 'exploreMpTab',
+    Icon: IconAtom,
+    isActive: (p) => p.startsWith('/dashboard/computation/explore')
   },
   {
     href: '/dashboard/computation/compose',

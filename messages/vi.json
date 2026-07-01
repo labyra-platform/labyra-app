@@ -1930,7 +1930,9 @@
     "clearSelection": "Bỏ chọn",
     "deleteSelected": "Xóa ({count})",
     "jobsTab": "Việc",
-    "exploreMpTab": "Explore MP"
+    "exploreMpTab": "Explore MP",
+    "composeFromLibrary": "Từ thư viện",
+    "composeFromRun": "Từ run cũ"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",
@@ -1989,6 +1991,7 @@
     "colMaterialId": "Material ID",
     "colCrystalSystem": "Hệ tinh thể",
     "colSpaceGroup": "Nhóm không gian",
-    "colSites": "Số vị trí"
+    "colSites": "Số vị trí",
+    "runDft": "Chạy DFT"
   }
 }

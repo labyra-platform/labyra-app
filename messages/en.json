@@ -1929,7 +1929,9 @@
     "clearSelection": "Clear",
     "deleteSelected": "Delete ({count})",
     "jobsTab": "Jobs",
-    "exploreMpTab": "Explore MP"
+    "exploreMpTab": "Explore MP",
+    "composeFromLibrary": "From library",
+    "composeFromRun": "From a run"
   },
   "structures": {
     "importTitle": "Import structure",
@@ -1988,6 +1990,7 @@
     "colMaterialId": "Material ID",
     "colCrystalSystem": "Crystal System",
     "colSpaceGroup": "Space Group",
-    "colSites": "Sites"
+    "colSites": "Sites",
+    "runDft": "Run DFT"
   }
 }

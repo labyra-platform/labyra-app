@@ -6,7 +6,7 @@
  *
  * @phase R327-structure-viewer
  */
-import { IconArrowLeft } from '@tabler/icons-react';
+import { IconArrowLeft, IconRocket } from '@tabler/icons-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
@@ -38,28 +38,36 @@ export default async function StructureDetailPage({ params }: { params: Promise<
           </Link>
         </Button>
 
-        <div>
-          <h1 className='text-xl font-semibold'>{formatSciNode(cs.name)}</h1>
-          <div className='text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-sm'>
-            <Badge variant='outline' className='uppercase'>
-              {cs.source}
-            </Badge>
-            {cs.mpId ? (
-              <a
-                href={`https://materialsproject.org/materials/${cs.mpId}`}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='text-primary font-mono underline-offset-2 hover:underline'
-              >
-                {cs.mpId}
-              </a>
-            ) : null}
-            {cs.structure.spaceGroup ? (
-              <span>{formatSpaceGroup(cs.structure.spaceGroup)}</span>
-            ) : null}
-            <span>{t('atomCount', { count: cs.structure.nat })}</span>
-            {cs.verified ? <Badge variant='secondary'>{t('verified')}</Badge> : null}
+        <div className='flex flex-wrap items-start justify-between gap-4'>
+          <div>
+            <h1 className='text-xl font-semibold'>{formatSciNode(cs.name)}</h1>
+            <div className='text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-sm'>
+              <Badge variant='outline' className='uppercase'>
+                {cs.source}
+              </Badge>
+              {cs.mpId ? (
+                <a
+                  href={`https://materialsproject.org/materials/${cs.mpId}`}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='text-primary font-mono underline-offset-2 hover:underline'
+                >
+                  {cs.mpId}
+                </a>
+              ) : null}
+              {cs.structure.spaceGroup ? (
+                <span>{formatSpaceGroup(cs.structure.spaceGroup)}</span>
+              ) : null}
+              <span>{t('atomCount', { count: cs.structure.nat })}</span>
+              {cs.verified ? <Badge variant='secondary'>{t('verified')}</Badge> : null}
+            </div>
           </div>
+          <Button asChild>
+            <Link href={`/dashboard/computation/compose?structure=${id}`}>
+              <IconRocket className='mr-1 size-4' />
+              {t('runDft')}
+            </Link>
+          </Button>
         </div>
 
         <StructureViewer structureId={id} />

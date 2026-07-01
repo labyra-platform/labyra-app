@@ -12,14 +12,16 @@
 
 import { IconLoader2, IconRocket } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
@@ -41,6 +43,11 @@ interface RunRef {
   id: string;
   name: string;
 }
+interface StructureRef {
+  id: string;
+  name: string;
+  formula: string;
+}
 type SrcState = 'idle' | 'loading' | 'ready' | 'error';
 
 const EXE: Record<string, string> = {
@@ -61,10 +68,23 @@ function previewOf(n: ComposeNode): string {
   return exe;
 }
 
-export function DftComposeView({ runs }: { runs: RunRef[] }) {
+export function DftComposeView({
+  runs,
+  structures,
+  initialStructureId
+}: {
+  runs: RunRef[];
+  structures: StructureRef[];
+  initialStructureId?: string;
+}) {
   const t = useTranslations('computation');
   const router = useRouter();
-  const [sourceId, setSourceId] = useState(runs[0]?.id ?? '');
+  const initialSource = initialStructureId
+    ? `cs:${initialStructureId}`
+    : runs[0]
+      ? `run:${runs[0].id}`
+      : '';
+  const [sourceId, setSourceId] = useState(initialSource);
   const [structure, setStructure] = useState<unknown>(null);
   const [globalCfg, setGlobalCfg] = useState<unknown>(null);
   const [srcState, setSrcState] = useState<SrcState>('idle');
@@ -78,15 +98,20 @@ export function DftComposeView({ runs }: { runs: RunRef[] }) {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
-  async function loadSource(id: string) {
-    setSourceId(id);
-    if (!id) return;
+  async function loadSource(value: string) {
+    setSourceId(value);
+    if (!value) return;
     setSrcState('loading');
+    const sep = value.indexOf(':');
+    const kind = sep === -1 ? 'run' : value.slice(0, sep);
+    const id = sep === -1 ? value : value.slice(sep + 1);
+    const url = kind === 'cs' ? `/api/structures/${id}/definition` : '/api/dft/definition';
+    const body = kind === 'cs' ? {} : { workflowId: id };
     try {
-      const res = await fetch('/api/dft/definition', {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflowId: id })
+        body: JSON.stringify(body)
       });
       if (!res.ok) {
         setSrcState('error');
@@ -100,6 +125,13 @@ export function DftComposeView({ runs }: { runs: RunRef[] }) {
       setSrcState('error');
     }
   }
+
+  // Seeded from the structure library ("Run DFT" on a structure) — load it now
+  // so the composer lands ready without a manual pick.
+  useEffect(() => {
+    if (initialStructureId) void loadSource(`cs:${initialStructureId}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function selectArch(id: string) {
     setArchId(id);
@@ -178,7 +210,7 @@ export function DftComposeView({ runs }: { runs: RunRef[] }) {
       <div className='flex flex-wrap items-end gap-x-6 gap-y-3'>
         <div className='min-w-56 space-y-1.5'>
           <Label>{t('composeSource')}</Label>
-          {runs.length === 0 ? (
+          {runs.length === 0 && structures.length === 0 ? (
             <p className='text-muted-foreground text-sm'>{t('composeNoRuns')}</p>
           ) : (
             <Select value={sourceId} onValueChange={loadSource}>
@@ -186,11 +218,26 @@ export function DftComposeView({ runs }: { runs: RunRef[] }) {
                 <SelectValue placeholder={t('composeSourcePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                {runs.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.name}
-                  </SelectItem>
-                ))}
+                {structures.length > 0 ? (
+                  <SelectGroup>
+                    <SelectLabel>{t('composeFromLibrary')}</SelectLabel>
+                    {structures.map((s) => (
+                      <SelectItem key={s.id} value={`cs:${s.id}`}>
+                        {s.formula} · {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ) : null}
+                {runs.length > 0 ? (
+                  <SelectGroup>
+                    <SelectLabel>{t('composeFromRun')}</SelectLabel>
+                    {runs.map((r) => (
+                      <SelectItem key={r.id} value={`run:${r.id}`}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ) : null}
               </SelectContent>
             </Select>
           )}

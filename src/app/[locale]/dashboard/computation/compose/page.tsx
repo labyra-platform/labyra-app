@@ -12,21 +12,40 @@ import { notFound } from 'next/navigation';
 import PageContainer from '@/components/layout/page-container';
 import { ComputationTabs } from '@/features/computation/components/computation-tabs';
 import { DftComposeView } from '@/features/computation/components/dft-compose-view';
+import { reducedFormula } from '@/features/crystal-structures/structure-row';
 import { getCurrentTenantId } from '@/lib/auth/server';
+import { listCrystalStructures } from '@/lib/firebase/crystal-structures/service';
 import { listDftWorkflows } from '@/lib/firebase/dft/service';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ComputationComposePage() {
+export default async function ComputationComposePage({
+  searchParams
+}: {
+  searchParams: Promise<{ structure?: string }>;
+}) {
   const tenantId = await getCurrentTenantId();
   if (!tenantId) notFound();
-  const workflows = await listDftWorkflows(tenantId);
+  const [workflows, structures] = await Promise.all([
+    listDftWorkflows(tenantId),
+    listCrystalStructures(tenantId)
+  ]);
   const runs = workflows.map((w) => ({ id: w.id, name: w.global?.prefix ?? w.id }));
+  const structureRefs = structures.map((c) => ({
+    id: c.id,
+    name: c.name,
+    formula: reducedFormula(c.structure)
+  }));
+  const { structure: initialStructureId } = await searchParams;
 
   return (
     <PageContainer>
       <ComputationTabs />
-      <DftComposeView runs={runs} />
+      <DftComposeView
+        runs={runs}
+        structures={structureRefs}
+        initialStructureId={initialStructureId}
+      />
     </PageContainer>
   );
 }

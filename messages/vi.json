@@ -1890,6 +1890,25 @@
     "newImportLabel": "Workflow JSON",
     "newImportHint": "Dán định nghĩa workflow gồm structure, global và mảng units khác rỗng.",
     "newImportInvalid": "JSON workflow không hợp lệ — cần structure, global và mảng units khác rỗng.",
-    "downloadJson": "Tải JSON"
+    "downloadJson": "Tải JSON",
+    "composeTitle": "Soạn pipeline",
+    "composeDescription": "Dựng pipeline DFT từ archetype, chỉnh từng node và khởi chạy — kèm preview workflow-JSON trực tiếp.",
+    "composeSource": "Nguồn cấu trúc (từ run)",
+    "composeSourcePlaceholder": "Chọn run…",
+    "composeSourceHint": "Kế thừa ô mạng, species, cutoff, functional và Hubbard U từ run có sẵn; pipeline bên dưới soạn mới.",
+    "composeNoRuns": "Chưa có run nào để kế thừa cấu trúc — nhập một định nghĩa trước.",
+    "composeLoading": "Đang tải cấu trúc…",
+    "composeError": "Không tải được cấu trúc của run đó.",
+    "composeReady": "Đã tải cấu trúc.",
+    "composeArchetype": "Pipeline",
+    "composeNodes": "Node",
+    "composePreview": "Workflow JSON (trực tiếp)",
+    "composeLaunch": "Khởi chạy run đã soạn",
+    "composePhononNote": "Phonon (ph.x) chưa có — cần worker hỗ trợ.",
+    "archElectronic": "Electronic (bands + DOS/PDOS)",
+    "archBands": "Bands",
+    "archDosPdos": "DOS/PDOS",
+    "archRelax": "Relax + SCF",
+    "archPhonon": "Phonon"
   }
 }

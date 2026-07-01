@@ -1889,6 +1889,25 @@
     "newImportLabel": "Workflow JSON",
     "newImportHint": "Paste a workflow definition with structure, global and a non-empty units array.",
     "newImportInvalid": "Invalid workflow JSON — needs structure, global and a non-empty units array.",
-    "downloadJson": "Download JSON"
+    "downloadJson": "Download JSON",
+    "composeTitle": "Compose",
+    "composeDescription": "Build a DFT pipeline from an archetype, tune each node, and launch — with a live workflow-JSON preview.",
+    "composeSource": "Structure source (from a run)",
+    "composeSourcePlaceholder": "Select a run…",
+    "composeSourceHint": "Inherit cell, species, cutoffs, functional and Hubbard U from an existing run; the pipeline below is composed fresh.",
+    "composeNoRuns": "No existing run to inherit a structure from — import a definition first.",
+    "composeLoading": "Loading structure…",
+    "composeError": "Could not load that run's structure.",
+    "composeReady": "Structure loaded.",
+    "composeArchetype": "Pipeline",
+    "composeNodes": "Nodes",
+    "composePreview": "Workflow JSON (live)",
+    "composeLaunch": "Launch composed run",
+    "composePhononNote": "Phonon (ph.x) is not available yet — needs worker support.",
+    "archElectronic": "Electronic (bands + DOS/PDOS)",
+    "archBands": "Bands",
+    "archDosPdos": "DOS/PDOS",
+    "archRelax": "Relax + SCF",
+    "archPhonon": "Phonon"
   }
 }

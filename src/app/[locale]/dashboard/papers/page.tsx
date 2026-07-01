@@ -13,10 +13,8 @@ export async function generateMetadata() {
 export default async function PapersListPage() {
   const t = await getTranslations('papers');
   return (
-    <PageContainer
-      pageTitle={t('title')}
-      pageDescription={t('subtitle')}
-      pageHeaderAction={
+    <PageContainer>
+      <div className='mb-4 flex justify-end'>
         <UploadSheet
           trigger={
             <Button>
@@ -25,8 +23,7 @@ export default async function PapersListPage() {
             </Button>
           }
         />
-      }
-    >
+      </div>
       <PapersLibraryView />
     </PageContainer>
   );

@@ -29,7 +29,6 @@ import { listDftWorkflows } from '@/lib/firebase/dft/service';
 export const dynamic = 'force-dynamic';
 
 export default async function ComputationPage() {
-  const tNav = await getTranslations('nav');
   const t = await getTranslations('computation');
   const tenantId = await getCurrentTenantId();
   if (!tenantId) {
@@ -44,7 +43,7 @@ export default async function ComputationPage() {
   }));
 
   return (
-    <PageContainer pageTitle={tNav('computation')} pageDescription={t('description')}>
+    <PageContainer>
       <div className='space-y-4'>
         <div className='flex justify-end gap-2'>
           <Button asChild variant='outline' size='sm'>

@@ -1,0 +1,86 @@
+/**
+ * ComputationTabs — Mat3ra-style section navigation for the computation domain.
+ * Route-linked tabs (Jobs / Structures / Compose / Compare) with the active
+ * route underlined; an optional right slot holds the page's primary action
+ * (e.g. New computation / Import structure), like Mat3ra's CREATE.
+ *
+ * @phase R322-computation-tabs
+ */
+'use client';
+
+import {
+  IconCube,
+  IconGitCompare,
+  IconListDetails,
+  IconTools,
+  type IconProps
+} from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
+import type { ComponentType, ReactNode } from 'react';
+import { Link, usePathname } from '@/i18n/navigation';
+import { cn } from '@/lib/utils';
+
+interface Tab {
+  href: string;
+  labelKey: string;
+  Icon: ComponentType<IconProps>;
+  isActive: (path: string) => boolean;
+}
+
+const TABS: Tab[] = [
+  {
+    href: '/dashboard/computation',
+    labelKey: 'jobsTab',
+    Icon: IconListDetails,
+    isActive: (p) => p.endsWith('/dashboard/computation')
+  },
+  {
+    href: '/dashboard/structures',
+    labelKey: 'structuresTitle',
+    Icon: IconCube,
+    isActive: (p) => p.startsWith('/dashboard/structures')
+  },
+  {
+    href: '/dashboard/computation/compose',
+    labelKey: 'composeTitle',
+    Icon: IconTools,
+    isActive: (p) => p.startsWith('/dashboard/computation/compose')
+  },
+  {
+    href: '/dashboard/computation/compare',
+    labelKey: 'compareTitle',
+    Icon: IconGitCompare,
+    isActive: (p) => p.startsWith('/dashboard/computation/compare')
+  }
+];
+
+export function ComputationTabs({ rightSlot }: { rightSlot?: ReactNode }) {
+  const t = useTranslations('computation');
+  const pathname = usePathname() ?? '';
+
+  return (
+    <div className='mb-4 flex items-center justify-between gap-4 border-b'>
+      <nav className='flex gap-1 overflow-x-auto'>
+        {TABS.map(({ href, labelKey, Icon, isActive }) => {
+          const active = isActive(pathname);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                '-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                active
+                  ? 'border-primary text-foreground'
+                  : 'text-muted-foreground hover:text-foreground border-transparent'
+              )}
+            >
+              <Icon className='size-4' />
+              {t(labelKey)}
+            </Link>
+          );
+        })}
+      </nav>
+      {rightSlot ? <div className='shrink-0 pb-1'>{rightSlot}</div> : null}
+    </div>
+  );
+}

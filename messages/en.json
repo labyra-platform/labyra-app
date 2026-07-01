@@ -1919,7 +1919,8 @@
     "selectAll": "Select all",
     "selectedCount": "{count} selected",
     "clearSelection": "Clear",
-    "deleteSelected": "Delete ({count})"
+    "deleteSelected": "Delete ({count})",
+    "jobsTab": "Jobs"
   },
   "structures": {
     "importTitle": "Import structure",

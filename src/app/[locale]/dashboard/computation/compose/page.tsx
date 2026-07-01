@@ -9,8 +9,8 @@
  * @phase R315-composer
  */
 import { notFound } from 'next/navigation';
-import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
+import { ComputationTabs } from '@/features/computation/components/computation-tabs';
 import { DftComposeView } from '@/features/computation/components/dft-compose-view';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { listDftWorkflows } from '@/lib/firebase/dft/service';
@@ -18,14 +18,14 @@ import { listDftWorkflows } from '@/lib/firebase/dft/service';
 export const dynamic = 'force-dynamic';
 
 export default async function ComputationComposePage() {
-  const t = await getTranslations('computation');
   const tenantId = await getCurrentTenantId();
   if (!tenantId) notFound();
   const workflows = await listDftWorkflows(tenantId);
   const runs = workflows.map((w) => ({ id: w.id, name: w.global?.prefix ?? w.id }));
 
   return (
-    <PageContainer pageTitle={t('composeTitle')} pageDescription={t('composeDescription')}>
+    <PageContainer>
+      <ComputationTabs />
       <DftComposeView runs={runs} />
     </PageContainer>
   );

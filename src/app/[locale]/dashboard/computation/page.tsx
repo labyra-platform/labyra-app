@@ -14,15 +14,13 @@
  *
  * @phase R251-computation-pivot
  */
-import { IconCube, IconGitCompare, IconTools } from '@tabler/icons-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
-import { Button } from '@/components/ui/button';
+import { ComputationTabs } from '@/features/computation/components/computation-tabs';
 import { DftNewWorkflowDialog } from '@/features/computation/components/dft-new-workflow-dialog';
 import { DftWorkflowTable } from '@/features/computation/components/dft-workflow-table';
 import { toWorkflowRow } from '@/features/computation/workflow-row';
-import { Link } from '@/i18n/navigation';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { listDftWorkflows } from '@/lib/firebase/dft/service';
 
@@ -44,34 +42,12 @@ export default async function ComputationPage() {
 
   return (
     <PageContainer>
-      <div className='space-y-4'>
-        <div className='flex justify-end gap-2'>
-          <Button asChild variant='outline' size='sm'>
-            <Link href='/dashboard/structures'>
-              <IconCube className='mr-1 size-4' />
-              {t('structuresTitle')}
-            </Link>
-          </Button>
-          <Button asChild variant='outline' size='sm'>
-            <Link href='/dashboard/computation/compose'>
-              <IconTools className='mr-1 size-4' />
-              {t('composeTitle')}
-            </Link>
-          </Button>
-          <Button asChild variant='outline' size='sm'>
-            <Link href='/dashboard/computation/compare'>
-              <IconGitCompare className='mr-1 size-4' />
-              {t('compareTitle')}
-            </Link>
-          </Button>
-          <DftNewWorkflowDialog bases={bases} />
-        </div>
-        {rows.length === 0 ? (
-          <div className='text-muted-foreground py-12 text-center text-sm'>{t('noWorkflows')}</div>
-        ) : (
-          <DftWorkflowTable rows={rows} />
-        )}
-      </div>
+      <ComputationTabs rightSlot={<DftNewWorkflowDialog bases={bases} />} />
+      {rows.length === 0 ? (
+        <div className='text-muted-foreground py-12 text-center text-sm'>{t('noWorkflows')}</div>
+      ) : (
+        <DftWorkflowTable rows={rows} />
+      )}
     </PageContainer>
   );
 }

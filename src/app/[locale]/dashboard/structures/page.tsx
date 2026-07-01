@@ -10,6 +10,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
+import { ComputationTabs } from '@/features/computation/components/computation-tabs';
 import { ImportStructureDialog } from '@/features/crystal-structures/components/import-structure-dialog';
 import { StructuresTable } from '@/features/crystal-structures/components/structures-table';
 import { toStructureRow } from '@/features/crystal-structures/structure-row';
@@ -27,16 +28,12 @@ export default async function StructuresPage() {
 
   return (
     <PageContainer>
-      <div className='space-y-4'>
-        <div className='flex justify-end'>
-          <ImportStructureDialog />
-        </div>
-        {rows.length === 0 ? (
-          <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>
-        ) : (
-          <StructuresTable rows={rows} />
-        )}
-      </div>
+      <ComputationTabs rightSlot={<ImportStructureDialog />} />
+      {rows.length === 0 ? (
+        <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>
+      ) : (
+        <StructuresTable rows={rows} />
+      )}
     </PageContainer>
   );
 }

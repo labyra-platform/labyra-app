@@ -149,6 +149,18 @@ export function exportStructure(structure: unknown, fmt: 'cif' | 'poscar'): Prom
   return callWorker('/dft/structure/export', { structure, fmt });
 }
 
+export interface KpathResult {
+  point_coords: Record<string, [number, number, number]>;
+  segments: [string, string][];
+  path: { label: string; coords: [number, number, number]; npoints: number }[];
+  bravais?: string | null;
+}
+
+/** seekpath high-symmetry BZ path for a stored DftStructure (bands crystal_b). */
+export function getKpath(structure: unknown): Promise<WorkerResult> {
+  return callWorker('/dft/kpath', { structure });
+}
+
 export function fetchDftBands(body: FetchBandsBody): Promise<WorkerResult> {
   return callWorker('/dft/bands', body);
 }

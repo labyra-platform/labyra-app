@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WorkflowGraph } from '@/features/workflow/components/workflow-graph';
+import type { BandsPathPoint } from '@/features/computation/bands-path';
 import type { WorkflowEdge, WorkflowNodeInput } from '@/features/workflow/types/workflow';
 import { useRouter } from '@/i18n/navigation';
 import { DFT_MACHINE_PRESETS } from '@/lib/schemas/dft-submit-schema';
@@ -43,6 +44,7 @@ import {
 } from '../compose-model';
 import { ComposeInputPreview } from './compose-input-preview';
 import { ComposeNodeEditor } from './compose-node-editor';
+import { KpathEditor } from './kpath-editor';
 
 interface RunRef {
   id: string;
@@ -158,6 +160,10 @@ export function DftComposeView({
 
   function changeNodeFlavor(nodeId: string, flavor: string) {
     setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, flavor } : n)));
+  }
+
+  function setNodeKpath(nodeId: string, kpath: BandsPathPoint[]) {
+    setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, kpath } : n)));
   }
 
   function cloneNode(nodeId: string) {
@@ -404,6 +410,14 @@ export function DftComposeView({
                     onClone={() => cloneNode(selNode.id)}
                     onDelete={() => deleteNode(selNode.id)}
                   />
+                  {selNode.calcType === 'bands' ? (
+                    <KpathEditor
+                      key={`${selNode.id}-kpath`}
+                      structure={structure}
+                      path={selNode.kpath}
+                      onChange={(kp) => setNodeKpath(selNode.id, kp)}
+                    />
+                  ) : null}
                 </div>
               ) : (
                 <p className='text-muted-foreground p-3 text-sm'>{t('composeSelectNode')}</p>

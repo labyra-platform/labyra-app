@@ -11,7 +11,7 @@
  *
  * @phase R315-composer
  */
-import { HEX_BANDS_PATH } from '@/features/computation/bands-path';
+import { HEX_BANDS_PATH, type BandsPathPoint } from '@/features/computation/bands-path';
 import type { DftCalcType } from '@/types/dft';
 
 export type ParamKey =
@@ -50,6 +50,7 @@ export interface ComposeNode {
   dependsOn: string[];
   params: NodeParams;
   flavor?: string;
+  kpath?: BandsPathPoint[];
 }
 
 export interface Archetype {
@@ -194,7 +195,8 @@ export const CALC_GROUPS: { exe: string; types: DftCalcType[] }[] = [
 function buildPwParams(
   calcType: DftCalcType,
   p: NodeParams,
-  hasVdw: boolean
+  hasVdw: boolean,
+  kpath?: BandsPathPoint[]
 ): Record<string, unknown> {
   const stress = calcType === 'vc-relax' || calcType === 'scf';
   const params: Record<string, unknown> = {
@@ -218,7 +220,7 @@ function buildPwParams(
     params.dftd3Threebody = true;
   }
   if (calcType === 'bands') {
-    params.kPoints = { type: 'crystal_b', path: HEX_BANDS_PATH };
+    params.kPoints = { type: 'crystal_b', path: kpath ?? HEX_BANDS_PATH };
   } else {
     params.kPoints = { type: 'automatic', grid: p.kgrid, shift: [0, 0, 0] };
   }
@@ -250,7 +252,7 @@ export function buildDefinition(
     calcType: n.calcType,
     dependsOn: n.dependsOn,
     params: PW_TYPES.has(n.calcType)
-      ? buildPwParams(n.calcType, n.params, hasVdw)
+      ? buildPwParams(n.calcType, n.params, hasVdw, n.kpath)
       : POSTPROC_TYPES.has(n.calcType)
         ? buildPostprocParams(n.calcType, n.params, prefix, n.flavor)
         : {}
@@ -267,7 +269,8 @@ export function buildUnitParams(node: ComposeNode, global: unknown): Record<stri
   const g = (global ?? {}) as { prefix?: string; vdwCorr?: string };
   const prefix = String(g.prefix ?? 'material');
   const hasVdw = g.vdwCorr === 'grimme-d3';
-  if (PW_TYPES.has(node.calcType)) return buildPwParams(node.calcType, node.params, hasVdw);
+  if (PW_TYPES.has(node.calcType))
+    return buildPwParams(node.calcType, node.params, hasVdw, node.kpath);
   if (POSTPROC_TYPES.has(node.calcType)) {
     return buildPostprocParams(node.calcType, node.params, prefix, node.flavor);
   }

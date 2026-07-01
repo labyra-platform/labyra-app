@@ -83,6 +83,7 @@ export function DftWorkflowGraph({
         edges={edges}
         onNodeClick={onNodeClick}
         selectedId={selectedId}
+        showMiniMap={false}
       />
     </div>
   );

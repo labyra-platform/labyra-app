@@ -18,7 +18,6 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
 import { ComputationTabs } from '@/features/computation/components/computation-tabs';
-import { DftNewWorkflowDialog } from '@/features/computation/components/dft-new-workflow-dialog';
 import { DftWorkflowTable } from '@/features/computation/components/dft-workflow-table';
 import { toWorkflowRow } from '@/features/computation/workflow-row';
 import { getCurrentTenantId } from '@/lib/auth/server';
@@ -34,15 +33,10 @@ export default async function ComputationPage() {
   }
   const workflows = await listDftWorkflows(tenantId);
   const rows = workflows.map(toWorkflowRow);
-  const bases = workflows.map((w) => ({
-    id: w.id,
-    name: w.global?.prefix ?? w.id,
-    hubbard: w.global?.hubbard ?? []
-  }));
 
   return (
     <PageContainer>
-      <ComputationTabs rightSlot={<DftNewWorkflowDialog bases={bases} />} />
+      <ComputationTabs />
       {rows.length === 0 ? (
         <div className='text-muted-foreground py-12 text-center text-sm'>{t('noWorkflows')}</div>
       ) : (

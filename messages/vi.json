@@ -1933,7 +1933,12 @@
     "exploreMpTab": "Explore MP",
     "composeFromLibrary": "Từ thư viện",
     "composeFromRun": "Từ run cũ",
-    "composeRunIdHint": "Chữ thường, số và gạch ngang; 3–64 ký tự."
+    "composeRunIdHint": "Chữ thường, số và gạch ngang; 3–64 ký tự.",
+    "composeInputTitle": "Input (.in)",
+    "composeInputEmpty": "Nhấn làm mới để dựng input của node này.",
+    "composeInputError": "Không dựng được input — kiểm tra thông số.",
+    "composeInputRefresh": "Làm mới input",
+    "backToJobs": "Về danh sách job"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

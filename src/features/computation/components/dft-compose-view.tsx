@@ -39,6 +39,7 @@ import {
   type ComposeNode,
   type NodeParams
 } from '../compose-model';
+import { ComposeInputPreview } from './compose-input-preview';
 import { ComposeNodeEditor } from './compose-node-editor';
 
 interface RunRef {
@@ -329,14 +330,23 @@ export function DftComposeView({
             </div>
             <div className='shrink-0 lg:w-96'>
               {selNode ? (
-                <ComposeNodeEditor
-                  node={selNode}
-                  canDelete={nodes.length > 1}
-                  onChange={(p) => updateNode(selNode.id, p)}
-                  onChangeType={(ct) => changeNodeType(selNode.id, ct)}
-                  onClone={() => cloneNode(selNode.id)}
-                  onDelete={() => deleteNode(selNode.id)}
-                />
+                <div className='space-y-3'>
+                  <ComposeInputPreview
+                    key={selNode.id}
+                    calcType={selNode.calcType}
+                    structure={structure}
+                    global={globalCfg}
+                    params={selNode.params}
+                  />
+                  <ComposeNodeEditor
+                    node={selNode}
+                    canDelete={nodes.length > 1}
+                    onChange={(p) => updateNode(selNode.id, p)}
+                    onChangeType={(ct) => changeNodeType(selNode.id, ct)}
+                    onClone={() => cloneNode(selNode.id)}
+                    onDelete={() => deleteNode(selNode.id)}
+                  />
+                </div>
               ) : (
                 <p className='text-muted-foreground p-3 text-sm'>{t('composeSelectNode')}</p>
               )}

@@ -1932,7 +1932,12 @@
     "exploreMpTab": "Explore MP",
     "composeFromLibrary": "From library",
     "composeFromRun": "From a run",
-    "composeRunIdHint": "Lowercase letters, numbers and hyphens; 3–64 characters."
+    "composeRunIdHint": "Lowercase letters, numbers and hyphens; 3–64 characters.",
+    "composeInputTitle": "Input (.in)",
+    "composeInputEmpty": "Refresh to render this node's input.",
+    "composeInputError": "Could not render input — check parameters.",
+    "composeInputRefresh": "Refresh input",
+    "backToJobs": "Back to jobs"
   },
   "structures": {
     "importTitle": "Import structure",

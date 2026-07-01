@@ -8,10 +8,13 @@
  *
  * @phase R252-dft-workspace-shell
  */
+import { IconArrowLeft } from '@tabler/icons-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
+import { Button } from '@/components/ui/button';
 import { DftWorkflowWorkspace } from '@/features/computation/components/dft-workflow-workspace';
+import { Link } from '@/i18n/navigation';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { getDftWorkflow } from '@/lib/firebase/dft/service';
 
@@ -30,10 +33,13 @@ export default async function DftWorkflowPage({ params }: PageProps) {
   if (!workflow) notFound();
 
   return (
-    <PageContainer
-      pageTitle={workflow.global?.prefix ?? workflow.id}
-      pageDescription={t('workspaceDescription')}
-    >
+    <PageContainer>
+      <Button asChild variant='ghost' size='sm' className='-ml-2 mb-2 w-fit'>
+        <Link href='/dashboard/computation'>
+          <IconArrowLeft className='mr-1 size-4' />
+          {t('backToJobs')}
+        </Link>
+      </Button>
       <DftWorkflowWorkspace workflow={workflow} />
     </PageContainer>
   );

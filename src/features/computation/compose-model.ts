@@ -116,35 +116,6 @@ export const ARCHETYPES: Archetype[] = [
       { id: 'u6', calcType: 'dos', dependsOn: ['u5'] },
       { id: 'u7', calcType: 'pdos', dependsOn: ['u5'] }
     ]
-  },
-  {
-    id: 'bands',
-    labelKey: 'archBands',
-    skeleton: [
-      { id: 'u1', calcType: 'vc-relax', dependsOn: [] },
-      { id: 'u2', calcType: 'scf', dependsOn: ['u1'] },
-      { id: 'u3', calcType: 'bands', dependsOn: ['u2'] },
-      { id: 'u4', calcType: 'ppbands', dependsOn: ['u3'] }
-    ]
-  },
-  {
-    id: 'dospdos',
-    labelKey: 'archDosPdos',
-    skeleton: [
-      { id: 'u1', calcType: 'vc-relax', dependsOn: [] },
-      { id: 'u2', calcType: 'scf', dependsOn: ['u1'] },
-      { id: 'u3', calcType: 'nscf', dependsOn: ['u2'] },
-      { id: 'u4', calcType: 'dos', dependsOn: ['u3'] },
-      { id: 'u5', calcType: 'pdos', dependsOn: ['u3'] }
-    ]
-  },
-  {
-    id: 'relax',
-    labelKey: 'archRelax',
-    skeleton: [
-      { id: 'u1', calcType: 'vc-relax', dependsOn: [] },
-      { id: 'u2', calcType: 'scf', dependsOn: ['u1'] }
-    ]
   }
 ];
 

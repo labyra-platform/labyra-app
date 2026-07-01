@@ -190,12 +190,31 @@ Required when `ibrav = 0`: three lattice vectors under a unit option
 
 ## Build plan mapping
 
+Actual rounds diverge from the original sketch; this is the live sequence. Each
+round keeps the compose → preview (`.in`) → submit path green and verifiable.
+
+**Shipped**
+
 | Round | Scope |
 |---|---|
-| R337 | Reorganise the **existing** editor params into the namelist blocks above (UI-only, emit policy wired for advanced-off). No new params. |
-| R338 | HUBBARD (+U) block: per-species U in eV, projector selector; wire into generator + card emit. |
-| R339 | ATOMIC_SPECIES card + **UPF upload** (storage, per-species assignment, filename into input). |
-| R340 | Remaining advanced params (diagonalization knobs, symmetry, hybrid, slab/PEC dipole). |
+| R336 | Per-node `.in` preview panel; graph/back-arrow/pipeline cleanup |
+| R337 | Compose layout — run-id/launch to top-right, drop inherit hint |
+| R338 | Executable flavors (bands.x `spin_component`, pp.x `plot_num`); fixed charge→pp.x routing + preview now sends built params |
 
-Each round keeps the compose → preview (`.in`) → submit path green and
-verifiable.
+**Next**
+
+| Round | Scope |
+|---|---|
+| R339 | k-path compact editor for `bands` (point + steps list, reorder, BZ label; no 3D BZ diagram) |
+| R340 | Namelist-block reorg — group existing params into &CONTROL/&SYSTEM/&ELECTRONS/&IONS/&CELL, wire the advanced-off emit policy |
+| R341 | HUBBARD (+U) block: per-species U (eV), projector selector |
+| R342 | ATOMIC_SPECIES card + UPF upload (storage, per-species assignment) |
+| R343 | Remaining advanced params (diagonalization, symmetry, hybrid, slab/PEC dipole) |
+| R344+ | New executables by tier: pp.x + average.x (band alignment) → epsilon.x (optical) → hp.x (ab-initio U) → ph.x → q2r.x → matdyn.x (phonon) |
+
+**Final polish**
+
+| Round | Scope |
+|---|---|
+| Compute / resource UI | Proper CPU/GPU/HPC picker (Mat3ra-style): machine backend (CPU/GPU Cloud Batch vs Lucia SLURM), time limit + restartable, nodes/cores, QE parallelization flags (`-npool` k-pools, `-nband` band groups, `-ntg` FFT task groups, `-ndiag` linear-algebra, `-nimage`), notifications/events. GPU/HPC need infra (GPU-built QE image, SLURM submit) beyond UI. |
+| Guide subtab | Executable dependency DAG (pw.x → post-process / phonon / optical-GW / Hubbard) plus per-option explanations for newcomers — `ion_dynamics`, `smearing`, `diagonalization`, `occupations`, `cell_dofree`, `vdw_corr`, Hubbard projector — surfaced as tooltips + an onboarding map. |

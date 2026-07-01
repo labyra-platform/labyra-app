@@ -1878,6 +1878,7 @@
     "metricLatticeC": "Hằng số c",
     "metricVolume": "Thể tích ô",
     "metricDensity": "Mật độ",
-    "metricEnergy": "Năng lượng tổng"
+    "metricEnergy": "Năng lượng tổng",
+    "compareTarget": "Mục tiêu"
   }
 }

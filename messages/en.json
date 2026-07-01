@@ -1877,6 +1877,7 @@
     "metricLatticeC": "Lattice c",
     "metricVolume": "Cell volume",
     "metricDensity": "Density",
-    "metricEnergy": "Total energy"
+    "metricEnergy": "Total energy",
+    "compareTarget": "Target"
   }
 }

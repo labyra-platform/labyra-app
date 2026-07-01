@@ -10,6 +10,7 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -42,6 +43,7 @@ export function DftCompareView({ rows }: { rows: CompareRow[] }) {
     () => new Set(rows.filter((r) => r.gapEv != null).map((r) => r.id))
   );
   const [metric, setMetric] = useState<CompareMetric>('gap');
+  const [target, setTarget] = useState('');
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -74,9 +76,15 @@ export function DftCompareView({ rows }: { rows: CompareRow[] }) {
 
       {selectedRows.length > 0 ? (
         <>
-          <div className='flex items-center gap-2'>
+          <div className='flex flex-wrap items-center gap-2'>
             <span className='text-muted-foreground text-sm'>{t('compareMetric')}</span>
-            <Select value={metric} onValueChange={(v) => setMetric(v as CompareMetric)}>
+            <Select
+              value={metric}
+              onValueChange={(v) => {
+                setMetric(v as CompareMetric);
+                setTarget('');
+              }}
+            >
               <SelectTrigger className='h-8 w-44'>
                 <SelectValue />
               </SelectTrigger>
@@ -88,9 +96,25 @@ export function DftCompareView({ rows }: { rows: CompareRow[] }) {
                 ))}
               </SelectContent>
             </Select>
+            <span className='text-muted-foreground ml-2 text-sm'>{t('compareTarget')}</span>
+            <Input
+              type='number'
+              step='any'
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              placeholder='—'
+              className='h-8 w-28'
+            />
+            <span className='text-muted-foreground text-xs'>{metricMeta(metric).unit}</span>
           </div>
           <div className='h-72 rounded-lg border p-3'>
-            <CompareMetricChart rows={selectedRows} metric={metric} />
+            <CompareMetricChart
+              rows={selectedRows}
+              metric={metric}
+              target={
+                target.trim() !== '' && Number.isFinite(Number(target)) ? Number(target) : null
+              }
+            />
           </div>
           <div className='overflow-hidden rounded-lg border'>
             <Table>

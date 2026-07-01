@@ -14,6 +14,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -46,15 +47,31 @@ function makeTooltip(unit: string, decimals: number) {
 
 export function CompareMetricChart({
   rows,
-  metric
+  metric,
+  target
 }: {
   rows: CompareRow[];
   metric: CompareMetric;
+  target?: number | null;
 }) {
   const t = useTranslations('computation');
   const meta = metricMeta(metric);
   const axisLabel = `${t(meta.labelKey)} (${meta.unit})`;
   const Tip = makeTooltip(meta.unit, meta.decimals);
+  const targetLine =
+    target != null && Number.isFinite(target) ? (
+      <ReferenceLine
+        y={target}
+        stroke='#dc2626'
+        strokeDasharray='4 2'
+        label={{
+          value: `${t('compareTarget')} ${target} ${meta.unit}`,
+          position: 'insideTopRight',
+          fill: '#dc2626',
+          fontSize: 10
+        }}
+      />
+    ) : null;
 
   const withVal = rows
     .map((r) => ({ row: r, val: metricValue(r, metric) }))
@@ -114,6 +131,7 @@ export function CompareMetricChart({
             dot={{ r: 4 }}
             isAnimationActive={false}
           />
+          {targetLine}
         </LineChart>
       </ResponsiveContainer>
     );
@@ -143,6 +161,7 @@ export function CompareMetricChart({
         />
         <Tooltip content={<Tip />} />
         <Bar dataKey='val' fill='#2563eb' />
+        {targetLine}
       </BarChart>
     </ResponsiveContainer>
   );

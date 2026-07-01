@@ -570,7 +570,15 @@
     "referencesSubcount": "{count} tài liệu",
     "referencesShownOfTotal": "{shown} / {total}",
     "renameTab": "Đổi tên",
-    "searchScholar": "Tìm trên Google Scholar"
+    "searchScholar": "Tìm trên Google Scholar",
+    "selectAll": "Chọn tất cả",
+    "selectPaper": "Chọn paper",
+    "selectedCount": "Đã chọn {count}",
+    "clearSelection": "Bỏ chọn",
+    "archiveSelected": "Lưu trữ",
+    "archiveSelectedConfirm": "Lưu trữ {count} paper đã chọn? Có thể khôi phục sau.",
+    "archiveSelectedSuccess": "Đã lưu trữ {count} paper.",
+    "archiveSelectedPartial": "{failed} paper không lưu trữ được."
   },
   "collections": {
     "title": "Bộ sưu tập",

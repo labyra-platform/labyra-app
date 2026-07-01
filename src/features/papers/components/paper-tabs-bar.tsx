@@ -276,7 +276,7 @@ export function PaperTabsBar({ locale }: { locale: string }) {
                       style={styles.solidChip}
                     >
                       <span className='max-w-[10rem] truncate'>
-                        {named ? group.name : t('tabGroupUnnamed')}
+                        {named ? formatSciNode(group.name) : t('tabGroupUnnamed')}
                       </span>
                       {/* R232b: count only when unnamed — a named group makes it noise. */}
                       {!named && (

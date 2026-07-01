@@ -32,6 +32,7 @@ import {
 import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal-info-card';
 import { UploadSheet } from '@/features/papers/components/upload-sheet';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Icons } from '@/components/icons';
 import { PaperMetadataEditor } from '@/features/papers/components/paper-metadata-editor';
 import { getFirebaseAuth } from '@/lib/firebase/client';
@@ -146,6 +147,9 @@ export function PaperList({
   const [sort, setSort] = useState<SortKey>('recent');
   const [view, setView] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen
   const [mainView, setMainView] = useState<MainView>('list'); // R237cl: list vs overview dashboard
+  // R324: bulk selection (checkbox multi-select + bulk archive).
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const visibleSlugs = useMemo(() => {
     const s = new Set<string>();
@@ -281,6 +285,56 @@ export function PaperList({
     });
   };
 
+  // R324: bulk-selection helpers (act on the currently filtered/visible papers).
+  const allSelected =
+    filteredPapers.length > 0 && filteredPapers.every((p) => selectedIds.has(p.id));
+  const someSelected = filteredPapers.some((p) => selectedIds.has(p.id));
+  const headerState: boolean | 'indeterminate' = allSelected
+    ? true
+    : someSelected
+      ? 'indeterminate'
+      : false;
+
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(filteredPapers.map((p) => p.id)));
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkArchive = async () => {
+    const ids = filteredPapers.map((p) => p.id).filter((id) => selectedIds.has(id));
+    if (ids.length === 0 || bulkBusy) return;
+    if (!confirm(t('archiveSelectedConfirm', { count: ids.length }))) return;
+    setBulkBusy(true);
+    try {
+      const headers = await paperAuthHeader();
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/papers/${id}?reason=manual_archive`, { method: 'DELETE', headers })
+        )
+      );
+      const failed = results.filter(
+        (r) =>
+          r.status === 'rejected' ||
+          (r.status === 'fulfilled' && !r.value.ok && r.value.status !== 204)
+      ).length;
+      if (failed > 0) toast.error(t('archiveSelectedPartial', { failed }));
+      else toast.success(t('archiveSelectedSuccess', { count: ids.length }));
+      clearSelection();
+    } catch (e) {
+      toast.error(t('archiveFailed'), { description: e instanceof Error ? e.message : 'unknown' });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   return (
     <div className='space-y-3'>
       {viewToggle}
@@ -294,6 +348,7 @@ export function PaperList({
       {/* R222: toolbar — sort + density toggle */}
       <div className='flex items-center justify-between gap-2'>
         <div className='flex items-center gap-2'>
+          <Checkbox checked={headerState} onCheckedChange={toggleAll} aria-label={t('selectAll')} />
           <p className='text-xs text-muted-foreground'>
             {hasFilter || collectionFilter !== null
               ? t('filterShowing', { shown: filteredPapers.length, total: papers.length })
@@ -338,6 +393,35 @@ export function PaperList({
         </div>
       </div>
 
+      {/* R324: bulk-action bar — appears when any visible paper is selected. */}
+      {someSelected && (
+        <div className='flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2'>
+          <span className='text-sm font-medium'>
+            {t('selectedCount', {
+              count: filteredPapers.filter((p) => selectedIds.has(p.id)).length
+            })}
+          </span>
+          <div className='flex items-center gap-2'>
+            <Button variant='ghost' size='sm' onClick={clearSelection}>
+              {t('clearSelection')}
+            </Button>
+            <Button
+              variant='destructive'
+              size='sm'
+              onClick={() => void bulkArchive()}
+              disabled={bulkBusy}
+            >
+              {bulkBusy ? (
+                <IconLoader2 className='mr-1 size-4 animate-spin' />
+              ) : (
+                <Icons.trash className='mr-1 size-4' />
+              )}
+              {t('archiveSelected')}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* @r179-2-hotfix1-applied: show info card when filter narrowed to 1 journal */}
       {filter.journals.size === 1 &&
         (() => {
@@ -356,6 +440,8 @@ export function PaperList({
               paper={paper}
               locale={locale}
               view={view}
+              selected={selectedIds.has(paper.id)}
+              onToggleSelect={toggleOne}
               onDomainClick={toggleDomainFilter}
             />
           ))}
@@ -369,11 +455,15 @@ function PaperRow({
   paper,
   locale,
   view,
+  selected,
+  onToggleSelect,
   onDomainClick
 }: {
   paper: Paper;
   locale: string;
   view: ViewMode;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
   onDomainClick: (slug: string) => void;
 }) {
   const t = useTranslations('papers');
@@ -432,116 +522,125 @@ function PaperRow({
         isCard ? 'rounded-lg border p-4' : 'px-4 py-2.5'
       )}
     >
-      <div className='flex items-start justify-between gap-3'>
-        <div className='min-w-0 flex-1'>
-          <h3 className={cn('truncate font-medium', isCompact ? 'text-sm' : 'text-base')}>
-            <Link
-              href={href}
-              onClick={(e) => e.stopPropagation()}
-              className='hover:underline focus-visible:underline focus-visible:outline-none'
-            >
-              {paper.title ? formatSciNode(cleanText(paper.title) ?? paper.title) : t('untitled')}
-            </Link>
-            {/* R227c: subtle "open in a tab" marker so the user knows this paper
+      <div className='flex items-start gap-3'>
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggleSelect(paper.id)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={t('selectPaper')}
+          className='mt-0.5 shrink-0'
+        />
+        <div className='flex min-w-0 flex-1 items-start justify-between gap-3'>
+          <div className='min-w-0 flex-1'>
+            <h3 className={cn('truncate font-medium', isCompact ? 'text-sm' : 'text-base')}>
+              <Link
+                href={href}
+                onClick={(e) => e.stopPropagation()}
+                className='hover:underline focus-visible:underline focus-visible:outline-none'
+              >
+                {paper.title ? formatSciNode(cleanText(paper.title) ?? paper.title) : t('untitled')}
+              </Link>
+              {/* R227c: subtle "open in a tab" marker so the user knows this paper
                 already has a reading session (clicking returns to it). */}
-            {isOpenInTab && (
-              <span
-                className='ml-2 inline-flex items-center gap-1 align-middle rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary'
-                title={t('openInTab')}
-              >
-                <span className='size-1.5 rounded-full bg-primary' aria-hidden />
-                {t('openInTab')}
-              </span>
-            )}
-          </h3>
-          <div className='mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground'>
-            {metaParts.length > 0 ? (
-              <span className='truncate'>{metaParts.join(' · ')}</span>
-            ) : (
-              <button
-                type='button'
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setEditOpen(true);
-                }}
-                className='inline-flex cursor-pointer items-center gap-1 rounded text-xs italic text-amber-600 underline-offset-2 hover:underline dark:text-amber-500'
-              >
-                {t('metadataPending')} · {t('metadataAdd')}
-              </button>
-            )}
-            {/* R222b: DOI link (Cách A) — opens publisher in a new tab. stopPropagation
+              {isOpenInTab && (
+                <span
+                  className='ml-2 inline-flex items-center gap-1 align-middle rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary'
+                  title={t('openInTab')}
+                >
+                  <span className='size-1.5 rounded-full bg-primary' aria-hidden />
+                  {t('openInTab')}
+                </span>
+              )}
+            </h3>
+            <div className='mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground'>
+              {metaParts.length > 0 ? (
+                <span className='truncate'>{metaParts.join(' · ')}</span>
+              ) : (
+                <button
+                  type='button'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setEditOpen(true);
+                  }}
+                  className='inline-flex cursor-pointer items-center gap-1 rounded text-xs italic text-amber-600 underline-offset-2 hover:underline dark:text-amber-500'
+                >
+                  {t('metadataPending')} · {t('metadataAdd')}
+                </button>
+              )}
+              {/* R222b: DOI link (Cách A) — opens publisher in a new tab. stopPropagation
                 so clicking DOI does NOT also open the in-app paper detail. The
                 external-link icon + "DOI" text make it explicit this leaves the app. */}
-            {paper.doi && (
-              <>
-                <span aria-hidden>·</span>
-                <a
-                  href={`https://doi.org/${paper.doi}`}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  onClick={(e) => e.stopPropagation()}
-                  className='inline-flex items-center gap-0.5 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline'
-                  aria-label={`DOI: ${paper.doi}`}
-                >
-                  DOI
-                  <IconExternalLink className='size-3' aria-hidden />
-                </a>
-                {paper.doiVerified === false && (
-                  <IconAlertTriangle
-                    className='size-3 text-amber-600 dark:text-amber-400'
-                    title={t('doiUnverified')}
-                  />
-                )}
-              </>
-            )}
-            {/* R237ca: OpenAlex field — authoritative classification, shown
+              {paper.doi && (
+                <>
+                  <span aria-hidden>·</span>
+                  <a
+                    href={`https://doi.org/${paper.doi}`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    onClick={(e) => e.stopPropagation()}
+                    className='inline-flex items-center gap-0.5 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline'
+                    aria-label={`DOI: ${paper.doi}`}
+                  >
+                    DOI
+                    <IconExternalLink className='size-3' aria-hidden />
+                  </a>
+                  {paper.doiVerified === false && (
+                    <IconAlertTriangle
+                      className='size-3 text-amber-600 dark:text-amber-400'
+                      title={t('doiUnverified')}
+                    />
+                  )}
+                </>
+              )}
+              {/* R237ca: OpenAlex field — authoritative classification, shown
                 before the Gemini domain chip (option B: OpenAlex is primary). */}
-            {paper.openalexField && (
-              <PaperOpenAlexBadge
-                field={paper.openalexField}
-                subfield={paper.openalexSubfield}
-                topic={paper.openalexTopic}
-                score={paper.openalexTopicScore}
-                variant='compact'
-              />
-            )}
-            {/* R222 #4: domain as a clickable color chip, not grey tail text. */}
-            {paper.domain && paper.domain !== 'unknown' && domainAxis && (
-              <button
-                type='button'
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDomainClick(paper.domain!);
-                }}
+              {paper.openalexField && (
+                <PaperOpenAlexBadge
+                  field={paper.openalexField}
+                  subfield={paper.openalexSubfield}
+                  topic={paper.openalexTopic}
+                  score={paper.openalexTopicScore}
+                  variant='compact'
+                />
+              )}
+              {/* R222 #4: domain as a clickable color chip, not grey tail text. */}
+              {paper.domain && paper.domain !== 'unknown' && domainAxis && (
+                <button
+                  type='button'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDomainClick(paper.domain!);
+                  }}
+                  className={cn(
+                    'inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium leading-none transition-opacity hover:opacity-80',
+                    AXIS_COLOR[domainAxis]
+                  )}
+                >
+                  {t(`domain.${paper.domain}`)}
+                </button>
+              )}
+            </div>
+          </div>
+          {/* R222 #5: status badge only when it carries signal (not 'indexed'). */}
+          <div className='flex shrink-0 items-center gap-1'>
+            {badgeClass && (
+              <span
                 className={cn(
-                  'inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium leading-none transition-opacity hover:opacity-80',
-                  AXIS_COLOR[domainAxis]
+                  'rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
+                  badgeClass
                 )}
               >
-                {t(`domain.${paper.domain}`)}
-              </button>
+                {t(`status.${paper.status}`)}
+              </span>
             )}
+            <PaperRowMenu
+              paperId={paper.id}
+              status={paper.status}
+              onEditMetadata={() => setEditOpen(true)}
+            />
           </div>
-        </div>
-        {/* R222 #5: status badge only when it carries signal (not 'indexed'). */}
-        <div className='flex shrink-0 items-center gap-1'>
-          {badgeClass && (
-            <span
-              className={cn(
-                'rounded-full px-2 py-0.5 text-[10px] font-medium leading-none',
-                badgeClass
-              )}
-            >
-              {t(`status.${paper.status}`)}
-            </span>
-          )}
-          <PaperRowMenu
-            paperId={paper.id}
-            status={paper.status}
-            onEditMetadata={() => setEditOpen(true)}
-          />
         </div>
       </div>
       <PaperMetadataEditor

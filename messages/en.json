@@ -569,7 +569,15 @@
     "referencesSubcount": "{count} references",
     "referencesShownOfTotal": "{shown} of {total}",
     "renameTab": "Rename",
-    "searchScholar": "Search on Google Scholar"
+    "searchScholar": "Search on Google Scholar",
+    "selectAll": "Select all",
+    "selectPaper": "Select paper",
+    "selectedCount": "{count} selected",
+    "clearSelection": "Clear",
+    "archiveSelected": "Archive",
+    "archiveSelectedConfirm": "Archive {count} selected paper(s)? You can restore them later.",
+    "archiveSelectedSuccess": "Archived {count} paper(s).",
+    "archiveSelectedPartial": "{failed} paper(s) could not be archived."
   },
   "collections": {
     "title": "Collections",

@@ -54,6 +54,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { formatSciNode } from '@/features/spectra/utils/format-units';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1104,7 +1105,7 @@ export function PdfViewer({
 
         <div className='min-w-0 flex-1 max-w-md'>
           <h1 className='truncate text-sm font-medium' title={displayTitle}>
-            {paperLoading ? t('loading') : displayTitle}
+            {paperLoading ? t('loading') : formatSciNode(displayTitle)}
           </h1>
           {paper && (
             <p className='truncate text-xs text-muted-foreground'>

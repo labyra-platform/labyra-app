@@ -227,7 +227,7 @@ export function DftComposeView({
         ? t('composeError')
         : srcState === 'ready'
           ? t('composeReady')
-          : t('composeSourceHint');
+          : '';
 
   async function launch() {
     if (!canLaunch) return;
@@ -255,61 +255,110 @@ export function DftComposeView({
 
   return (
     <div className='space-y-4'>
-      <div className='flex flex-wrap items-end gap-x-6 gap-y-3'>
-        <div className='min-w-56 space-y-1.5'>
-          <Label>{t('composeSource')}</Label>
-          {runs.length === 0 && structures.length === 0 ? (
-            <p className='text-muted-foreground text-sm'>{t('composeNoRuns')}</p>
-          ) : (
-            <Select value={sourceId} onValueChange={loadSource}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('composeSourcePlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {structures.length > 0 ? (
-                  <SelectGroup>
-                    <SelectLabel>{t('composeFromLibrary')}</SelectLabel>
-                    {structures.map((s) => (
-                      <SelectItem key={s.id} value={`cs:${s.id}`}>
-                        {s.mpId ? `${s.formula} · ${s.mpId}` : s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ) : null}
-                {runs.length > 0 ? (
-                  <SelectGroup>
-                    <SelectLabel>{t('composeFromRun')}</SelectLabel>
-                    {runs.map((r) => (
-                      <SelectItem key={r.id} value={`run:${r.id}`}>
-                        {r.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ) : null}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-        <div className='space-y-1.5'>
-          <Label>{t('composeArchetype')}</Label>
-          <div className='flex flex-wrap gap-1'>
-            {ARCHETYPES.map((a) => (
-              <Button
-                key={a.id}
-                size='sm'
-                variant={archId === a.id ? 'default' : 'outline'}
-                onClick={() => selectArch(a.id)}
-              >
-                {t(a.labelKey)}
+      <div className='flex flex-wrap items-end justify-between gap-x-6 gap-y-3'>
+        <div className='flex flex-wrap items-end gap-x-6 gap-y-3'>
+          <div className='min-w-56 space-y-1.5'>
+            <Label>{t('composeSource')}</Label>
+            {runs.length === 0 && structures.length === 0 ? (
+              <p className='text-muted-foreground text-sm'>{t('composeNoRuns')}</p>
+            ) : (
+              <Select value={sourceId} onValueChange={loadSource}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('composeSourcePlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {structures.length > 0 ? (
+                    <SelectGroup>
+                      <SelectLabel>{t('composeFromLibrary')}</SelectLabel>
+                      {structures.map((s) => (
+                        <SelectItem key={s.id} value={`cs:${s.id}`}>
+                          {s.mpId ? `${s.formula} · ${s.mpId}` : s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ) : null}
+                  {runs.length > 0 ? (
+                    <SelectGroup>
+                      <SelectLabel>{t('composeFromRun')}</SelectLabel>
+                      {runs.map((r) => (
+                        <SelectItem key={r.id} value={`run:${r.id}`}>
+                          {r.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ) : null}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <div className='space-y-1.5'>
+            <Label>{t('composeArchetype')}</Label>
+            <div className='flex flex-wrap gap-1'>
+              {ARCHETYPES.map((a) => (
+                <Button
+                  key={a.id}
+                  size='sm'
+                  variant={archId === a.id ? 'default' : 'outline'}
+                  onClick={() => selectArch(a.id)}
+                >
+                  {t(a.labelKey)}
+                </Button>
+              ))}
+              <Button size='sm' variant='outline' disabled>
+                {t('archPhonon')}
               </Button>
-            ))}
-            <Button size='sm' variant='outline' disabled>
-              {t('archPhonon')}
-            </Button>
+            </div>
           </div>
         </div>
+        <div className='flex flex-wrap items-end gap-3'>
+          <div className='space-y-1.5'>
+            <Label htmlFor='compose-run-id'>{t('computeRunId')}</Label>
+            <Input
+              id='compose-run-id'
+              value={runId}
+              onChange={(e) => setRunId(normalizeRunId(e.target.value))}
+              placeholder='e.g. ws2-electronic-1'
+              className='w-56'
+            />
+            <p
+              className={
+                runId && !validId ? 'text-destructive text-xs' : 'text-muted-foreground text-xs'
+              }
+            >
+              {t('composeRunIdHint')}
+            </p>
+          </div>
+          <div className='space-y-1.5'>
+            <Label>{t('computeMachine')}</Label>
+            <Select value={preset} onValueChange={setPreset}>
+              <SelectTrigger className='w-44'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DFT_MACHINE_PRESETS.map((pr) => (
+                  <SelectItem key={pr} value={pr}>
+                    {pr}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={launch} disabled={!canLaunch}>
+            {busy ? (
+              <IconLoader2 className='mr-1 size-4 animate-spin' />
+            ) : (
+              <IconRocket className='mr-1 size-4' />
+            )}
+            {t('composeLaunch')}
+          </Button>
+        </div>
       </div>
-      <p className='text-muted-foreground text-xs'>{srcMsg}</p>
+      {feedback ? (
+        <p className={feedback.ok ? 'text-xs text-emerald-600' : 'text-destructive text-xs'}>
+          {feedback.text}
+        </p>
+      ) : null}
+      {srcMsg ? <p className='text-muted-foreground text-xs'>{srcMsg}</p> : null}
 
       <Tabs defaultValue='graph'>
         <TabsList>
@@ -359,54 +408,6 @@ export function DftComposeView({
           </pre>
         </TabsContent>
       </Tabs>
-
-      <div className='flex flex-wrap items-end gap-3'>
-        <div className='space-y-1.5'>
-          <Label htmlFor='compose-run-id'>{t('computeRunId')}</Label>
-          <Input
-            id='compose-run-id'
-            value={runId}
-            onChange={(e) => setRunId(normalizeRunId(e.target.value))}
-            placeholder='e.g. ws2-electronic-1'
-            className='w-56'
-          />
-          <p
-            className={
-              runId && !validId ? 'text-destructive text-xs' : 'text-muted-foreground text-xs'
-            }
-          >
-            {t('composeRunIdHint')}
-          </p>
-        </div>
-        <div className='space-y-1.5'>
-          <Label>{t('computeMachine')}</Label>
-          <Select value={preset} onValueChange={setPreset}>
-            <SelectTrigger className='w-44'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DFT_MACHINE_PRESETS.map((pr) => (
-                <SelectItem key={pr} value={pr}>
-                  {pr}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={launch} disabled={!canLaunch}>
-          {busy ? (
-            <IconLoader2 className='mr-1 size-4 animate-spin' />
-          ) : (
-            <IconRocket className='mr-1 size-4' />
-          )}
-          {t('composeLaunch')}
-        </Button>
-      </div>
-      {feedback ? (
-        <p className={feedback.ok ? 'text-xs text-emerald-600' : 'text-destructive text-xs'}>
-          {feedback.text}
-        </p>
-      ) : null}
     </div>
   );
 }

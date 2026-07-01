@@ -1889,6 +1889,7 @@
     "newTabImport": "Nhập JSON",
     "newImportLabel": "Workflow JSON",
     "newImportHint": "Dán định nghĩa workflow gồm structure, global và mảng units khác rỗng.",
-    "newImportInvalid": "JSON workflow không hợp lệ — cần structure, global và mảng units khác rỗng."
+    "newImportInvalid": "JSON workflow không hợp lệ — cần structure, global và mảng units khác rỗng.",
+    "downloadJson": "Tải JSON"
   }
 }

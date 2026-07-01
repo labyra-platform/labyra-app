@@ -1888,6 +1888,7 @@
     "newTabImport": "Import JSON",
     "newImportLabel": "Workflow JSON",
     "newImportHint": "Paste a workflow definition with structure, global and a non-empty units array.",
-    "newImportInvalid": "Invalid workflow JSON — needs structure, global and a non-empty units array."
+    "newImportInvalid": "Invalid workflow JSON — needs structure, global and a non-empty units array.",
+    "downloadJson": "Download JSON"
   }
 }

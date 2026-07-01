@@ -26,6 +26,7 @@ import { DftResultsTab } from '@/features/computation/components/dft-results-tab
 import { DftComputeTab } from '@/features/computation/components/dft-compute-tab';
 import { DftPrelaunchChecklist } from '@/features/computation/components/dft-prelaunch-checklist';
 import { DftNodePanel } from '@/features/computation/components/dft-node-panel';
+import { DownloadWorkflowJson } from '@/features/computation/components/download-workflow-json';
 import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
 import type { DftWorkflow } from '@/types/dft';
 
@@ -148,7 +149,8 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
             />
           </TabsContent>
 
-          <TabsContent value='settings' className='m-0 flex-1 overflow-y-auto p-4'>
+          <TabsContent value='settings' className='m-0 flex-1 space-y-4 overflow-y-auto p-4'>
+            <DownloadWorkflowJson workflow={workflow} />
             <dl className='grid max-w-md grid-cols-2 gap-x-6 gap-y-2 text-sm'>
               <div className='flex justify-between gap-2'>
                 <dt className='text-muted-foreground'>{t('functional')}</dt>

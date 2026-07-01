@@ -1,6 +1,7 @@
 /**
- * Crystal-structures table — Mat3ra-style columns (Formula, Unit Cell, Lattice,
- * Symmetry, Atoms, Source) over the tenant's structure library, with row delete.
+ * Crystal-structures table — Materials-Explorer-style columns (Material ID,
+ * Formula, Crystal System, Space Group, Sites) over the tenant's structure
+ * library, with row delete. Formula links to the 3D detail view.
  *
  * @phase R318-crystal-structures
  */
@@ -19,7 +20,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Link, useRouter } from '@/i18n/navigation';
-import { formatSciNode } from '@/features/spectra/utils/format-units';
+import { formatSciNode, formatSpaceGroup } from '@/features/spectra/utils/format-units';
 import type { StructureRow } from '../structure-row';
 
 export function StructuresTable({ rows }: { rows: StructureRow[] }) {
@@ -42,18 +43,20 @@ export function StructuresTable({ rows }: { rows: StructureRow[] }) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>{t('colMaterialId')}</TableHead>
             <TableHead>{t('colFormula')}</TableHead>
-            <TableHead>{t('colUnitCell')}</TableHead>
-            <TableHead>{t('colLattice')}</TableHead>
-            <TableHead>{t('colSymmetry')}</TableHead>
-            <TableHead className='text-right'>{t('colAtoms')}</TableHead>
-            <TableHead>{t('colSource')}</TableHead>
+            <TableHead>{t('colCrystalSystem')}</TableHead>
+            <TableHead>{t('colSpaceGroup')}</TableHead>
+            <TableHead className='text-right'>{t('colSites')}</TableHead>
             <TableHead className='w-10' />
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((r) => (
             <TableRow key={r.id}>
+              <TableCell className='text-muted-foreground font-mono text-xs'>
+                {r.mpId ?? '—'}
+              </TableCell>
               <TableCell>
                 <Link
                   href={`/dashboard/structures/${r.id}`}
@@ -61,15 +64,10 @@ export function StructuresTable({ rows }: { rows: StructureRow[] }) {
                 >
                   {formatSciNode(r.formula)}
                 </Link>
-                <span className='text-muted-foreground ml-2 text-xs'>{r.name}</span>
               </TableCell>
-              <TableCell className='tabular-nums'>{r.unitCellFormula}</TableCell>
-              <TableCell>{r.lattice}</TableCell>
-              <TableCell className='font-mono text-xs'>{r.spaceGroup}</TableCell>
+              <TableCell>{r.crystalSystem}</TableCell>
+              <TableCell className='font-mono text-xs'>{formatSpaceGroup(r.spaceGroup)}</TableCell>
               <TableCell className='text-right tabular-nums'>{r.nat}</TableCell>
-              <TableCell>
-                <span className='text-muted-foreground text-xs uppercase'>{r.source}</span>
-              </TableCell>
               <TableCell>
                 <Button
                   variant='ghost'

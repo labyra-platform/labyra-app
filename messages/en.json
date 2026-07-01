@@ -1984,6 +1984,10 @@
     "viewerShow_axes": "Axes",
     "backToLibrary": "Back to structures",
     "atomCount": "{count} atoms",
-    "verified": "verified"
+    "verified": "verified",
+    "colMaterialId": "Material ID",
+    "colCrystalSystem": "Crystal System",
+    "colSpaceGroup": "Space Group",
+    "colSites": "Sites"
   }
 }

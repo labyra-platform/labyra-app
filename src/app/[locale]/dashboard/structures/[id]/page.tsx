@@ -13,7 +13,7 @@ import PageContainer from '@/components/layout/page-container';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StructureViewer } from '@/features/crystal-structures/components/structure-viewer';
-import { formatSciNode } from '@/features/spectra/utils/format-units';
+import { formatSciNode, formatSpaceGroup } from '@/features/spectra/utils/format-units';
 import { Link } from '@/i18n/navigation';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { getCrystalStructure } from '@/lib/firebase/crystal-structures/service';
@@ -54,7 +54,9 @@ export default async function StructureDetailPage({ params }: { params: Promise<
                 {cs.mpId}
               </a>
             ) : null}
-            {cs.structure.spaceGroup ? <span>{formatSciNode(cs.structure.spaceGroup)}</span> : null}
+            {cs.structure.spaceGroup ? (
+              <span>{formatSpaceGroup(cs.structure.spaceGroup)}</span>
+            ) : null}
             <span>{t('atomCount', { count: cs.structure.nat })}</span>
             {cs.verified ? <Badge variant='secondary'>{t('verified')}</Badge> : null}
           </div>

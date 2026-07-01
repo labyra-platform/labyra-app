@@ -12,9 +12,11 @@ import type { DftStructure } from '@/types/dft';
 export interface StructureRow {
   id: string;
   name: string;
+  mpId?: string;
   formula: string;
   unitCellFormula: string;
   lattice: string;
+  crystalSystem: string;
   spaceGroup: string;
   nat: number;
   source: string;
@@ -75,14 +77,32 @@ export function latticeFamily(ibrav: number): string {
   return LATTICE_BY_IBRAV[ibrav] ?? '—';
 }
 
+/** Bravais family → crystal system full name (Materials-Explorer column). */
+const CRYSTAL_SYSTEM: Record<string, string> = {
+  CUB: 'Cubic',
+  HEX: 'Hexagonal',
+  TET: 'Tetragonal',
+  ORC: 'Orthorhombic',
+  MCL: 'Monoclinic',
+  TRI: 'Triclinic',
+  RHL: 'Trigonal',
+  FREE: '—'
+};
+
+export function crystalSystem(ibrav: number): string {
+  return CRYSTAL_SYSTEM[latticeFamily(ibrav)] ?? '—';
+}
+
 export function toStructureRow(cs: CrystalStructure): StructureRow {
   const s = cs.structure;
   return {
     id: cs.id,
     name: cs.name,
+    mpId: cs.mpId,
     formula: reducedFormula(s),
     unitCellFormula: unitCellFormula(s),
     lattice: latticeFamily(s.ibrav),
+    crystalSystem: crystalSystem(s.ibrav),
     spaceGroup: s.spaceGroup ?? '—',
     nat: s.nat,
     source: cs.source,

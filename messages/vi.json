@@ -1985,6 +1985,10 @@
     "viewerShow_axes": "Trục",
     "backToLibrary": "Về danh sách structure",
     "atomCount": "{count} nguyên tử",
-    "verified": "đã xác minh"
+    "verified": "đã xác minh",
+    "colMaterialId": "Material ID",
+    "colCrystalSystem": "Hệ tinh thể",
+    "colSpaceGroup": "Nhóm không gian",
+    "colSites": "Số vị trí"
   }
 }

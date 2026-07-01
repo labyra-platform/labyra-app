@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { formatSciNode } from '@/features/spectra/utils/format-units';
+import { formatSciNode, formatSpaceGroup } from '@/features/spectra/utils/format-units';
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { type ExploreMode, exploreStore, type MpResult } from './explore-mp-store';
@@ -238,7 +238,7 @@ export function ExploreMpView() {
                     </TableCell>
                     <TableCell className='font-medium'>{formatSciNode(r.formula)}</TableCell>
                     <TableCell className='capitalize'>{r.crystalSystem || '—'}</TableCell>
-                    <TableCell>{r.spaceGroup ? formatSciNode(r.spaceGroup) : '—'}</TableCell>
+                    <TableCell>{r.spaceGroup ? formatSpaceGroup(r.spaceGroup) : '—'}</TableCell>
                     <TableCell className='text-right tabular-nums'>{r.nsites ?? '—'}</TableCell>
                     <TableCell
                       className={cn(

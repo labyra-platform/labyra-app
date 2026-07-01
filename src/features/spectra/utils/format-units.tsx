@@ -114,6 +114,31 @@ export function SciText({ children }: { children: string }) {
 }
 
 /**
+ * Hermann–Mauguin space-group formatter. Only the digit right after an underscore
+ * is a subscript (screw axis): "P6_3/mmc (#194)" → "P6₃/mmc (#194)". Axis orders
+ * and the "(#194)" number stay full size — used instead of formatSciNode, which
+ * would wrongly subscript the "6".
+ */
+export function formatSpaceGroup(sg: string): React.ReactNode {
+  if (!sg) return sg;
+  const parts: React.ReactNode[] = [];
+  const re = /_(\d)/g;
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null = re.exec(sg);
+  while (m !== null) {
+    if (m.index > last) parts.push(sg.slice(last, m.index));
+    parts.push(<sub key={key}>{m[1]}</sub>);
+    key += 1;
+    last = re.lastIndex;
+    m = re.exec(sg);
+  }
+  if (last < sg.length) parts.push(sg.slice(last));
+  if (parts.length === 0) return sg;
+  return parts.length === 1 ? parts[0] : parts;
+}
+
+/**
  * Like formatSciText but renders real <sub>/<sup> elements (React nodes) instead
  * of Unicode. Use for TITLES so chemical formulae with LETTERS in sub/superscript
  * (e.g. WO3-x → WO₃₋ₓ, Ni1-x, vacancy notation) render correctly — Unicode only

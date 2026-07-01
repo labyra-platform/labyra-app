@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatSpaceGroup } from '@/features/spectra/utils/format-units';
 import { cn } from '@/lib/utils';
 
 interface MpResult {
@@ -126,7 +127,9 @@ export function MpSearchPanel({
                   <span className='w-20 shrink-0 truncate capitalize'>
                     {r.crystalSystem || '—'}
                   </span>
-                  <span className='w-16 shrink-0 truncate'>{r.spaceGroup || '—'}</span>
+                  <span className='w-16 shrink-0 truncate'>
+                    {r.spaceGroup ? formatSpaceGroup(r.spaceGroup) : '—'}
+                  </span>
                   <span className='shrink-0 tabular-nums'>
                     {r.bandGap === null ? '—' : `${r.bandGap.toFixed(2)} eV`}
                   </span>

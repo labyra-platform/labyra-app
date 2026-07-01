@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -30,20 +31,16 @@ import { cn } from '@/lib/utils';
 import { type ExploreMode, exploreStore, type MpResult } from './explore-mp-store';
 import { PeriodicTable } from './periodic-table';
 
-const MODES: { value: ExploreMode; labelKey: string }[] = [
-  { value: 'only', labelKey: 'mpModeOnly' },
-  { value: 'atleast', labelKey: 'mpModeAtLeast' },
-  { value: 'formula', labelKey: 'mpModeFormula' },
-  { value: 'mpid', labelKey: 'mpModeId' }
-];
-
 const num = (v: number | null, digits: number) =>
   v === null || v === undefined ? '—' : v.toFixed(digits);
 
 export function ExploreMpView() {
   const t = useTranslations('structures');
   const router = useRouter();
-  const [mode, setMode] = useState<ExploreMode>(() => exploreStore.get().mode);
+  const [mode, setMode] = useState<ExploreMode>(() => {
+    const m = exploreStore.get().mode;
+    return m === 'atleast' ? 'atleast' : 'only';
+  });
   const [selectedEls, setSelectedEls] = useState<ReadonlySet<string>>(
     () => new Set(exploreStore.get().selectedEls)
   );
@@ -58,8 +55,6 @@ export function ExploreMpView() {
     exploreStore.set({ mode, selectedEls: [...selectedEls], text, results, error });
   }, [mode, selectedEls, text, results, error]);
 
-  const isElementMode = mode === 'only' || mode === 'atleast';
-
   const toggleEl = (sym: string) => {
     setSelectedEls((prev) => {
       const next = new Set(prev);
@@ -70,12 +65,12 @@ export function ExploreMpView() {
   };
 
   const buildQuery = (): string => {
-    if (mode === 'only') return [...selectedEls].join('-');
-    if (mode === 'atleast') return [...selectedEls].join(',');
-    return text.trim();
+    const typed = text.trim();
+    if (typed !== '') return typed; // formula / mp-id / chemsys — the worker parses it
+    return mode === 'only' ? [...selectedEls].join('-') : [...selectedEls].join(',');
   };
 
-  const canSearch = !busy && (isElementMode ? selectedEls.size > 0 : text.trim().length > 0);
+  const canSearch = !busy && (text.trim().length > 0 || selectedEls.size > 0);
 
   async function search() {
     const q = buildQuery();
@@ -132,57 +127,71 @@ export function ExploreMpView() {
     <div className='grid gap-4 xl:grid-cols-2'>
       {/* Left — query builder */}
       <div className='space-y-3'>
-        <div className='flex flex-wrap gap-1'>
-          {MODES.map((m) => (
-            <Button
-              key={m.value}
-              size='sm'
-              variant={mode === m.value ? 'default' : 'outline'}
-              onClick={() => setMode(m.value)}
-            >
-              {t(m.labelKey)}
-            </Button>
-          ))}
-        </div>
-
-        {isElementMode ? (
-          <div className='space-y-2 rounded-lg border p-3'>
-            <p className='text-muted-foreground text-xs'>
-              {mode === 'only' ? t('mpModeOnlyHint') : t('mpModeAtLeastHint')}
-            </p>
-            <PeriodicTable selected={selectedEls} onToggle={toggleEl} />
-            {selectedEls.size > 0 ? (
-              <div className='flex flex-wrap items-center gap-1.5 pt-1'>
-                {[...selectedEls].map((sym) => (
-                  <Badge
-                    key={sym}
-                    variant='secondary'
-                    className='cursor-pointer gap-1'
-                    onClick={() => toggleEl(sym)}
+        <div className='space-y-2 rounded-lg border p-3'>
+          <PeriodicTable
+            selected={selectedEls}
+            onToggle={toggleEl}
+            overlay={
+              <div className='flex w-full flex-col gap-2 pr-2'>
+                <div className='space-y-1'>
+                  <Label htmlFor='mp-text' className='text-xs'>
+                    {t('mpTextLabel')}
+                  </Label>
+                  <Input
+                    id='mp-text'
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        void search();
+                      }
+                    }}
+                    placeholder={t('mpTextPlaceholder')}
+                    className='h-8'
+                  />
+                </div>
+                <div className='flex flex-wrap items-center gap-1'>
+                  <span className='text-muted-foreground text-xs'>{t('mpElementMatch')}</span>
+                  <Button
+                    size='sm'
+                    variant={mode === 'only' ? 'default' : 'outline'}
+                    className='h-7 px-2 text-xs'
+                    onClick={() => setMode('only')}
                   >
-                    {sym}
-                    <IconX className='size-3' />
-                  </Badge>
-                ))}
-                <Button variant='ghost' size='sm' onClick={() => setSelectedEls(new Set())}>
-                  {t('clearSelection')}
-                </Button>
+                    {t('mpModeOnly')}
+                  </Button>
+                  <Button
+                    size='sm'
+                    variant={mode === 'atleast' ? 'default' : 'outline'}
+                    className='h-7 px-2 text-xs'
+                    onClick={() => setMode('atleast')}
+                  >
+                    {t('mpModeAtLeast')}
+                  </Button>
+                </div>
               </div>
-            ) : null}
-          </div>
-        ) : (
-          <Input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void search();
-              }
-            }}
-            placeholder={mode === 'formula' ? t('mpFormulaPlaceholder') : t('mpIdPlaceholder')}
+            }
           />
-        )}
+          {selectedEls.size > 0 ? (
+            <div className='flex flex-wrap items-center gap-1.5 pt-1'>
+              {[...selectedEls].map((sym) => (
+                <Badge
+                  key={sym}
+                  variant='secondary'
+                  className='cursor-pointer gap-1'
+                  onClick={() => toggleEl(sym)}
+                >
+                  {sym}
+                  <IconX className='size-3' />
+                </Badge>
+              ))}
+              <Button variant='ghost' size='sm' onClick={() => setSelectedEls(new Set())}>
+                {t('clearSelection')}
+              </Button>
+            </div>
+          ) : null}
+        </div>
 
         <Button onClick={() => void search()} disabled={!canSearch}>
           {busy ? (

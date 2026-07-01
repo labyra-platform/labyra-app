@@ -8,17 +8,21 @@
  */
 'use client';
 
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { CATEGORY_CLASS, PERIODIC_ELEMENTS, PERIODIC_PLACEHOLDERS } from './periodic-table-data';
 
 export function PeriodicTable({
   selected,
   onToggle,
-  disabled = false
+  disabled = false,
+  overlay
 }: {
   selected: ReadonlySet<string>;
   onToggle: (sym: string) => void;
   disabled?: boolean;
+  /** Content dropped into the empty top-left block (rows 1–3, groups 3–12). */
+  overlay?: ReactNode;
 }) {
   return (
     <div className='overflow-x-auto pb-1'>
@@ -26,6 +30,11 @@ export function PeriodicTable({
         className='grid min-w-[680px] gap-1'
         style={{ gridTemplateColumns: 'repeat(18, minmax(0, 1fr))' }}
       >
+        {overlay ? (
+          <div style={{ gridColumn: '3 / 13', gridRow: '1 / 4' }} className='flex items-center'>
+            {overlay}
+          </div>
+        ) : null}
         {PERIODIC_PLACEHOLDERS.map((p) => (
           <div
             key={p.label}

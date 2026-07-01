@@ -1993,6 +1993,9 @@
     "colCrystalSystem": "Hệ tinh thể",
     "colSpaceGroup": "Nhóm không gian",
     "colSites": "Số vị trí",
-    "runDft": "Chạy DFT"
+    "runDft": "Chạy DFT",
+    "mpTextLabel": "Công thức hoặc MP-ID",
+    "mpTextPlaceholder": "vd WS2 · mp-224 · W-S",
+    "mpElementMatch": "Nguyên tố:"
   }
 }

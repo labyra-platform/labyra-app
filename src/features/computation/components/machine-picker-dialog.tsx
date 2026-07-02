@@ -14,6 +14,8 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -51,9 +53,15 @@ const GCP_MACHINES: MachineSpec[] = [
 ];
 
 const PROVIDERS = [
-  { id: 'gcp', label: 'Google Cloud Batch', Icon: IconBrandGoogle, live: true },
-  { id: 'lucia', label: 'Lucia (EuroHPC)', Icon: IconServer, live: false },
-  { id: 'aws', label: 'AWS', Icon: IconBrandAws, live: false }
+  { id: 'gcp', label: 'Google Cloud Batch', Icon: IconBrandGoogle, live: true, spec: null },
+  {
+    id: 'lucia',
+    label: 'Lucia (EuroHPC)',
+    Icon: IconServer,
+    live: false,
+    spec: 'AMD Milan · 128 cores/node · multi-node SLURM'
+  },
+  { id: 'aws', label: 'AWS', Icon: IconBrandAws, live: false, spec: null }
 ] as const;
 
 export function MachinePickerDialog({
@@ -99,7 +107,7 @@ export function MachinePickerDialog({
 
         <div className='grid gap-4 sm:grid-cols-[200px_1fr]'>
           <div className='space-y-1'>
-            {PROVIDERS.map(({ id, label, Icon, live }) => (
+            {PROVIDERS.map(({ id, label, Icon, live, spec }) => (
               <button
                 key={id}
                 type='button'
@@ -114,7 +122,12 @@ export function MachinePickerDialog({
                 )}
               >
                 <Icon className='size-4 shrink-0' />
-                <span className='min-w-0 flex-1 truncate'>{label}</span>
+                <span className='min-w-0 flex-1'>
+                  <span className='block truncate'>{label}</span>
+                  {spec ? (
+                    <span className='text-muted-foreground block truncate text-[10px]'>{spec}</span>
+                  ) : null}
+                </span>
                 {!live ? (
                   <Badge variant='outline' className='shrink-0 text-[10px]'>
                     {t('machineComingSoon')}
@@ -145,7 +158,7 @@ export function MachinePickerDialog({
                       </span>
                     </div>
                     <p className='text-muted-foreground text-xs'>
-                      {m.vcpu} vCPU · {m.memGb} GB RAM
+                      1 {t('machineNodeUnit')} × {m.vcpu} vCPU · {m.memGb} GB RAM
                       {m.gpu ? ` · ${m.gpu}` : ''}
                       {m.noteKey ? ` — ${t(m.noteKey)}` : ''}
                     </p>
@@ -155,6 +168,16 @@ export function MachinePickerDialog({
               );
             })}
           </div>
+        </div>
+
+        <div className='flex items-center gap-3 border-t pt-3'>
+          <div className='flex items-center gap-2'>
+            <Label htmlFor='machine-nodes' className='text-xs'>
+              {t('machineNodes')}
+            </Label>
+            <Input id='machine-nodes' value='1' disabled className='h-8 w-16 text-center' />
+          </div>
+          <p className='text-muted-foreground text-xs'>{t('machineSingleNodeHint')}</p>
         </div>
 
         <DialogFooter>

@@ -1970,7 +1970,10 @@
     "avgpotVacuum": "Mức chân không (max)",
     "avgpotPlanar": "planar",
     "avgpotMacro": "macroscopic",
-    "avgpotHint": "V(z) từ pp.x plot_num=11 → average.x. Cho band alignment: E_vac − E_F là công thoát; căn mép vùng theo phương pháp two-step potential lineup."
+    "avgpotHint": "V(z) từ pp.x plot_num=11 → average.x. Cho band alignment: E_vac − E_F là công thoát; căn mép vùng theo phương pháp two-step potential lineup.",
+    "machineNodes": "Số node",
+    "machineNodeUnit": "node",
+    "machineSingleNodeHint": "Cloud Batch chạy mỗi unit trên một node duy nhất (MPI trong VM). Chọn nhiều node sẽ có khi nối Lucia (SLURM)."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

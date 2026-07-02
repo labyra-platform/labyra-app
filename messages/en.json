@@ -1969,7 +1969,10 @@
     "avgpotVacuum": "Vacuum level (max)",
     "avgpotPlanar": "planar",
     "avgpotMacro": "macroscopic",
-    "avgpotHint": "V(z) from pp.x plot_num=11 → average.x. For band alignment: E_vac − E_F gives the work function; align band edges via the two-step potential lineup."
+    "avgpotHint": "V(z) from pp.x plot_num=11 → average.x. For band alignment: E_vac − E_F gives the work function; align band edges via the two-step potential lineup.",
+    "machineNodes": "Nodes",
+    "machineNodeUnit": "node",
+    "machineSingleNodeHint": "Cloud Batch runs each unit on a single node (MPI within the VM). Multi-node selection arrives with Lucia (SLURM)."
   },
   "structures": {
     "importTitle": "Import structure",

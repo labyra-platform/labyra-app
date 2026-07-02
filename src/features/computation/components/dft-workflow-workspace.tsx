@@ -20,6 +20,7 @@ import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DftAvgpotTab } from '@/features/computation/components/dft-avgpot-tab';
 import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
 import { DftConvergenceTab } from '@/features/computation/components/dft-convergence-tab';
 import { DftResultsTab } from '@/features/computation/components/dft-results-tab';
@@ -135,6 +136,9 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
               <TabsTrigger value='settings'>{t('tabSettings')}</TabsTrigger>
               <TabsTrigger value='compute'>{t('tabCompute')}</TabsTrigger>
               <TabsTrigger value='bands'>{t('tabBands')}</TabsTrigger>
+              {units.some((u) => u.calcType === 'avgpot') ? (
+                <TabsTrigger value='avgpot'>{t('tabAvgpot')}</TabsTrigger>
+              ) : null}
               <TabsTrigger value='results'>{t('tabResults')}</TabsTrigger>
               <TabsTrigger value='convergence'>{t('tabConvergence')}</TabsTrigger>
             </TabsList>
@@ -181,6 +185,9 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
           </TabsContent>
           <TabsContent value='bands' className='m-0 flex-1 overflow-y-auto p-4'>
             <DftBandsTab workflow={workflow} />
+          </TabsContent>
+          <TabsContent value='avgpot' className='m-0 flex-1 overflow-y-auto p-4'>
+            <DftAvgpotTab workflow={workflow} />
           </TabsContent>
           <TabsContent value='results' className='m-0 flex-1 overflow-y-auto p-4'>
             <DftResultsTab workflow={workflow} />

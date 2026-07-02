@@ -219,3 +219,13 @@ export function listPseudos(): Promise<WorkerResult> {
 export function uploadPseudo(filename: string, contentB64: string): Promise<WorkerResult> {
   return callWorker('/dft/pseudo/upload', { filename, contentB64 });
 }
+
+export interface FetchAvgpotBody {
+  tenantId: string;
+  workflowId: string;
+  unitId?: string;
+}
+/** Planar/macroscopic-averaged potential V(z) — for the Potential tab. */
+export function fetchDftAvgpot(body: FetchAvgpotBody): Promise<WorkerResult> {
+  return callWorker('/dft/avgpot', body);
+}

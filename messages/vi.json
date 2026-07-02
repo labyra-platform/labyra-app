@@ -1962,7 +1962,15 @@
     "machineCancel": "Hủy",
     "machineSelect": "Chọn",
     "exportDataCsv": "Dữ liệu (CSV)",
-    "exportDataJson": "Dữ liệu (JSON)"
+    "exportDataJson": "Dữ liệu (JSON)",
+    "tabAvgpot": "Thế tĩnh điện",
+    "avgpotNoUnit": "Workflow chưa có unit avgpot — thêm node average.x sau unit pp.x electrostatic potential.",
+    "avgpotLoading": "Đang tải V(z)…",
+    "avgpotError": "Không tải được dữ liệu V(z)",
+    "avgpotVacuum": "Mức chân không (max)",
+    "avgpotPlanar": "planar",
+    "avgpotMacro": "macroscopic",
+    "avgpotHint": "V(z) từ pp.x plot_num=11 → average.x. Cho band alignment: E_vac − E_F là công thoát; căn mép vùng theo phương pháp two-step potential lineup."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

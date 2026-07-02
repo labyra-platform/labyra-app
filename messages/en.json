@@ -1961,7 +1961,15 @@
     "machineCancel": "Cancel",
     "machineSelect": "Select",
     "exportDataCsv": "Data (CSV)",
-    "exportDataJson": "Data (JSON)"
+    "exportDataJson": "Data (JSON)",
+    "tabAvgpot": "Potential",
+    "avgpotNoUnit": "No avgpot unit in this workflow — add an average.x node after a pp.x electrostatic-potential unit.",
+    "avgpotLoading": "Loading V(z)…",
+    "avgpotError": "Failed to load V(z) data",
+    "avgpotVacuum": "Vacuum level (max)",
+    "avgpotPlanar": "planar",
+    "avgpotMacro": "macroscopic",
+    "avgpotHint": "V(z) from pp.x plot_num=11 → average.x. For band alignment: E_vac − E_F gives the work function; align band edges via the two-step potential lineup."
   },
   "structures": {
     "importTitle": "Import structure",

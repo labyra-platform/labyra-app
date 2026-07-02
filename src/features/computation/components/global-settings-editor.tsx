@@ -49,7 +49,7 @@ export function GlobalSettingsEditor({
             value={value.functional ?? 'pbe'}
             onValueChange={(v) => update({ functional: v as DftFunctional })}
           >
-            <SelectTrigger className='h-8'>
+            <SelectTrigger className='h-8 w-full'>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

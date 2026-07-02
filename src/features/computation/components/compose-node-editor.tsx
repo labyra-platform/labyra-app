@@ -137,7 +137,7 @@ export function ComposeNodeEditor({
   );
   const sel = <T extends string>(key: keyof NodeParams, value: T, options: readonly T[]) => (
     <Select value={value} onValueChange={(v) => set({ [key]: v } as Partial<NodeParams>)}>
-      <SelectTrigger className='h-8'>
+      <SelectTrigger className='h-8 w-full'>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -197,7 +197,7 @@ export function ComposeNodeEditor({
               value={p.occupations}
               onValueChange={(v) => set({ occupations: v as NodeParams['occupations'] })}
             >
-              <SelectTrigger className='h-8'>
+              <SelectTrigger className='h-8 w-full'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -212,7 +212,7 @@ export function ComposeNodeEditor({
           <div key='smearing' className='space-y-1'>
             <Label className='text-xs'>smearing</Label>
             <Select value={p.smearing} onValueChange={(v) => set({ smearing: v as SmearingType })}>
-              <SelectTrigger className='h-8'>
+              <SelectTrigger className='h-8 w-full'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -317,7 +317,7 @@ export function ComposeNodeEditor({
               value={String(p.nspin)}
               onValueChange={(v) => set({ nspin: Number(v) as 1 | 2 })}
             >
-              <SelectTrigger className='h-8'>
+              <SelectTrigger className='h-8 w-full'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -396,7 +396,7 @@ export function ComposeNodeEditor({
           <div key='edir' className='space-y-1'>
             <Label className='text-xs'>edir</Label>
             <Select value={String(p.edir)} onValueChange={(v) => set({ edir: Number(v) })}>
-              <SelectTrigger className='h-8'>
+              <SelectTrigger className='h-8 w-full'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -408,7 +408,7 @@ export function DftComposeView({
             </div>
             <div className='shrink-0 lg:w-96'>
               {selNode ? (
-                <div className='space-y-3'>
+                <div className='max-h-[78vh] space-y-3 overflow-y-auto pr-1'>
                   <ComposeInputPreview
                     key={selNode.id}
                     calcType={selNode.calcType}

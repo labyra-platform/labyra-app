@@ -8,7 +8,7 @@
  */
 'use client';
 
-import { IconLoader2, IconRefresh } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconLoader2, IconRefresh } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ export function ComposeInputPreview({
   const t = useTranslations('computation');
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -61,8 +62,25 @@ export function ComposeInputPreview({
 
   return (
     <div className='rounded-lg border'>
-      <div className='flex items-center justify-between border-b px-3 py-1.5'>
-        <span className='font-mono text-xs font-medium'>{t('composeInputTitle')}</span>
+      <div
+        className={
+          open
+            ? 'flex items-center justify-between border-b px-3 py-1.5'
+            : 'flex items-center justify-between px-3 py-1.5'
+        }
+      >
+        <button
+          type='button'
+          onClick={() => setOpen((v) => !v)}
+          className='flex items-center gap-1 font-mono text-xs font-medium'
+        >
+          {open ? (
+            <IconChevronDown className='size-3.5' />
+          ) : (
+            <IconChevronRight className='size-3.5' />
+          )}
+          {t('composeInputTitle')}
+        </button>
         <Button
           variant='ghost'
           size='icon'
@@ -78,7 +96,7 @@ export function ComposeInputPreview({
           )}
         </Button>
       </div>
-      {error ? (
+      {!open ? null : error ? (
         <p className='text-destructive px-3 py-2 text-xs'>{error}</p>
       ) : text ? (
         <pre className='max-h-56 overflow-auto px-3 py-2 font-mono text-[11px] leading-relaxed'>

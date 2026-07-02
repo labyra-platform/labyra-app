@@ -40,7 +40,7 @@ export function PeriodicTable({
             key={p.label}
             style={{ gridColumn: p.col, gridRow: p.row }}
             className={cn(
-              'flex aspect-square items-center justify-center rounded-sm text-[8px] font-medium leading-none',
+              'flex aspect-square items-center justify-center rounded-sm text-[10px] font-medium leading-none',
               CATEGORY_CLASS[p.category]
             )}
           >
@@ -58,7 +58,7 @@ export function PeriodicTable({
               style={{ gridColumn: el.col, gridRow: el.row }}
               aria-pressed={isSel}
               className={cn(
-                'flex aspect-square items-center justify-center rounded-sm text-[11px] font-semibold leading-none transition-all',
+                'flex aspect-square items-center justify-center rounded-sm text-[13px] font-semibold leading-none transition-all',
                 CATEGORY_CLASS[el.category],
                 isSel && 'ring-primary ring-2 ring-offset-1',
                 disabled ? 'cursor-not-allowed opacity-40' : 'hover:brightness-110'

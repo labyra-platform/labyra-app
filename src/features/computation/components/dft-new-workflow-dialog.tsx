@@ -74,7 +74,7 @@ export function DftNewWorkflowDialog({ bases }: { bases: Base[] }) {
   const [mode, setMode] = useState<Mode>(bases.length > 0 ? 'clone' : 'import');
   const [baseId, setBaseId] = useState(bases[0]?.id ?? '');
   const [runId, setRunId] = useState('');
-  const [preset, setPreset] = useState<string>(DFT_MACHINE_PRESETS[0]);
+  const [preset, setPreset] = useState<string>('bulk-large');
   const [uValues, setUValues] = useState<Record<string, string>>(() => initU(bases[0]));
   const [importText, setImportText] = useState('');
   const [busy, setBusy] = useState(false);

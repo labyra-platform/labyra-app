@@ -1955,7 +1955,12 @@
     "pseudoColElement": "Nguyên tố",
     "pseudoColEcutwfc": "ecutwfc tối thiểu",
     "pseudoColEcutrho": "ecutrho tối thiểu",
-    "pseudoColSize": "Kích thước"
+    "pseudoColSize": "Kích thước",
+    "machinePickerTitle": "Tài nguyên tính toán",
+    "machineComingSoon": "Sắp có",
+    "machineGpuNote": "Image QE hiện chỉ CPU — GPU chưa dùng tới khi có bản CUDA",
+    "machineCancel": "Hủy",
+    "machineSelect": "Chọn"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

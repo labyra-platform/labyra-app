@@ -30,7 +30,7 @@ const RUN_ID_RE = /^[a-z0-9][a-z0-9-]{2,63}$/;
 
 export function DftComputeTab({ workflow }: { workflow: DftWorkflow }) {
   const t = useTranslations('computation');
-  const [preset, setPreset] = useState<string>(DFT_MACHINE_PRESETS[0] ?? 'standard');
+  const [preset, setPreset] = useState<string>('bulk-large');
   const [runId, setRunId] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);

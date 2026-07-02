@@ -30,7 +30,6 @@ import { WorkflowGraph } from '@/features/workflow/components/workflow-graph';
 import type { BandsPathPoint } from '@/features/computation/bands-path';
 import type { WorkflowEdge, WorkflowNodeInput } from '@/features/workflow/types/workflow';
 import { useRouter } from '@/i18n/navigation';
-import { DFT_MACHINE_PRESETS } from '@/lib/schemas/dft-submit-schema';
 import type { DftCalcType, DftWorkflowGlobal } from '@/types/dft';
 import {
   ARCHETYPES,
@@ -43,6 +42,7 @@ import {
   type NodeParams
 } from '../compose-model';
 import { ComposeInputPreview } from './compose-input-preview';
+import { MachinePickerDialog } from './machine-picker-dialog';
 import { ComposeNodeEditor } from './compose-node-editor';
 import { GlobalSettingsEditor } from './global-settings-editor';
 import { KpathEditor } from './kpath-editor';
@@ -101,7 +101,7 @@ export function DftComposeView({
     ARCHETYPES[0].skeleton[0]?.id ?? null
   );
   const [runId, setRunId] = useState('');
-  const [preset, setPreset] = useState<string>(DFT_MACHINE_PRESETS[0]);
+  const [preset, setPreset] = useState<string>('bulk-large');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -350,18 +350,7 @@ export function DftComposeView({
           </div>
           <div className='space-y-1.5'>
             <Label>{t('computeMachine')}</Label>
-            <Select value={preset} onValueChange={setPreset}>
-              <SelectTrigger className='w-44'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DFT_MACHINE_PRESETS.map((pr) => (
-                  <SelectItem key={pr} value={pr}>
-                    {pr}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MachinePickerDialog value={preset} onChange={setPreset} />
           </div>
           <div className='space-y-1.5'>
             <Label className='invisible' aria-hidden>

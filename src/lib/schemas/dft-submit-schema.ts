@@ -8,7 +8,14 @@
  */
 import { z } from 'zod';
 
-export const DFT_MACHINE_PRESETS = ['bulk-large', 'bulk-amd', 'standard'] as const;
+export const DFT_MACHINE_PRESETS = [
+  'low',
+  'standard',
+  'bulk',
+  'bulk-amd',
+  'bulk-large',
+  'high-gpu'
+] as const;
 
 export const dftSubmitSchema = z.object({
   workflowId: z

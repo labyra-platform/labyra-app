@@ -1954,7 +1954,12 @@
     "pseudoColElement": "Element",
     "pseudoColEcutwfc": "Min ecutwfc",
     "pseudoColEcutrho": "Min ecutrho",
-    "pseudoColSize": "Size"
+    "pseudoColSize": "Size",
+    "machinePickerTitle": "Compute resource",
+    "machineComingSoon": "Coming soon",
+    "machineGpuNote": "QE image is CPU-only — GPU idles until a CUDA build ships",
+    "machineCancel": "Cancel",
+    "machineSelect": "Select"
   },
   "structures": {
     "importTitle": "Import structure",

@@ -3,7 +3,6 @@
 import {
   IconBrandFirebase,
   IconBrandGithub,
-  IconBrandGoogle,
   IconEye,
   IconEyeOff,
   IconLoader2
@@ -14,6 +13,7 @@ import { type FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { GoogleMark } from '@/features/auth/google-mark';
 import { HexMark } from '@/features/auth/hex-mark';
 import { Link, useRouter } from '@/i18n/navigation';
 import { establishSession, signInWithEmail, signInWithGithub, signInWithGoogle } from '@/lib/auth';
@@ -71,7 +71,7 @@ export default function SignInPage(): React.ReactElement {
         </span>
       </div>
 
-      <div className='bg-card overflow-hidden rounded-xl border shadow-sm'>
+      <div className='bg-card overflow-hidden rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.18)]'>
         <div className='space-y-5 p-8'>
           <div className='space-y-1 text-center'>
             <h1 className='text-xl font-semibold tracking-tight' style={DISPLAY}>
@@ -96,7 +96,7 @@ export default function SignInPage(): React.ReactElement {
               onClick={() => void handleOauth('google')}
               disabled={loading}
             >
-              <IconBrandGoogle className='mr-2 size-4' />
+              <GoogleMark className='mr-2 size-4' />
               Google
             </Button>
           </div>
@@ -168,7 +168,7 @@ export default function SignInPage(): React.ReactElement {
           </form>
         </div>
 
-        <div className='bg-muted/50 space-y-3 border-t px-8 py-5 text-center'>
+        <div className='bg-muted/50 space-y-3 px-8 py-5 text-center'>
           <p className='text-muted-foreground text-sm'>
             {t('noAccount')}{' '}
             <Link href='/sign-up' className='text-foreground font-medium hover:underline'>

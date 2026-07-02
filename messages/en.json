@@ -1959,7 +1959,9 @@
     "machineComingSoon": "Coming soon",
     "machineGpuNote": "QE image is CPU-only — GPU idles until a CUDA build ships",
     "machineCancel": "Cancel",
-    "machineSelect": "Select"
+    "machineSelect": "Select",
+    "exportDataCsv": "Data (CSV)",
+    "exportDataJson": "Data (JSON)"
   },
   "structures": {
     "importTitle": "Import structure",

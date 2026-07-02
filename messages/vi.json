@@ -1960,7 +1960,9 @@
     "machineComingSoon": "Sắp có",
     "machineGpuNote": "Image QE hiện chỉ CPU — GPU chưa dùng tới khi có bản CUDA",
     "machineCancel": "Hủy",
-    "machineSelect": "Chọn"
+    "machineSelect": "Chọn",
+    "exportDataCsv": "Dữ liệu (CSV)",
+    "exportDataJson": "Dữ liệu (JSON)"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

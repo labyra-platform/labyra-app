@@ -19,6 +19,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BandStructurePlot, type BandsData } from './band-structure-plot';
 import { exportPng, exportSvg } from './chart-export';
+import { downloadBandsData, downloadDosData } from './data-export';
 import { DosPdosPanel, type DosData } from './dos-pdos-panel';
 import { Button } from '@/components/ui/button';
 import {
@@ -254,6 +255,16 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
                 <DropdownMenuItem onClick={() => exportFrom(bandRef, 'bands', 'png')}>
                   PNG
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => data && unitId && downloadBandsData(data, unitId, 'csv')}
+                >
+                  {t('exportDataCsv')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => data && unitId && downloadBandsData(data, unitId, 'json')}
+                >
+                  {t('exportDataJson')}
+                </DropdownMenuItem>
                 {dos && showDos ? (
                   <>
                     <DropdownMenuSeparator />
@@ -263,6 +274,16 @@ export function DftBandsTab({ workflow }: { workflow: DftWorkflow }) {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => exportFrom(dosRef, 'dos', 'png')}>
                       PNG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => dos && unitId && downloadDosData(dos, unitId, 'csv')}
+                    >
+                      {t('exportDataCsv')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => dos && unitId && downloadDosData(dos, unitId, 'json')}
+                    >
+                      {t('exportDataJson')}
                     </DropdownMenuItem>
                   </>
                 ) : null}

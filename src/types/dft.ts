@@ -194,6 +194,8 @@ export interface DftWorkflowGlobal {
   ecutwfc?: number;
   ecutrho?: number;
   hubbard?: HubbardParam[];
+  /** Per-element pseudopotential assignment (element → uploaded .UPF filename). */
+  pseudoMap?: Record<string, string>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

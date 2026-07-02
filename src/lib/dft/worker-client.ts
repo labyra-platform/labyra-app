@@ -57,6 +57,24 @@ async function callWorker(path: string, body: unknown): Promise<WorkerResult> {
   };
 }
 
+async function callWorkerGet(path: string): Promise<WorkerResult> {
+  if (!WORKER_URL) {
+    throw new Error('DFT_WORKER_URL is not configured');
+  }
+  const auth = makeAuth();
+  const client = await auth.getIdTokenClient(WORKER_URL);
+  const resp = await client.request({
+    url: `${WORKER_URL}${path}`,
+    method: 'GET',
+    validateStatus: () => true
+  });
+  return {
+    ok: resp.status >= 200 && resp.status < 300,
+    status: resp.status,
+    data: resp.data
+  };
+}
+
 export interface SubmitWorkflowBody {
   tenantId: string;
   workflowId: string;
@@ -187,4 +205,17 @@ export interface FetchConvergenceBody {
 /** SCF + ionic-relaxation convergence history — for the Convergence tab. */
 export function fetchDftConvergence(body: FetchConvergenceBody): Promise<WorkerResult> {
   return callWorker('/dft/convergence', body);
+}
+
+export interface PseudoInfo {
+  filename: string;
+  element: string | null;
+}
+/** List the tenant's uploaded pseudopotential UPFs (GCS pseudo/ prefix). */
+export function listPseudos(): Promise<WorkerResult> {
+  return callWorkerGet('/dft/pseudo/list');
+}
+/** Upload one .UPF (base64) into the tenant's pseudopotential library. */
+export function uploadPseudo(filename: string, contentB64: string): Promise<WorkerResult> {
+  return callWorker('/dft/pseudo/upload', { filename, contentB64 });
 }

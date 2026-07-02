@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import type { DftFunctional, DftWorkflowGlobal, HubbardParam } from '@/types/dft';
 import { NumberField } from './compose-node-editor';
+import { PseudoEditor } from './pseudo-editor';
 
 const FUNCTIONALS: DftFunctional[] = ['pbe', 'pbesol', 'hse'];
 
@@ -132,6 +133,12 @@ export function GlobalSettingsEditor({
           ))
         )}
       </div>
+
+      <PseudoEditor
+        species={species}
+        value={value.pseudoMap ?? {}}
+        onChange={(m) => update({ pseudoMap: m })}
+      />
     </div>
   );
 }

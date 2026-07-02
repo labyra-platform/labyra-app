@@ -29,6 +29,7 @@ import { formatSciNode, formatSpaceGroup } from '@/features/spectra/utils/format
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { type ExploreMode, exploreStore, type MpResult } from './explore-mp-store';
+import { SortableHead, useSortRows } from '@/components/ui-extra/sortable-head';
 import { PeriodicTable } from './periodic-table';
 
 const num = (v: number | null, digits: number) =>
@@ -46,6 +47,17 @@ export function ExploreMpView() {
   );
   const [text, setText] = useState(() => exploreStore.get().text);
   const [results, setResults] = useState<MpResult[] | null>(() => exploreStore.get().results);
+  const sortable = useSortRows(results ?? [], {
+    mpId: (r) => r.mpId,
+    formula: (r) => r.formula,
+    system: (r) => r.crystalSystem,
+    spaceGroup: (r) => r.spaceGroupNumber ?? r.spaceGroup,
+    sites: (r) => r.nsites,
+    hull: (r) => r.energyAboveHull,
+    gap: (r) => r.bandGap,
+    density: (r) => r.density,
+    volume: (r) => r.volume
+  });
   const [error, setError] = useState<string | null>(() => exploreStore.get().error);
   const [busy, setBusy] = useState(false);
   const [importingId, setImportingId] = useState<string | null>(null);
@@ -225,20 +237,79 @@ export function ExploreMpView() {
             <Table>
               <TableHeader className='bg-background sticky top-0 z-10'>
                 <TableRow>
-                  <TableHead>{t('mpColId')}</TableHead>
-                  <TableHead>{t('mpColFormula')}</TableHead>
-                  <TableHead>{t('mpColSystem')}</TableHead>
-                  <TableHead>{t('mpColSpaceGroup')}</TableHead>
-                  <TableHead className='text-right'>{t('mpColSites')}</TableHead>
-                  <TableHead className='text-right'>{t('mpColHull')}</TableHead>
-                  <TableHead className='text-right'>{t('mpColGap')}</TableHead>
-                  <TableHead className='text-right'>{t('mpColDensity')}</TableHead>
-                  <TableHead className='text-right'>{t('mpColVolume')}</TableHead>
+                  <SortableHead
+                    label={t('mpColId')}
+                    sortKey='mpId'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('mpColFormula')}
+                    sortKey='formula'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('mpColSystem')}
+                    sortKey='system'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('mpColSpaceGroup')}
+                    sortKey='spaceGroup'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('mpColSites')}
+                    sortKey='sites'
+                    align='right'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('mpColHull')}
+                    sortKey='hull'
+                    align='right'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('mpColGap')}
+                    sortKey='gap'
+                    align='right'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('mpColDensity')}
+                    sortKey='density'
+                    align='right'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('mpColVolume')}
+                    sortKey='volume'
+                    align='right'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
                   <TableHead className='text-right'>{t('mpColAction')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((r) => (
+                {sortable.sorted.map((r) => (
                   <TableRow key={r.mpId}>
                     <TableCell className='font-mono text-xs'>
                       <a

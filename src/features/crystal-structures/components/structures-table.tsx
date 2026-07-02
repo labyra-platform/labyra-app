@@ -21,12 +21,20 @@ import {
 } from '@/components/ui/table';
 import { Link, useRouter } from '@/i18n/navigation';
 import { formatSciNode, formatSpaceGroup } from '@/features/spectra/utils/format-units';
+import { SortableHead, useSortRows } from '@/components/ui-extra/sortable-head';
 import type { StructureRow } from '../structure-row';
 
 export function StructuresTable({ rows }: { rows: StructureRow[] }) {
   const t = useTranslations('structures');
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
+  const sortable = useSortRows(rows, {
+    mpId: (r) => r.mpId ?? null,
+    formula: (r) => r.formula,
+    system: (r) => r.crystalSystem,
+    spaceGroup: (r) => r.spaceGroup,
+    sites: (r) => r.nat
+  });
 
   async function remove(id: string) {
     setBusy(id);
@@ -43,16 +51,47 @@ export function StructuresTable({ rows }: { rows: StructureRow[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t('colMaterialId')}</TableHead>
-            <TableHead>{t('colFormula')}</TableHead>
-            <TableHead>{t('colCrystalSystem')}</TableHead>
-            <TableHead>{t('colSpaceGroup')}</TableHead>
-            <TableHead className='text-right'>{t('colSites')}</TableHead>
+            <SortableHead
+              label={t('colMaterialId')}
+              sortKey='mpId'
+              activeKey={sortable.sortKey}
+              dir={sortable.dir}
+              onToggle={sortable.toggle}
+            />
+            <SortableHead
+              label={t('colFormula')}
+              sortKey='formula'
+              activeKey={sortable.sortKey}
+              dir={sortable.dir}
+              onToggle={sortable.toggle}
+            />
+            <SortableHead
+              label={t('colCrystalSystem')}
+              sortKey='system'
+              activeKey={sortable.sortKey}
+              dir={sortable.dir}
+              onToggle={sortable.toggle}
+            />
+            <SortableHead
+              label={t('colSpaceGroup')}
+              sortKey='spaceGroup'
+              activeKey={sortable.sortKey}
+              dir={sortable.dir}
+              onToggle={sortable.toggle}
+            />
+            <SortableHead
+              label={t('colSites')}
+              sortKey='sites'
+              align='right'
+              activeKey={sortable.sortKey}
+              dir={sortable.dir}
+              onToggle={sortable.toggle}
+            />
             <TableHead className='w-10' />
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((r) => (
+          {sortable.sorted.map((r) => (
             <TableRow key={r.id}>
               <TableCell className='text-muted-foreground font-mono text-xs'>
                 {r.mpId ?? '—'}

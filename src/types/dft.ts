@@ -44,7 +44,8 @@ export type DftCalcType =
   | 'ppbands'
   | 'dos'
   | 'pdos'
-  | 'charge';
+  | 'charge'
+  | 'avgpot';
 
 export type DftExecutable = 'pw.x' | 'bands.x' | 'dos.x' | 'projwfc.x' | 'pp.x';
 

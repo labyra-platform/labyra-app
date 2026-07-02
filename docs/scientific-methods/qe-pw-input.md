@@ -162,7 +162,7 @@ Replaces the deprecated `Hubbard_U(i)` namelist syntax. Structure:
 
 ```
 HUBBARD {atomic | ortho-atomic | norm-atomic | wf | pseudo}
-U     label-manifold  u_val          # e.g.  U W-3d 6.2
+U     label-manifold  u_val          # e.g.  U W-5d 6.2
 J0    label-manifold  j0_val         # optional
 ALPHA label-manifold  alpha_val      # optional
 V     label-manifold label'-manifold' I J v_val   # inter-site +V
@@ -172,7 +172,7 @@ V     label-manifold label'-manifold' I J v_val   # inter-site +V
   `ortho-atomic` is the common robust choice.
 - `manifold` is written as `3d`, `2p`, `4f`, …
 - **All Hubbard parameters are in eV.**
-- Labyra WO₃₋ₓ defaults: `U W-3d 6.2`, `U O-2p 9.0` (thesis DFT+U setup).
+- Labyra WO₃₋ₓ defaults: `U W-5d 6.2`, `U O-2p 9.0` (thesis DFT+U setup).
 
 Emit policy: the HUBBARD card is written only when DFT+U is enabled for the
 node; otherwise it is omitted entirely.

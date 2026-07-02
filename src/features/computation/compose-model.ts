@@ -47,7 +47,10 @@ export type ParamKey =
   | 'eamp'
   | 'mixingNdim'
   | 'diagoDavidNdim'
-  | 'diagoFullAcc';
+  | 'diagoFullAcc'
+  | 'avgNpt'
+  | 'avgIdir'
+  | 'avgAwin';
 
 export type SmearingType = 'gaussian' | 'methfessel-paxton' | 'marzari-vanderbilt' | 'fermi-dirac';
 
@@ -99,6 +102,10 @@ export interface NodeParams {
   mixingNdim: number;
   diagoDavidNdim: number;
   diagoFullAcc: boolean;
+  // average.x — planar/macroscopic average of a pp.x filplot (band alignment)
+  avgNpt: number;
+  avgIdir: 1 | 2 | 3;
+  avgAwin: number; // a.u.; 0 = planar average only
 }
 
 export interface ComposeNode {
@@ -162,7 +169,10 @@ export const DEFAULT_PARAMS: NodeParams = {
   eamp: 0,
   mixingNdim: 20,
   diagoDavidNdim: 8,
-  diagoFullAcc: false
+  diagoFullAcc: false,
+  avgNpt: 2000,
+  avgIdir: 3,
+  avgAwin: 0
 };
 
 /** Which basic params are meaningful (and thus editable) for a calc type. */
@@ -201,6 +211,9 @@ export interface NamelistBlock {
 export function paramBlocks(calcType: DftCalcType): NamelistBlock[] {
   if (calcType === 'dos' || calcType === 'pdos') {
     return [{ name: '&DOS', keys: ['emin', 'emax', 'deltaE'] }];
+  }
+  if (calcType === 'avgpot') {
+    return [{ name: 'AVERAGE', keys: ['avgNpt', 'avgIdir', 'avgAwin'] }];
   }
   if (calcType === 'ppbands' || calcType === 'charge') return [];
   const isRelax = calcType === 'relax' || calcType === 'vc-relax';
@@ -255,7 +268,7 @@ export function nodesFor(archetype: Archetype): ComposeNode[] {
 }
 
 const PW_TYPES = new Set<DftCalcType>(['vc-relax', 'relax', 'scf', 'nscf', 'bands']);
-const POSTPROC_TYPES = new Set<DftCalcType>(['dos', 'pdos', 'ppbands', 'charge']);
+const POSTPROC_TYPES = new Set<DftCalcType>(['dos', 'pdos', 'ppbands', 'charge', 'avgpot']);
 
 export interface FlavorOption {
   id: string;
@@ -301,7 +314,8 @@ export const EXE_OF: Record<DftCalcType, string> = {
   charge: 'pp.x',
   ppbands: 'bands.x',
   dos: 'dos.x',
-  pdos: 'projwfc.x'
+  pdos: 'projwfc.x',
+  avgpot: 'average.x'
 };
 
 /** Calc types offered in the node "execute" selector, grouped by executable. */
@@ -310,7 +324,8 @@ export const CALC_GROUPS: { exe: string; types: DftCalcType[] }[] = [
   { exe: 'pp.x', types: ['charge'] },
   { exe: 'bands.x', types: ['ppbands'] },
   { exe: 'dos.x', types: ['dos'] },
-  { exe: 'projwfc.x', types: ['pdos'] }
+  { exe: 'projwfc.x', types: ['pdos'] },
+  { exe: 'average.x', types: ['avgpot'] }
 ];
 
 function buildPwParams(
@@ -385,6 +400,16 @@ function buildPostprocParams(
   const fp = flavorParams(calcType, flavor);
   if (calcType === 'ppbands') return { lsym: true, name: `PBE_${prefix}`, ...fp };
   if (calcType === 'charge') return { name: `PBE_${prefix}`, ...fp };
+  if (calcType === 'avgpot') {
+    // pp.x (charge unit, name PBE_{prefix}) writes filplot charge/{name}_{prefix}.charge
+    return {
+      filplot: `charge/PBE_${prefix}_${prefix}.charge`,
+      npt: p.avgNpt,
+      idir: p.avgIdir,
+      awin: p.avgAwin,
+      name: `PBE_${prefix}`
+    };
+  }
   return { Emin: p.emin, Emax: p.emax, DeltaE: p.deltaE, ngauss: -1, name: `PBE_${prefix}` };
 }
 

@@ -444,6 +444,39 @@ export function ComposeNodeEditor({
         );
       case 'diagoFullAcc':
         return chk('diagoFullAcc', p.diagoFullAcc, 'diago_full_acc');
+      case 'avgNpt':
+        return (
+          <div key='avgNpt' className='space-y-1'>
+            <Label className='text-xs'>npt (points)</Label>
+            {num('avgNpt', p.avgNpt)}
+          </div>
+        );
+      case 'avgIdir':
+        return (
+          <div key='avgIdir' className='space-y-1'>
+            <Label className='text-xs'>idir (axis)</Label>
+            <Select
+              value={String(p.avgIdir)}
+              onValueChange={(v) => set({ avgIdir: Number(v) as 1 | 2 | 3 })}
+            >
+              <SelectTrigger className='h-8 w-full'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='1'>1 (a₁)</SelectItem>
+                <SelectItem value='2'>2 (a₂)</SelectItem>
+                <SelectItem value='3'>3 (a₃)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      case 'avgAwin':
+        return (
+          <div key='avgAwin' className='space-y-1'>
+            <Label className='text-xs'>awin (a.u., 0 = planar)</Label>
+            {num('avgAwin', p.avgAwin)}
+          </div>
+        );
       default:
         return null;
     }

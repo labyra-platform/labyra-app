@@ -37,7 +37,17 @@ export type ParamKey =
   | 'bfgsNdim'
   | 'cellDynamics'
   | 'press'
-  | 'cellDofree';
+  | 'cellDofree'
+  | 'nosym'
+  | 'totCharge'
+  | 'dipoleCorrection'
+  | 'edir'
+  | 'emaxpos'
+  | 'eopreg'
+  | 'eamp'
+  | 'mixingNdim'
+  | 'diagoDavidNdim'
+  | 'diagoFullAcc';
 
 export type SmearingType = 'gaussian' | 'methfessel-paxton' | 'marzari-vanderbilt' | 'fermi-dirac';
 
@@ -78,6 +88,17 @@ export interface NodeParams {
   cellDynamics: CellDynamics;
   press: number; // kbar
   cellDofree: CellDofree;
+  // advanced — emit-off (written to the .in only when set / enabled)
+  nosym: boolean;
+  totCharge: number;
+  dipoleCorrection: boolean; // master toggle → tefield+dipfield (+edir/emaxpos/eopreg/eamp)
+  edir: number; // 1 | 2 | 3
+  emaxpos: number;
+  eopreg: number;
+  eamp: number; // Hartree a.u.
+  mixingNdim: number;
+  diagoDavidNdim: number;
+  diagoFullAcc: boolean;
 }
 
 export interface ComposeNode {
@@ -131,7 +152,17 @@ export const DEFAULT_PARAMS: NodeParams = {
   bfgsNdim: 0,
   cellDynamics: 'bfgs',
   press: 0,
-  cellDofree: 'all'
+  cellDofree: 'all',
+  nosym: false,
+  totCharge: 0,
+  dipoleCorrection: false,
+  edir: 3,
+  emaxpos: 0.5,
+  eopreg: 0.1,
+  eamp: 0,
+  mixingNdim: 20,
+  diagoDavidNdim: 8,
+  diagoFullAcc: false
 };
 
 /** Which basic params are meaningful (and thus editable) for a calc type. */
@@ -157,6 +188,7 @@ export function advancedKeys(calcType: DftCalcType): ParamKey[] {
 export interface NamelistBlock {
   name: string;
   keys: ParamKey[];
+  advanced?: ParamKey[];
 }
 
 /**
@@ -176,10 +208,15 @@ export function paramBlocks(calcType: DftCalcType): NamelistBlock[] {
   if (isRelax) control.push('nstep', 'etotConvThr', 'forcConvThr');
   const blocks: NamelistBlock[] = [
     { name: '&CONTROL', keys: control },
-    { name: '&SYSTEM', keys: ['nspin', 'occupations', 'smearing', 'degauss', 'nbnd'] },
+    {
+      name: '&SYSTEM',
+      keys: ['nspin', 'occupations', 'smearing', 'degauss', 'nbnd'],
+      advanced: ['nosym', 'totCharge', 'dipoleCorrection', 'edir', 'emaxpos', 'eopreg', 'eamp']
+    },
     {
       name: '&ELECTRONS',
-      keys: ['convThr', 'mixingBeta', 'mixingMode', 'diagonalization', 'electronMaxstep']
+      keys: ['convThr', 'mixingBeta', 'mixingMode', 'diagonalization', 'electronMaxstep'],
+      advanced: ['mixingNdim', 'diagoDavidNdim', 'diagoFullAcc']
     }
   ];
   if (isRelax) blocks.push({ name: '&IONS', keys: ['ionDynamics', 'bfgsNdim'] });
@@ -288,7 +325,8 @@ function buildPwParams(
     occupations: p.occupations,
     convThr: p.convThr,
     mixingBeta: p.mixingBeta,
-    diagoDavidNdim: 8,
+    diagoDavidNdim: p.diagoDavidNdim,
+    mixingNdim: p.mixingNdim,
     tstress: stress,
     tprnfor: stress,
     restartMode: p.restartMode,
@@ -302,6 +340,17 @@ function buildPwParams(
   }
   if (p.nbnd > 0) params.nbnd = p.nbnd;
   if (p.electronMaxstep > 0) params.electronMaxstep = p.electronMaxstep;
+  if (p.nosym) params.nosym = true;
+  if (p.totCharge !== 0) params.totCharge = p.totCharge;
+  if (p.diagoFullAcc) params.diagoFullAcc = true;
+  if (p.dipoleCorrection) {
+    params.tefield = true;
+    params.dipfield = true;
+    params.edir = p.edir;
+    params.emaxpos = p.emaxpos;
+    params.eopreg = p.eopreg;
+    params.eamp = p.eamp;
+  }
   if (p.nstep > 0) params.nstep = p.nstep;
   if (calcType === 'relax' || calcType === 'vc-relax') {
     params.ionDynamics = p.ionDynamics;

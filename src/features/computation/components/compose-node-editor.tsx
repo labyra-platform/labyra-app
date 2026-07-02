@@ -12,6 +12,7 @@
 import { IconCopy, IconTrash } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -125,6 +126,7 @@ export function ComposeNodeEditor({
 }: Props) {
   const blocks = paramBlocks(node.calcType);
   const p = node.params;
+  const [advOpen, setAdvOpen] = useState<Record<string, boolean>>({});
   const set = (patch: Partial<NodeParams>) => onChange({ ...p, ...patch });
   const num = (key: keyof NodeParams, value: number) => (
     <NumberField
@@ -146,6 +148,18 @@ export function ComposeNodeEditor({
         ))}
       </SelectContent>
     </Select>
+  );
+  const chk = (key: keyof NodeParams, value: boolean, label: string) => (
+    <div className='col-span-2 flex items-center gap-2'>
+      <Checkbox
+        id={key}
+        checked={value}
+        onCheckedChange={(c) => set({ [key]: c === true } as Partial<NodeParams>)}
+      />
+      <Label htmlFor={key} className='text-xs'>
+        {label}
+      </Label>
+    </div>
   );
 
   function renderParam(key: ParamKey) {
@@ -362,6 +376,74 @@ export function ComposeNodeEditor({
             {sel('cellDofree', p.cellDofree, CELL_DOFREE)}
           </div>
         );
+      case 'nosym':
+        return chk('nosym', p.nosym, 'nosym (disable symmetry)');
+      case 'totCharge':
+        return (
+          <div key='totCharge' className='space-y-1'>
+            <Label className='text-xs'>tot_charge (e)</Label>
+            {num('totCharge', p.totCharge)}
+          </div>
+        );
+      case 'dipoleCorrection':
+        return chk(
+          'dipoleCorrection',
+          p.dipoleCorrection,
+          'dipole correction (slab: tefield + dipfield)'
+        );
+      case 'edir':
+        return (
+          <div key='edir' className='space-y-1'>
+            <Label className='text-xs'>edir</Label>
+            <Select value={String(p.edir)} onValueChange={(v) => set({ edir: Number(v) })}>
+              <SelectTrigger className='h-8'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='1'>1 (a₁)</SelectItem>
+                <SelectItem value='2'>2 (a₂)</SelectItem>
+                <SelectItem value='3'>3 (a₃)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      case 'emaxpos':
+        return (
+          <div key='emaxpos' className='space-y-1'>
+            <Label className='text-xs'>emaxpos (0–1)</Label>
+            {num('emaxpos', p.emaxpos)}
+          </div>
+        );
+      case 'eopreg':
+        return (
+          <div key='eopreg' className='space-y-1'>
+            <Label className='text-xs'>eopreg (0–1)</Label>
+            {num('eopreg', p.eopreg)}
+          </div>
+        );
+      case 'eamp':
+        return (
+          <div key='eamp' className='space-y-1'>
+            <Label className='text-xs'>eamp (a.u.)</Label>
+            {num('eamp', p.eamp)}
+          </div>
+        );
+      case 'mixingNdim':
+        return (
+          <div key='mixingNdim' className='space-y-1'>
+            <Label className='text-xs'>mixing_ndim</Label>
+            {num('mixingNdim', p.mixingNdim)}
+          </div>
+        );
+      case 'diagoDavidNdim':
+        return (
+          <div key='diagoDavidNdim' className='space-y-1'>
+            <Label className='text-xs'>diago_david_ndim</Label>
+            {num('diagoDavidNdim', p.diagoDavidNdim)}
+          </div>
+        );
+      case 'diagoFullAcc':
+        return chk('diagoFullAcc', p.diagoFullAcc, 'diago_full_acc');
       default:
         return null;
     }
@@ -428,14 +510,38 @@ export function ComposeNodeEditor({
       {blocks.length === 0 ? (
         <p className='text-muted-foreground border-t pt-3 text-xs'>No editable parameters.</p>
       ) : (
-        blocks.map((block) => (
-          <div key={block.name} className='space-y-2 border-t pt-3'>
-            <p className='text-muted-foreground font-mono text-xs font-medium'>{block.name}</p>
-            <div className='grid grid-cols-2 gap-x-3 gap-y-3'>
-              {block.keys.map((key) => renderParam(key))}
+        blocks.map((block) => {
+          const advKeys = block.advanced ?? [];
+          const dipoleSub = ['edir', 'emaxpos', 'eopreg', 'eamp'];
+          const visibleAdv = advKeys.filter((k) =>
+            dipoleSub.includes(k) ? p.dipoleCorrection : true
+          );
+          const open = advOpen[block.name] ?? false;
+          return (
+            <div key={block.name} className='space-y-2 border-t pt-3'>
+              <p className='text-muted-foreground font-mono text-xs font-medium'>{block.name}</p>
+              <div className='grid grid-cols-2 gap-x-3 gap-y-3'>
+                {block.keys.map((key) => renderParam(key))}
+              </div>
+              {advKeys.length > 0 ? (
+                <>
+                  <button
+                    type='button'
+                    onClick={() => setAdvOpen({ ...advOpen, [block.name]: !open })}
+                    className='text-muted-foreground hover:text-foreground text-xs'
+                  >
+                    {open ? '− Hide advanced' : '+ Advanced'}
+                  </button>
+                  {open ? (
+                    <div className='grid grid-cols-2 gap-x-3 gap-y-3'>
+                      {visibleAdv.map((key) => renderParam(key))}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
             </div>
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );

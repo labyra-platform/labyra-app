@@ -31,7 +31,7 @@ import type { BandsPathPoint } from '@/features/computation/bands-path';
 import type { WorkflowEdge, WorkflowNodeInput } from '@/features/workflow/types/workflow';
 import { useRouter } from '@/i18n/navigation';
 import { DFT_MACHINE_PRESETS } from '@/lib/schemas/dft-submit-schema';
-import type { DftCalcType } from '@/types/dft';
+import type { DftCalcType, DftWorkflowGlobal } from '@/types/dft';
 import {
   ARCHETYPES,
   buildDefinition,
@@ -44,6 +44,7 @@ import {
 } from '../compose-model';
 import { ComposeInputPreview } from './compose-input-preview';
 import { ComposeNodeEditor } from './compose-node-editor';
+import { GlobalSettingsEditor } from './global-settings-editor';
 import { KpathEditor } from './kpath-editor';
 
 interface RunRef {
@@ -92,7 +93,7 @@ export function DftComposeView({
       : '';
   const [sourceId, setSourceId] = useState(initialSource);
   const [structure, setStructure] = useState<unknown>(null);
-  const [globalCfg, setGlobalCfg] = useState<unknown>(null);
+  const [globalCfg, setGlobalCfg] = useState<DftWorkflowGlobal | null>(null);
   const [srcState, setSrcState] = useState<SrcState>('idle');
   const [archId, setArchId] = useState(ARCHETYPES[0].id);
   const [nodes, setNodes] = useState<ComposeNode[]>(() => nodesFor(ARCHETYPES[0]));
@@ -123,7 +124,7 @@ export function DftComposeView({
         setSrcState('error');
         return;
       }
-      const data = (await res.json()) as { structure: unknown; global: unknown };
+      const data = (await res.json()) as { structure: unknown; global: DftWorkflowGlobal };
       setStructure(data.structure);
       setGlobalCfg(data.global);
       setSrcState('ready');
@@ -230,6 +231,11 @@ export function DftComposeView({
     [nodes, structure, globalCfg]
   );
   const preview = useMemo(() => JSON.stringify(definition, null, 2), [definition]);
+
+  const species = useMemo(() => {
+    const s = structure as { atomicSpecies?: { element: string }[] } | null;
+    return Array.from(new Set((s?.atomicSpecies ?? []).map((a) => a.element)));
+  }, [structure]);
 
   const validId = /^[a-z0-9][a-z0-9-]{2,63}$/.test(runId);
   const canLaunch = validId && srcState === 'ready' && !busy;
@@ -378,6 +384,10 @@ export function DftComposeView({
         </p>
       ) : null}
       {srcMsg ? <p className='text-muted-foreground text-xs'>{srcMsg}</p> : null}
+
+      {globalCfg ? (
+        <GlobalSettingsEditor value={globalCfg} species={species} onChange={setGlobalCfg} />
+      ) : null}
 
       <Tabs defaultValue='graph'>
         <TabsList>

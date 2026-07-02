@@ -58,7 +58,7 @@ const SMEARING: SmearingType[] = [
  * this: the browser returns "" for an in-progress "1e", collapsing the value to 0.
  * The model is only updated once the text parses to a finite number.
  */
-function NumberField({
+export function NumberField({
   value,
   onCommit,
   className

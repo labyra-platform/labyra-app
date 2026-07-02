@@ -121,7 +121,8 @@
     "emailLabel": "Email",
     "passwordLabel": "Mật khẩu",
     "showPassword": "Hiện mật khẩu",
-    "hidePassword": "Ẩn mật khẩu"
+    "hidePassword": "Ẩn mật khẩu",
+    "securedBy": "Bảo mật bởi"
   },
   "dashboard": {
     "totalRevenue": "Tổng doanh thu",

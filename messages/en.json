@@ -121,7 +121,8 @@
     "emailLabel": "Email",
     "passwordLabel": "Password",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "securedBy": "Secured by"
   },
   "dashboard": {
     "totalRevenue": "Total Revenue",

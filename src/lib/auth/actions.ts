@@ -11,6 +11,7 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signOut as firebaseSignOut,
+  GithubAuthProvider,
   GoogleAuthProvider,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
@@ -20,6 +21,7 @@ import {
 import { getFirebaseAuth } from '@/lib/firebase/client';
 
 const googleProvider = new GoogleAuthProvider();
+const githubProvider = new GithubAuthProvider();
 
 /** Sign in với email + password */
 export async function signInWithEmail(email: string, password: string): Promise<UserCredential> {
@@ -31,6 +33,13 @@ export async function signInWithEmail(email: string, password: string): Promise<
 export async function signInWithGoogle(): Promise<UserCredential> {
   const auth = getFirebaseAuth();
   return signInWithPopup(auth, googleProvider);
+}
+
+/** Sign in với GitHub popup — requires the GitHub provider to be enabled in
+ * Firebase Console (Authentication → Sign-in method → GitHub). */
+export async function signInWithGithub(): Promise<UserCredential> {
+  const auth = getFirebaseAuth();
+  return signInWithPopup(auth, githubProvider);
 }
 
 /** Sign up email + password — sends a verification email immediately. */

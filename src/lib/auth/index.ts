@@ -9,6 +9,7 @@ export {
   resetPassword,
   establishSession,
   signInWithEmail,
+  signInWithGithub,
   signInWithGoogle,
   signOut,
   signUpWithEmail

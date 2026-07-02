@@ -1,16 +1,22 @@
 'use client';
 
-import { IconBrandGoogle, IconEye, IconEyeOff, IconLoader2 } from '@tabler/icons-react';
+import {
+  IconBrandFirebase,
+  IconBrandGithub,
+  IconBrandGoogle,
+  IconEye,
+  IconEyeOff,
+  IconLoader2
+} from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import type React from 'react';
 import { type FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { HexMark } from '@/features/auth/hex-mark';
 import { Link, useRouter } from '@/i18n/navigation';
-import { establishSession, signInWithGoogle, signUpWithEmail } from '@/lib/auth';
+import { establishSession, signInWithGithub, signInWithGoogle, signUpWithEmail } from '@/lib/auth';
 
 const DISPLAY = { fontFamily: 'var(--font-display)' } as const;
 
@@ -24,15 +30,18 @@ export default function SignUpPage(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  async function finish(cred: Awaited<ReturnType<typeof signUpWithEmail>>): Promise<void> {
+    await establishSession(cred);
+    router.push('/dashboard');
+    router.refresh();
+  }
+
   async function handleEmailSignUp(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const cred = await signUpWithEmail(email, password);
-      await establishSession(cred);
-      router.push('/dashboard');
-      router.refresh();
+      await finish(await signUpWithEmail(email, password));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-up failed');
     } finally {
@@ -40,16 +49,14 @@ export default function SignUpPage(): React.ReactElement {
     }
   }
 
-  async function handleGoogleSignIn(): Promise<void> {
+  async function handleOauth(provider: 'google' | 'github'): Promise<void> {
     setLoading(true);
     setError(null);
     try {
-      const cred = await signInWithGoogle();
-      await establishSession(cred);
-      router.push('/dashboard');
-      router.refresh();
+      const cred = provider === 'google' ? await signInWithGoogle() : await signInWithGithub();
+      await finish(cred);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google sign-in failed');
+      setError(err instanceof Error ? err.message : 'Sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -64,30 +71,41 @@ export default function SignUpPage(): React.ReactElement {
         </span>
       </div>
 
-      <Card>
-        <CardHeader className='space-y-1 text-center'>
-          <CardTitle className='text-2xl font-semibold tracking-tight' style={DISPLAY}>
-            {t('signUpTitle')}
-          </CardTitle>
-          <CardDescription>{t('signUpSubtitle')}</CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <Button
-            type='button'
-            variant='outline'
-            className='w-full'
-            onClick={() => void handleGoogleSignIn()}
-            disabled={loading}
-          >
-            <IconBrandGoogle className='mr-2 size-4' />
-            {t('continueWithGoogle')}
-          </Button>
+      <div className='bg-card overflow-hidden rounded-xl border shadow-sm'>
+        <div className='space-y-5 p-8'>
+          <div className='space-y-1 text-center'>
+            <h1 className='text-xl font-semibold tracking-tight' style={DISPLAY}>
+              {t('signUpTitle')}
+            </h1>
+            <p className='text-muted-foreground text-sm'>{t('signUpSubtitle')}</p>
+          </div>
+
+          <div className='grid grid-cols-2 gap-3'>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => void handleOauth('github')}
+              disabled={loading}
+            >
+              <IconBrandGithub className='mr-2 size-4' />
+              GitHub
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => void handleOauth('google')}
+              disabled={loading}
+            >
+              <IconBrandGoogle className='mr-2 size-4' />
+              Google
+            </Button>
+          </div>
 
           <div className='relative'>
             <div className='absolute inset-0 flex items-center'>
               <span className='w-full border-t' />
             </div>
-            <div className='relative flex justify-center text-xs uppercase'>
+            <div className='relative flex justify-center text-xs lowercase'>
               <span className='bg-card text-muted-foreground px-2'>{t('or')}</span>
             </div>
           </div>
@@ -149,15 +167,24 @@ export default function SignUpPage(): React.ReactElement {
               )}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
 
-      <p className='text-muted-foreground text-center text-sm'>
-        {t('haveAccount')}{' '}
-        <Link href='/sign-in' className='text-foreground font-medium hover:underline'>
-          {tCommon('signIn')}
-        </Link>
-      </p>
+        <div className='bg-muted/50 space-y-3 border-t px-8 py-5 text-center'>
+          <p className='text-muted-foreground text-sm'>
+            {t('haveAccount')}{' '}
+            <Link href='/sign-in' className='text-foreground font-medium hover:underline'>
+              {tCommon('signIn')}
+            </Link>
+          </p>
+          <p className='text-muted-foreground flex items-center justify-center gap-1.5 text-xs'>
+            {t('securedBy')}
+            <span className='text-foreground inline-flex items-center gap-1 font-medium'>
+              <IconBrandFirebase className='size-3.5' />
+              Firebase
+            </span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

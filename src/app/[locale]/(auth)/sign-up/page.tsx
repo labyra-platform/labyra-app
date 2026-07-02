@@ -1,19 +1,25 @@
 'use client';
-// R165-phase-1-oxlint: oxlint cleanup
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { IconBrandGoogle, IconEye, IconEyeOff, IconLoader2 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import type React from 'react';
 import { type FormEvent, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { HexMark } from '@/features/auth/hex-mark';
+import { Link, useRouter } from '@/i18n/navigation';
 import { establishSession, signInWithGoogle, signUpWithEmail } from '@/lib/auth';
+
+const DISPLAY = { fontFamily: 'var(--font-display)' } as const;
 
 export default function SignUpPage(): React.ReactElement {
   const router = useRouter();
   const t = useTranslations('auth');
-  const _tCommon = useTranslations('common');
+  const tCommon = useTranslations('common');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -49,67 +55,99 @@ export default function SignUpPage(): React.ReactElement {
   }
 
   return (
-    <div className='space-y-6'>
-      <div className='text-center'>
-        <h1 className='text-2xl font-semibold tracking-tight'>{t('signUpTitle')}</h1>
-        <p className='text-sm text-muted-foreground'>{t('signUpSubtitle')}</p>
+    <div className='space-y-8'>
+      <div className='flex items-center gap-2 lg:hidden'>
+        <HexMark className='size-6' />
+        <span className='text-lg font-semibold tracking-tight' style={DISPLAY}>
+          Labyra
+        </span>
       </div>
 
-      <button
-        onClick={handleGoogleSignIn}
+      <div className='space-y-1.5'>
+        <h1 className='text-2xl font-semibold tracking-tight' style={DISPLAY}>
+          {t('signUpTitle')}
+        </h1>
+        <p className='text-muted-foreground text-sm'>{t('signUpSubtitle')}</p>
+      </div>
+
+      <Button
+        type='button'
+        variant='outline'
+        className='w-full'
+        onClick={() => void handleGoogleSignIn()}
         disabled={loading}
-        className='w-full rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50'
       >
+        <IconBrandGoogle className='mr-2 size-4' />
         {t('continueWithGoogle')}
-      </button>
+      </Button>
 
       <div className='relative'>
         <div className='absolute inset-0 flex items-center'>
           <span className='w-full border-t' />
         </div>
         <div className='relative flex justify-center text-xs uppercase'>
-          <span className='bg-background px-2 text-muted-foreground'>{t('or')}</span>
+          <span className='bg-background text-muted-foreground px-2'>{t('or')}</span>
         </div>
       </div>
 
-      <form onSubmit={handleEmailSignUp} className='space-y-4'>
-        <input
-          type='email'
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder='email@example.com'
-          required
-          aria-label='Email'
-          className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-        />
-        <input
-          type='password'
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder='Password (min 8 chars)'
-          minLength={8}
-          required
-          aria-label='Password'
-          className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-        />
-        {error && (
-          <p className='text-sm text-destructive' role='alert'>
+      <form onSubmit={(e) => void handleEmailSignUp(e)} className='space-y-4'>
+        <div className='space-y-1.5'>
+          <Label htmlFor='email'>{t('emailLabel')}</Label>
+          <Input
+            id='email'
+            type='email'
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t('emailPlaceholder')}
+            required
+            autoComplete='email'
+          />
+        </div>
+        <div className='space-y-1.5'>
+          <Label htmlFor='password'>{t('passwordLabel')}</Label>
+          <div className='relative'>
+            <Input
+              id='password'
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('passwordPlaceholder')}
+              minLength={8}
+              required
+              autoComplete='new-password'
+              className='pr-10'
+            />
+            <button
+              type='button'
+              onClick={() => setShowPassword((v) => !v)}
+              className='text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex items-center px-3'
+              aria-label={showPassword ? t('hidePassword') : t('showPassword')}
+            >
+              {showPassword ? <IconEyeOff className='size-4' /> : <IconEye className='size-4' />}
+            </button>
+          </div>
+        </div>
+        {error ? (
+          <p className='text-destructive text-sm' role='alert'>
             {error}
           </p>
-        )}
-        <button
-          type='submit'
-          disabled={loading}
-          className='w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50'
-        >
-          {loading ? t('creatingAccount') : t('signUpTitle')}
-        </button>
+        ) : null}
+        <Button type='submit' className='w-full' disabled={loading}>
+          {loading ? (
+            <>
+              <IconLoader2 className='mr-2 size-4 animate-spin' />
+              {t('creatingAccount')}
+            </>
+          ) : (
+            tCommon('signUp')
+          )}
+        </Button>
       </form>
 
-      <p className='text-center text-sm text-muted-foreground'>
+      <p className='text-muted-foreground text-center text-sm'>
         {t('haveAccount')}{' '}
-        <Link href='/sign-in' className='font-medium text-primary hover:underline'>
-          Sign in
+        <Link href='/sign-in' className='text-foreground font-medium hover:underline'>
+          {tCommon('signIn')}
         </Link>
       </p>
     </div>

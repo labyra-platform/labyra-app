@@ -1,14 +1,21 @@
 import type { ReactNode } from 'react';
+import { AuthBrandPanel } from '@/features/auth/auth-brand-panel';
 
 /**
- * Auth route group layout — centered, no sidebar/header.
+ * Auth route group layout — a split screen. Left: Labyra brand panel (crystal
+ * lattice, hidden below lg). Right: the auth form ({children}), centered.
  *
- * Routes: /sign-in, /sign-up, /forgot-password
+ * Routes: /sign-in, /sign-up
+ *
+ * @phase R346-auth-redesign
  */
 export default function AuthLayout({ children }: { children: ReactNode }): React.ReactElement {
   return (
-    <div className='flex min-h-screen items-center justify-center bg-background'>
-      <div className='w-full max-w-md p-6'>{children}</div>
+    <div className='flex min-h-screen'>
+      <AuthBrandPanel className='hidden lg:flex lg:w-[46%]' />
+      <main className='flex flex-1 items-center justify-center p-6 sm:p-10'>
+        <div className='w-full max-w-sm'>{children}</div>
+      </main>
     </div>
   );
 }

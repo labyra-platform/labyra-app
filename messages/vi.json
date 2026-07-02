@@ -115,7 +115,13 @@
     "signingIn": "Đang đăng nhập...",
     "creatingAccount": "Đang tạo tài khoản...",
     "signInToManage": "Đăng nhập để quản lý tài khoản",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "brandTagline": "Phổ, cấu trúc và DFT — trong cùng một nơi.",
+    "brandEyebrow": "Vật liệu · Phổ · DFT",
+    "emailLabel": "Email",
+    "passwordLabel": "Mật khẩu",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu"
   },
   "dashboard": {
     "totalRevenue": "Tổng doanh thu",

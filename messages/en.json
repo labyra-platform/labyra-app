@@ -115,7 +115,13 @@
     "signingIn": "Signing in...",
     "creatingAccount": "Creating account...",
     "signInToManage": "Sign in to manage your account",
-    "logout": "Log out"
+    "logout": "Log out",
+    "brandTagline": "Spectra, structures, and DFT — one workspace.",
+    "brandEyebrow": "Materials · Spectra · DFT",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "dashboard": {
     "totalRevenue": "Total Revenue",

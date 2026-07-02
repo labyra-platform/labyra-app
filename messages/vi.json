@@ -1945,7 +1945,17 @@
     "composeInputEmpty": "Nhấn làm mới để dựng input của node này.",
     "composeInputError": "Không dựng được input — kiểm tra thông số.",
     "composeInputRefresh": "Làm mới input",
-    "backToJobs": "Về danh sách job"
+    "backToJobs": "Về danh sách job",
+    "pseudoTab": "Giả thế",
+    "pseudoLibraryHint": "File UPF đã tải lên được nạp vào pseudo_dir của mọi phiên chạy. Cutoff hiển thị là mức tối thiểu do tác giả giả thế khuyến nghị trong header file — đặt ecutwfc/ecutrho toàn cục bằng hoặc cao hơn giá trị lớn nhất giữa các nguyên tố.",
+    "pseudoUpload": "Tải lên .UPF",
+    "pseudoLoading": "Đang tải thư viện…",
+    "pseudoEmpty": "Chưa có giả thế nào — tải lên các file .UPF mà phép tính cần.",
+    "pseudoColFile": "File",
+    "pseudoColElement": "Nguyên tố",
+    "pseudoColEcutwfc": "ecutwfc tối thiểu",
+    "pseudoColEcutrho": "ecutrho tối thiểu",
+    "pseudoColSize": "Kích thước"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

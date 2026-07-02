@@ -1944,7 +1944,17 @@
     "composeInputEmpty": "Refresh to render this node's input.",
     "composeInputError": "Could not render input — check parameters.",
     "composeInputRefresh": "Refresh input",
-    "backToJobs": "Back to jobs"
+    "backToJobs": "Back to jobs",
+    "pseudoTab": "Pseudopotentials",
+    "pseudoLibraryHint": "Uploaded UPF files are staged into every run's pseudo_dir. Cutoffs shown are the author-suggested minimums from each file's header — set global ecutwfc/ecutrho at or above the largest values across your species.",
+    "pseudoUpload": "Upload .UPF",
+    "pseudoLoading": "Loading library…",
+    "pseudoEmpty": "No pseudopotentials yet — upload the .UPF files your calculations need.",
+    "pseudoColFile": "File",
+    "pseudoColElement": "Element",
+    "pseudoColEcutwfc": "Min ecutwfc",
+    "pseudoColEcutrho": "Min ecutrho",
+    "pseudoColSize": "Size"
   },
   "structures": {
     "importTitle": "Import structure",

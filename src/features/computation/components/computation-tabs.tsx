@@ -11,6 +11,7 @@
 import {
   IconAtom,
   IconCube,
+  IconDatabase,
   IconGitCompare,
   IconListDetails,
   IconTools,
@@ -58,6 +59,12 @@ const TABS: Tab[] = [
     labelKey: 'compareTitle',
     Icon: IconGitCompare,
     isActive: (p) => p.startsWith('/dashboard/computation/compare')
+  },
+  {
+    href: '/dashboard/computation/pseudo',
+    labelKey: 'pseudoTab',
+    Icon: IconDatabase,
+    isActive: (p) => p.startsWith('/dashboard/computation/pseudo')
   }
 ];
 

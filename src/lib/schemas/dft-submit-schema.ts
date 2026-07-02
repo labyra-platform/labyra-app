@@ -8,6 +8,10 @@
  */
 import { z } from 'zod';
 
+/** Raw '<family>-standard-N' machine types accepted alongside named presets
+ * (HPC-relevant families; mirrors worker batch_client resolve_machine). */
+export const DFT_MACHINE_TYPE_RE = /^(c4d|c3d|c3|c2d|c2|n2)-standard-\d+$/;
+
 export const DFT_MACHINE_PRESETS = [
   'low',
   'standard',
@@ -15,6 +19,7 @@ export const DFT_MACHINE_PRESETS = [
   'bulk-amd',
   'bulk-large',
   'bulk-amd-xl',
+  'bulk-n2',
   'high-gpu'
 ] as const;
 
@@ -25,7 +30,7 @@ export const dftSubmitSchema = z.object({
     .min(3)
     .max(64)
     .regex(/^[a-z0-9][a-z0-9-]*$/, 'Lowercase letters, digits and hyphens only.'),
-  machinePreset: z.enum(DFT_MACHINE_PRESETS),
+  machinePreset: z.union([z.enum(DFT_MACHINE_PRESETS), z.string().regex(DFT_MACHINE_TYPE_RE)]),
   workflow: z.object({
     structure: z.unknown(),
     global: z.unknown(),

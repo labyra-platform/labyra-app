@@ -50,6 +50,14 @@ const GCP_MACHINES: MachineSpec[] = [
     noteKey: 'machineC2dXlNote'
   },
   {
+    preset: 'bulk-n2',
+    machineType: 'n2-standard-96',
+    vcpu: 96,
+    memGb: 384,
+    gpu: null,
+    noteKey: 'machineN2Note'
+  },
+  {
     preset: 'bulk',
     machineType: 'c2-standard-60',
     vcpu: 60,
@@ -66,6 +74,68 @@ const GCP_MACHINES: MachineSpec[] = [
     noteKey: 'machineGpuNote'
   }
 ];
+
+/** HPC-relevant families (Cluster-Toolkit-supported compute-optimized + N2).
+ * Sizes verified against GCP docs; standard = 4 GB/vCPU except C4D (3.875). */
+interface MachineFamily {
+  id: string;
+  cpu: string;
+  ramPerVcpu: number;
+  sizes: number[];
+  quotaMetric: string;
+}
+const FAMILIES: MachineFamily[] = [
+  {
+    id: 'n2',
+    cpu: 'Intel Ice Lake',
+    ramPerVcpu: 4,
+    sizes: [2, 4, 8, 16, 32, 48, 64, 80, 96, 128],
+    quotaMetric: 'N2_CPUS'
+  },
+  {
+    id: 'c2',
+    cpu: 'Intel Cascade Lake',
+    ramPerVcpu: 4,
+    sizes: [4, 8, 16, 30, 60],
+    quotaMetric: 'C2_CPUS'
+  },
+  {
+    id: 'c2d',
+    cpu: 'AMD Milan',
+    ramPerVcpu: 4,
+    sizes: [2, 4, 8, 16, 32, 56, 112],
+    quotaMetric: 'C2D_CPUS'
+  },
+  {
+    id: 'c3',
+    cpu: 'Intel Sapphire Rapids',
+    ramPerVcpu: 4,
+    sizes: [4, 8, 22, 44, 88, 176],
+    quotaMetric: 'C3_CPUS'
+  },
+  {
+    id: 'c3d',
+    cpu: 'AMD Genoa',
+    ramPerVcpu: 4,
+    sizes: [4, 8, 16, 30, 60, 90, 180, 360],
+    quotaMetric: 'C3D_CPUS'
+  },
+  {
+    id: 'c4d',
+    cpu: 'AMD Turin',
+    ramPerVcpu: 3.875,
+    sizes: [2, 4, 8, 16, 32, 48, 64, 96, 192, 384],
+    quotaMetric: 'C4D_CPUS'
+  }
+];
+
+const MACHINE_TYPE_RE = /^(?:c4d|c3d|c3|c2d|c2|n2)-standard-(\d+)$/;
+function vcpuOf(value: string): number | null {
+  const preset = GCP_MACHINES.find((m) => m.preset === value);
+  if (preset) return preset.vcpu;
+  const m = MACHINE_TYPE_RE.exec(value);
+  return m ? Number(m[1]) : null;
+}
 
 const PROVIDERS = [
   { id: 'gcp', label: 'Google Cloud Batch', Icon: IconBrandGoogle, live: true, spec: null },
@@ -90,8 +160,7 @@ export function MachinePickerDialog({
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<string>('gcp');
   const [selected, setSelected] = useState<string>(value);
-
-  const current = GCP_MACHINES.find((m) => m.preset === value);
+  const [family, setFamily] = useState<string>('presets');
 
   const confirm = () => {
     onChange(selected);
@@ -111,7 +180,7 @@ export function MachinePickerDialog({
           <IconCpu className='mr-2 size-4' />
           <span className='truncate'>
             {value}
-            {current ? ` · ${current.vcpu} vCPU` : ''}
+            {vcpuOf(value) !== null ? ` · ${vcpuOf(value)} vCPU` : ''}
           </span>
         </Button>
       </DialogTrigger>
@@ -152,36 +221,76 @@ export function MachinePickerDialog({
             ))}
           </div>
 
-          <div className='max-h-[50vh] space-y-2 overflow-y-auto pr-1'>
-            {GCP_MACHINES.map((m) => {
-              const active = selected === m.preset;
-              return (
+          <div className='space-y-2'>
+            <div className='flex flex-wrap gap-1.5'>
+              {['presets', ...FAMILIES.map((f) => f.id)].map((id) => (
                 <button
-                  key={m.preset}
+                  key={id}
                   type='button'
-                  onClick={() => setSelected(m.preset)}
+                  onClick={() => setFamily(id)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors',
-                    active ? 'border-primary bg-accent/40' : 'hover:bg-accent/30'
+                    'rounded-full border px-3 py-1 font-mono text-xs uppercase transition-colors',
+                    family === id ? 'border-primary bg-accent/50' : 'hover:bg-accent/30'
                   )}
                 >
-                  <div className='min-w-0 flex-1'>
-                    <div className='flex items-center gap-2'>
-                      <span className='text-sm font-medium'>{m.preset}</span>
-                      <span className='text-muted-foreground font-mono text-xs'>
-                        {m.machineType}
-                      </span>
-                    </div>
-                    <p className='text-muted-foreground text-xs'>
-                      1 {t('machineNodeUnit')} × {m.vcpu} vCPU · {m.memGb} GB RAM
-                      {m.gpu ? ` · ${m.gpu}` : ''}
-                      {m.noteKey ? ` — ${t(m.noteKey)}` : ''}
-                    </p>
-                  </div>
-                  {active ? <IconCheck className='text-primary size-4 shrink-0' /> : null}
+                  {id}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+            {family !== 'presets' ? (
+              <p className='text-muted-foreground text-xs'>
+                {(() => {
+                  const f = FAMILIES.find((x) => x.id === family);
+                  return f
+                    ? `${f.cpu} — ${t('machineFamilyQuota', { metric: f.quotaMetric })}`
+                    : null;
+                })()}
+              </p>
+            ) : null}
+            <div className='max-h-[44vh] space-y-2 overflow-y-auto pr-1'>
+              {(family === 'presets'
+                ? GCP_MACHINES
+                : (FAMILIES.find((f) => f.id === family)?.sizes ?? []).map((n) => {
+                    const fam = FAMILIES.find((f) => f.id === family);
+                    const name = `${family}-standard-${n}`;
+                    return {
+                      preset: name,
+                      machineType: name,
+                      vcpu: n,
+                      memGb: Math.round(n * (fam?.ramPerVcpu ?? 4)),
+                      gpu: null
+                    } as MachineSpec;
+                  })
+              ).map((m) => {
+                const active = selected === m.preset;
+                return (
+                  <button
+                    key={m.preset}
+                    type='button'
+                    onClick={() => setSelected(m.preset)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors',
+                      active ? 'border-primary bg-accent/40' : 'hover:bg-accent/30'
+                    )}
+                  >
+                    <div className='min-w-0 flex-1'>
+                      <div className='flex items-center gap-2'>
+                        <span className='text-sm font-medium'>{m.preset}</span>
+                        <span className='text-muted-foreground font-mono text-xs'>
+                          {m.machineType}
+                        </span>
+                      </div>
+                      <p className='text-muted-foreground text-xs'>
+                        1 {t('machineNodeUnit')} × {m.vcpu} vCPU · {m.memGb} GB RAM
+                        {m.gpu ? ` · ${m.gpu}` : ''}
+                        {m.noteKey ? ` — ${t(m.noteKey)}` : ''}
+                      </p>
+                    </div>
+                    {active ? <IconCheck className='text-primary size-4 shrink-0' /> : null}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 

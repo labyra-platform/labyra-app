@@ -29,9 +29,15 @@ import {
   EXE_OF,
   FLAVORS,
   paramBlocks,
+  type CellDofree,
+  type CellDynamics,
   type ComposeNode,
+  type Diagonalization,
+  type IonDynamics,
+  type MixingMode,
   type NodeParams,
   type ParamKey,
+  type RestartMode,
   type SmearingType
 } from '../compose-model';
 
@@ -50,6 +56,24 @@ const SMEARING: SmearingType[] = [
   'methfessel-paxton',
   'marzari-vanderbilt',
   'fermi-dirac'
+];
+
+const RESTART: RestartMode[] = ['from_scratch', 'restart'];
+const MIXING_MODE: MixingMode[] = ['plain', 'TF', 'local-TF'];
+const DIAGONALIZATION: Diagonalization[] = ['david', 'cg', 'ppcg', 'rmm-davidson'];
+const ION_DYNAMICS: IonDynamics[] = ['bfgs', 'damp', 'fire'];
+const CELL_DYNAMICS: CellDynamics[] = ['bfgs', 'sd', 'damp-pr'];
+const CELL_DOFREE: CellDofree[] = [
+  'all',
+  'x',
+  'y',
+  'z',
+  'xy',
+  'xz',
+  'yz',
+  '2Dxy',
+  'shape',
+  'volume'
 ];
 
 /**
@@ -108,6 +132,20 @@ export function ComposeNodeEditor({
       onCommit={(n) => set({ [key]: n } as Partial<NodeParams>)}
       className='h-8'
     />
+  );
+  const sel = <T extends string>(key: keyof NodeParams, value: T, options: readonly T[]) => (
+    <Select value={value} onValueChange={(v) => set({ [key]: v } as Partial<NodeParams>)}>
+      <SelectTrigger className='h-8'>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>
+            {o}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 
   function renderParam(key: ParamKey) {
@@ -227,6 +265,101 @@ export function ComposeNodeEditor({
           <div key='deltaE' className='space-y-1'>
             <Label className='text-xs'>DeltaE (eV)</Label>
             {num('deltaE', p.deltaE)}
+          </div>
+        );
+      case 'restartMode':
+        return (
+          <div key='restartMode' className='space-y-1'>
+            <Label className='text-xs'>restart_mode</Label>
+            {sel('restartMode', p.restartMode, RESTART)}
+          </div>
+        );
+      case 'nstep':
+        return (
+          <div key='nstep' className='space-y-1'>
+            <Label className='text-xs'>nstep (0 = default)</Label>
+            {num('nstep', p.nstep)}
+          </div>
+        );
+      case 'etotConvThr':
+        return (
+          <div key='etotConvThr' className='space-y-1'>
+            <Label className='text-xs'>etot_conv_thr (0 = default)</Label>
+            {num('etotConvThr', p.etotConvThr)}
+          </div>
+        );
+      case 'forcConvThr':
+        return (
+          <div key='forcConvThr' className='space-y-1'>
+            <Label className='text-xs'>forc_conv_thr (0 = default)</Label>
+            {num('forcConvThr', p.forcConvThr)}
+          </div>
+        );
+      case 'nspin':
+        return (
+          <div key='nspin' className='space-y-1'>
+            <Label className='text-xs'>nspin</Label>
+            <Select
+              value={String(p.nspin)}
+              onValueChange={(v) => set({ nspin: Number(v) as 1 | 2 })}
+            >
+              <SelectTrigger className='h-8'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='1'>1 (non-polarized)</SelectItem>
+                <SelectItem value='2'>2 (LSDA)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      case 'mixingMode':
+        return (
+          <div key='mixingMode' className='space-y-1'>
+            <Label className='text-xs'>mixing_mode</Label>
+            {sel('mixingMode', p.mixingMode, MIXING_MODE)}
+          </div>
+        );
+      case 'diagonalization':
+        return (
+          <div key='diagonalization' className='space-y-1'>
+            <Label className='text-xs'>diagonalization</Label>
+            {sel('diagonalization', p.diagonalization, DIAGONALIZATION)}
+          </div>
+        );
+      case 'ionDynamics':
+        return (
+          <div key='ionDynamics' className='space-y-1'>
+            <Label className='text-xs'>ion_dynamics</Label>
+            {sel('ionDynamics', p.ionDynamics, ION_DYNAMICS)}
+          </div>
+        );
+      case 'bfgsNdim':
+        return (
+          <div key='bfgsNdim' className='space-y-1'>
+            <Label className='text-xs'>bfgs_ndim (0 = default)</Label>
+            {num('bfgsNdim', p.bfgsNdim)}
+          </div>
+        );
+      case 'cellDynamics':
+        return (
+          <div key='cellDynamics' className='space-y-1'>
+            <Label className='text-xs'>cell_dynamics</Label>
+            {sel('cellDynamics', p.cellDynamics, CELL_DYNAMICS)}
+          </div>
+        );
+      case 'press':
+        return (
+          <div key='press' className='space-y-1'>
+            <Label className='text-xs'>press (kbar)</Label>
+            {num('press', p.press)}
+          </div>
+        );
+      case 'cellDofree':
+        return (
+          <div key='cellDofree' className='space-y-1'>
+            <Label className='text-xs'>cell_dofree</Label>
+            {sel('cellDofree', p.cellDofree, CELL_DOFREE)}
           </div>
         );
       default:

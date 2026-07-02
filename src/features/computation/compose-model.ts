@@ -25,9 +25,28 @@ export type ParamKey =
   | 'nbnd'
   | 'smearing'
   | 'mixingBeta'
-  | 'electronMaxstep';
+  | 'electronMaxstep'
+  | 'restartMode'
+  | 'nstep'
+  | 'etotConvThr'
+  | 'forcConvThr'
+  | 'nspin'
+  | 'mixingMode'
+  | 'diagonalization'
+  | 'ionDynamics'
+  | 'bfgsNdim'
+  | 'cellDynamics'
+  | 'press'
+  | 'cellDofree';
 
 export type SmearingType = 'gaussian' | 'methfessel-paxton' | 'marzari-vanderbilt' | 'fermi-dirac';
+
+export type RestartMode = 'from_scratch' | 'restart';
+export type MixingMode = 'plain' | 'TF' | 'local-TF';
+export type Diagonalization = 'david' | 'cg' | 'ppcg' | 'rmm-davidson';
+export type IonDynamics = 'bfgs' | 'damp' | 'fire';
+export type CellDynamics = 'bfgs' | 'sd' | 'damp-pr';
+export type CellDofree = 'all' | 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz' | '2Dxy' | 'shape' | 'volume';
 
 export interface NodeParams {
   kgrid: [number, number, number];
@@ -42,6 +61,23 @@ export interface NodeParams {
   smearing: SmearingType;
   mixingBeta: number;
   electronMaxstep: number;
+  // &CONTROL
+  restartMode: RestartMode;
+  nstep: number; // 0 = QE default
+  etotConvThr: number; // 0 = QE default (relax/vc-relax)
+  forcConvThr: number; // 0 = QE default (relax/vc-relax)
+  // &SYSTEM
+  nspin: 1 | 2;
+  // &ELECTRONS
+  mixingMode: MixingMode;
+  diagonalization: Diagonalization;
+  // &IONS (relax / vc-relax)
+  ionDynamics: IonDynamics;
+  bfgsNdim: number; // 0 = QE default
+  // &CELL (vc-relax)
+  cellDynamics: CellDynamics;
+  press: number; // kbar
+  cellDofree: CellDofree;
 }
 
 export interface ComposeNode {
@@ -83,7 +119,19 @@ export const DEFAULT_PARAMS: NodeParams = {
   nbnd: 0,
   smearing: 'gaussian',
   mixingBeta: 0.2,
-  electronMaxstep: 0
+  electronMaxstep: 0,
+  restartMode: 'from_scratch',
+  nstep: 0,
+  etotConvThr: 0,
+  forcConvThr: 0,
+  nspin: 1,
+  mixingMode: 'plain',
+  diagonalization: 'david',
+  ionDynamics: 'bfgs',
+  bfgsNdim: 0,
+  cellDynamics: 'bfgs',
+  press: 0,
+  cellDofree: 'all'
 };
 
 /** Which basic params are meaningful (and thus editable) for a calc type. */
@@ -123,10 +171,21 @@ export function paramBlocks(calcType: DftCalcType): NamelistBlock[] {
     return [{ name: '&DOS', keys: ['emin', 'emax', 'deltaE'] }];
   }
   if (calcType === 'ppbands' || calcType === 'charge') return [];
+  const isRelax = calcType === 'relax' || calcType === 'vc-relax';
+  const control: ParamKey[] = ['restartMode'];
+  if (isRelax) control.push('nstep', 'etotConvThr', 'forcConvThr');
   const blocks: NamelistBlock[] = [
-    { name: '&SYSTEM', keys: ['occupations', 'smearing', 'degauss', 'nbnd'] },
-    { name: '&ELECTRONS', keys: ['convThr', 'mixingBeta', 'electronMaxstep'] }
+    { name: '&CONTROL', keys: control },
+    { name: '&SYSTEM', keys: ['nspin', 'occupations', 'smearing', 'degauss', 'nbnd'] },
+    {
+      name: '&ELECTRONS',
+      keys: ['convThr', 'mixingBeta', 'mixingMode', 'diagonalization', 'electronMaxstep']
+    }
   ];
+  if (isRelax) blocks.push({ name: '&IONS', keys: ['ionDynamics', 'bfgsNdim'] });
+  if (calcType === 'vc-relax') {
+    blocks.push({ name: '&CELL', keys: ['cellDynamics', 'press', 'cellDofree'] });
+  }
   if (calcType !== 'bands') blocks.push({ name: 'K_POINTS', keys: ['kgrid'] });
   return blocks;
 }
@@ -231,7 +290,11 @@ function buildPwParams(
     mixingBeta: p.mixingBeta,
     diagoDavidNdim: 8,
     tstress: stress,
-    tprnfor: stress
+    tprnfor: stress,
+    restartMode: p.restartMode,
+    nspin: p.nspin,
+    mixingMode: p.mixingMode,
+    diagonalization: p.diagonalization
   };
   if (p.occupations === 'smearing') {
     params.smearing = p.smearing;
@@ -239,6 +302,18 @@ function buildPwParams(
   }
   if (p.nbnd > 0) params.nbnd = p.nbnd;
   if (p.electronMaxstep > 0) params.electronMaxstep = p.electronMaxstep;
+  if (p.nstep > 0) params.nstep = p.nstep;
+  if (calcType === 'relax' || calcType === 'vc-relax') {
+    params.ionDynamics = p.ionDynamics;
+    if (p.bfgsNdim > 0) params.bfgsNdim = p.bfgsNdim;
+    if (p.etotConvThr > 0) params.etotConvThr = p.etotConvThr;
+    if (p.forcConvThr > 0) params.forcConvThr = p.forcConvThr;
+  }
+  if (calcType === 'vc-relax') {
+    params.cellDynamics = p.cellDynamics;
+    params.press = p.press;
+    params.cellDofree = p.cellDofree;
+  }
   if (hasVdw) {
     params.vdwCorr = 'grimme-d3';
     params.dftd3Version = 3;

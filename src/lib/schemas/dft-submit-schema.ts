@@ -14,6 +14,7 @@ export const DFT_MACHINE_PRESETS = [
   'bulk',
   'bulk-amd',
   'bulk-large',
+  'bulk-amd-xl',
   'high-gpu'
 ] as const;
 

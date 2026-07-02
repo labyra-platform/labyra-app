@@ -41,7 +41,22 @@ const GCP_MACHINES: MachineSpec[] = [
   { preset: 'standard', machineType: 'e2 (auto)', vcpu: 8, memGb: 32, gpu: null },
   { preset: 'bulk-amd', machineType: 'c2d-standard-16', vcpu: 16, memGb: 64, gpu: null },
   { preset: 'bulk-large', machineType: 'c2d-standard-32', vcpu: 32, memGb: 128, gpu: null },
-  { preset: 'bulk', machineType: 'c2-standard-60', vcpu: 60, memGb: 240, gpu: null },
+  {
+    preset: 'bulk-amd-xl',
+    machineType: 'c2d-standard-56',
+    vcpu: 56,
+    memGb: 224,
+    gpu: null,
+    noteKey: 'machineC2dXlNote'
+  },
+  {
+    preset: 'bulk',
+    machineType: 'c2-standard-60',
+    vcpu: 60,
+    memGb: 240,
+    gpu: null,
+    noteKey: 'machineC2QuotaNote'
+  },
   {
     preset: 'high-gpu',
     machineType: 'g2-standard-8',

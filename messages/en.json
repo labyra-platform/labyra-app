@@ -1972,7 +1972,9 @@
     "avgpotHint": "V(z) from pp.x plot_num=11 → average.x. For band alignment: E_vac − E_F gives the work function; align band edges via the two-step potential lineup.",
     "machineNodes": "Nodes",
     "machineNodeUnit": "node",
-    "machineSingleNodeHint": "Cloud Batch runs each unit on a single node (MPI within the VM). Multi-node selection arrives with Lucia (SLURM)."
+    "machineSingleNodeHint": "Cloud Batch runs each unit on a single node (MPI within the VM). Multi-node selection arrives with Lucia (SLURM).",
+    "machineC2dXlNote": "AMD Milan — fits the default 100 C2D vCPU regional quota; ~bulk performance without a quota request.",
+    "machineC2QuotaNote": "Requires C2_CPUS ≥ 60 regional quota (default is often 8 — the job stays QUEUED until an increase is granted)."
   },
   "structures": {
     "importTitle": "Import structure",

@@ -1977,7 +1977,8 @@
     "machineC2dXlNote": "AMD Milan — nằm trong quota mặc định 100 C2D vCPU của region; hiệu năng ~bulk mà không cần xin quota.",
     "machineC2QuotaNote": "Cần quota C2_CPUS ≥ 60 của region (mặc định thường là 8 — job sẽ kẹt QUEUED cho tới khi được duyệt tăng).",
     "machineN2Note": "Ice Lake, 384 GB RAM — node lớn nhất trong trần CPU mặc định của region; hợp slab/heterostructure lớn (DFT+U tốn RAM).",
-    "machineFamilyQuota": "khả dụng tuỳ region; job cần quota {metric} của region ≥ số vCPU máy (mặc định thường thấp — thiếu thì job kẹt QUEUED)."
+    "machineFamilyQuota": "khả dụng tuỳ region; job cần quota {metric} của region ≥ số vCPU máy (mặc định thường thấp — thiếu thì job kẹt QUEUED).",
+    "convLive": "Đang chạy"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

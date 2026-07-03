@@ -229,3 +229,12 @@ export interface FetchAvgpotBody {
 export function fetchDftAvgpot(body: FetchAvgpotBody): Promise<WorkerResult> {
   return callWorker('/dft/avgpot', body);
 }
+
+export interface ReconcileBody {
+  tenantId: string;
+  workflowId: string;
+}
+/** Poll Batch for stuck/vanished units and fail them — for a running-workflow poll. */
+export function reconcileDftWorkflow(body: ReconcileBody): Promise<WorkerResult> {
+  return callWorker('/dft/reconcile', body);
+}

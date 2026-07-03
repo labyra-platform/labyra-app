@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DftAvgpotTab } from '@/features/computation/components/dft-avgpot-tab';
+import { WorkflowReconciler } from '@/features/computation/components/workflow-reconciler';
 import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
 import { DftConvergenceTab } from '@/features/computation/components/dft-convergence-tab';
 import { DftResultsTab } from '@/features/computation/components/dft-results-tab';
@@ -58,6 +59,10 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
       >
         <div className='border-b p-3'>
           <p className='truncate text-sm font-medium'>{g?.prefix ?? workflow.id}</p>
+          <WorkflowReconciler
+            workflowId={workflow.id}
+            active={workflow.overallStatus === 'running'}
+          />
           {workflow.overallStatus ? (
             <Badge variant='secondary' className='mt-1 text-[10px]'>
               {workflow.overallStatus}

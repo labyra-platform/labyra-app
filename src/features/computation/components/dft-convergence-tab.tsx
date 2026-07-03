@@ -7,7 +7,7 @@
  */
 'use client';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -27,6 +27,10 @@ interface IonicStep {
 interface ConvergenceData {
   calcType?: string;
   scf_accuracy: number[];
+  /** 'total cpu time spent up to now' at each SCF iteration (s) — the time axis. */
+  scf_seconds?: number[];
+  /** false while the .out is a mid-run snapshot (live), true once QE printed JOB DONE. */
+  job_done?: boolean;
   ionic_steps: IonicStep[];
   n_ionic_steps: number;
   converged: boolean;
@@ -53,9 +57,16 @@ function ConvTooltip({
   label?: number;
 }) {
   if (!active || !payload || payload.length === 0) return null;
+  const dt = payload.find((p) => p.dataKey === 'acc') as
+    | (TipItem & { payload?: { dt?: number } })
+    | undefined;
+  const dtVal = dt?.payload?.dt;
   return (
     <div className='bg-popover rounded-md border px-2 py-1.5 text-xs shadow-md'>
-      <div className='font-medium'>step {label}</div>
+      <div className='font-medium'>
+        iteration {label}
+        {typeof dtVal === 'number' && dtVal > 0 ? ` · +${dtVal.toFixed(1)}s` : ''}
+      </div>
       {payload.map((p) => {
         const v = p.value;
         const txt =
@@ -77,11 +88,12 @@ function ConvTooltip({
 export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
   const t = useTranslations('computation');
   const [data, setData] = useState<ConvergenceData | null>(null);
+  const dataRef = useRef<ConvergenceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (!dataRef.current) setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/dft/convergence', {
@@ -95,6 +107,7 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
         return;
       }
       setData(body);
+      dataRef.current = body;
     } catch {
       setError(t('convError'));
     } finally {
@@ -103,8 +116,21 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
   }, [workflow.id, t]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let stop = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = async () => {
+      await load();
+      if (stop) return;
+      // keep polling every 8s while the run is still streaming (no JOB DONE yet)
+      if (!dataRef.current?.job_done) timer = setTimeout(() => void tick(), 8000);
+    };
+    void tick();
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflow.id]);
 
   if (loading) {
     return (
@@ -116,7 +142,12 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
   }
   if (!data) return null;
 
-  const scfRows = data.scf_accuracy.map((a, i) => ({ step: i + 1, acc: a }));
+  const secs = data.scf_seconds ?? [];
+  const scfRows = data.scf_accuracy.map((a, i) => ({
+    step: i + 1,
+    acc: a,
+    dt: i > 0 && secs[i] != null && secs[i - 1] != null ? secs[i] - secs[i - 1] : 0
+  }));
   const ionicRows = data.ionic_steps.map((s, i) => ({
     step: i + 1,
     energy: s.energy_ry,
@@ -136,6 +167,12 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
         >
           {data.converged ? t('converged') : t('notConverged')}
         </span>
+        {!data.job_done ? (
+          <span className='inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600'>
+            <span className='size-1.5 animate-pulse rounded-full bg-blue-500' />
+            {t('convLive')}
+          </span>
+        ) : null}
         {data.calcType ? (
           <span className='text-muted-foreground text-xs'>{data.calcType}</span>
         ) : null}

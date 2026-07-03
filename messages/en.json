@@ -1851,7 +1851,9 @@
       "colStatus": "Status",
       "colJob": "Job",
       "colPipeline": "Pipeline",
-      "colResult": "Result"
+      "colResult": "Result",
+      "colDuration": "Duration",
+      "colCreated": "Created"
     },
     "filter": {
       "all": "All",

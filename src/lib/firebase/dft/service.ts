@@ -47,8 +47,24 @@ function toWorkflow(id: string, data: Record<string, unknown>): DftWorkflow {
     snapshot: (data.snapshot as Record<string, DftUnitSnapshot> | undefined) ?? {},
     structure: parseStructure(data.structure),
     global: data.global as DftWorkflowGlobal | undefined,
-    units: data.units as DftUnit[] | undefined
+    units: data.units as DftUnit[] | undefined,
+    createdAt: toMillis(data.createdAt),
+    createdBy: (data.createdBy as string | undefined) ?? null
   };
+}
+
+/** Firestore Timestamp | number | ISO string → epoch ms, or null. */
+function toMillis(raw: unknown): number | null {
+  if (raw == null) return null;
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string') {
+    const t = Date.parse(raw);
+    return Number.isNaN(t) ? null : t;
+  }
+  const ts = raw as { toMillis?: () => number; _seconds?: number; seconds?: number };
+  if (typeof ts.toMillis === 'function') return ts.toMillis();
+  const secs = ts._seconds ?? ts.seconds;
+  return typeof secs === 'number' ? secs * 1000 : null;
 }
 export async function getDftWorkflow(
   tenantId: string,

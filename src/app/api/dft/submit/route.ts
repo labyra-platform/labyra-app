@@ -40,7 +40,8 @@ export async function POST(request: Request) {
       workflowId,
       workflow,
       machinePreset,
-      maxRunSec: MAX_RUN_SEC
+      maxRunSec: MAX_RUN_SEC,
+      createdBy: user.email ?? user.uid
     });
     if (!result.ok) {
       return NextResponse.json(

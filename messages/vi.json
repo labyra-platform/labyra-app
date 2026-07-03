@@ -1852,7 +1852,9 @@
       "colStatus": "Trạng thái",
       "colJob": "Job",
       "colPipeline": "Pipeline",
-      "colResult": "Kết quả"
+      "colResult": "Kết quả",
+      "colDuration": "Thời gian",
+      "colCreated": "Tạo lúc"
     },
     "filter": {
       "all": "Tất cả",

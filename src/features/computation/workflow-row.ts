@@ -46,6 +46,11 @@ export interface WorkflowRow {
   status: StatusKind;
   steps: StepDot[];
   result: ResultCell;
+  /** Submit time (epoch ms) and who launched it. */
+  createdAt: number | null;
+  createdBy: string | null;
+  /** Sum of known per-step durations (s); null if none are known yet. */
+  totalDurationSec: number | null;
 }
 
 /** "PBE+U" when a Hubbard manifold is set, else the bare functional. */
@@ -128,6 +133,8 @@ export function toWorkflowRow(wf: DftWorkflow): WorkflowRow {
       durationSec: stepDuration(snap)
     };
   });
+  const known = steps.map((st) => st.durationSec).filter((d): d is number => d != null);
+  const totalDurationSec = known.length > 0 ? known.reduce((a, b) => a + b, 0) : null;
   return {
     id: wf.id,
     name: wf.global?.prefix ?? wf.id,
@@ -135,6 +142,9 @@ export function toWorkflowRow(wf: DftWorkflow): WorkflowRow {
     hubbard: wf.global?.hubbard ?? [],
     status,
     steps,
-    result: deriveResult(wf, status)
+    result: deriveResult(wf, status),
+    createdAt: wf.createdAt ?? null,
+    createdBy: wf.createdBy ?? null,
+    totalDurationSec
   };
 }

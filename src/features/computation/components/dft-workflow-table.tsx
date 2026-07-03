@@ -37,6 +37,8 @@ import {
 import type { ResultCell, StatusKind, WorkflowRow } from '@/features/computation/workflow-row';
 import { Link, useRouter } from '@/i18n/navigation';
 import { WorkflowPipelineMini } from './workflow-pipeline-mini';
+import { SortableHead, useSortRows } from '@/components/ui-extra/sortable-head';
+import { formatDuration } from '@/features/computation/workflow-row';
 import { WorkflowRowActions } from './workflow-row-actions';
 
 const STATUS_VARIANT: Record<StatusKind, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -62,6 +64,21 @@ type Sort = 'name' | 'status';
 const href = (id: string) => `/dashboard/computation/${id}`;
 
 /** Compact Hubbard-U summary, e.g. "W-5d 6.2 · O-2p 9". */
+const fmtDate = (ms: number | null) => {
+  if (ms == null) return '—';
+  const d = new Date(ms);
+  const now = Date.now();
+  const day = 86400000;
+  // Recent → relative ("2h ago", "3d ago"); older → absolute date.
+  const diff = now - ms;
+  if (diff < day) {
+    const h = Math.floor(diff / 3600000);
+    if (h < 1) return `${Math.max(1, Math.floor(diff / 60000))}m ago`;
+    return `${h}h ago`;
+  }
+  if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
 const fmtU = (r: WorkflowRow) => r.hubbard.map((h) => `${h.manifold} ${h.value}`).join(' · ');
 
 function ResultCellView({ cell }: { cell: ResultCell }) {
@@ -133,6 +150,14 @@ export function DftWorkflowTable({ rows }: Props) {
         : STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name)
     );
   }, [rows, query, filter, sort]);
+
+  const sortable = useSortRows(view, {
+    status: (r) => r.status,
+    job: (r) => r.name,
+    duration: (r) => r.totalDurationSec,
+    created: (r) => r.createdAt
+  });
+  const sortedView = sortable.sorted;
 
   const filters: Filter[] = ['all', 'running', 'completed', 'failed'];
 
@@ -253,15 +278,43 @@ export function DftWorkflowTable({ rows }: Props) {
                       aria-label={t('selectAll')}
                     />
                   </TableHead>
-                  <TableHead className='w-[120px]'>{t('table.colStatus')}</TableHead>
-                  <TableHead>{t('table.colJob')}</TableHead>
+                  <SortableHead
+                    label={t('table.colStatus')}
+                    sortKey='status'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                    className='w-[120px]'
+                  />
+                  <SortableHead
+                    label={t('table.colJob')}
+                    sortKey='job'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
                   <TableHead>{t('table.colPipeline')}</TableHead>
+                  <SortableHead
+                    label={t('table.colDuration')}
+                    sortKey='duration'
+                    align='right'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
+                  <SortableHead
+                    label={t('table.colCreated')}
+                    sortKey='created'
+                    activeKey={sortable.sortKey}
+                    dir={sortable.dir}
+                    onToggle={sortable.toggle}
+                  />
                   <TableHead>{t('table.colResult')}</TableHead>
                   <TableHead className='w-10' />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {view.map((r) => (
+                {sortedView.map((r) => (
                   <TableRow
                     key={r.id}
                     data-state={selected.has(r.id) ? 'selected' : undefined}
@@ -294,6 +347,17 @@ export function DftWorkflowTable({ rows }: Props) {
                     </TableCell>
                     <TableCell>
                       <WorkflowPipelineMini steps={r.steps} />
+                    </TableCell>
+                    <TableCell className='text-right text-xs tabular-nums'>
+                      {formatDuration(r.totalDurationSec) ?? '—'}
+                    </TableCell>
+                    <TableCell className='text-xs'>
+                      <div className='tabular-nums'>{fmtDate(r.createdAt)}</div>
+                      {r.createdBy ? (
+                        <div className='text-muted-foreground max-w-[140px] truncate'>
+                          {r.createdBy}
+                        </div>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <ResultCellView cell={r.result} />

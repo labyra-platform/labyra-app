@@ -269,6 +269,9 @@ export interface DftWorkflow {
   results: DftResults | null;
   /** Per-unit status, keyed by unitId. */
   snapshot: Record<string, DftUnitSnapshot>;
+  /** Compose/submit time (epoch ms) and the user who launched it, for the job list. */
+  createdAt?: number | null;
+  createdBy?: string | null;
   /** Workflow definition (top-level in the doc) — needed to render the DAG. */
   structure?: DftStructure;
   global?: DftWorkflowGlobal;

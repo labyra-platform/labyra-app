@@ -62,3 +62,28 @@ Cancelled and stuck units both land in the existing `failed` status, distinguish
 by `errorMessage` ("cancelled by user", "Stuck in QUEUED …"). No dedicated
 `cancelled` status is introduced, keeping the orchestrator's terminal set
 (`COMPLETED`, `FAILED`) and all status-rendering paths unchanged.
+
+## Scheduled sweep (`POST /dft/reconcile-sweep`, `driver.reconcile_all`)
+
+The in-app poller (`WorkflowReconciler`) only runs while a user has the workflow
+page mounted. To catch stuck/vanished jobs when nobody is watching, a Cloud
+Scheduler job hits `POST /dft/reconcile-sweep` every 5 minutes.
+
+- **Enumeration** — `io.list_running_workflows` runs a Firestore **collection-group**
+  query over `dftWorkflows` filtered on `overallStatus == 'running'`, recovering
+  each `tenantId` from the document's grandparent (`tenants/{tid}/dftWorkflows/{wid}`).
+  Each workflow is then passed through the same `reconcile` as the in-app path, so
+  behaviour is identical; the sweep only changes *who* triggers it and *when*.
+- **Auth** — the endpoint mutates workflows across every tenant and has no user
+  context, so it is gated by a shared secret: the `X-Cron-Secret` header must match
+  `DFT_CRON_SECRET` (Secret Manager). If the secret is unset the endpoint returns
+  503 (disabled) rather than running unprotected; a mismatch returns 403. The
+  Cloud Run service is otherwise `allUsers`-invocable, which is why the sweep must
+  guard itself at the application layer.
+- **Isolation** — one workflow raising inside the sweep is logged and skipped; the
+  loop continues. The in-app poller and the sweep are complementary and safe to run
+  together because `reconcile` is idempotent (re-marking a terminal unit is a no-op).
+
+Setup lives in `scripts/setup-reconcile-scheduler.sh` (creates the secret, wires it
+into the worker, and creates/updates the scheduler job). `deploy.sh` carries
+`DFT_CRON_SECRET` in `--set-secrets` so it survives redeploys.

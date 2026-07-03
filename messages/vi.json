@@ -1984,7 +1984,10 @@
     "cancelUnitTitle": "Dừng bước này?",
     "cancelConfirm": "Thao tác này dừng job Batch đang chạy và giải phóng VM. Các bước đã xong được giữ lại; bước bị dừng và những bước phụ thuộc nó sẽ bị đánh dấu thất bại. Không thể hoàn tác.",
     "cancelKeep": "Tiếp tục chạy",
-    "cancelConfirmAction": "Dừng job"
+    "cancelConfirmAction": "Dừng job",
+    "autoCutoffTitle": "Cutoff gợi ý (từ UPF)",
+    "autoCutoffApply": "Áp dụng",
+    "autoCutoffDetail": "ecutwfc {wfc} Ry, ecutrho {rho} Ry — lấy max mức tối thiểu khuyến nghị của các giả thế đã gán. Loại chính: {kind} (ecutrho ≈ {ratio} ecutwfc). Tăng thêm cho nguyên tố cứng hoặc cần hội tụ chặt."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

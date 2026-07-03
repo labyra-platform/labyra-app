@@ -1983,7 +1983,10 @@
     "cancelUnitTitle": "Cancel this step?",
     "cancelConfirm": "This stops the running Batch job and releases its VM. Completed steps are kept; the cancelled step and anything depending on it are marked failed. This cannot be undone.",
     "cancelKeep": "Keep running",
-    "cancelConfirmAction": "Cancel job"
+    "cancelConfirmAction": "Cancel job",
+    "autoCutoffTitle": "Suggested cutoffs (from UPFs)",
+    "autoCutoffApply": "Apply",
+    "autoCutoffDetail": "ecutwfc {wfc} Ry, ecutrho {rho} Ry — max of the assigned pseudopotentials' suggested minimums. Dominant type: {kind} (ecutrho ≈ {ratio} ecutwfc). Increase for hard elements or tight convergence."
   },
   "structures": {
     "importTitle": "Import structure",

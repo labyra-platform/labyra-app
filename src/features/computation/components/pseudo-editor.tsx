@@ -8,7 +8,7 @@
  */
 'use client';
 
-import { IconLoader2, IconUpload } from '@tabler/icons-react';
+import { IconAlertTriangle, IconLoader2, IconUpload } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,9 +21,19 @@ import {
 
 const NONE = '__none__';
 
-interface PseudoInfo {
+export interface PseudoInfo {
   filename: string;
   element: string | null;
+  ecutwfc?: number | null;
+  ecutrho?: number | null;
+  pseudoType?: string | null;
+}
+
+/** Element guessed from a UPF filename's leading token (e.g. 'W.pbe-…' → 'W',
+ * 'Fe_ONCV…' → 'Fe') — used to auto-assign and to flag element mismatches. */
+function elementFromName(name: string): string | null {
+  const m = /^([A-Z][a-z]?)(?=[._\- ]|$)/.exec(name);
+  return m ? m[1] : null;
 }
 
 function fileToB64(file: File): Promise<string> {
@@ -42,11 +52,15 @@ function fileToB64(file: File): Promise<string> {
 export function PseudoEditor({
   species,
   value,
-  onChange
+  onChange,
+  onLibrary
 }: {
   species: string[];
   value: Record<string, string>;
   onChange: (next: Record<string, string>) => void;
+  /** Bubbles the loaded UPF library up (filename → parsed cutoffs/type) so the
+   * global editor can derive ecutwfc/ecutrho from the assigned pseudopotentials. */
+  onLibrary?: (lib: PseudoInfo[]) => void;
 }) {
   const [available, setAvailable] = useState<PseudoInfo[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -59,15 +73,36 @@ export function PseudoEditor({
       if (res.ok) {
         const data = (await res.json()) as { pseudos?: PseudoInfo[] };
         setAvailable(data.pseudos ?? []);
+        onLibrary?.(data.pseudos ?? []);
       }
     } catch {
       // leave the list as-is; upload/assign still work once reachable
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Auto-assign: for each species with no pick yet, choose the library UPF whose
+  // element (header, else filename) matches. Runs when the library or species set
+  // changes; never overrides an existing choice.
+  useEffect(() => {
+    if (available.length === 0 || species.length === 0) return;
+    const next = { ...value };
+    let changed = false;
+    for (const el of species) {
+      if (next[el]) continue;
+      const hit = available.find((p) => (p.element ?? elementFromName(p.filename)) === el);
+      if (hit) {
+        next[el] = hit.filename;
+        changed = true;
+      }
+    }
+    if (changed) onChange(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [available, species]);
 
   // Dropdown options = uploaded UPFs ∪ any already-assigned filename (so a stale
   // assignment still shows even if the file is missing from the current listing).
@@ -159,7 +194,21 @@ export function PseudoEditor({
                 ))}
               </SelectContent>
             </Select>
-            {!value[el] ? <span className='text-muted-foreground text-xs'>unassigned</span> : null}
+            {(() => {
+              const fn = value[el];
+              if (!fn) return <span className='text-muted-foreground text-xs'>unassigned</span>;
+              const info = available.find((p) => p.filename === fn);
+              const upfEl = info?.element ?? elementFromName(fn);
+              if (upfEl && upfEl !== el) {
+                return (
+                  <span className='inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-xs font-medium text-amber-600'>
+                    <IconAlertTriangle className='size-3.5' />
+                    {upfEl}≠{el}
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </div>
         ))
       )}

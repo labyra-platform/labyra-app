@@ -20,8 +20,10 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import type { DftFunctional, DftWorkflowGlobal, HubbardParam } from '@/types/dft';
+import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { NumberField } from './compose-node-editor';
-import { PseudoEditor } from './pseudo-editor';
+import { PseudoEditor, type PseudoInfo } from './pseudo-editor';
 
 const FUNCTIONALS: DftFunctional[] = ['pbe', 'pbesol', 'hse'];
 
@@ -35,6 +37,44 @@ export function GlobalSettingsEditor({
   onChange: (next: DftWorkflowGlobal) => void;
 }) {
   const update = (patch: Partial<DftWorkflowGlobal>) => onChange({ ...value, ...patch });
+
+  const t = useTranslations('computation');
+  const [library, setLibrary] = useState<PseudoInfo[]>([]);
+
+  // Suggested cutoffs from the assigned UPFs: ecutwfc/ecutrho = the max across
+  // species of each pseudopotential's author-suggested minimum. The dominant
+  // pseudopotential kind sets the expected ecutrho/ecutwfc ratio shown to the
+  // user (norm-conserving ≈ 4×; ultrasoft/PAW 8–12×), so an atypical value is
+  // easy to spot.
+  const cutoffSuggestion = useMemo(() => {
+    const assigned = Object.values(value.pseudoMap ?? {});
+    if (assigned.length === 0) return null;
+    const infos = assigned
+      .map((fn) => library.find((p) => p.filename === fn))
+      .filter((p): p is PseudoInfo => Boolean(p));
+    const wfcs = infos
+      .map((p) => p.ecutwfc)
+      .filter((n): n is number => typeof n === 'number' && n > 0);
+    const rhos = infos
+      .map((p) => p.ecutrho)
+      .filter((n): n is number => typeof n === 'number' && n > 0);
+    if (wfcs.length === 0) return null;
+    const ecutwfc = Math.max(...wfcs);
+    const kinds = infos.map((p) => (p.pseudoType ?? '').toUpperCase());
+    const isPawUs = kinds.some((k) => k === 'PAW' || k === 'US');
+    // If any UPF is PAW/US, ecutrho follows the 8–12× rule (take 10×) unless the
+    // headers already suggest a higher value; norm-conserving uses 4×.
+    const headerRho = rhos.length > 0 ? Math.max(...rhos) : 0;
+    const ratio = isPawUs ? 10 : 4;
+    const ecutrho = Math.max(headerRho, Math.round(ecutwfc * ratio));
+    const kind = kinds.find((k) => k === 'PAW') ?? kinds.find((k) => k === 'US') ?? 'NC';
+    return {
+      ecutwfc,
+      ecutrho,
+      kind,
+      ratioLabel: isPawUs ? '8–12×' : '4×'
+    };
+  }, [value.pseudoMap, library]);
   const rows = value.hubbard ?? [];
   const setHubbard = (next: HubbardParam[]) => update({ hubbard: next });
 
@@ -138,7 +178,37 @@ export function GlobalSettingsEditor({
         species={species}
         value={value.pseudoMap ?? {}}
         onChange={(m) => update({ pseudoMap: m })}
+        onLibrary={setLibrary}
       />
+
+      {cutoffSuggestion ? (
+        <div className='bg-muted/40 space-y-1 rounded-md border p-2 text-xs'>
+          <div className='flex items-center justify-between'>
+            <span className='font-medium'>{t('autoCutoffTitle')}</span>
+            <Button
+              variant='outline'
+              size='sm'
+              className='h-7'
+              onClick={() =>
+                update({
+                  ecutwfc: cutoffSuggestion.ecutwfc,
+                  ecutrho: cutoffSuggestion.ecutrho
+                })
+              }
+            >
+              {t('autoCutoffApply')}
+            </Button>
+          </div>
+          <p className='text-muted-foreground'>
+            {t('autoCutoffDetail', {
+              wfc: cutoffSuggestion.ecutwfc,
+              rho: cutoffSuggestion.ecutrho,
+              kind: cutoffSuggestion.kind,
+              ratio: cutoffSuggestion.ratioLabel
+            })}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

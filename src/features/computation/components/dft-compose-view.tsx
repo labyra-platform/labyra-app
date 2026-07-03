@@ -95,6 +95,7 @@ export function DftComposeView({
   const [structure, setStructure] = useState<unknown>(null);
   const [globalCfg, setGlobalCfg] = useState<DftWorkflowGlobal | null>(null);
   const [srcState, setSrcState] = useState<SrcState>('idle');
+  const [previewOk, setPreviewOk] = useState<boolean>(true);
   const [archId, setArchId] = useState(ARCHETYPES[0].id);
   const [nodes, setNodes] = useState<ComposeNode[]>(() => nodesFor(ARCHETYPES[0]));
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -251,6 +252,11 @@ export function DftComposeView({
 
   async function launch() {
     if (!canLaunch) return;
+    // The launched workflow is built from live compose state (definition), so it
+    // always reflects the latest edits — there is no separate save step. But if the
+    // input preview last failed to render, the .in likely has an error QE will
+    // reject; confirm before spending a VM on it.
+    if (!previewOk && !window.confirm(t('composeInputWarnLaunch'))) return;
     setBusy(true);
     setFeedback(null);
     try {
@@ -404,6 +410,8 @@ export function DftComposeView({
                     structure={structure}
                     global={globalCfg}
                     params={buildUnitParams(selNode, globalCfg)}
+                    unitId={selNode.id}
+                    onStatus={(st) => setPreviewOk(st.ok)}
                   />
                   <ComposeNodeEditor
                     node={selNode}

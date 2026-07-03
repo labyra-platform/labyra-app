@@ -1987,7 +1987,10 @@
     "cancelConfirmAction": "Dừng job",
     "autoCutoffTitle": "Cutoff gợi ý (từ UPF)",
     "autoCutoffApply": "Áp dụng",
-    "autoCutoffDetail": "ecutwfc {wfc} Ry, ecutrho {rho} Ry — lấy max mức tối thiểu khuyến nghị của các giả thế đã gán. Loại chính: {kind} (ecutrho ≈ {ratio} ecutwfc). Tăng thêm cho nguyên tố cứng hoặc cần hội tụ chặt."
+    "autoCutoffDetail": "ecutwfc {wfc} Ry, ecutrho {rho} Ry — lấy max mức tối thiểu khuyến nghị của các giả thế đã gán. Loại chính: {kind} (ecutrho ≈ {ratio} ecutwfc). Tăng thêm cho nguyên tố cứng hoặc cần hội tụ chặt.",
+    "nbndAuto": "Tự động",
+    "nbndAutoHint": "nbnd {nbnd} = ⌈{occ} dải chiếm × 1.15⌉ từ {elec} electron hoá trị (UPF đã gán). +15% để dư dải trống cho đuôi DOS và tìm Fermi ổn định; tăng thêm nếu cần DOS dày hoặc nhiều trạng thái trống.",
+    "nbndAutoFail": "Chưa ước lượng được nbnd — gán UPF cho mọi nguyên tố trước."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

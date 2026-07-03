@@ -408,6 +408,9 @@ export function DftComposeView({
                   <ComposeNodeEditor
                     node={selNode}
                     canDelete={nodes.length > 1}
+                    structure={structure}
+                    pseudoMap={globalCfg?.pseudoMap}
+                    nspin={selNode.params.nspin}
                     onChange={(p) => updateNode(selNode.id, p)}
                     onChangeType={(ct) => changeNodeType(selNode.id, ct)}
                     onChangeFlavor={(f) => changeNodeFlavor(selNode.id, f)}

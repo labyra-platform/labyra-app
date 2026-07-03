@@ -1986,7 +1986,10 @@
     "cancelConfirmAction": "Cancel job",
     "autoCutoffTitle": "Suggested cutoffs (from UPFs)",
     "autoCutoffApply": "Apply",
-    "autoCutoffDetail": "ecutwfc {wfc} Ry, ecutrho {rho} Ry — max of the assigned pseudopotentials' suggested minimums. Dominant type: {kind} (ecutrho ≈ {ratio} ecutwfc). Increase for hard elements or tight convergence."
+    "autoCutoffDetail": "ecutwfc {wfc} Ry, ecutrho {rho} Ry — max of the assigned pseudopotentials' suggested minimums. Dominant type: {kind} (ecutrho ≈ {ratio} ecutwfc). Increase for hard elements or tight convergence.",
+    "nbndAuto": "Auto",
+    "nbndAutoHint": "nbnd {nbnd} = ⌈{occ} occupied × 1.15⌉ from {elec} valence electrons (assigned UPFs). The +15% leaves empty bands for DOS tails and a stable Fermi search; raise it for dense DOS or many empty states.",
+    "nbndAutoFail": "Could not estimate nbnd — assign a UPF to every element first."
   },
   "structures": {
     "importTitle": "Import structure",

@@ -248,3 +248,14 @@ export interface CancelBody {
 export function cancelDftWorkflow(body: CancelBody): Promise<WorkerResult> {
   return callWorker('/dft/cancel', body);
 }
+
+export interface NbndSuggestBody {
+  tenantId: string;
+  structure: unknown;
+  pseudoMap: Record<string, string>;
+  nspin?: number;
+}
+/** Minimum nbnd from valence electrons (Σ z_valence of assigned UPFs). */
+export function suggestDftNbnd(body: NbndSuggestBody): Promise<WorkerResult> {
+  return callWorker('/dft/nbnd-suggest', body);
+}

@@ -10,6 +10,7 @@
 'use client';
 
 import { IconCopy, IconTrash } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -50,6 +51,10 @@ interface Props {
   onChangeFlavor: (flavor: string) => void;
   onClone: () => void;
   onDelete: () => void;
+  /** For the "Auto" nbnd helper: valence electrons come from the assigned UPFs. */
+  structure?: unknown;
+  pseudoMap?: Record<string, string>;
+  nspin?: number;
 }
 
 const SMEARING: SmearingType[] = [
@@ -122,12 +127,53 @@ export function ComposeNodeEditor({
   onChangeType,
   onChangeFlavor,
   onClone,
-  onDelete
+  onDelete,
+  structure,
+  pseudoMap,
+  nspin
 }: Props) {
+  const t = useTranslations('computation');
   const blocks = paramBlocks(node.calcType);
   const p = node.params;
   const [advOpen, setAdvOpen] = useState<Record<string, boolean>>({});
+  const [nbndBusy, setNbndBusy] = useState(false);
+  const [nbndHint, setNbndHint] = useState<string | null>(null);
   const set = (patch: Partial<NodeParams>) => onChange({ ...p, ...patch });
+
+  const suggestNbnd = async () => {
+    if (!structure || !pseudoMap) return;
+    setNbndBusy(true);
+    setNbndHint(null);
+    try {
+      const res = await fetch('/api/dft/nbnd-suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structure, pseudoMap, nspin: nspin ?? 1 })
+      });
+      const data = (await res.json().catch(() => null)) as {
+        nbnd?: number;
+        nOccupied?: number;
+        nElectrons?: number;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.nbnd) {
+        setNbndHint(data?.error ?? t('nbndAutoFail'));
+        return;
+      }
+      set({ nbnd: data.nbnd });
+      setNbndHint(
+        t('nbndAutoHint', {
+          nbnd: data.nbnd,
+          occ: Math.round(data.nOccupied ?? 0),
+          elec: Math.round(data.nElectrons ?? 0)
+        })
+      );
+    } catch {
+      setNbndHint(t('nbndAutoFail'));
+    } finally {
+      setNbndBusy(false);
+    }
+  };
   const num = (key: keyof NodeParams, value: number) => (
     <NumberField
       value={value}
@@ -256,8 +302,21 @@ export function ComposeNodeEditor({
       case 'nbnd':
         return (
           <div key='nbnd' className='space-y-1'>
-            <Label className='text-xs'>nbnd (0 = auto)</Label>
+            <div className='flex items-center justify-between'>
+              <Label className='text-xs'>nbnd (0 = auto)</Label>
+              {structure && pseudoMap && Object.keys(pseudoMap).length > 0 ? (
+                <button
+                  type='button'
+                  onClick={() => void suggestNbnd()}
+                  disabled={nbndBusy}
+                  className='text-primary hover:underline text-xs disabled:opacity-50'
+                >
+                  {nbndBusy ? '…' : t('nbndAuto')}
+                </button>
+              ) : null}
+            </div>
             {num('nbnd', p.nbnd)}
+            {nbndHint ? <p className='text-muted-foreground text-[11px]'>{nbndHint}</p> : null}
           </div>
         );
       case 'emin':

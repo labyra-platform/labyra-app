@@ -1978,7 +1978,13 @@
     "machineC2QuotaNote": "Cần quota C2_CPUS ≥ 60 của region (mặc định thường là 8 — job sẽ kẹt QUEUED cho tới khi được duyệt tăng).",
     "machineN2Note": "Ice Lake, 384 GB RAM — node lớn nhất trong trần CPU mặc định của region; hợp slab/heterostructure lớn (DFT+U tốn RAM).",
     "machineFamilyQuota": "khả dụng tuỳ region; job cần quota {metric} của region ≥ số vCPU máy (mặc định thường thấp — thiếu thì job kẹt QUEUED).",
-    "convLive": "Đang chạy"
+    "convLive": "Đang chạy",
+    "cancelJob": "Dừng",
+    "cancelWorkflowTitle": "Dừng workflow này?",
+    "cancelUnitTitle": "Dừng bước này?",
+    "cancelConfirm": "Thao tác này dừng job Batch đang chạy và giải phóng VM. Các bước đã xong được giữ lại; bước bị dừng và những bước phụ thuộc nó sẽ bị đánh dấu thất bại. Không thể hoàn tác.",
+    "cancelKeep": "Tiếp tục chạy",
+    "cancelConfirmAction": "Dừng job"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

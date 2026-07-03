@@ -1977,7 +1977,13 @@
     "machineC2QuotaNote": "Requires C2_CPUS ≥ 60 regional quota (default is often 8 — the job stays QUEUED until an increase is granted).",
     "machineN2Note": "Ice Lake, 384 GB RAM — largest node within the default regional CPU cap; best for large slabs/heterostructures (memory-heavy DFT+U).",
     "machineFamilyQuota": "availability varies by region; scheduling needs {metric} regional quota ≥ the machine vCPUs (default is often low — the job stays QUEUED otherwise).",
-    "convLive": "Streaming"
+    "convLive": "Streaming",
+    "cancelJob": "Cancel",
+    "cancelWorkflowTitle": "Cancel this workflow?",
+    "cancelUnitTitle": "Cancel this step?",
+    "cancelConfirm": "This stops the running Batch job and releases its VM. Completed steps are kept; the cancelled step and anything depending on it are marked failed. This cannot be undone.",
+    "cancelKeep": "Keep running",
+    "cancelConfirmAction": "Cancel job"
   },
   "structures": {
     "importTitle": "Import structure",

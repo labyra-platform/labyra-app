@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DftAvgpotTab } from '@/features/computation/components/dft-avgpot-tab';
+import { CancelWorkflowButton } from '@/features/computation/components/cancel-workflow-button';
 import { WorkflowReconciler } from '@/features/computation/components/workflow-reconciler';
 import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
 import { DftConvergenceTab } from '@/features/computation/components/dft-convergence-tab';
@@ -64,9 +65,14 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
             active={workflow.overallStatus === 'running'}
           />
           {workflow.overallStatus ? (
-            <Badge variant='secondary' className='mt-1 text-[10px]'>
-              {workflow.overallStatus}
-            </Badge>
+            <div className='mt-1 flex items-center gap-2'>
+              <Badge variant='secondary' className='text-[10px]'>
+                {workflow.overallStatus}
+              </Badge>
+              {workflow.overallStatus === 'running' ? (
+                <CancelWorkflowButton workflowId={workflow.id} variant='ghost' />
+              ) : null}
+            </div>
           ) : null}
         </div>
         <div className='p-2'>
@@ -76,11 +82,11 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
               const st = workflow.snapshot?.[u.id]?.status ?? 'pending';
               const active = u.id === selectedId;
               return (
-                <li key={u.id}>
+                <li key={u.id} className='flex items-center gap-1'>
                   <button
                     type='button'
                     onClick={() => setSelectedId(active ? null : u.id)}
-                    className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm ${active ? 'bg-accent' : 'hover:bg-muted'}`}
+                    className={`flex flex-1 items-center gap-2 rounded px-2 py-1 text-left text-sm ${active ? 'bg-accent' : 'hover:bg-muted'}`}
                   >
                     <span
                       className={`size-1.5 shrink-0 rounded-full ${STATUS_DOT[st] ?? STATUS_DOT.pending}`}
@@ -90,6 +96,14 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
                     </span>
                     <span className='flex-1 truncate'>{u.name ?? u.calcType}</span>
                   </button>
+                  {st === 'running' || st === 'queued' ? (
+                    <CancelWorkflowButton
+                      workflowId={workflow.id}
+                      unitId={u.id}
+                      size='icon'
+                      variant='ghost'
+                    />
+                  ) : null}
                 </li>
               );
             })}

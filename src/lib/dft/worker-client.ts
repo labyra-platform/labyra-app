@@ -238,3 +238,13 @@ export interface ReconcileBody {
 export function reconcileDftWorkflow(body: ReconcileBody): Promise<WorkerResult> {
   return callWorker('/dft/reconcile', body);
 }
+
+export interface CancelBody {
+  tenantId: string;
+  workflowId: string;
+  unitId?: string;
+}
+/** Stop a running workflow (or one unit) — cancels the Batch job(s). */
+export function cancelDftWorkflow(body: CancelBody): Promise<WorkerResult> {
+  return callWorker('/dft/cancel', body);
+}

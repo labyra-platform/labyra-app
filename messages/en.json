@@ -1993,7 +1993,9 @@
     "nbndAutoHint": "nbnd {nbnd} = ⌈{occ} occupied × 1.15⌉ from {elec} valence electrons (assigned UPFs). The +15% leaves empty bands for DOS tails and a stable Fermi search; raise it for dense DOS or many empty states.",
     "nbndAutoFail": "Could not estimate nbnd — assign a UPF to every element first.",
     "composeInputDownload": "Download .in",
-    "composeInputWarnLaunch": "The input preview for the selected step last failed to render, so its .in may contain an error that QE will reject. Launch anyway?"
+    "composeInputWarnLaunch": "The input preview for the selected step last failed to render, so its .in may contain an error that QE will reject. Launch anyway?",
+    "advancedTitle": "Advanced",
+    "advancedHint": "Optional parameters — defaults are fine for most runs; open to fine-tune."
   },
   "structures": {
     "importTitle": "Import structure",

@@ -1994,7 +1994,9 @@
     "nbndAutoHint": "nbnd {nbnd} = ⌈{occ} dải chiếm × 1.15⌉ từ {elec} electron hoá trị (UPF đã gán). +15% để dư dải trống cho đuôi DOS và tìm Fermi ổn định; tăng thêm nếu cần DOS dày hoặc nhiều trạng thái trống.",
     "nbndAutoFail": "Chưa ước lượng được nbnd — gán UPF cho mọi nguyên tố trước.",
     "composeInputDownload": "Tải .in",
-    "composeInputWarnLaunch": "Bản xem trước input của bước đang chọn vừa render lỗi, nên file .in có thể chứa lỗi mà QE sẽ từ chối. Vẫn chạy?"
+    "composeInputWarnLaunch": "Bản xem trước input của bước đang chọn vừa render lỗi, nên file .in có thể chứa lỗi mà QE sẽ từ chối. Vẫn chạy?",
+    "advancedTitle": "Nâng cao",
+    "advancedHint": "Tham số tuỳ chọn — mặc định đủ cho phần lớn trường hợp; mở ra để tinh chỉnh."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

@@ -49,6 +49,12 @@ const TABS: Tab[] = [
     isActive: (p) => p.startsWith('/dashboard/structures')
   },
   {
+    href: '/dashboard/computation/pseudo',
+    labelKey: 'pseudoTab',
+    Icon: IconDatabase,
+    isActive: (p) => p.startsWith('/dashboard/computation/pseudo')
+  },
+  {
     href: '/dashboard/computation/compose',
     labelKey: 'composeTitle',
     Icon: IconTools,
@@ -59,12 +65,6 @@ const TABS: Tab[] = [
     labelKey: 'compareTitle',
     Icon: IconGitCompare,
     isActive: (p) => p.startsWith('/dashboard/computation/compare')
-  },
-  {
-    href: '/dashboard/computation/pseudo',
-    labelKey: 'pseudoTab',
-    Icon: IconDatabase,
-    isActive: (p) => p.startsWith('/dashboard/computation/pseudo')
   }
 ];
 

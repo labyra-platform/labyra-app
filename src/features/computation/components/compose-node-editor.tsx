@@ -9,7 +9,7 @@
  */
 'use client';
 
-import { IconCopy, IconTrash } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconCopy, IconTrash } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -615,21 +615,42 @@ export function ComposeNodeEditor({
               <div className='grid grid-cols-2 gap-x-3 gap-y-3'>
                 {block.keys.map((key) => renderParam(key))}
               </div>
-              {advKeys.length > 0 ? (
-                <>
+              {visibleAdv.length > 0 ? (
+                <div
+                  className={
+                    open
+                      ? 'border-primary/40 bg-muted/30 rounded-lg border'
+                      : 'hover:border-primary/40 hover:bg-muted/20 rounded-lg border transition-colors'
+                  }
+                >
                   <button
                     type='button'
                     onClick={() => setAdvOpen({ ...advOpen, [block.name]: !open })}
-                    className='text-muted-foreground hover:text-foreground text-xs'
+                    className='flex w-full items-center justify-between gap-2 px-3 py-2 text-left'
+                    aria-expanded={open}
                   >
-                    {open ? '− Hide advanced' : '+ Advanced'}
+                    <span className='flex items-center gap-1.5 text-sm font-medium'>
+                      {open ? (
+                        <IconChevronDown className='text-muted-foreground size-4' />
+                      ) : (
+                        <IconChevronRight className='text-muted-foreground size-4' />
+                      )}
+                      {t('advancedTitle')}
+                    </span>
+                    <span className='bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums'>
+                      {visibleAdv.length}
+                    </span>
                   </button>
                   {open ? (
-                    <div className='grid grid-cols-2 gap-x-3 gap-y-3'>
+                    <div className='grid grid-cols-2 gap-x-3 gap-y-3 px-3 pb-3'>
                       {visibleAdv.map((key) => renderParam(key))}
                     </div>
-                  ) : null}
-                </>
+                  ) : (
+                    <p className='text-muted-foreground px-3 pb-2 text-[11px]'>
+                      {t('advancedHint')}
+                    </p>
+                  )}
+                </div>
               ) : null}
             </div>
           );

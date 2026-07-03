@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DftAvgpotTab } from '@/features/computation/components/dft-avgpot-tab';
 import { CancelWorkflowButton } from '@/features/computation/components/cancel-workflow-button';
+import { JobsAutoRefresh } from '@/features/computation/components/jobs-auto-refresh';
 import { WorkflowReconciler } from '@/features/computation/components/workflow-reconciler';
 import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
 import { DftConvergenceTab } from '@/features/computation/components/dft-convergence-tab';
@@ -64,6 +65,7 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
             workflowId={workflow.id}
             active={workflow.overallStatus === 'running'}
           />
+          <JobsAutoRefresh active={workflow.overallStatus === 'running'} />
           {workflow.overallStatus ? (
             <div className='mt-1 flex items-center gap-2'>
               <Badge variant='secondary' className='text-[10px]'>

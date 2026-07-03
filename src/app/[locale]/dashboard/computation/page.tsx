@@ -21,6 +21,7 @@ import { ComputationTabs } from '@/features/computation/components/computation-t
 import { DftWorkflowTable } from '@/features/computation/components/dft-workflow-table';
 import { toWorkflowRow } from '@/features/computation/workflow-row';
 import { getCurrentTenantId } from '@/lib/auth/server';
+import { JobsAutoRefresh } from '@/features/computation/components/jobs-auto-refresh';
 import { listDftWorkflows } from '@/lib/firebase/dft/service';
 
 export const dynamic = 'force-dynamic';
@@ -33,9 +34,11 @@ export default async function ComputationPage() {
   }
   const workflows = await listDftWorkflows(tenantId);
   const rows = workflows.map(toWorkflowRow);
+  const anyActive = rows.some((r) => r.status === 'running' || r.status === 'queued');
 
   return (
     <PageContainer>
+      <JobsAutoRefresh active={anyActive} />
       <ComputationTabs />
       {rows.length === 0 ? (
         <div className='text-muted-foreground py-12 text-center text-sm'>{t('noWorkflows')}</div>

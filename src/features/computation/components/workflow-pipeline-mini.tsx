@@ -31,8 +31,14 @@ function dotColor(status: DftUnitStatus | undefined): string {
   }
 }
 
+/** Connector colour between two steps: green once the left step has completed,
+ * otherwise a muted rail (mirrors the progress-rail look of the reference). */
+function railColor(leftStatus: DftUnitStatus | undefined): string {
+  return leftStatus === 'completed' ? 'bg-emerald-500/70' : 'bg-border';
+}
+
 function DotIcon({ status }: { status: DftUnitStatus | undefined }) {
-  const cls = cn('size-3.5 shrink-0', dotColor(status));
+  const cls = cn('size-4 shrink-0', dotColor(status));
   switch (status) {
     case 'completed':
       return <IconCircleCheckFilled className={cls} aria-hidden />;
@@ -65,7 +71,12 @@ export function WorkflowPipelineMini({ steps, className }: Props) {
           : `${s.label}: ${s.status ?? 'pending'}`;
         return (
           <div key={s.id} className='flex items-center gap-1' title={title}>
-            {i > 0 ? <span className='bg-border h-px w-3' aria-hidden /> : null}
+            {i > 0 ? (
+              <span
+                className={cn('h-0.5 w-3 rounded-full', railColor(steps[i - 1].status))}
+                aria-hidden
+              />
+            ) : null}
             <DotIcon status={s.status} />
             <span className='text-muted-foreground hidden text-[11px] lg:inline'>
               {s.label}

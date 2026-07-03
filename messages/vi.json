@@ -1996,7 +1996,9 @@
     "composeInputDownload": "Tải .in",
     "composeInputWarnLaunch": "Bản xem trước input của bước đang chọn vừa render lỗi, nên file .in có thể chứa lỗi mà QE sẽ từ chối. Vẫn chạy?",
     "advancedTitle": "Nâng cao",
-    "advancedHint": "Tham số tuỳ chọn — mặc định đủ cho phần lớn trường hợp; mở ra để tinh chỉnh."
+    "advancedHint": "Tham số tuỳ chọn — mặc định đủ cho phần lớn trường hợp; mở ra để tinh chỉnh.",
+    "pseudoColType": "Loại",
+    "pseudoSetsGlobal": "đặt global"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

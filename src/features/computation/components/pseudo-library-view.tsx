@@ -11,9 +11,16 @@
 
 import { IconLoader2, IconUpload } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 import { SortableHead, useSortRows } from '@/components/ui-extra/sortable-head';
 
 interface PseudoRow {
@@ -22,6 +29,24 @@ interface PseudoRow {
   size: number | null;
   ecutwfc: number | null;
   ecutrho: number | null;
+  pseudoType?: string | null;
+  relativistic?: string | null;
+  nlcc?: boolean | null;
+  functional?: string | null;
+}
+
+const NEUTRAL_BADGE =
+  'rounded bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-medium';
+
+/** Colour the pseudopotential-kind badge: PAW/US emerald, NC amber (softer
+ * cutoffs but no augmentation), other neutral. */
+function typeBadge(kind: string): string {
+  const k = kind.toUpperCase();
+  if (k === 'PAW' || k === 'US')
+    return 'rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600';
+  if (k === 'NC')
+    return 'rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600';
+  return NEUTRAL_BADGE;
 }
 
 function fileToB64(file: File): Promise<string> {
@@ -66,6 +91,16 @@ export function PseudoLibraryView() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // The UPF that drives the global cutoff = the one with the largest ecutrho
+  // (tie-broken by ecutwfc); global ecutwfc/ecutrho must meet or exceed it.
+  const globalSetter = useMemo(() => {
+    const list = (rows ?? []).filter((r) => r.ecutrho != null || r.ecutwfc != null);
+    if (list.length === 0) return null;
+    return list.toSorted(
+      (a, b) => (b.ecutrho ?? 0) - (a.ecutrho ?? 0) || (b.ecutwfc ?? 0) - (a.ecutwfc ?? 0)
+    )[0].filename;
+  }, [rows]);
 
   const sortable = useSortRows(rows ?? [], {
     filename: (r) => r.filename,
@@ -150,6 +185,7 @@ export function PseudoLibraryView() {
                   dir={sortable.dir}
                   onToggle={sortable.toggle}
                 />
+                <TableHead>{t('pseudoColType')}</TableHead>
                 <SortableHead
                   label={t('pseudoColEcutwfc')}
                   sortKey='ecutwfc'
@@ -181,6 +217,23 @@ export function PseudoLibraryView() {
                 <TableRow key={r.filename}>
                   <TableCell className='font-mono text-xs'>{r.filename}</TableCell>
                   <TableCell className='font-medium'>{r.element ?? '—'}</TableCell>
+                  <TableCell>
+                    <div className='flex flex-wrap items-center gap-1'>
+                      {r.pseudoType ? (
+                        <span className={typeBadge(r.pseudoType)}>{r.pseudoType}</span>
+                      ) : null}
+                      {r.relativistic ? (
+                        <span className={NEUTRAL_BADGE}>{r.relativistic}</span>
+                      ) : null}
+                      {r.nlcc ? <span className={NEUTRAL_BADGE}>NLCC</span> : null}
+                      {r.functional ? <span className={NEUTRAL_BADGE}>{r.functional}</span> : null}
+                      {globalSetter && r.filename === globalSetter ? (
+                        <span className='rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-600'>
+                          {t('pseudoSetsGlobal')}
+                        </span>
+                      ) : null}
+                    </div>
+                  </TableCell>
                   <TableCell className='text-right tabular-nums'>{fmtRy(r.ecutwfc)}</TableCell>
                   <TableCell className='text-right tabular-nums'>{fmtRy(r.ecutrho)}</TableCell>
                   <TableCell className='text-muted-foreground text-right tabular-nums'>

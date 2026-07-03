@@ -1995,7 +1995,9 @@
     "composeInputDownload": "Download .in",
     "composeInputWarnLaunch": "The input preview for the selected step last failed to render, so its .in may contain an error that QE will reject. Launch anyway?",
     "advancedTitle": "Advanced",
-    "advancedHint": "Optional parameters — defaults are fine for most runs; open to fine-tune."
+    "advancedHint": "Optional parameters — defaults are fine for most runs; open to fine-tune.",
+    "pseudoColType": "Type",
+    "pseudoSetsGlobal": "sets global"
   },
   "structures": {
     "importTitle": "Import structure",

@@ -9,7 +9,10 @@ import {
   IconAlertTriangleFilled,
   IconCircle,
   IconCircleCheckFilled,
-  IconLoader2
+  IconLoader2,
+  IconCheck,
+  IconClock,
+  IconX
 } from '@tabler/icons-react';
 import type { StepDot } from '@/features/computation/workflow-row';
 import { formatDuration } from '@/features/computation/workflow-row';
@@ -90,6 +93,78 @@ export function WorkflowPipelineMini({ steps, className }: Props) {
           Σ {total}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/** Filled status disc for the prominent rail: solid colour + white glyph, matching
+ * the reference stepper (large nodes, labels below). */
+function RailNode({ status }: { status: DftUnitStatus | undefined }) {
+  const base = 'flex size-8 items-center justify-center rounded-full shrink-0';
+  switch (status) {
+    case 'completed':
+      return (
+        <span className={cn(base, 'bg-emerald-500 text-white')}>
+          <IconCheck className='size-4' stroke={3} aria-hidden />
+        </span>
+      );
+    case 'failed':
+      return (
+        <span className={cn(base, 'bg-destructive text-white')}>
+          <IconX className='size-4' stroke={3} aria-hidden />
+        </span>
+      );
+    case 'running':
+      return (
+        <span className={cn(base, 'bg-blue-500 text-white')}>
+          <IconLoader2 className='size-4 animate-spin' aria-hidden />
+        </span>
+      );
+    case 'queued':
+      return (
+        <span className={cn(base, 'border-2 border-amber-500 text-amber-500')}>
+          <IconClock className='size-4' aria-hidden />
+        </span>
+      );
+    default:
+      return <span className={cn(base, 'border-muted-foreground/30 border-2')} aria-hidden />;
+  }
+}
+
+/**
+ * Prominent progress rail — large nodes with labels below and thick connectors
+ * that turn green as each step completes. For the job detail view where one
+ * workflow is tracked closely; the table uses the compact variant above.
+ */
+export function WorkflowPipelineRail({ steps, className }: Props) {
+  if (steps.length === 0) return null;
+  return (
+    <div className={cn('flex items-start', className)}>
+      {steps.map((s, i) => {
+        const dur = formatDuration(s.durationSec);
+        return (
+          <div key={s.id} className='contents'>
+            {i > 0 ? (
+              <span
+                className={cn(
+                  'mt-4 h-0.5 min-w-4 flex-1 rounded-full',
+                  railColor(steps[i - 1].status)
+                )}
+                aria-hidden
+              />
+            ) : null}
+            <div className='flex flex-col items-center gap-1.5' style={{ minWidth: '4rem' }}>
+              <RailNode status={s.status} />
+              <span className='max-w-[6rem] truncate text-center text-xs font-medium'>
+                {s.label}
+              </span>
+              {dur ? (
+                <span className='text-muted-foreground/70 text-[10px] tabular-nums'>{dur}</span>
+              ) : null}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

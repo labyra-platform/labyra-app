@@ -81,10 +81,28 @@ export function formatDuration(sec: number | null | undefined): string | null {
 }
 
 function orderedUnits(units: DftUnit[]): DftUnit[] {
-  return units
-    .map((u, i) => ({ u, key: u.order ?? i + 1 }))
-    .toSorted((a, b) => a.key - b.key)
-    .map((x) => x.u);
+  // Topological order over dependsOn edges so the pipeline always reads in DAG
+  // sequence (vc-relax → scf → nscf → bands/dos → …), tie-broken by an explicit
+  // `order` field (else composition index). Falls back to the tie-break key alone
+  // if a cycle or dangling dependency would otherwise stall the sort.
+  const key = new Map(units.map((u, i) => [u.id, u.order ?? i + 1]));
+  const byId = new Map(units.map((u) => [u.id, u]));
+  const placed = new Set<string>();
+  const out: DftUnit[] = [];
+  const remaining = [...units];
+  while (remaining.length > 0) {
+    const ready = remaining.filter((u) =>
+      (u.dependsOn ?? []).every((d) => !byId.has(d) || placed.has(d))
+    );
+    const batch = (ready.length > 0 ? ready : remaining).toSorted(
+      (a, b) => (key.get(a.id) ?? 0) - (key.get(b.id) ?? 0)
+    );
+    const next = batch[0];
+    out.push(next);
+    placed.add(next.id);
+    remaining.splice(remaining.indexOf(next), 1);
+  }
+  return out;
 }
 
 /** Roll the units' snapshot statuses into a single workflow status. */

@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DftAvgpotTab } from '@/features/computation/components/dft-avgpot-tab';
+import { WorkflowPipelineRail } from '@/features/computation/components/workflow-pipeline-mini';
+import { toWorkflowRow } from '@/features/computation/workflow-row';
 import { CancelWorkflowButton } from '@/features/computation/components/cancel-workflow-button';
 import { JobsAutoRefresh } from '@/features/computation/components/jobs-auto-refresh';
 import { WorkflowReconciler } from '@/features/computation/components/workflow-reconciler';
@@ -47,6 +49,7 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showRail, setShowRail] = useState(true);
   const units = useMemo(() => workflow.units ?? [], [workflow.units]);
+  const railSteps = useMemo(() => toWorkflowRow(workflow).steps, [workflow]);
   const selectedUnit = useMemo(
     () => units.find((u) => u.id === selectedId) ?? null,
     [units, selectedId]
@@ -137,6 +140,9 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
       </aside>
 
       <div className='flex min-w-0 flex-1 flex-col'>
+        <div className='overflow-x-auto border-b px-4 py-3'>
+          <WorkflowPipelineRail steps={railSteps} />
+        </div>
         <Tabs defaultValue='overview' className='flex flex-1 flex-col gap-0'>
           <div className='flex items-center gap-1 border-b px-2'>
             <Button

@@ -31,6 +31,8 @@ interface ConvergenceData {
   scf_seconds?: number[];
   /** false while the .out is a mid-run snapshot (live), true once QE printed JOB DONE. */
   job_done?: boolean;
+  /** true when the .out is not in GCS yet (job queued / before first flush). */
+  pending?: boolean;
   ionic_steps: IonicStep[];
   n_ionic_steps: number;
   converged: boolean;
@@ -141,6 +143,20 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
     return <div className='text-destructive py-12 text-center text-sm'>{error}</div>;
   }
   if (!data) return null;
+
+  // Job launched but no output yet (still queued, or before the first 30 s
+  // streaming flush) — show a waiting state; the poller keeps checking.
+  if (data.pending && data.scf_accuracy.length === 0) {
+    return (
+      <div className='text-muted-foreground flex flex-col items-center gap-2 py-12 text-center text-sm'>
+        <span className='inline-flex items-center gap-1.5'>
+          <span className='size-1.5 animate-pulse rounded-full bg-blue-500' />
+          {t('convWaiting')}
+        </span>
+        <span className='text-xs'>{t('convWaitingHint')}</span>
+      </div>
+    );
+  }
 
   const secs = data.scf_seconds ?? [];
   const scfRows = data.scf_accuracy.map((a, i) => ({

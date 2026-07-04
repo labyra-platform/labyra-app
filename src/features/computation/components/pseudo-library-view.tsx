@@ -138,7 +138,9 @@ export function PseudoLibraryView() {
   return (
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
-        <p className='text-muted-foreground max-w-2xl text-sm'>{t('pseudoLibraryHint')}</p>
+        <p className='text-muted-foreground max-w-2xl text-pretty text-sm'>
+          {t('pseudoLibraryHint')}
+        </p>
         <Button variant='outline' disabled={uploading} onClick={() => fileRef.current?.click()}>
           {uploading ? (
             <IconLoader2 className='mr-2 size-4 animate-spin' />

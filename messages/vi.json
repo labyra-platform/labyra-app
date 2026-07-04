@@ -1949,7 +1949,7 @@
     "composeInputRefresh": "Làm mới input",
     "backToJobs": "Về danh sách job",
     "pseudoTab": "Giả thế",
-    "pseudoLibraryHint": "File UPF đã tải lên được nạp vào pseudo_dir của mọi phiên chạy. Cutoff hiển thị là mức tối thiểu do tác giả giả thế khuyến nghị trong header file — đặt ecutwfc/ecutrho toàn cục bằng hoặc cao hơn giá trị lớn nhất giữa các nguyên tố.",
+    "pseudoLibraryHint": "File UPF đã tải được nạp vào pseudo_dir của mọi run. Cutoff hiển thị là mức tối thiểu tác giả khuyến nghị từ header mỗi file — đặt global ecutwfc/ecutrho bằng hoặc cao hơn giá trị lớn nhất trong các nguyên tố của bạn.",
     "pseudoUpload": "Tải lên .UPF",
     "pseudoLoading": "Đang tải thư viện…",
     "pseudoEmpty": "Chưa có giả thế nào — tải lên các file .UPF mà phép tính cần.",
@@ -1998,7 +1998,9 @@
     "advancedTitle": "Nâng cao",
     "advancedHint": "Tham số tuỳ chọn — mặc định đủ cho phần lớn trường hợp; mở ra để tinh chỉnh.",
     "pseudoColType": "Loại",
-    "pseudoSetsGlobal": "đặt global"
+    "pseudoSetsGlobal": "đặt global",
+    "convWaiting": "Đang chờ output…",
+    "convWaitingHint": "Job đang khởi động — các vòng SCF sẽ hiện ở đây khi bắt đầu chạy."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

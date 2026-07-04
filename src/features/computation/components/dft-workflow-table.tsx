@@ -12,7 +12,7 @@
  */
 'use client';
 
-import { IconArrowsSort, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconSearch, IconTrash } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -59,7 +59,6 @@ const STATUS_ORDER: Record<StatusKind, number> = {
 };
 
 type Filter = 'all' | 'running' | 'completed' | 'failed';
-type Sort = 'name' | 'status';
 
 const href = (id: string) => `/dashboard/computation/${id}`;
 
@@ -131,7 +130,6 @@ export function DftWorkflowTable({ rows }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const [sort, setSort] = useState<Sort>('name');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
@@ -144,12 +142,10 @@ export function DftWorkflowTable({ rows }: Props) {
       if (filter === 'running') return r.status === 'running' || r.status === 'queued';
       return true;
     });
-    return matched.toSorted((a, b) =>
-      sort === 'name'
-        ? a.name.localeCompare(b.name)
-        : STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name)
+    return matched.toSorted(
+      (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name)
     );
-  }, [rows, query, filter, sort]);
+  }, [rows, query, filter]);
 
   const sortable = useSortRows(view, {
     status: (r) => r.status,
@@ -230,15 +226,6 @@ export function DftWorkflowTable({ rows }: Props) {
               ))}
             </SelectContent>
           </Select>
-          <Button
-            size='sm'
-            variant='ghost'
-            onClick={() => setSort((s) => (s === 'name' ? 'status' : 'name'))}
-            title={t('sortBy')}
-          >
-            <IconArrowsSort className='size-4' aria-hidden />
-            {sort === 'name' ? t('sortName') : t('sortStatus')}
-          </Button>
         </div>
       </div>
 

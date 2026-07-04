@@ -1948,7 +1948,7 @@
     "composeInputRefresh": "Refresh input",
     "backToJobs": "Back to jobs",
     "pseudoTab": "Pseudopotentials",
-    "pseudoLibraryHint": "Uploaded UPF files are staged into every run's pseudo_dir. Cutoffs shown are the author-suggested minimums from each file's header — set global ecutwfc/ecutrho at or above the largest values across your species.",
+    "pseudoLibraryHint": "Uploaded UPF files are staged into every run's pseudo_dir. Cutoffs shown are the author-suggested minimums from each file's header — set global ecutwfc/ecutrho at or above the largest values across your species.",
     "pseudoUpload": "Upload .UPF",
     "pseudoLoading": "Loading library…",
     "pseudoEmpty": "No pseudopotentials yet — upload the .UPF files your calculations need.",
@@ -1997,7 +1997,9 @@
     "advancedTitle": "Advanced",
     "advancedHint": "Optional parameters — defaults are fine for most runs; open to fine-tune.",
     "pseudoColType": "Type",
-    "pseudoSetsGlobal": "sets global"
+    "pseudoSetsGlobal": "sets global",
+    "convWaiting": "Waiting for output…",
+    "convWaitingHint": "The job is starting up — SCF iterations will stream here once it runs."
   },
   "structures": {
     "importTitle": "Import structure",

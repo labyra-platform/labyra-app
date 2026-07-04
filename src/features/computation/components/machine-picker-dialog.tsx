@@ -184,12 +184,12 @@ export function MachinePickerDialog({
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent className='sm:max-w-3xl'>
+      <DialogContent className='flex h-[80vh] max-h-[720px] flex-col sm:max-w-3xl'>
         <DialogHeader>
           <DialogTitle>{t('machinePickerTitle')}</DialogTitle>
         </DialogHeader>
 
-        <div className='grid gap-4 sm:grid-cols-[200px_1fr]'>
+        <div className='grid min-h-0 flex-1 gap-4 sm:grid-cols-[200px_1fr]'>
           <div className='space-y-1'>
             {PROVIDERS.map(({ id, label, Icon, live, spec }) => (
               <button
@@ -221,7 +221,7 @@ export function MachinePickerDialog({
             ))}
           </div>
 
-          <div className='space-y-2'>
+          <div className='flex min-h-0 flex-col gap-2'>
             <div className='flex flex-wrap gap-1.5'>
               {['presets', ...FAMILIES.map((f) => f.id)].map((id) => (
                 <button
@@ -247,7 +247,7 @@ export function MachinePickerDialog({
                 })()}
               </p>
             ) : null}
-            <div className='max-h-[44vh] space-y-2 overflow-y-auto pr-1'>
+            <div className='min-h-0 flex-1 space-y-2 overflow-y-auto pr-1'>
               {(family === 'presets'
                 ? GCP_MACHINES
                 : (FAMILIES.find((f) => f.id === family)?.sizes ?? []).map((n) => {

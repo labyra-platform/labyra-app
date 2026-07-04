@@ -301,7 +301,7 @@ export function ComposeNodeEditor({
         );
       case 'nbnd':
         return (
-          <div key='nbnd' className='space-y-1'>
+          <div key='nbnd' className='col-span-2 space-y-1'>
             <div className='flex items-center justify-between'>
               <Label className='text-xs'>nbnd (0 = auto)</Label>
               {structure && pseudoMap && Object.keys(pseudoMap).length > 0 ? (
@@ -645,11 +645,7 @@ export function ComposeNodeEditor({
                     <div className='grid grid-cols-2 gap-x-3 gap-y-3 px-3 pb-3'>
                       {visibleAdv.map((key) => renderParam(key))}
                     </div>
-                  ) : (
-                    <p className='text-muted-foreground px-3 pb-2 text-[11px]'>
-                      {t('advancedHint')}
-                    </p>
-                  )}
+                  ) : null}
                 </div>
               ) : null}
             </div>

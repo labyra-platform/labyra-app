@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -164,10 +165,27 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
     acc: a,
     dt: i > 0 && secs[i] != null && secs[i - 1] != null ? secs[i] - secs[i - 1] : 0
   }));
-  const ionicRows = data.ionic_steps.map((s, i) => ({
+  // Convergence targets from the unit whose data the endpoint returned (calcType).
+  // etot/forc default to the template values when the compose left them unset.
+  const calcType = data.calcType;
+  const convUnit = (workflow.units ?? []).find((u) => u.calcType === calcType);
+  const cp = (convUnit?.params ?? {}) as {
+    convThr?: number;
+    etotConvThr?: number;
+    forcConvThr?: number;
+  };
+  const scfThr = typeof cp.convThr === 'number' && cp.convThr > 0 ? cp.convThr : null;
+  const etotThr = typeof cp.etotConvThr === 'number' && cp.etotConvThr > 0 ? cp.etotConvThr : 1e-6;
+  const forcThr =
+    typeof cp.forcConvThr === 'number' && cp.forcConvThr > 0 ? cp.forcConvThr : 4.5e-4;
+  const isRelaxConv = calcType === 'relax' || calcType === 'vc-relax';
+
+  const ionicRows = data.ionic_steps.map((s, i, arr) => ({
     step: i + 1,
     energy: s.energy_ry,
-    force: s.total_force
+    force: s.total_force,
+    // |ΔE| vs previous ionic step — the quantity etot_conv_thr actually bounds.
+    dE: i > 0 ? Math.abs(s.energy_ry - arr[i - 1].energy_ry) : null
   }));
   const hasIonic = ionicRows.length > 1;
 
@@ -234,6 +252,20 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
                   width={56}
                 />
                 <Tooltip content={<ConvTooltip />} />
+                {scfThr ? (
+                  <ReferenceLine
+                    y={scfThr}
+                    stroke='#2563eb'
+                    strokeDasharray='4 4'
+                    strokeOpacity={0.6}
+                    label={{
+                      value: `conv_thr ${scfThr.toExponential(0)}`,
+                      position: 'insideTopRight',
+                      fontSize: 9,
+                      fill: '#2563eb'
+                    }}
+                  />
+                ) : null}
                 <Line
                   dataKey='acc'
                   name={t('scfAccuracyShort')}
@@ -289,6 +321,36 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
                   width={56}
                 />
                 <Tooltip content={<ConvTooltip />} />
+                {isRelaxConv ? (
+                  <ReferenceLine
+                    yAxisId='f'
+                    y={forcThr}
+                    stroke='#dc2626'
+                    strokeDasharray='4 4'
+                    strokeOpacity={0.7}
+                    label={{
+                      value: `forc_conv_thr ${forcThr.toExponential(1)}`,
+                      position: 'insideBottomRight',
+                      fontSize: 9,
+                      fill: '#dc2626'
+                    }}
+                  />
+                ) : null}
+                {isRelaxConv ? (
+                  <ReferenceLine
+                    yAxisId='f'
+                    y={etotThr}
+                    stroke='#16a34a'
+                    strokeDasharray='4 4'
+                    strokeOpacity={0.7}
+                    label={{
+                      value: `etot_conv_thr ${etotThr.toExponential(0)}`,
+                      position: 'insideTopRight',
+                      fontSize: 9,
+                      fill: '#16a34a'
+                    }}
+                  />
+                ) : null}
                 <Line
                   yAxisId='e'
                   dataKey='energy'
@@ -309,10 +371,22 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
                   dot={{ r: 2 }}
                   isAnimationActive={false}
                 />
+                <Line
+                  yAxisId='f'
+                  dataKey='dE'
+                  name={t('deltaERy')}
+                  type='monotone'
+                  stroke='#16a34a'
+                  strokeWidth={1}
+                  strokeDasharray='2 2'
+                  dot={{ r: 1.5 }}
+                  connectNulls
+                  isAnimationActive={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className='mt-1 flex gap-3 text-[10px]'>
+          <div className='mt-1 flex flex-wrap gap-3 text-[10px]'>
             <span className='flex items-center gap-1'>
               <span className='inline-block size-2 rounded-[1px] bg-[#2563eb]' />
               {t('energyRy')}
@@ -321,7 +395,12 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
               <span className='inline-block size-2 rounded-[1px] bg-[#dc2626]' />
               {t('forceRyBohr')}
             </span>
+            <span className='flex items-center gap-1'>
+              <span className='inline-block size-2 rounded-[1px] bg-[#16a34a]' />
+              {t('deltaERy')}
+            </span>
           </div>
+          <p className='text-muted-foreground mt-1 text-[10px]'>{t('convThrNote')}</p>
         </div>
       ) : null}
     </div>

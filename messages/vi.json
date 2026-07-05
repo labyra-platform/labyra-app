@@ -2042,7 +2042,9 @@
     "composeStructurePlaceholder": "Chọn cấu trúc",
     "composeProjectEmpty": "Dự án này chưa có cấu trúc.",
     "composeNoProjects": "Chưa có dự án — tạo ở tab Dự án.",
-    "composeLeaveWarn": "Bạn có thay đổi compose chưa lưu. Rời đi mà không lưu?"
+    "composeLeaveWarn": "Bạn có thay đổi compose chưa lưu. Rời đi mà không lưu?",
+    "deltaERy": "|ΔE| (Ry)",
+    "convThrNote": "Đường đứt = ngưỡng hội tụ mục tiêu. BFGS hội tụ khi cả |ΔE| < etot_conv_thr và tổng lực < forc_conv_thr. |ΔE| là mức thay đổi năng lượng giữa các bước ionic (không phải năng lượng tuyệt đối)."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

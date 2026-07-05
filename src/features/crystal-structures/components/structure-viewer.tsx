@@ -27,14 +27,20 @@ const Viewer3D = dynamic(() => import('./viewer-3d'), {
   )
 });
 
-const TOGGLES: (keyof ShowFlags)[] = ['atoms', 'bonds', 'cell', 'axes'];
+const TOGGLES: (keyof ShowFlags)[] = ['atoms', 'bonds', 'polyhedra', 'cell', 'axes'];
 
 export function StructureViewer({ structureId }: { structureId: string }) {
   const t = useTranslations('structures');
   const [scene, setScene] = useState<StructureScene | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [show, setShow] = useState<ShowFlags>({ atoms: true, bonds: true, cell: true, axes: true });
+  const [show, setShow] = useState<ShowFlags>({
+    atoms: true,
+    bonds: true,
+    polyhedra: true,
+    cell: true,
+    axes: true
+  });
 
   useEffect(() => {
     let alive = true;
@@ -104,7 +110,9 @@ export function StructureViewer({ structureId }: { structureId: string }) {
         </div>
       ) : scene ? (
         <>
-          <Viewer3D scene={scene} show={show} />
+          <div className={FRAME}>
+            <Viewer3D scene={scene} show={show} />
+          </div>
           {legend.length > 0 ? (
             <div className='flex flex-wrap gap-3'>
               {legend.map(([el, color]) => (

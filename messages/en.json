@@ -2153,6 +2153,7 @@
     "metallic": "Metallic",
     "unknown": "Unknown",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "viewerShow_polyhedra": "Polyhedra"
   }
 }

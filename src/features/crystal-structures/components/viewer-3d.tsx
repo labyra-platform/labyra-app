@@ -11,9 +11,11 @@
  */
 'use client';
 
+import { IconCamera, IconMaximize, IconRotate } from '@tabler/icons-react';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 import type { StructureScene } from '@/lib/dft/worker-client';
 
 export interface ShowFlags {
@@ -21,7 +23,12 @@ export interface ShowFlags {
   bonds: boolean;
   cell: boolean;
   axes: boolean;
+  polyhedra: boolean;
 }
+
+/** Electronegative elements that sit at polyhedron vertices (anions); every
+ * other element is treated as a coordination centre (cation). */
+const ANION_ELEMENTS = new Set(['N', 'O', 'F', 'P', 'S', 'Cl', 'Se', 'Br', 'Te', 'I']);
 
 export default function Viewer3D({ scene, show }: { scene: StructureScene; show: ShowFlags }) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -29,8 +36,11 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
     atoms: null,
     bonds: null,
     cell: null,
-    axes: null
+    axes: null,
+    polyhedra: null
   });
+  const resetViewRef = useRef<() => void>(() => {});
+  const screenshotRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -40,7 +50,11 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
 
     const threeScene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      preserveDrawingBuffer: true
+    });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mount.appendChild(renderer.domElement);
@@ -130,7 +144,55 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
     axesGroup.add(mkAxis(new THREE.Vector3(0, 0, 1), 0x2166cb));
 
     threeScene.add(atomGroup, bondGroup, cellGroup, axesGroup);
-    groupsRef.current = { atoms: atomGroup, bonds: bondGroup, cell: cellGroup, axes: axesGroup };
+
+    // Coordination polyhedra: for each cation, hull its bonded anion neighbours.
+    const polyGroup = new THREE.Group();
+    const pk = (p: number[] | readonly number[]) =>
+      `${p[0].toFixed(3)},${p[1].toFixed(3)},${p[2].toFixed(3)}`;
+    const atomAt = new Map<string, (typeof scene.atoms)[number]>();
+    for (const a of scene.atoms) atomAt.set(pk(a.xyz), a);
+    const neighborPos = new Map<string, number[][]>();
+    const pushNbr = (key: string, xyz: number[]) => {
+      const arr = neighborPos.get(key);
+      if (arr) arr.push(xyz);
+      else neighborPos.set(key, [xyz]);
+    };
+    for (const b of scene.bonds) {
+      pushNbr(pk(b.from), [b.to[0], b.to[1], b.to[2]]);
+      pushNbr(pk(b.to), [b.from[0], b.from[1], b.from[2]]);
+    }
+    for (const a of scene.atoms) {
+      if (ANION_ELEMENTS.has(a.el)) continue; // only cations centre a polyhedron
+      const anions = (neighborPos.get(pk(a.xyz)) ?? []).filter((p) => {
+        const nb = atomAt.get(pk(p));
+        return nb && ANION_ELEMENTS.has(nb.el);
+      });
+      if (anions.length < 4) continue; // need a 3D hull
+      try {
+        const pts = anions.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+        const geo = new ConvexGeometry(pts);
+        const mat = new THREE.MeshPhongMaterial({
+          color: a.color,
+          transparent: true,
+          opacity: 0.4,
+          side: THREE.DoubleSide,
+          flatShading: true,
+          shininess: 30
+        });
+        polyGroup.add(new THREE.Mesh(geo, mat));
+      } catch {
+        /* degenerate (coplanar) coordination — skip */
+      }
+    }
+    threeScene.add(polyGroup);
+
+    groupsRef.current = {
+      atoms: atomGroup,
+      bonds: bondGroup,
+      cell: cellGroup,
+      axes: axesGroup,
+      polyhedra: polyGroup
+    };
 
     const span = Math.max(L[0].length(), L[1].length(), L[2].length(), 4);
     camera.position.set(
@@ -144,6 +206,21 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
     controls.update();
+
+    const initialCamPos = camera.position.clone();
+    resetViewRef.current = () => {
+      camera.position.copy(initialCamPos);
+      controls.target.copy(cellCenter);
+      controls.update();
+    };
+    screenshotRef.current = () => {
+      renderer.render(threeScene, camera);
+      const url = renderer.domElement.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${scene.formula ?? 'structure'}.png`;
+      link.click();
+    };
 
     let raf = 0;
     const animate = () => {
@@ -175,7 +252,7 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
       });
       renderer.dispose();
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
-      groupsRef.current = { atoms: null, bonds: null, cell: null, axes: null };
+      groupsRef.current = { atoms: null, bonds: null, cell: null, axes: null, polyhedra: null };
     };
   }, [scene]);
 
@@ -186,7 +263,45 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
     if (g.bonds) g.bonds.visible = show.bonds;
     if (g.cell) g.cell.visible = show.cell;
     if (g.axes) g.axes.visible = show.axes;
+    if (g.polyhedra) g.polyhedra.visible = show.polyhedra;
   }, [show]);
 
-  return <div ref={mountRef} className='h-[70vh] max-h-[640px] min-h-[420px] w-full' />;
+  return (
+    <div className='relative h-full w-full'>
+      <div ref={mountRef} className='h-full w-full' />
+      <div className='absolute right-2 top-2 flex flex-col gap-1'>
+        <button
+          type='button'
+          onClick={() => resetViewRef.current()}
+          className='bg-background/80 hover:bg-background rounded border p-1.5 shadow-sm'
+          title='Reset view'
+          aria-label='Reset view'
+        >
+          <IconRotate className='size-4' />
+        </button>
+        <button
+          type='button'
+          onClick={() => {
+            const el = mountRef.current?.parentElement;
+            if (document.fullscreenElement) void document.exitFullscreen();
+            else void el?.requestFullscreen();
+          }}
+          className='bg-background/80 hover:bg-background rounded border p-1.5 shadow-sm'
+          title='Fullscreen'
+          aria-label='Fullscreen'
+        >
+          <IconMaximize className='size-4' />
+        </button>
+        <button
+          type='button'
+          onClick={() => screenshotRef.current()}
+          className='bg-background/80 hover:bg-background rounded border p-1.5 shadow-sm'
+          title='Screenshot (PNG)'
+          aria-label='Screenshot'
+        >
+          <IconCamera className='size-4' />
+        </button>
+      </div>
+    </div>
+  );
 }

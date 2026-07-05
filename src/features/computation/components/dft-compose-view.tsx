@@ -32,6 +32,11 @@ import type { DftCalcType, DftWorkflowGlobal } from '@/types/dft';
 import type { DftComposeState } from '@/types/dft-project';
 import { formatFormula } from '@/lib/utils/format-formula';
 import {
+  getComposeDraft,
+  saveComposeDraft,
+  setComposeDirty
+} from '@/features/computation/compose-draft-store';
+import {
   ARCHETYPES,
   buildDefinition,
   buildUnitParams,
@@ -146,8 +151,6 @@ export function DftComposeView({
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedUpdatedAt, setSavedUpdatedAt] = useState<number | null>(null);
-  // Snapshot of what was last saved, to detect unsaved changes (dirty state).
-  const [savedSig, setSavedSig] = useState<string | null>(null);
 
   async function loadSource(value: string) {
     setSourceId(value);
@@ -180,8 +183,25 @@ export function DftComposeView({
   // Seeded from the structure library ("Run DFT" on a structure) — load it now
   // so the composer lands ready without a manual pick.
   useEffect(() => {
+    // 1) A draft kept in memory across tab switches wins — it holds unsaved edits.
+    const ctxKey = `${projectId ?? ''}:${initialStructureId ?? ''}`;
+    const d = getComposeDraft();
+    if (d && d.contextKey === ctxKey) {
+      try {
+        setArchId(d.archId);
+        setNodes(d.nodes as ComposeNode[]);
+        if (d.global) setGlobalCfg(d.global as DftWorkflowGlobal);
+        setRunId(d.runId);
+        setSelectedId(d.selectedId);
+        setPickedProject(d.pickedProject);
+        if (d.sourceId.startsWith('cs:')) void loadSource(d.sourceId);
+        return; // draft restored — skip archetype/Firestore reset
+      } catch {
+        /* fall through to normal load */
+      }
+    }
     if (initialStructureId) void loadSource(`cs:${initialStructureId}`);
-    // Restore the most recent saved compose state for this structure, if any.
+    // 2) Otherwise restore the most recent Firestore-saved state for this structure.
     if (initialStructureId && savedStates.length > 0) {
       const mine = savedStates
         .filter((st) => st.structureId === initialStructureId)
@@ -194,14 +214,13 @@ export function DftComposeView({
           if (latest.runId) setRunId(latest.runId);
           if (latest.selectedId !== undefined) setSelectedId(latest.selectedId ?? null);
           setSavedUpdatedAt(latest.updatedAt);
-          setSavedSig(
-            JSON.stringify({
-              nodes: latest.nodes,
-              globalCfg: latest.global,
-              runId: latest.runId,
-              sourceId: `cs:${latest.structureId}`
-            })
-          );
+          const restoredSig = JSON.stringify({
+            nodes: latest.nodes,
+            globalCfg: latest.global,
+            runId: latest.runId,
+            sourceId: `cs:${latest.structureId}`
+          });
+          setBaselineSig(restoredSig);
         } catch {
           /* ignore malformed saved state */
         }
@@ -333,9 +352,53 @@ export function DftComposeView({
   // Signature of the current compose — compared to the last saved one to flag
   // unsaved changes. Excludes preset (a launch-time choice, not part of state).
   const composeSig = JSON.stringify({ nodes, globalCfg, runId, sourceId });
-  const dirty = savedSig !== null && composeSig !== savedSig;
+  // Baseline for dirty detection = the last Firestore-saved signature, or the
+  // mount-settled state (captured once globalCfg has loaded, to avoid a false
+  // dirty from the async structure load). "dirty" = edited past that baseline.
+  const [baselineSig, setBaselineSig] = useState<string | null>(null);
+  useEffect(() => {
+    if (baselineSig === null && globalCfg !== null) setBaselineSig(composeSig);
+  }, [globalCfg, baselineSig, composeSig]);
+  const dirty = baselineSig !== null && composeSig !== baselineSig;
   const effectiveProjectId = pickedProject || projectId;
   const canSave = Boolean(effectiveProjectId && sourceStructureId && validId && !saving);
+
+  // Keep the working state alive across tab switches, and expose the dirty flag so
+  // the tab bar can warn before navigating away. Draft is context-keyed so it only
+  // restores for the same project + structure. Dirty for a draft that was never
+  // saved (savedSig null) counts as dirty once the user has edited past the default.
+  useEffect(() => {
+    saveComposeDraft({
+      contextKey: `${projectId ?? ''}:${initialStructureId ?? ''}`,
+      nodes,
+      global: globalCfg,
+      runId,
+      sourceId,
+      selectedId,
+      pickedProject,
+      archId
+    });
+    setComposeDirty(dirty);
+  }, [
+    nodes,
+    globalCfg,
+    runId,
+    sourceId,
+    selectedId,
+    pickedProject,
+    archId,
+    dirty,
+    projectId,
+    initialStructureId
+  ]);
+
+  // Clear the dirty flag when this view unmounts after a save (draft persists for
+  // restoration, but a saved state should not keep warning on the next navigation).
+  useEffect(() => {
+    return () => {
+      if (!dirty) setComposeDirty(false);
+    };
+  }, [dirty]);
 
   async function save() {
     if (!effectiveProjectId || !sourceStructureId) return;
@@ -359,7 +422,7 @@ export function DftComposeView({
         setFeedback({ ok: false, text: data.error ?? t('composeSaveError') });
         return;
       }
-      setSavedSig(composeSig);
+      setBaselineSig(composeSig);
       setSavedUpdatedAt(data.updatedAt ?? Date.now());
       setFeedback({ ok: true, text: t('composeSaved') });
     } catch {

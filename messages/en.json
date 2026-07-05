@@ -2031,7 +2031,8 @@
     "composeProjectPlaceholder": "Choose a project",
     "composeStructurePlaceholder": "Choose a structure",
     "composeProjectEmpty": "No structures in this project yet.",
-    "composeNoProjects": "No projects yet — create one in the Projects tab."
+    "composeNoProjects": "No projects yet — create one in the Projects tab.",
+    "composeLeaveWarn": "You have unsaved changes to this compose. Leave without saving?"
   },
   "structures": {
     "importTitle": "Import structure",

@@ -2032,7 +2032,8 @@
     "composeProjectPlaceholder": "Chọn dự án",
     "composeStructurePlaceholder": "Chọn cấu trúc",
     "composeProjectEmpty": "Dự án này chưa có cấu trúc.",
-    "composeNoProjects": "Chưa có dự án — tạo ở tab Dự án."
+    "composeNoProjects": "Chưa có dự án — tạo ở tab Dự án.",
+    "composeLeaveWarn": "Bạn có thay đổi compose chưa lưu. Rời đi mà không lưu?"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

@@ -8,6 +8,8 @@
  */
 'use client';
 
+import { type MouseEvent, useSyncExternalStore } from 'react';
+
 import {
   IconAtom,
   IconCube,
@@ -20,7 +22,12 @@ import {
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import type { ComponentType, ReactNode } from 'react';
-import { Link, usePathname } from '@/i18n/navigation';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import {
+  getComposeDirty,
+  setComposeDirty,
+  subscribeComposeDirty
+} from '@/features/computation/compose-draft-store';
 import { cn } from '@/lib/utils';
 
 interface Tab {
@@ -78,6 +85,19 @@ const TABS: Tab[] = [
 export function ComputationTabs({ rightSlot }: { rightSlot?: ReactNode }) {
   const t = useTranslations('computation');
   const pathname = usePathname() ?? '';
+  const router = useRouter();
+  // Warn before leaving the composer with unsaved edits (client-side navigation
+  // does not trigger beforeunload, so intercept the tab click here).
+  const dirty = useSyncExternalStore(subscribeComposeDirty, getComposeDirty, () => false);
+
+  const guardedNavigate = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!dirty) return;
+    e.preventDefault();
+    if (window.confirm(t('composeLeaveWarn'))) {
+      setComposeDirty(false);
+      router.push(href);
+    }
+  };
 
   return (
     <div className='mb-4 flex items-center justify-between gap-4 border-b'>
@@ -88,6 +108,7 @@ export function ComputationTabs({ rightSlot }: { rightSlot?: ReactNode }) {
             <Link
               key={href}
               href={href}
+              onClick={(e) => guardedNavigate(e, href)}
               className={cn(
                 '-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                 active

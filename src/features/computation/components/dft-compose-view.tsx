@@ -10,7 +10,7 @@
  */
 'use client';
 
-import { IconLoader2, IconRocket, IconDeviceFloppy } from '@tabler/icons-react';
+import { IconLoader2, IconRocket, IconDeviceFloppy, IconListSearch } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import type { DftCalcType, DftWorkflowGlobal } from '@/types/dft';
 import type { DftComposeState } from '@/types/dft-project';
 import { formatFormula } from '@/lib/utils/format-formula';
+import { RunIdBrowserDialog } from '@/features/computation/components/run-id-browser-dialog';
 import {
   getComposeDraft,
   saveComposeDraft,
@@ -140,6 +141,8 @@ export function DftComposeView({
     ARCHETYPES[0].skeleton[0]?.id ?? null
   );
   const [runId, setRunId] = useState('');
+  const [runBrowserOpen, setRunBrowserOpen] = useState(false);
+  const [existingIds, setExistingIds] = useState<Set<string>>(new Set());
   const [preset, setPreset] = useState<string>('bulk-large');
   const [pickedProject, setPickedProject] = useState<string>(projectId ?? '');
   const activeProject = projects.find((p) => p.id === (pickedProject || projectId)) ?? null;
@@ -326,6 +329,22 @@ export function DftComposeView({
     return Array.from(new Set((s?.atomicSpecies ?? []).map((a) => a.element)));
   }, [structure]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/dft/workflows');
+        const data = (await res.json()) as { workflows?: { id: string }[] };
+        if (!cancelled) setExistingIds(new Set((data.workflows ?? []).map((w) => w.id)));
+      } catch {
+        /* non-fatal — collision warning just won't show */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const validId = /^[a-z0-9][a-z0-9-]{2,63}$/.test(runId);
   const sourceStructureId = sourceId.startsWith('cs:') ? sourceId.slice(3) : null;
   const activeStructureName =
@@ -338,6 +357,7 @@ export function DftComposeView({
         .join('-')
         .slice(0, 63)
     : runId;
+  const idCollides = validId && existingIds.has(effectiveJobId);
   const canLaunch = validId && srcState === 'ready' && !busy;
 
   const srcMsg =
@@ -443,6 +463,9 @@ export function DftComposeView({
   }, [dirty]);
 
   async function launch() {
+    if (idCollides && !window.confirm(t('runIdOverwriteConfirm', { id: effectiveJobId }))) {
+      return;
+    }
     if (!canLaunch) return;
     // The launched workflow is built from live compose state (definition), so it
     // always reflects the latest edits — there is no separate save step. But if the
@@ -548,19 +571,35 @@ export function DftComposeView({
         <div className='flex flex-wrap items-start gap-3'>
           <div className='space-y-1.5'>
             <Label htmlFor='compose-run-id'>{t('computeRunId')}</Label>
-            <Input
-              id='compose-run-id'
-              value={runId}
-              onChange={(e) => setRunId(normalizeRunId(e.target.value))}
-              placeholder='e.g. ws2-electronic-1'
-              className='w-56'
-            />
+            <div className='flex items-center gap-1.5'>
+              <Input
+                id='compose-run-id'
+                value={runId}
+                onChange={(e) => setRunId(normalizeRunId(e.target.value))}
+                placeholder='e.g. ws2-electronic-1'
+                className='w-56'
+              />
+              <Button
+                type='button'
+                variant='outline'
+                size='icon'
+                onClick={() => setRunBrowserOpen(true)}
+                aria-label={t('runIdBrowseTitle')}
+                title={t('runIdBrowseTitle')}
+              >
+                <IconListSearch className='size-4' />
+              </Button>
+            </div>
             <p
               className={
-                runId && !validId ? 'text-destructive text-xs' : 'text-muted-foreground text-xs'
+                runId && !validId
+                  ? 'text-destructive text-xs'
+                  : idCollides
+                    ? 'text-xs text-amber-600'
+                    : 'text-muted-foreground text-xs'
               }
             >
-              {t('composeRunIdHint')}
+              {idCollides ? t('runIdCollidesWarn', { id: effectiveJobId }) : t('composeRunIdHint')}
             </p>
           </div>
           <div className='space-y-1.5'>
@@ -676,6 +715,12 @@ export function DftComposeView({
           </pre>
         </TabsContent>
       </Tabs>
+      <RunIdBrowserDialog
+        open={runBrowserOpen}
+        onOpenChange={setRunBrowserOpen}
+        currentJobId={effectiveJobId}
+        onReuse={(r) => setRunId(normalizeRunId(r.id))}
+      />
     </div>
   );
 }

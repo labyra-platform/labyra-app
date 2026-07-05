@@ -2044,7 +2044,16 @@
     "composeNoProjects": "Chưa có dự án — tạo ở tab Dự án.",
     "composeLeaveWarn": "Bạn có thay đổi compose chưa lưu. Rời đi mà không lưu?",
     "deltaERy": "|ΔE| (Ry)",
-    "convThrNote": "Đường đứt = ngưỡng hội tụ mục tiêu. BFGS hội tụ khi cả |ΔE| < etot_conv_thr và tổng lực < forc_conv_thr. |ΔE| là mức thay đổi năng lượng giữa các bước ionic (không phải năng lượng tuyệt đối)."
+    "convThrNote": "Đường đứt = ngưỡng hội tụ mục tiêu. BFGS hội tụ khi cả |ΔE| < etot_conv_thr và tổng lực < forc_conv_thr. |ΔE| là mức thay đổi năng lượng giữa các bước ionic (không phải năng lượng tuyệt đối).",
+    "runIdBrowseTitle": "Các run đã có",
+    "runIdBrowseDesc": "Các runID đã dùng. Chọn lại một cái để ĐÈ khi launch, hoặc xóa run cũ.",
+    "runIdBrowseEmpty": "Chưa có run nào.",
+    "runIdReuse": "Dùng lại",
+    "runIdDelete": "Xóa run",
+    "runIdDeleteConfirm": "Xóa vĩnh viễn run \"{id}\"? Thao tác này xóa workflow và kết quả của nó.",
+    "runIdCollidesTag": "hiện tại",
+    "runIdCollidesWarn": "⚠ \"{id}\" đã tồn tại — launch sẽ ĐÈ lên nó.",
+    "runIdOverwriteConfirm": "Run tên \"{id}\" đã tồn tại. Launch sẽ ĐÈ lên nó và kết quả cũ. Tiếp tục?"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

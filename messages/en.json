@@ -2043,7 +2043,16 @@
     "composeNoProjects": "No projects yet — create one in the Projects tab.",
     "composeLeaveWarn": "You have unsaved changes to this compose. Leave without saving?",
     "deltaERy": "|ΔE| (Ry)",
-    "convThrNote": "Dashed lines = convergence targets. BFGS converges when both |ΔE| < etot_conv_thr and total force < forc_conv_thr. |ΔE| is the energy change between ionic steps (not the absolute energy)."
+    "convThrNote": "Dashed lines = convergence targets. BFGS converges when both |ΔE| < etot_conv_thr and total force < forc_conv_thr. |ΔE| is the energy change between ionic steps (not the absolute energy).",
+    "runIdBrowseTitle": "Existing runs",
+    "runIdBrowseDesc": "Run IDs already used. Reuse one to overwrite it on launch, or delete an old run.",
+    "runIdBrowseEmpty": "No runs yet.",
+    "runIdReuse": "Reuse",
+    "runIdDelete": "Delete run",
+    "runIdDeleteConfirm": "Delete run \"{id}\" permanently? This removes its workflow and results.",
+    "runIdCollidesTag": "current",
+    "runIdCollidesWarn": "⚠ \"{id}\" already exists — launching will overwrite it.",
+    "runIdOverwriteConfirm": "A run named \"{id}\" already exists. Launching will overwrite it and its results. Continue?"
   },
   "structures": {
     "importTitle": "Import structure",

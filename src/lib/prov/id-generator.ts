@@ -19,7 +19,8 @@ export type EntityCollection =
   | 'experiments'
   | 'papers'
   | 'references'
-  | 'crystalStructures';
+  | 'crystalStructures'
+  | 'dftProjects';
 
 export type ActivityCollection = 'measurements' | 'analyses';
 
@@ -30,7 +31,8 @@ const PREFIX_MAP: Record<EntityCollection, string> = {
   experiments: 'exp',
   papers: 'pap',
   references: 'ref',
-  crystalStructures: 'cst'
+  crystalStructures: 'cst',
+  dftProjects: 'prj'
 };
 
 /**

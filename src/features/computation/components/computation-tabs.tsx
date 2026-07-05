@@ -15,7 +15,8 @@ import {
   IconGitCompare,
   IconListDetails,
   IconTools,
-  type IconProps
+  type IconProps,
+  IconFolder
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import type { ComponentType, ReactNode } from 'react';
@@ -53,6 +54,12 @@ const TABS: Tab[] = [
     labelKey: 'pseudoTab',
     Icon: IconDatabase,
     isActive: (p) => p.startsWith('/dashboard/computation/pseudo')
+  },
+  {
+    href: '/dashboard/computation/projects',
+    labelKey: 'projectsTab',
+    Icon: IconFolder,
+    isActive: (p) => p.startsWith('/dashboard/computation/projects')
   },
   {
     href: '/dashboard/computation/compose',

@@ -10,7 +10,7 @@
  */
 'use client';
 
-import { IconLoader2, IconRocket } from '@tabler/icons-react';
+import { IconLoader2, IconRocket, IconDeviceFloppy } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import type { BandsPathPoint } from '@/features/computation/bands-path';
 import type { WorkflowEdge, WorkflowNodeInput } from '@/features/workflow/types/workflow';
 import { useRouter } from '@/i18n/navigation';
 import type { DftCalcType, DftWorkflowGlobal } from '@/types/dft';
+import type { DftComposeState } from '@/types/dft-project';
 import {
   ARCHETYPES,
   buildDefinition,
@@ -93,14 +94,29 @@ function upstreamRelaxOf(unitId: string, nodes: ComposeNode[]): string | null {
   return null;
 }
 
+/** Slugify a name into a job-id-safe token (lowercase, hyphenated, ≤24 chars). */
+function jobSlug(v: string): string {
+  return v
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 24);
+}
+
 export function DftComposeView({
   runs,
   structures,
-  initialStructureId
+  initialStructureId,
+  projectId,
+  projects = [],
+  savedStates = []
 }: {
   runs: RunRef[];
   structures: StructureRef[];
   initialStructureId?: string;
+  projectId?: string;
+  projects?: { id: string; name: string; structureIds: string[] }[];
+  savedStates?: DftComposeState[];
 }) {
   const t = useTranslations('computation');
   const router = useRouter();
@@ -121,8 +137,13 @@ export function DftComposeView({
   );
   const [runId, setRunId] = useState('');
   const [preset, setPreset] = useState<string>('bulk-large');
+  const activeProject = projects.find((p) => p.id === projectId) ?? null;
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedUpdatedAt, setSavedUpdatedAt] = useState<number | null>(null);
+  // Snapshot of what was last saved, to detect unsaved changes (dirty state).
+  const [savedSig, setSavedSig] = useState<string | null>(null);
 
   async function loadSource(value: string) {
     setSourceId(value);
@@ -156,6 +177,32 @@ export function DftComposeView({
   // so the composer lands ready without a manual pick.
   useEffect(() => {
     if (initialStructureId) void loadSource(`cs:${initialStructureId}`);
+    // Restore the most recent saved compose state for this structure, if any.
+    if (initialStructureId && savedStates.length > 0) {
+      const mine = savedStates
+        .filter((st) => st.structureId === initialStructureId)
+        .toSorted((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+      const latest = mine[0];
+      if (latest) {
+        try {
+          setNodes(latest.nodes as ComposeNode[]);
+          if (latest.global) setGlobalCfg(latest.global as DftWorkflowGlobal);
+          if (latest.runId) setRunId(latest.runId);
+          if (latest.selectedId !== undefined) setSelectedId(latest.selectedId ?? null);
+          setSavedUpdatedAt(latest.updatedAt);
+          setSavedSig(
+            JSON.stringify({
+              nodes: latest.nodes,
+              globalCfg: latest.global,
+              runId: latest.runId,
+              sourceId: `cs:${latest.structureId}`
+            })
+          );
+        } catch {
+          /* ignore malformed saved state */
+        }
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -257,6 +304,17 @@ export function DftComposeView({
   }, [structure]);
 
   const validId = /^[a-z0-9][a-z0-9-]{2,63}$/.test(runId);
+  const activeStructureName =
+    structures.find((st) => st.id === initialStructureId)?.name ?? initialStructureId ?? '';
+  // Job id = project-structure-runId when composing inside a project (keeps job
+  // names unique + traceable), else just the runId.
+  const effectiveJobId =
+    projectId && activeProject
+      ? [jobSlug(activeProject.name), jobSlug(activeStructureName), runId]
+          .filter(Boolean)
+          .join('-')
+          .slice(0, 63)
+      : runId;
   const canLaunch = validId && srcState === 'ready' && !busy;
 
   const srcMsg =
@@ -267,6 +325,54 @@ export function DftComposeView({
         : srcState === 'ready'
           ? t('composeReady')
           : '';
+
+  // Signature of the current compose — compared to the last saved one to flag
+  // unsaved changes. Excludes preset (a launch-time choice, not part of state).
+  const composeSig = JSON.stringify({ nodes, globalCfg, runId, sourceId });
+  const dirty = savedSig !== null && composeSig !== savedSig;
+  const canSave = Boolean(projectId && initialStructureId && validId && !saving);
+
+  async function save() {
+    if (!projectId || !initialStructureId) return;
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/dft/projects/compose-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          structureId: initialStructureId,
+          runId,
+          nodes,
+          global: globalCfg,
+          selectedId
+        })
+      });
+      const data = (await res.json().catch(() => ({}))) as { updatedAt?: number; error?: string };
+      if (!res.ok) {
+        setFeedback({ ok: false, text: data.error ?? t('composeSaveError') });
+        return;
+      }
+      setSavedSig(composeSig);
+      setSavedUpdatedAt(data.updatedAt ?? Date.now());
+      setFeedback({ ok: true, text: t('composeSaved') });
+    } catch {
+      setFeedback({ ok: false, text: t('composeSaveError') });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
 
   async function launch() {
     if (!canLaunch) return;
@@ -281,14 +387,18 @@ export function DftComposeView({
       const res = await fetch('/api/dft/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflowId: runId, machinePreset: preset, workflow: definition })
+        body: JSON.stringify({
+          workflowId: effectiveJobId,
+          machinePreset: preset,
+          workflow: definition
+        })
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
         setFeedback({ ok: false, text: data.error ?? t('newError') });
         return;
       }
-      router.push(`/dashboard/computation/${runId}`);
+      router.push(`/dashboard/computation/${effectiveJobId}`);
       router.refresh();
     } catch {
       setFeedback({ ok: false, text: t('newError') });
@@ -380,14 +490,34 @@ export function DftComposeView({
             <Label className='invisible' aria-hidden>
               {t('composeLaunch')}
             </Label>
-            <Button onClick={launch} disabled={!canLaunch}>
-              {busy ? (
-                <IconLoader2 className='mr-1 size-4 animate-spin' />
-              ) : (
-                <IconRocket className='mr-1 size-4' />
-              )}
-              {t('composeLaunch')}
-            </Button>
+            <div className='flex items-center gap-2'>
+              {projectId ? (
+                <Button variant='outline' onClick={() => void save()} disabled={!canSave}>
+                  {saving ? (
+                    <IconLoader2 className='mr-1 size-4 animate-spin' />
+                  ) : (
+                    <IconDeviceFloppy className='mr-1 size-4' />
+                  )}
+                  {t('composeSave')}
+                  {dirty ? <span className='ml-1 size-1.5 rounded-full bg-amber-500' /> : null}
+                </Button>
+              ) : null}
+              <Button onClick={launch} disabled={!canLaunch}>
+                {busy ? (
+                  <IconLoader2 className='mr-1 size-4 animate-spin' />
+                ) : (
+                  <IconRocket className='mr-1 size-4' />
+                )}
+                {t('composeLaunch')}
+              </Button>
+            </div>
+            {projectId && savedUpdatedAt ? (
+              <p className='text-muted-foreground text-[11px]'>
+                {dirty
+                  ? t('composeUnsaved')
+                  : t('composeSavedAt', { time: new Date(savedUpdatedAt).toLocaleString() })}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>

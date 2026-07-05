@@ -75,6 +75,24 @@ function normalizeRunId(s: string): string {
     .slice(0, 64);
 }
 
+/** The nearest transitive relax/vc-relax ancestor of a unit (by dependsOn), if
+ * any — its relaxed output replaces this unit's atomic positions at runtime. */
+function upstreamRelaxOf(unitId: string, nodes: ComposeNode[]): string | null {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const seen = new Set<string>();
+  const stack = [...(byId.get(unitId)?.dependsOn ?? [])];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const n = byId.get(id);
+    if (!n) continue;
+    if (n.calcType === 'relax' || n.calcType === 'vc-relax') return n.calcType;
+    stack.push(...n.dependsOn);
+  }
+  return null;
+}
+
 export function DftComposeView({
   runs,
   structures,
@@ -411,6 +429,7 @@ export function DftComposeView({
                     global={globalCfg}
                     params={buildUnitParams(selNode, globalCfg)}
                     unitId={selNode.id}
+                    upstreamRelax={upstreamRelaxOf(selNode.id, nodes)}
                     onStatus={(st) => setPreviewOk(st.ok)}
                   />
                   <ComposeNodeEditor

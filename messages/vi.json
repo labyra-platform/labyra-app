@@ -2000,7 +2000,9 @@
     "pseudoColType": "Loại",
     "pseudoSetsGlobal": "đặt global",
     "convWaiting": "Đang chờ output…",
-    "convWaitingHint": "Job đang khởi động — các vòng SCF sẽ hiện ở đây khi bắt đầu chạy."
+    "convWaitingHint": "Job đang khởi động — các vòng SCF sẽ hiện ở đây khi bắt đầu chạy.",
+    "previewRelaxNote1": "ATOMIC_POSITIONS bên dưới là cấu trúc BAN ĐẦU (chỉ để xem trước).",
+    "previewRelaxNote2": "Khi chạy thật, chúng được thay bằng toạ độ đã relax từ bước '{unit}' phía trên."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

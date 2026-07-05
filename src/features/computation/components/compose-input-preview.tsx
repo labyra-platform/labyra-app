@@ -16,8 +16,24 @@ import {
   IconRefresh
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+
+/** In-session cache of rendered .in text, keyed by structure+global+params+calc. */
+const previewCache = new Map<string, string>();
+
+/** Insert a comment above ATOMIC_POSITIONS noting that the coordinates shown are
+ * the initial structure and will be replaced at runtime by the upstream relax. */
+function withRelaxMarker(
+  input: string,
+  upstreamRelax: string | null | undefined,
+  t: (k: string, v?: Record<string, string>) => string
+): string {
+  if (!upstreamRelax || !input.includes('ATOMIC_POSITIONS')) return input;
+  const note =
+    `! ${t('previewRelaxNote1', { unit: upstreamRelax })}\n` + `! ${t('previewRelaxNote2')}\n`;
+  return input.replace(/^(ATOMIC_POSITIONS)/m, `${note}$1`);
+}
 
 export function ComposeInputPreview({
   calcType,
@@ -25,7 +41,8 @@ export function ComposeInputPreview({
   global,
   params,
   unitId,
-  onStatus
+  onStatus,
+  upstreamRelax
 }: {
   calcType: string;
   structure: unknown;
@@ -35,6 +52,9 @@ export function ComposeInputPreview({
   unitId?: string;
   /** Bubbles preview state up so launch can warn if an input failed to render. */
   onStatus?: (s: { ok: boolean; error: string | null }) => void;
+  /** If set, this unit's ATOMIC_POSITIONS are replaced at runtime by the relaxed
+   * output of this upstream relax/vc-relax unit — a marker is shown in the preview. */
+  upstreamRelax?: string | null;
 }) {
   const t = useTranslations('computation');
   const [text, setText] = useState('');
@@ -59,7 +79,9 @@ export function ComposeInputPreview({
         onStatus?.({ ok: false, error: msg });
         return;
       }
-      setText(data.input ?? '');
+      const rendered = withRelaxMarker(data.input ?? '', upstreamRelax, t);
+      previewCache.set(cacheKey, rendered);
+      setText(rendered);
       onStatus?.({ ok: true, error: null });
     } catch {
       setError(t('composeInputError'));
@@ -69,16 +91,33 @@ export function ComposeInputPreview({
     }
   }
 
-  // Auto-render the real .in when the structure, globals, or this unit's params
-  // change — debounced (400 ms) so a burst of edits collapses into one worker
-  // call. The manual refresh button remains for an explicit re-render.
+  // Cache rendered inputs by (structure+global+params+calc) so switching between
+  // nodes — or back to a node — is instant. On change: if we have a cached render
+  // show it immediately (0 ms), otherwise render right away for a node switch and
+  // only debounce when the same node's params are being edited rapidly.
   const sig = JSON.stringify({ calcType, global, params });
+  const cacheKey = `${calcType}::${JSON.stringify(structure)}::${sig}::${upstreamRelax ?? ''}`;
+  const prevKindRef = useRef<string>('');
   useEffect(() => {
     if (!structure) return;
-    const id = setTimeout(() => void load(), 400);
+    const cached = previewCache.get(cacheKey);
+    if (cached !== undefined) {
+      setText(cached);
+      onStatus?.({ ok: true, error: null });
+      return;
+    }
+    // No cache: a node switch (calcType/unit changed) renders immediately; a param
+    // edit on the same node debounces to collapse keystrokes.
+    const switched = prevKindRef.current !== calcType;
+    prevKindRef.current = calcType;
+    if (switched) {
+      void load();
+      return;
+    }
+    const id = setTimeout(() => void load(), 250);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structure, sig]);
+  }, [structure, cacheKey]);
 
   function downloadInput() {
     if (!text) return;

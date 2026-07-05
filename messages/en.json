@@ -1999,7 +1999,9 @@
     "pseudoColType": "Type",
     "pseudoSetsGlobal": "sets global",
     "convWaiting": "Waiting for output…",
-    "convWaitingHint": "The job is starting up — SCF iterations will stream here once it runs."
+    "convWaitingHint": "The job is starting up — SCF iterations will stream here once it runs.",
+    "previewRelaxNote1": "ATOMIC_POSITIONS below are the INITIAL structure (preview only).",
+    "previewRelaxNote2": "At runtime they are replaced by the relaxed output of the upstream '{unit}' unit."
   },
   "structures": {
     "importTitle": "Import structure",

@@ -2024,7 +2024,14 @@
     "composeSaveState": "Save state",
     "vdwLabel": "Grimme-D3 dispersion (vdW)",
     "vdwVersion": "Damping",
-    "vdwHint": "Applied to all pw.x steps (relax, vc-relax, scf) for energy consistency. D3-BJ (version 4) is the modern default and recommended for layered materials; D3(0) uses the original zero-damping."
+    "vdwHint": "Applied to all pw.x steps (relax, vc-relax, scf) for energy consistency. D3-BJ (version 4) is the modern default and recommended for layered materials; D3(0) uses the original zero-damping.",
+    "projectImportFirst": "Import structures",
+    "projectAllAdded": "All your structures are in this project.",
+    "composeProject": "Project",
+    "composeProjectPlaceholder": "Choose a project",
+    "composeStructurePlaceholder": "Choose a structure",
+    "composeProjectEmpty": "No structures in this project yet.",
+    "composeNoProjects": "No projects yet — create one in the Projects tab."
   },
   "structures": {
     "importTitle": "Import structure",

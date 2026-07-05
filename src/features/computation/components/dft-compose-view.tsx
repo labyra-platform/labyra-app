@@ -19,9 +19,7 @@ import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
@@ -29,9 +27,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WorkflowGraph } from '@/features/workflow/components/workflow-graph';
 import type { BandsPathPoint } from '@/features/computation/bands-path';
 import type { WorkflowEdge, WorkflowNodeInput } from '@/features/workflow/types/workflow';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import type { DftCalcType, DftWorkflowGlobal } from '@/types/dft';
 import type { DftComposeState } from '@/types/dft-project';
+import { formatFormula } from '@/lib/utils/format-formula';
 import {
   ARCHETYPES,
   buildDefinition,
@@ -137,7 +136,12 @@ export function DftComposeView({
   );
   const [runId, setRunId] = useState('');
   const [preset, setPreset] = useState<string>('bulk-large');
-  const activeProject = projects.find((p) => p.id === projectId) ?? null;
+  const [pickedProject, setPickedProject] = useState<string>(projectId ?? '');
+  const activeProject = projects.find((p) => p.id === (pickedProject || projectId)) ?? null;
+  // Structures belonging to the picked project (for the second dropdown).
+  const projectStructureRefs = activeProject
+    ? structures.filter((st) => activeProject.structureIds.includes(st.id))
+    : [];
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -304,17 +308,17 @@ export function DftComposeView({
   }, [structure]);
 
   const validId = /^[a-z0-9][a-z0-9-]{2,63}$/.test(runId);
+  const sourceStructureId = sourceId.startsWith('cs:') ? sourceId.slice(3) : null;
   const activeStructureName =
-    structures.find((st) => st.id === initialStructureId)?.name ?? initialStructureId ?? '';
+    structures.find((st) => st.id === sourceStructureId)?.name ?? sourceStructureId ?? '';
   // Job id = project-structure-runId when composing inside a project (keeps job
   // names unique + traceable), else just the runId.
-  const effectiveJobId =
-    projectId && activeProject
-      ? [jobSlug(activeProject.name), jobSlug(activeStructureName), runId]
-          .filter(Boolean)
-          .join('-')
-          .slice(0, 63)
-      : runId;
+  const effectiveJobId = activeProject
+    ? [jobSlug(activeProject.name), jobSlug(activeStructureName), runId]
+        .filter(Boolean)
+        .join('-')
+        .slice(0, 63)
+    : runId;
   const canLaunch = validId && srcState === 'ready' && !busy;
 
   const srcMsg =
@@ -330,10 +334,11 @@ export function DftComposeView({
   // unsaved changes. Excludes preset (a launch-time choice, not part of state).
   const composeSig = JSON.stringify({ nodes, globalCfg, runId, sourceId });
   const dirty = savedSig !== null && composeSig !== savedSig;
-  const canSave = Boolean(projectId && initialStructureId && validId && !saving);
+  const effectiveProjectId = pickedProject || projectId;
+  const canSave = Boolean(effectiveProjectId && sourceStructureId && validId && !saving);
 
   async function save() {
-    if (!projectId || !initialStructureId) return;
+    if (!effectiveProjectId || !sourceStructureId) return;
     setSaving(true);
     setFeedback(null);
     try {
@@ -341,8 +346,8 @@ export function DftComposeView({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId,
-          structureId: initialStructureId,
+          projectId: effectiveProjectId,
+          structureId: sourceStructureId,
           runId,
           nodes,
           global: globalCfg,
@@ -412,37 +417,50 @@ export function DftComposeView({
       <div className='flex flex-wrap items-start justify-between gap-x-6 gap-y-3'>
         <div className='flex flex-wrap items-start gap-x-6 gap-y-3'>
           <div className='min-w-56 space-y-1.5'>
-            <Label>{t('composeSource')}</Label>
-            {runs.length === 0 && structures.length === 0 ? (
-              <p className='text-muted-foreground text-sm'>{t('composeNoRuns')}</p>
+            <Label>{t('composeProject')}</Label>
+            {projects.length === 0 ? (
+              <p className='text-muted-foreground text-sm'>
+                <Link href='/dashboard/computation/projects' className='underline'>
+                  {t('composeNoProjects')}
+                </Link>
+              </p>
             ) : (
-              <Select value={sourceId} onValueChange={loadSource}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('composeSourcePlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {structures.length > 0 ? (
-                    <SelectGroup>
-                      <SelectLabel>{t('composeFromLibrary')}</SelectLabel>
-                      {structures.map((s) => (
+              <div className='space-y-2'>
+                <Select value={pickedProject} onValueChange={setPickedProject}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('composeProjectPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((pr) => (
+                      <SelectItem key={pr.id} value={pr.id}>
+                        {formatFormula(pr.name)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={sourceId.startsWith('cs:') ? sourceId : ''}
+                  onValueChange={loadSource}
+                  disabled={!pickedProject}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('composeStructurePlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectStructureRefs.length === 0 ? (
+                      <div className='text-muted-foreground px-2 py-1.5 text-xs'>
+                        {t('composeProjectEmpty')}
+                      </div>
+                    ) : (
+                      projectStructureRefs.map((s) => (
                         <SelectItem key={s.id} value={`cs:${s.id}`}>
-                          {s.mpId ? `${s.formula} · ${s.mpId}` : s.name}
+                          {formatFormula(s.mpId ? `${s.formula ?? s.name} · ${s.mpId}` : s.name)}
                         </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ) : null}
-                  {runs.length > 0 ? (
-                    <SelectGroup>
-                      <SelectLabel>{t('composeFromRun')}</SelectLabel>
-                      {runs.map((r) => (
-                        <SelectItem key={r.id} value={`run:${r.id}`}>
-                          {r.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ) : null}
-                </SelectContent>
-              </Select>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
           <div className='space-y-1.5'>
@@ -491,7 +509,7 @@ export function DftComposeView({
               {t('composeLaunch')}
             </Label>
             <div className='flex items-center gap-2'>
-              {projectId ? (
+              {effectiveProjectId ? (
                 <Button variant='outline' onClick={() => void save()} disabled={!canSave}>
                   {saving ? (
                     <IconLoader2 className='mr-1 size-4 animate-spin' />
@@ -511,7 +529,7 @@ export function DftComposeView({
                 {t('composeLaunch')}
               </Button>
             </div>
-            {projectId && savedUpdatedAt ? (
+            {effectiveProjectId && savedUpdatedAt ? (
               <p className='text-muted-foreground text-[11px]'>
                 {dirty
                   ? t('composeUnsaved')

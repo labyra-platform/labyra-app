@@ -11,7 +11,9 @@ import {
   IconLoader2,
   IconPlus,
   IconTool,
-  IconX
+  IconX,
+  IconChevronDown,
+  IconChevronRight
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -19,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Link } from '@/i18n/navigation';
 import type { DftProject } from '@/types/dft-project';
+import { formatFormula } from '@/lib/utils/format-formula';
 
 interface StructureLite {
   id: string;
@@ -36,7 +39,25 @@ function fmtDate(ms: number | null): string {
   });
 }
 
-const label = (s: StructureLite) => (s.mpId ? `${s.formula ?? s.name} · ${s.mpId}` : s.name);
+/** Format a structure label: subscript the chemical-formula digits, and in the
+ * space-group symbol convert only screw-axis notation (P6_3 → P6₃) — Hermann-
+ * Mauguin rotation orders like the 6 in "P6/mmm" stay full size. */
+function prettyLabel(text: string): string {
+  // Split off a trailing "(space group …)" so formula subscripting doesn't touch it.
+  return text.replace(/^([^(]*)(\(.*)?$/, (_m, formulaPart: string, rest?: string) => {
+    const formula = formatFormula(formulaPart);
+    if (!rest) return formula;
+    // In the space-group / paren part, only underscore-digits are subscripts.
+    const sg = rest.replace(/_([0-9]+)/g, (_x, d: string) =>
+      d
+        .split('')
+        .map((c: string) => '₀₁₂₃₄₅₆₇₈₉'[Number(c)] ?? c)
+        .join('')
+    );
+    return formula + sg;
+  });
+}
+const label = (s: StructureLite) => prettyLabel(s.mpId ? `${s.name} · ${s.mpId}` : s.name);
 
 export function ProjectsView({ structures }: { structures: StructureLite[] }) {
   const t = useTranslations('computation');
@@ -129,21 +150,26 @@ export function ProjectsView({ structures }: { structures: StructureLite[] }) {
             const available = structures.filter((s) => !p.structureIds.includes(s.id));
             return (
               <div key={p.id} className='rounded-lg border'>
-                <div className='flex items-center justify-between p-3'>
-                  <div className='flex items-center gap-2'>
-                    <IconFolder className='text-muted-foreground size-4' />
-                    <span className='font-medium'>{p.name}</span>
-                    <span className='text-muted-foreground text-xs'>
-                      {t('projectCreatedOn', { date: fmtDate(p.createdAt) })}
-                    </span>
-                    <span className='text-muted-foreground text-xs'>
-                      · {t('projectStructureCount', { n: String(attached.length) })}
-                    </span>
-                  </div>
-                  <Button variant='ghost' size='sm' onClick={() => setExpanded(open ? null : p.id)}>
-                    {open ? t('projectClose') : t('projectManage')}
-                  </Button>
-                </div>
+                <button
+                  type='button'
+                  onClick={() => setExpanded(open ? null : p.id)}
+                  className='hover:bg-muted/40 flex w-full items-center gap-2 p-3 text-left transition-colors'
+                  aria-expanded={open}
+                >
+                  {open ? (
+                    <IconChevronDown className='text-muted-foreground size-4 shrink-0' />
+                  ) : (
+                    <IconChevronRight className='text-muted-foreground size-4 shrink-0' />
+                  )}
+                  <IconFolder className='text-muted-foreground size-4 shrink-0' />
+                  <span className='font-medium'>{prettyLabel(p.name)}</span>
+                  <span className='text-muted-foreground text-xs'>
+                    {t('projectCreatedOn', { date: fmtDate(p.createdAt) })}
+                  </span>
+                  <span className='text-muted-foreground text-xs'>
+                    · {t('projectStructureCount', { n: String(attached.length) })}
+                  </span>
+                </button>
 
                 {open ? (
                   <div className='space-y-3 border-t p-3'>
@@ -184,11 +210,20 @@ export function ProjectsView({ structures }: { structures: StructureLite[] }) {
                       <p className='text-muted-foreground text-xs'>{t('projectNoStructures')}</p>
                     )}
 
-                    {available.length > 0 ? (
-                      <div>
-                        <p className='text-muted-foreground mb-1 text-xs font-medium'>
-                          {t('projectAddFromStore')}
-                        </p>
+                    <div className='border-t pt-2'>
+                      <p className='text-muted-foreground mb-1.5 text-xs font-medium'>
+                        {t('projectAddFromStore')}
+                      </p>
+                      {structures.length === 0 ? (
+                        <Button asChild size='sm' variant='outline'>
+                          <Link href='/dashboard/structures'>
+                            <IconPlus className='mr-1 size-3.5' />
+                            {t('projectImportFirst')}
+                          </Link>
+                        </Button>
+                      ) : available.length === 0 ? (
+                        <p className='text-muted-foreground text-xs'>{t('projectAllAdded')}</p>
+                      ) : (
                         <div className='flex flex-wrap gap-1.5'>
                           {available.map((s) => (
                             <Button
@@ -202,10 +237,8 @@ export function ProjectsView({ structures }: { structures: StructureLite[] }) {
                             </Button>
                           ))}
                         </div>
-                      </div>
-                    ) : structures.length === 0 ? (
-                      <p className='text-muted-foreground text-xs'>{t('projectStoreEmpty')}</p>
-                    ) : null}
+                      )}
+                    </div>
                   </div>
                 ) : null}
               </div>

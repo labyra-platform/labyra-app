@@ -2025,7 +2025,14 @@
     "composeSaveState": "Lưu trạng thái",
     "vdwLabel": "Hiệu chỉnh phân tán Grimme-D3 (vdW)",
     "vdwVersion": "Damping",
-    "vdwHint": "Áp dụng cho mọi bước pw.x (relax, vc-relax, scf) để năng lượng nhất quán. D3-BJ (version 4) là mặc định hiện đại, khuyến nghị cho vật liệu lớp; D3(0) dùng zero-damping gốc."
+    "vdwHint": "Áp dụng cho mọi bước pw.x (relax, vc-relax, scf) để năng lượng nhất quán. D3-BJ (version 4) là mặc định hiện đại, khuyến nghị cho vật liệu lớp; D3(0) dùng zero-damping gốc.",
+    "projectImportFirst": "Import cấu trúc",
+    "projectAllAdded": "Tất cả cấu trúc của bạn đã ở trong dự án này.",
+    "composeProject": "Dự án",
+    "composeProjectPlaceholder": "Chọn dự án",
+    "composeStructurePlaceholder": "Chọn cấu trúc",
+    "composeProjectEmpty": "Dự án này chưa có cấu trúc.",
+    "composeNoProjects": "Chưa có dự án — tạo ở tab Dự án."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

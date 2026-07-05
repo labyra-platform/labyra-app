@@ -17,7 +17,9 @@ import {
   IconLayoutList,
   IconLayoutRows,
   IconLoader2,
-  IconUpload
+  IconUpload,
+  IconRefresh,
+  IconUsersGroup
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -150,6 +152,9 @@ export function PaperList({
   // R324: bulk selection (checkbox multi-select + bulk archive).
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const tenantId = useTenantId();
+  const queryClient = useQueryClient();
+  const { collections } = useCollections();
 
   const visibleSlugs = useMemo(() => {
     const s = new Set<string>();
@@ -335,6 +340,75 @@ export function PaperList({
     }
   };
 
+  const selectedIdList = () => filteredPapers.map((p) => p.id).filter((id) => selectedIds.has(id));
+
+  const bulkAddToCollection = async (collectionId: string) => {
+    const ids = selectedIdList();
+    if (ids.length === 0 || bulkBusy || !tenantId) return;
+    setBulkBusy(true);
+    try {
+      await addPapersToCollection(tenantId, collectionId, ids);
+      await queryClient.invalidateQueries({
+        queryKey: ['tenant-collection', tenantId, 'collections']
+      });
+      toast.success(t('addToCollectionSuccess', { count: ids.length }));
+      clearSelection();
+    } catch (e) {
+      toast.error(t('addToCollectionFailed'), {
+        description: e instanceof Error ? e.message : 'unknown'
+      });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  // Fire an action per selected paper, tolerating partial failure; 403 = no group
+  // sharing permission (surfaced once, not per paper).
+  const bulkPerPaper = async (
+    path: (id: string) => string,
+    labels: { partial: string; success: string; failed: string; forbidden?: string }
+  ) => {
+    const ids = selectedIdList();
+    if (ids.length === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    try {
+      const headers = await paperAuthHeader();
+      const results = await Promise.allSettled(
+        ids.map((id) => fetch(path(id), { method: 'POST', headers }))
+      );
+      const forbidden = results.some((r) => r.status === 'fulfilled' && r.value.status === 403);
+      if (forbidden && labels.forbidden) {
+        toast.error(t(labels.forbidden));
+        return;
+      }
+      const failed = results.filter(
+        (r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)
+      ).length;
+      if (failed > 0) toast.error(t(labels.partial, { failed }));
+      else toast.success(t(labels.success, { count: ids.length }));
+      clearSelection();
+    } catch (e) {
+      toast.error(t(labels.failed), { description: e instanceof Error ? e.message : 'unknown' });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkReprocess = () =>
+    bulkPerPaper((id) => `/api/papers/${id}/reprocess`, {
+      partial: 'reprocessSelectedPartial',
+      success: 'reprocessSelectedSuccess',
+      failed: 'reprocessFailed'
+    });
+
+  const bulkShare = () =>
+    bulkPerPaper((id) => `/api/papers/${id}/share`, {
+      partial: 'shareSelectedPartial',
+      success: 'shareSelectedSuccess',
+      failed: 'shareFailed',
+      forbidden: 'shareForbidden'
+    });
+
   return (
     <div className='space-y-3'>
       {viewToggle}
@@ -404,6 +478,41 @@ export function PaperList({
           <div className='flex items-center gap-2'>
             <Button variant='ghost' size='sm' onClick={clearSelection}>
               {t('clearSelection')}
+            </Button>
+            {collections.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant='outline' size='sm' disabled={bulkBusy}>
+                    <IconFolderPlus className='mr-1 size-4' />
+                    {t('addToCollection')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='end' className='max-h-72 overflow-y-auto'>
+                  {collections.map((c) => (
+                    <DropdownMenuItem key={c.id} onClick={() => void bulkAddToCollection(c.id)}>
+                      {c.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => void bulkReprocess()}
+              disabled={bulkBusy}
+            >
+              <IconRefresh className='mr-1 size-4' />
+              {t('reprocessSelected')}
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => void bulkShare()}
+              disabled={bulkBusy}
+            >
+              <IconUsersGroup className='mr-1 size-4' />
+              {t('shareSelected')}
             </Button>
             <Button
               variant='destructive'

@@ -585,7 +585,16 @@
     "archiveSelected": "Lưu trữ",
     "archiveSelectedConfirm": "Lưu trữ {count} paper đã chọn? Có thể khôi phục sau.",
     "archiveSelectedSuccess": "Đã lưu trữ {count} paper.",
-    "archiveSelectedPartial": "{failed} paper không lưu trữ được."
+    "archiveSelectedPartial": "{failed} paper không lưu trữ được.",
+    "addToCollection": "Thêm vào collection",
+    "addToCollectionSuccess": "Đã thêm {count} vào collection",
+    "addToCollectionFailed": "Không thêm được vào collection",
+    "reprocessSelected": "Xử lý lại",
+    "reprocessSelectedSuccess": "Đang xử lý lại {count} bài",
+    "reprocessSelectedPartial": "{failed} bài xử lý lại thất bại",
+    "shareSelected": "Chia sẻ nhóm",
+    "shareSelectedSuccess": "Đã chia sẻ {count} bài cho nhóm",
+    "shareSelectedPartial": "{failed} bài chia sẻ thất bại"
   },
   "collections": {
     "title": "Bộ sưu tập",

@@ -584,7 +584,16 @@
     "archiveSelected": "Archive",
     "archiveSelectedConfirm": "Archive {count} selected paper(s)? You can restore them later.",
     "archiveSelectedSuccess": "Archived {count} paper(s).",
-    "archiveSelectedPartial": "{failed} paper(s) could not be archived."
+    "archiveSelectedPartial": "{failed} paper(s) could not be archived.",
+    "addToCollection": "Add to collection",
+    "addToCollectionSuccess": "Added {count} to collection",
+    "addToCollectionFailed": "Could not add to collection",
+    "reprocessSelected": "Reprocess",
+    "reprocessSelectedSuccess": "Reprocessing {count} papers",
+    "reprocessSelectedPartial": "{failed} failed to reprocess",
+    "shareSelected": "Share to group",
+    "shareSelectedSuccess": "Shared {count} to group",
+    "shareSelectedPartial": "{failed} failed to share"
   },
   "collections": {
     "title": "Collections",

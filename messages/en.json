@@ -2116,6 +2116,12 @@
     "runDft": "Run DFT",
     "mpTextLabel": "Formula or MP-ID",
     "mpTextPlaceholder": "e.g. WS2 · mp-224 · W-S",
-    "mpElementMatch": "Elements:"
+    "mpElementMatch": "Elements:",
+    "propSpaceGroup": "Space Group",
+    "propCrystalSystem": "Crystal System",
+    "propLattice": "Lattice",
+    "propUnitCell": "Unit-cell formula",
+    "propSites": "Sites",
+    "propMaterialId": "Material ID"
   }
 }

@@ -2117,6 +2117,12 @@
     "runDft": "Chạy DFT",
     "mpTextLabel": "Công thức hoặc MP-ID",
     "mpTextPlaceholder": "vd WS2 · mp-224 · W-S",
-    "mpElementMatch": "Nguyên tố:"
+    "mpElementMatch": "Nguyên tố:",
+    "propSpaceGroup": "Nhóm không gian",
+    "propCrystalSystem": "Hệ tinh thể",
+    "propLattice": "Mạng",
+    "propUnitCell": "Công thức ô cơ sở",
+    "propSites": "Số nguyên tử",
+    "propMaterialId": "Material ID"
   }
 }

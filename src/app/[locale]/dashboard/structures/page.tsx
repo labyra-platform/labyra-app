@@ -12,7 +12,7 @@ import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
 import { ComputationTabs } from '@/features/computation/components/computation-tabs';
 import { ImportStructureDialog } from '@/features/crystal-structures/components/import-structure-dialog';
-import { StructuresTable } from '@/features/crystal-structures/components/structures-table';
+import { StructuresBrowser } from '@/features/crystal-structures/components/structures-browser';
 import { toStructureRow } from '@/features/crystal-structures/structure-row';
 import { getCurrentTenantId } from '@/lib/auth/server';
 import { listCrystalStructures } from '@/lib/firebase/crystal-structures/service';
@@ -32,7 +32,7 @@ export default async function StructuresPage() {
       {rows.length === 0 ? (
         <div className='text-muted-foreground py-12 text-center text-sm'>{t('empty')}</div>
       ) : (
-        <StructuresTable rows={rows} />
+        <StructuresBrowser rows={rows} />
       )}
     </PageContainer>
   );

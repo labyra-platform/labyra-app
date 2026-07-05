@@ -24,7 +24,16 @@ import { formatSciNode, formatSpaceGroup } from '@/features/spectra/utils/format
 import { SortableHead, useSortRows } from '@/components/ui-extra/sortable-head';
 import type { StructureRow } from '../structure-row';
 
-export function StructuresTable({ rows }: { rows: StructureRow[] }) {
+export function StructuresTable({
+  rows,
+  selectedId,
+  onSelectRow
+}: {
+  rows: StructureRow[];
+  /** When set, rows select (highlight) instead of the formula linking away. */
+  selectedId?: string;
+  onSelectRow?: (id: string) => void;
+}) {
   const t = useTranslations('structures');
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -92,17 +101,29 @@ export function StructuresTable({ rows }: { rows: StructureRow[] }) {
         </TableHeader>
         <TableBody>
           {sortable.sorted.map((r) => (
-            <TableRow key={r.id}>
+            <TableRow
+              key={r.id}
+              className={
+                onSelectRow
+                  ? `cursor-pointer ${selectedId === r.id ? 'bg-muted/60' : 'hover:bg-muted/30'}`
+                  : undefined
+              }
+              onClick={onSelectRow ? () => onSelectRow(r.id) : undefined}
+            >
               <TableCell className='text-muted-foreground font-mono text-xs'>
                 {r.mpId ?? '—'}
               </TableCell>
               <TableCell>
-                <Link
-                  href={`/dashboard/structures/${r.id}`}
-                  className='text-primary font-medium underline-offset-2 hover:underline'
-                >
-                  {formatSciNode(r.formula)}
-                </Link>
+                {onSelectRow ? (
+                  <span className='text-primary font-medium'>{formatSciNode(r.formula)}</span>
+                ) : (
+                  <Link
+                    href={`/dashboard/structures/${r.id}`}
+                    className='text-primary font-medium underline-offset-2 hover:underline'
+                  >
+                    {formatSciNode(r.formula)}
+                  </Link>
+                )}
               </TableCell>
               <TableCell>{r.crystalSystem}</TableCell>
               <TableCell className='font-mono text-xs'>{formatSpaceGroup(r.spaceGroup)}</TableCell>
@@ -112,7 +133,10 @@ export function StructuresTable({ rows }: { rows: StructureRow[] }) {
                   variant='ghost'
                   size='icon'
                   disabled={busy === r.id}
-                  onClick={() => remove(r.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void remove(r.id);
+                  }}
                   aria-label={t('delete')}
                 >
                   <IconTrash className='size-4' />

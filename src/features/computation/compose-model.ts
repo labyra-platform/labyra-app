@@ -331,7 +331,7 @@ export const CALC_GROUPS: { exe: string; types: DftCalcType[] }[] = [
 function buildPwParams(
   calcType: DftCalcType,
   p: NodeParams,
-  hasVdw: boolean,
+  vdw: { corr: string | null; version: number },
   kpath?: BandsPathPoint[]
 ): Record<string, unknown> {
   const stress = calcType === 'vc-relax' || calcType === 'scf';
@@ -378,9 +378,9 @@ function buildPwParams(
     params.press = p.press;
     params.cellDofree = p.cellDofree;
   }
-  if (hasVdw) {
+  if (vdw.corr === 'grimme-d3') {
     params.vdwCorr = 'grimme-d3';
-    params.dftd3Version = 3;
+    params.dftd3Version = vdw.version;
     params.dftd3Threebody = true;
   }
   if (calcType === 'bands') {
@@ -418,15 +418,20 @@ export function buildDefinition(
   structure: unknown,
   global: unknown
 ): ComposedWorkflow {
-  const g = (global ?? {}) as { prefix?: string; hubbard?: unknown[]; vdwCorr?: string };
+  const g = (global ?? {}) as {
+    prefix?: string;
+    hubbard?: unknown[];
+    vdwCorr?: string;
+    dftd3Version?: number;
+  };
   const prefix = String(g.prefix ?? 'material');
-  const hasVdw = g.vdwCorr === 'grimme-d3';
+  const vdw = { corr: g.vdwCorr ?? null, version: g.dftd3Version ?? 4 };
   const units: SerializedUnit[] = nodes.map((n) => ({
     id: n.id,
     calcType: n.calcType,
     dependsOn: n.dependsOn,
     params: PW_TYPES.has(n.calcType)
-      ? buildPwParams(n.calcType, n.params, hasVdw, n.kpath)
+      ? buildPwParams(n.calcType, n.params, vdw, n.kpath)
       : POSTPROC_TYPES.has(n.calcType)
         ? buildPostprocParams(n.calcType, n.params, prefix, n.flavor)
         : {}
@@ -440,11 +445,11 @@ export function buildDefinition(
  * takes params as-is, so they must be built client-side, flavor included).
  */
 export function buildUnitParams(node: ComposeNode, global: unknown): Record<string, unknown> {
-  const g = (global ?? {}) as { prefix?: string; vdwCorr?: string };
+  const g = (global ?? {}) as { prefix?: string; vdwCorr?: string; dftd3Version?: number };
   const prefix = String(g.prefix ?? 'material');
-  const hasVdw = g.vdwCorr === 'grimme-d3';
+  const vdw = { corr: g.vdwCorr ?? null, version: g.dftd3Version ?? 4 };
   if (PW_TYPES.has(node.calcType))
-    return buildPwParams(node.calcType, node.params, hasVdw, node.kpath);
+    return buildPwParams(node.calcType, node.params, vdw, node.kpath);
   if (POSTPROC_TYPES.has(node.calcType)) {
     return buildPostprocParams(node.calcType, node.params, prefix, node.flavor);
   }

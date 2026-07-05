@@ -10,6 +10,7 @@
 
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -117,6 +118,41 @@ export function GlobalSettingsEditor({
             className='h-8'
           />
         </div>
+      </div>
+
+      <div className='space-y-2 border-t pt-3'>
+        <label className='flex items-center gap-2'>
+          <Checkbox
+            checked={value.vdwCorr === 'grimme-d3'}
+            onCheckedChange={(c) =>
+              update({
+                vdwCorr: c === true ? 'grimme-d3' : undefined,
+                dftd3Version: c === true ? (value.dftd3Version ?? 4) : undefined
+              })
+            }
+          />
+          <span className='text-sm font-medium'>{t('vdwLabel')}</span>
+        </label>
+        {value.vdwCorr === 'grimme-d3' ? (
+          <div className='space-y-1 pl-6'>
+            <div className='flex items-center gap-2'>
+              <Label className='text-xs'>{t('vdwVersion')}</Label>
+              <Select
+                value={String(value.dftd3Version ?? 4)}
+                onValueChange={(v) => update({ dftd3Version: Number(v) })}
+              >
+                <SelectTrigger className='h-7 w-56'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='4'>D3-BJ (Becke-Johnson)</SelectItem>
+                  <SelectItem value='3'>D3(0) (zero-damping)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className='text-muted-foreground text-[11px]'>{t('vdwHint')}</p>
+          </div>
+        ) : null}
       </div>
 
       <div className='space-y-2 border-t pt-3'>

@@ -2022,7 +2022,10 @@
     "composeSaveError": "Không lưu được",
     "composeSavedAt": "Đã lưu {time}",
     "composeUnsaved": "Có thay đổi chưa lưu",
-    "composeSaveState": "Lưu trạng thái"
+    "composeSaveState": "Lưu trạng thái",
+    "vdwLabel": "Hiệu chỉnh phân tán Grimme-D3 (vdW)",
+    "vdwVersion": "Damping",
+    "vdwHint": "Áp dụng cho mọi bước pw.x (relax, vc-relax, scf) để năng lượng nhất quán. D3-BJ (version 4) là mặc định hiện đại, khuyến nghị cho vật liệu lớp; D3(0) dùng zero-damping gốc."
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

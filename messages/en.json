@@ -2021,7 +2021,10 @@
     "composeSaveError": "Could not save",
     "composeSavedAt": "Saved {time}",
     "composeUnsaved": "Unsaved changes",
-    "composeSaveState": "Save state"
+    "composeSaveState": "Save state",
+    "vdwLabel": "Grimme-D3 dispersion (vdW)",
+    "vdwVersion": "Damping",
+    "vdwHint": "Applied to all pw.x steps (relax, vc-relax, scf) for energy consistency. D3-BJ (version 4) is the modern default and recommended for layered materials; D3(0) uses the original zero-damping."
   },
   "structures": {
     "importTitle": "Import structure",

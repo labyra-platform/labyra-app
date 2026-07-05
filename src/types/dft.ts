@@ -134,8 +134,8 @@ export interface DftUnitParams {
   tprnfor?: boolean;
 
   // vdW DFT-D3 (R272w-w) — required for layered materials (WS₂); beyond §5.1
-  vdwCorr?: string; // 'grimme-d3'
-  dftd3Version?: number; // 3
+  vdwCorr?: string; // 'grimme-d3' — enables Grimme-D3 dispersion
+  dftd3Version?: number; // 3 = D3(0) zero-damping, 4 = D3-BJ (default)
   dftd3Threebody?: boolean;
 
   // relax / vc-relax (§5.1)
@@ -197,6 +197,9 @@ export interface DftWorkflowGlobal {
   hubbard?: HubbardParam[];
   /** Per-element pseudopotential assignment (element → uploaded .UPF filename). */
   pseudoMap?: Record<string, string>;
+  /** Grimme-D3 dispersion, applied to every pw.x step for energy consistency. */
+  vdwCorr?: string; // 'grimme-d3'
+  dftd3Version?: number; // 3 = D3(0) zero-damping, 4 = D3-BJ (default)
 }
 
 // ─────────────────────────────────────────────────────────────────────────

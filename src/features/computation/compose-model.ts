@@ -48,6 +48,11 @@ export type ParamKey =
   | 'mixingNdim'
   | 'diagoDavidNdim'
   | 'diagoFullAcc'
+  | 'verbosity'
+  | 'startingPot'
+  | 'startingWfc'
+  | 'upscale'
+  | 'trustRadiusMax'
   | 'avgNpt'
   | 'avgIdir'
   | 'avgAwin';
@@ -93,6 +98,11 @@ export interface NodeParams {
   cellDofree: CellDofree;
   // advanced — emit-off (written to the .in only when set / enabled)
   nosym: boolean;
+  verbosity: string;
+  startingPot: string;
+  startingWfc: string;
+  upscale: number;
+  trustRadiusMax: number;
   totCharge: number;
   dipoleCorrection: boolean; // master toggle → tefield+dipfield (+edir/emaxpos/eopreg/eamp)
   edir: number; // 1 | 2 | 3
@@ -161,6 +171,11 @@ export const DEFAULT_PARAMS: NodeParams = {
   press: 0,
   cellDofree: 'all',
   nosym: false,
+  verbosity: 'high',
+  startingPot: 'atomic',
+  startingWfc: 'atomic+random',
+  upscale: 100,
+  trustRadiusMax: 0.8,
   totCharge: 0,
   dipoleCorrection: false,
   edir: 3,
@@ -220,7 +235,7 @@ export function paramBlocks(calcType: DftCalcType): NamelistBlock[] {
   const control: ParamKey[] = ['restartMode'];
   if (isRelax) control.push('nstep', 'etotConvThr', 'forcConvThr');
   const blocks: NamelistBlock[] = [
-    { name: '&CONTROL', keys: control },
+    { name: '&CONTROL', keys: control, advanced: ['verbosity'] },
     {
       name: '&SYSTEM',
       keys: ['nspin', 'occupations', 'smearing', 'degauss', 'nbnd'],
@@ -229,10 +244,15 @@ export function paramBlocks(calcType: DftCalcType): NamelistBlock[] {
     {
       name: '&ELECTRONS',
       keys: ['convThr', 'mixingBeta', 'mixingMode', 'diagonalization', 'electronMaxstep'],
-      advanced: ['mixingNdim', 'diagoDavidNdim', 'diagoFullAcc']
+      advanced: ['mixingNdim', 'diagoDavidNdim', 'diagoFullAcc', 'startingPot', 'startingWfc']
     }
   ];
-  if (isRelax) blocks.push({ name: '&IONS', keys: ['ionDynamics', 'bfgsNdim'] });
+  if (isRelax)
+    blocks.push({
+      name: '&IONS',
+      keys: ['ionDynamics', 'bfgsNdim'],
+      advanced: ['upscale', 'trustRadiusMax']
+    });
   if (calcType === 'vc-relax') {
     blocks.push({ name: '&CELL', keys: ['cellDynamics', 'press', 'cellDofree'] });
   }
@@ -347,7 +367,10 @@ function buildPwParams(
     restartMode: p.restartMode,
     nspin: p.nspin,
     mixingMode: p.mixingMode,
-    diagonalization: p.diagonalization
+    diagonalization: p.diagonalization,
+    verbosity: p.verbosity,
+    startingPot: p.startingPot,
+    startingWfc: p.startingWfc
   };
   if (p.occupations === 'smearing') {
     params.smearing = p.smearing;
@@ -372,6 +395,8 @@ function buildPwParams(
     if (p.bfgsNdim > 0) params.bfgsNdim = p.bfgsNdim;
     if (p.etotConvThr > 0) params.etotConvThr = p.etotConvThr;
     if (p.forcConvThr > 0) params.forcConvThr = p.forcConvThr;
+    if (p.upscale > 0) params.upscale = p.upscale;
+    if (p.trustRadiusMax > 0) params.trustRadiusMax = p.trustRadiusMax;
   }
   if (calcType === 'vc-relax') {
     params.cellDynamics = p.cellDynamics;

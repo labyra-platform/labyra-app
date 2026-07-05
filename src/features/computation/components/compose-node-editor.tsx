@@ -65,6 +65,9 @@ const SMEARING: SmearingType[] = [
 ];
 
 const RESTART: RestartMode[] = ['from_scratch', 'restart'];
+const VERBOSITY = ['high', 'low'] as const;
+const STARTING_POT = ['atomic', 'file'] as const;
+const STARTING_WFC = ['atomic+random', 'atomic', 'random', 'file'] as const;
 const MIXING_MODE: MixingMode[] = ['plain', 'TF', 'local-TF'];
 const DIAGONALIZATION: Diagonalization[] = ['david', 'cg', 'ppcg', 'rmm-davidson'];
 const ION_DYNAMICS: IonDynamics[] = ['bfgs', 'damp', 'fire'];
@@ -398,6 +401,41 @@ export function ComposeNodeEditor({
           <div key='diagonalization' className='space-y-1'>
             <Label className='text-xs'>diagonalization</Label>
             {sel('diagonalization', p.diagonalization, DIAGONALIZATION)}
+          </div>
+        );
+      case 'verbosity':
+        return (
+          <div key='verbosity' className='space-y-1'>
+            <Label className='text-xs'>verbosity</Label>
+            {sel('verbosity', p.verbosity, VERBOSITY)}
+          </div>
+        );
+      case 'startingPot':
+        return (
+          <div key='startingPot' className='space-y-1'>
+            <Label className='text-xs'>startingpot</Label>
+            {sel('startingPot', p.startingPot, STARTING_POT)}
+          </div>
+        );
+      case 'startingWfc':
+        return (
+          <div key='startingWfc' className='space-y-1'>
+            <Label className='text-xs'>startingwfc</Label>
+            {sel('startingWfc', p.startingWfc, STARTING_WFC)}
+          </div>
+        );
+      case 'upscale':
+        return (
+          <div key='upscale' className='space-y-1'>
+            <Label className='text-xs'>upscale</Label>
+            {num('upscale', p.upscale)}
+          </div>
+        );
+      case 'trustRadiusMax':
+        return (
+          <div key='trustRadiusMax' className='space-y-1'>
+            <Label className='text-xs'>trust_radius_max</Label>
+            {num('trustRadiusMax', p.trustRadiusMax)}
           </div>
         );
       case 'ionDynamics':

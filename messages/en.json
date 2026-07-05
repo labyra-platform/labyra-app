@@ -2122,6 +2122,24 @@
     "propLattice": "Lattice",
     "propUnitCell": "Unit-cell formula",
     "propSites": "Sites",
-    "propMaterialId": "Material ID"
+    "propMaterialId": "Material ID",
+    "crystalStructure": "Crystal Structure",
+    "latticeConventional": "Lattice (Conventional)",
+    "volume": "Volume",
+    "wyckoffPositions": "Wyckoff Positions",
+    "wyckoffLabel": "Label",
+    "wyckoffElement": "Element",
+    "symmetry": "Symmetry",
+    "latticeSystem": "Lattice System",
+    "hallNumber": "Hall Number",
+    "internationalNumber": "International Number",
+    "symbol": "Symbol",
+    "pointGroup": "Point Group",
+    "numberOfAtoms": "Number of Atoms",
+    "density": "Density",
+    "dimensionality": "Dimensionality",
+    "oxidationStates": "Possible Oxidation States",
+    "analysisLoading": "Analyzing symmetry…",
+    "analysisError": "Crystallographic analysis unavailable for this structure."
   }
 }

@@ -29,6 +29,36 @@ export interface CrystalStructure extends ProvBase {
   /** Precomputed Three.js render scene (atoms + bonds), cached so the 3D viewer
    *  loads from Firestore without a worker round-trip. Absent on legacy docs. */
   scene?: StructureScene;
+  /** Precomputed crystallographic analysis (symmetry, Wyckoff, density, …),
+   *  cached on first request. Absent until the detail panel is first opened. */
+  analysis?: StructureAnalysis;
+}
+
+/** Crystallographic summary from the worker (spglib / pymatgen). */
+export interface StructureAnalysis {
+  nsites: number;
+  density: number | null;
+  lattice: {
+    a: number;
+    b: number;
+    c: number;
+    alpha: number;
+    beta: number;
+    gamma: number;
+    volume: number;
+  } | null;
+  symmetry: {
+    crystalSystem: string;
+    latticeSystem: string;
+    hallNumber: number | null;
+    hallSymbol: string | null;
+    internationalNumber: number | null;
+    internationalSymbol: string | null;
+    pointGroup: string | null;
+  } | null;
+  wyckoff: { label: string; element: string; x: string; y: string; z: string }[];
+  dimensionality: string | null;
+  oxidationStates: string[];
 }
 
 export interface CreateCrystalStructureInput {

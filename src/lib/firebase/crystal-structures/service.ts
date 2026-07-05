@@ -69,6 +69,22 @@ export async function attachScene(
     .set({ scene: JSON.stringify(scene) }, { merge: true });
 }
 
+/** Cache a computed crystallographic analysis onto an existing structure. */
+export async function attachAnalysis(
+  tenantId: string,
+  id: string,
+  analysis: CrystalStructure['analysis']
+): Promise<void> {
+  if (!analysis) return;
+  const db = getAdminFirestoreService();
+  await db
+    .collection('tenants')
+    .doc(tenantId)
+    .collection(COLLECTION)
+    .doc(id)
+    .set({ analysis: JSON.stringify(analysis) }, { merge: true });
+}
+
 /** Decode a stored crystalStructure doc — structure is a JSON string (new) or an
  *  object (legacy docs written before the string encoding). */
 function parseStored(raw: Record<string, unknown>): CrystalStructure {
@@ -80,7 +96,11 @@ function parseStored(raw: Record<string, unknown>): CrystalStructure {
     typeof raw.scene === 'string'
       ? (JSON.parse(raw.scene) as CrystalStructure['scene'])
       : (raw.scene as CrystalStructure['scene']);
-  return { ...(raw as unknown as CrystalStructure), structure, scene };
+  const analysis =
+    typeof raw.analysis === 'string'
+      ? (JSON.parse(raw.analysis) as CrystalStructure['analysis'])
+      : (raw.analysis as CrystalStructure['analysis']);
+  return { ...(raw as unknown as CrystalStructure), structure, scene, analysis };
 }
 
 export async function listCrystalStructures(tenantId: string): Promise<CrystalStructure[]> {

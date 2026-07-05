@@ -2123,6 +2123,24 @@
     "propLattice": "Mạng",
     "propUnitCell": "Công thức ô cơ sở",
     "propSites": "Số nguyên tử",
-    "propMaterialId": "Material ID"
+    "propMaterialId": "Material ID",
+    "crystalStructure": "Cấu trúc tinh thể",
+    "latticeConventional": "Mạng (Conventional)",
+    "volume": "Thể tích",
+    "wyckoffPositions": "Vị trí Wyckoff",
+    "wyckoffLabel": "Nhãn",
+    "wyckoffElement": "Nguyên tố",
+    "symmetry": "Đối xứng",
+    "latticeSystem": "Hệ mạng",
+    "hallNumber": "Số Hall",
+    "internationalNumber": "Số quốc tế",
+    "symbol": "Ký hiệu",
+    "pointGroup": "Nhóm điểm",
+    "numberOfAtoms": "Số nguyên tử",
+    "density": "Khối lượng riêng",
+    "dimensionality": "Chiều",
+    "oxidationStates": "Trạng thái oxy hóa",
+    "analysisLoading": "Đang phân tích đối xứng…",
+    "analysisError": "Không có phân tích tinh thể cho cấu trúc này."
   }
 }

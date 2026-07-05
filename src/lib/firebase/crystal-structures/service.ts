@@ -85,6 +85,22 @@ export async function attachAnalysis(
     .set({ analysis: JSON.stringify(analysis) }, { merge: true });
 }
 
+/** Cache a Materials Project summary onto an existing structure. */
+export async function attachMpSummary(
+  tenantId: string,
+  id: string,
+  mpSummary: CrystalStructure['mpSummary']
+): Promise<void> {
+  if (!mpSummary) return;
+  const db = getAdminFirestoreService();
+  await db
+    .collection('tenants')
+    .doc(tenantId)
+    .collection(COLLECTION)
+    .doc(id)
+    .set({ mpSummary: JSON.stringify(mpSummary) }, { merge: true });
+}
+
 /** Decode a stored crystalStructure doc — structure is a JSON string (new) or an
  *  object (legacy docs written before the string encoding). */
 function parseStored(raw: Record<string, unknown>): CrystalStructure {
@@ -100,7 +116,11 @@ function parseStored(raw: Record<string, unknown>): CrystalStructure {
     typeof raw.analysis === 'string'
       ? (JSON.parse(raw.analysis) as CrystalStructure['analysis'])
       : (raw.analysis as CrystalStructure['analysis']);
-  return { ...(raw as unknown as CrystalStructure), structure, scene, analysis };
+  const mpSummary =
+    typeof raw.mpSummary === 'string'
+      ? (JSON.parse(raw.mpSummary) as CrystalStructure['mpSummary'])
+      : (raw.mpSummary as CrystalStructure['mpSummary']);
+  return { ...(raw as unknown as CrystalStructure), structure, scene, analysis, mpSummary };
 }
 
 export async function listCrystalStructures(tenantId: string): Promise<CrystalStructure[]> {

@@ -7,10 +7,11 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { StructureViewer } from '@/features/crystal-structures/components/structure-viewer';
 import { StructureCrystalCards } from '@/features/crystal-structures/components/structure-crystal-cards';
+import { StructureMpSummary } from '@/features/crystal-structures/components/structure-mp-summary';
 import { StructuresTable } from '@/features/crystal-structures/components/structures-table';
 import type { StructureRow } from '@/features/crystal-structures/structure-row';
 import { formatSciNode } from '@/features/spectra/utils/format-units';
@@ -18,7 +19,32 @@ import { formatSciNode } from '@/features/spectra/utils/format-units';
 export function StructuresBrowser({ rows }: { rows: StructureRow[] }) {
   const t = useTranslations('structures');
   const [selectedId, setSelectedId] = useState<string>(rows[0]?.id ?? '');
+  const [bandGaps, setBandGaps] = useState<Record<string, number | null | undefined>>({});
   const sel = rows.find((r) => r.id === selectedId) ?? rows[0];
+
+  // Background-fetch MP band gaps for every mp-sourced row (cached on the doc
+  // after the first hit) so the table's Band Gap column fills in progressively.
+  useEffect(() => {
+    let alive = true;
+    const mpRows = rows.filter((r) => r.mpId);
+    void Promise.all(
+      mpRows.map(async (r) => {
+        if (bandGaps[r.id] !== undefined) return;
+        try {
+          const res = await fetch(`/api/structures/${r.id}/mp-summary`);
+          if (!res.ok) return;
+          const mp = (await res.json()) as { bandGap: number | null };
+          if (alive) setBandGaps((prev) => ({ ...prev, [r.id]: mp.bandGap }));
+        } catch {
+          /* leave undefined */
+        }
+      })
+    );
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
 
   if (!sel) return null;
 
@@ -45,16 +71,30 @@ export function StructuresBrowser({ rows }: { rows: StructureRow[] }) {
         </div>
       </div>
 
-      {/* Column 1: 3D viewer · Column 2: crystallography cards */}
+      {/* Column 1: 3D viewer · Column 2: MP summary + crystallography cards */}
       <div className='grid gap-4 xl:grid-cols-2'>
         <StructureViewer key={sel.id} structureId={sel.id} />
-        <div className='space-y-2'>
-          <h2 className='text-lg font-semibold'>{t('crystalStructure')}</h2>
-          <StructureCrystalCards key={`cards-${sel.id}`} structureId={sel.id} columns={1} />
+        <div className='space-y-3'>
+          {sel.mpId ? (
+            <StructureMpSummary
+              key={`mp-${sel.id}`}
+              structureId={sel.id}
+              onLoaded={(mp) => setBandGaps((prev) => ({ ...prev, [sel.id]: mp.bandGap }))}
+            />
+          ) : null}
+          <div className='space-y-2'>
+            <h2 className='text-lg font-semibold'>{t('crystalStructure')}</h2>
+            <StructureCrystalCards key={`cards-${sel.id}`} structureId={sel.id} columns={1} />
+          </div>
         </div>
       </div>
 
-      <StructuresTable rows={rows} selectedId={selectedId} onSelectRow={setSelectedId} />
+      <StructuresTable
+        rows={rows}
+        selectedId={selectedId}
+        onSelectRow={setSelectedId}
+        bandGaps={bandGaps}
+      />
     </div>
   );
 }

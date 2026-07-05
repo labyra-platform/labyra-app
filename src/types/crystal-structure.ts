@@ -32,6 +32,23 @@ export interface CrystalStructure extends ProvBase {
   /** Precomputed crystallographic analysis (symmetry, Wyckoff, density, …),
    *  cached on first request. Absent until the detail panel is first opened. */
   analysis?: StructureAnalysis;
+  /** Cached Materials Project summary (band gap, hull, …) for mp-sourced
+   *  structures. Absent until first fetched. */
+  mpSummary?: MpSummary;
+}
+
+/** Materials Project summary from the worker (mp_api). */
+export interface MpSummary {
+  mpId: string;
+  bandGap: number | null;
+  isGapDirect: boolean | null;
+  energyAboveHull: number | null;
+  formationEnergyPerAtom: number | null;
+  isStable: boolean | null;
+  ordering: string | null;
+  totalMagnetization: number | null;
+  theoretical: boolean | null;
+  density: number | null;
 }
 
 /** Crystallographic summary from the worker (spglib / pymatgen). */

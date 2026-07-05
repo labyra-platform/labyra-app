@@ -2141,6 +2141,19 @@
     "dimensionality": "Chiều",
     "oxidationStates": "Trạng thái oxy hóa",
     "analysisLoading": "Đang phân tích đối xứng…",
-    "analysisError": "Không có phân tích tinh thể cho cấu trúc này."
+    "analysisError": "Không có phân tích tinh thể cho cấu trúc này.",
+    "colBandGap": "Band Gap",
+    "mpProperties": "Materials Project",
+    "mpLoading": "Đang lấy dữ liệu MP…",
+    "energyAboveHull": "Energy Above Hull",
+    "bandGapLabel": "Band Gap",
+    "formationEnergy": "Năng lượng hình thành",
+    "magneticOrdering": "Trật tự từ",
+    "totalMagnetization": "Từ hóa tổng",
+    "experimentallyObserved": "Quan sát thực nghiệm",
+    "metallic": "Kim loại",
+    "unknown": "Chưa rõ",
+    "yes": "Có",
+    "no": "Không"
   }
 }

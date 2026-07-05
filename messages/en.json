@@ -2140,6 +2140,19 @@
     "dimensionality": "Dimensionality",
     "oxidationStates": "Possible Oxidation States",
     "analysisLoading": "Analyzing symmetry…",
-    "analysisError": "Crystallographic analysis unavailable for this structure."
+    "analysisError": "Crystallographic analysis unavailable for this structure.",
+    "colBandGap": "Band Gap",
+    "mpProperties": "Materials Project",
+    "mpLoading": "Fetching MP data…",
+    "energyAboveHull": "Energy Above Hull",
+    "bandGapLabel": "Band Gap",
+    "formationEnergy": "Formation Energy",
+    "magneticOrdering": "Magnetic Ordering",
+    "totalMagnetization": "Total Magnetization",
+    "experimentallyObserved": "Experimentally Observed",
+    "metallic": "Metallic",
+    "unknown": "Unknown",
+    "yes": "Yes",
+    "no": "No"
   }
 }

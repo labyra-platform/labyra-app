@@ -27,16 +27,25 @@ import type { StructureRow } from '../structure-row';
 export function StructuresTable({
   rows,
   selectedId,
-  onSelectRow
+  onSelectRow,
+  bandGaps
 }: {
   rows: StructureRow[];
   /** When set, rows select (highlight) instead of the formula linking away. */
   selectedId?: string;
   onSelectRow?: (id: string) => void;
+  /** id → band gap (eV) from the MP summary; undefined = still loading. */
+  bandGaps?: Record<string, number | null | undefined>;
 }) {
   const t = useTranslations('structures');
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
+  const bandGapCell = (id: string) => {
+    const g = bandGaps?.[id];
+    if (g === undefined) return <span className='text-muted-foreground'>—</span>;
+    if (g === null) return <span className='text-muted-foreground'>—</span>;
+    return g < 1e-6 ? 'metal' : `${g.toFixed(2)} eV`;
+  };
   const sortable = useSortRows(rows, {
     mpId: (r) => r.mpId ?? null,
     formula: (r) => r.formula,
@@ -96,6 +105,7 @@ export function StructuresTable({
               dir={sortable.dir}
               onToggle={sortable.toggle}
             />
+            <TableHead className='text-right'>{t('colBandGap')}</TableHead>
             <TableHead className='w-10' />
           </TableRow>
         </TableHeader>
@@ -128,6 +138,7 @@ export function StructuresTable({
               <TableCell>{r.crystalSystem}</TableCell>
               <TableCell className='font-mono text-xs'>{formatSpaceGroup(r.spaceGroup)}</TableCell>
               <TableCell className='text-right tabular-nums'>{r.nat}</TableCell>
+              <TableCell className='text-right text-xs tabular-nums'>{bandGapCell(r.id)}</TableCell>
               <TableCell>
                 <Button
                   variant='ghost'

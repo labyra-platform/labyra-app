@@ -168,6 +168,11 @@ export function analyzeStructure(structure: unknown): Promise<WorkerResult> {
   return callWorker('/dft/structure/analysis', { structure });
 }
 
+/** Materials Project summary (band gap, hull, formation energy, …) by mp-id. */
+export function fetchStructureMpSummary(mpId: string): Promise<WorkerResult> {
+  return callWorker('/materials/summary', { mpId });
+}
+
 /** Emit CIF / POSCAR text for a stored DftStructure. */
 export function exportStructure(structure: unknown, fmt: 'cif' | 'poscar'): Promise<WorkerResult> {
   return callWorker('/dft/structure/export', { structure, fmt });

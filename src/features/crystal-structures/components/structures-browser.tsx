@@ -24,32 +24,35 @@ export function StructuresBrowser({ rows }: { rows: StructureRow[] }) {
 
   return (
     <div className='space-y-4'>
-      {/* Compact header + 3D viewer on top */}
-      <div className='mx-auto max-w-2xl space-y-2'>
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <h1 className='text-xl font-semibold'>{formatSciNode(sel.formula)}</h1>
-          <div className='flex items-center gap-1.5'>
-            <Badge variant='outline' className='uppercase'>
-              {sel.source}
-            </Badge>
-            {sel.verified ? <Badge variant='secondary'>{t('verified')}</Badge> : null}
-            {sel.mpId ? (
-              <a
-                href={`https://materialsproject.org/materials/${sel.mpId}`}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='text-primary font-mono text-sm underline-offset-2 hover:underline'
-              >
-                {sel.mpId}
-              </a>
-            ) : null}
-          </div>
+      {/* Header */}
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <h1 className='text-xl font-semibold'>{formatSciNode(sel.formula)}</h1>
+        <div className='flex items-center gap-1.5'>
+          <Badge variant='outline' className='uppercase'>
+            {sel.source}
+          </Badge>
+          {sel.verified ? <Badge variant='secondary'>{t('verified')}</Badge> : null}
+          {sel.mpId ? (
+            <a
+              href={`https://materialsproject.org/materials/${sel.mpId}`}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-primary font-mono text-sm underline-offset-2 hover:underline'
+            >
+              {sel.mpId}
+            </a>
+          ) : null}
         </div>
-        <StructureViewer key={sel.id} structureId={sel.id} />
       </div>
 
-      {/* MP-style crystallography cards */}
-      <StructureCrystalCards key={`cards-${sel.id}`} structureId={sel.id} />
+      {/* Column 1: 3D viewer · Column 2: crystallography cards */}
+      <div className='grid gap-4 xl:grid-cols-2'>
+        <StructureViewer key={sel.id} structureId={sel.id} />
+        <div className='space-y-2'>
+          <h2 className='text-lg font-semibold'>{t('crystalStructure')}</h2>
+          <StructureCrystalCards key={`cards-${sel.id}`} structureId={sel.id} columns={1} />
+        </div>
+      </div>
 
       <StructuresTable rows={rows} selectedId={selectedId} onSelectRow={setSelectedId} />
     </div>

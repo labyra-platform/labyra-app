@@ -16,7 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { StructureScene } from '@/lib/dft/worker-client';
 import type { ShowFlags } from './viewer-3d';
 
-const FRAME = 'h-[70vh] max-h-[640px] min-h-[420px] w-full rounded-lg border';
+const FRAME = 'h-[440px] w-full rounded-lg border';
 
 const Viewer3D = dynamic(() => import('./viewer-3d'), {
   ssr: false,

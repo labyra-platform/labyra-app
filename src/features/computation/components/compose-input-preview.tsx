@@ -30,8 +30,7 @@ function withRelaxMarker(
   t: (k: string, v?: Record<string, string>) => string
 ): string {
   if (!upstreamRelax || !input.includes('ATOMIC_POSITIONS')) return input;
-  const note =
-    `! ${t('previewRelaxNote1', { unit: upstreamRelax })}\n` + `! ${t('previewRelaxNote2')}\n`;
+  const note = `! ${t('previewRelaxNote1', { unit: upstreamRelax })}\n! ${t('previewRelaxNote2')}\n`;
   return input.replace(/^(ATOMIC_POSITIONS)/m, `${note}$1`);
 }
 

@@ -2155,6 +2155,8 @@
     "unknown": "Chưa rõ",
     "yes": "Có",
     "no": "Không",
-    "viewerShow_polyhedra": "Đa diện"
+    "viewerShow_polyhedra": "Đa diện",
+    "direct": "trực tiếp",
+    "indirect": "gián tiếp"
   }
 }

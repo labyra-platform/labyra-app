@@ -2154,6 +2154,8 @@
     "unknown": "Unknown",
     "yes": "Yes",
     "no": "No",
-    "viewerShow_polyhedra": "Polyhedra"
+    "viewerShow_polyhedra": "Polyhedra",
+    "direct": "direct",
+    "indirect": "indirect"
   }
 }

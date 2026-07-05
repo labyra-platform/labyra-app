@@ -71,10 +71,10 @@ export function StructuresBrowser({ rows }: { rows: StructureRow[] }) {
         </div>
       </div>
 
-      {/* Column 1: 3D viewer · Column 2: MP summary + crystallography cards */}
-      <div className='grid gap-4 xl:grid-cols-2'>
-        <StructureViewer key={sel.id} structureId={sel.id} />
+      {/* Column 1 (1/3): viewer + MP summary · Column 2 (2/3): crystal cards 2×2 */}
+      <div className='grid gap-4 xl:grid-cols-3'>
         <div className='space-y-3'>
+          <StructureViewer key={sel.id} structureId={sel.id} />
           {sel.mpId ? (
             <StructureMpSummary
               key={`mp-${sel.id}`}
@@ -82,10 +82,10 @@ export function StructuresBrowser({ rows }: { rows: StructureRow[] }) {
               onLoaded={(mp) => setBandGaps((prev) => ({ ...prev, [sel.id]: mp.bandGap }))}
             />
           ) : null}
-          <div className='space-y-2'>
-            <h2 className='text-lg font-semibold'>{t('crystalStructure')}</h2>
-            <StructureCrystalCards key={`cards-${sel.id}`} structureId={sel.id} columns={1} />
-          </div>
+        </div>
+        <div className='space-y-2 xl:col-span-2'>
+          <h2 className='text-lg font-semibold'>{t('crystalStructure')}</h2>
+          <StructureCrystalCards key={`cards-${sel.id}`} structureId={sel.id} columns={2} />
         </div>
       </div>
 

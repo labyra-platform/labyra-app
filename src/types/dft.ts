@@ -253,6 +253,8 @@ export interface DftResults {
 
 export interface DftUnitSnapshot {
   status: DftUnitStatus;
+  /** Epoch seconds when the unit was submitted to Batch (queued). */
+  queuedAt?: number | null;
   /** Epoch seconds (worker `time.time()`) when the unit started running. */
   startedAt?: number | null;
   /** Epoch seconds when the unit reached a terminal state (completed/failed). */

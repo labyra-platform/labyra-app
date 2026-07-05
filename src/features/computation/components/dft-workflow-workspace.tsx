@@ -28,13 +28,14 @@ import { JobsAutoRefresh } from '@/features/computation/components/jobs-auto-ref
 import { WorkflowReconciler } from '@/features/computation/components/workflow-reconciler';
 import { DftBandsTab } from '@/features/computation/components/dft-bands-tab';
 import { DftConvergenceTab } from '@/features/computation/components/dft-convergence-tab';
+import { formatDuration } from '@/features/computation/workflow-row';
 import { DftResultsTab } from '@/features/computation/components/dft-results-tab';
 import { DftComputeTab } from '@/features/computation/components/dft-compute-tab';
 import { DftPrelaunchChecklist } from '@/features/computation/components/dft-prelaunch-checklist';
 import { DftNodePanel } from '@/features/computation/components/dft-node-panel';
 import { DownloadWorkflowJson } from '@/features/computation/components/download-workflow-json';
 import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
-import type { DftWorkflow } from '@/types/dft';
+import type { DftUnitSnapshot, DftWorkflow } from '@/types/dft';
 
 const STATUS_DOT: Record<string, string> = {
   completed: 'bg-emerald-500',
@@ -43,6 +44,15 @@ const STATUS_DOT: Record<string, string> = {
   pending: 'bg-muted-foreground/40',
   failed: 'bg-destructive'
 };
+
+/** Per-unit elapsed time from snapshot timestamps (startedAt ?? queuedAt to
+ * finishedAt), formatted; null when the unit hasn't finished. */
+function unitDuration(s: DftUnitSnapshot | undefined): string | null {
+  if (!s || s.finishedAt == null) return null;
+  const start = s.startedAt ?? s.queuedAt;
+  if (start == null) return null;
+  return formatDuration(s.finishedAt - start);
+}
 
 export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
   const t = useTranslations('computation');
@@ -100,6 +110,11 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
                       {String(u.order ?? i + 1).padStart(2, '0')}
                     </span>
                     <span className='flex-1 truncate'>{u.name ?? u.calcType}</span>
+                    {unitDuration(workflow.snapshot?.[u.id]) ? (
+                      <span className='text-muted-foreground/70 shrink-0 text-[10px] tabular-nums'>
+                        {unitDuration(workflow.snapshot?.[u.id])}
+                      </span>
+                    ) : null}
                   </button>
                   {st === 'running' || st === 'queued' ? (
                     <CancelWorkflowButton

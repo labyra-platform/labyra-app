@@ -60,10 +60,27 @@ export function methodLabel(g: DftWorkflowGlobal | undefined): string {
   return hasU ? `${func}+U` : func;
 }
 
-/** Per-step wall-clock seconds from the snapshot timestamps; null if unknown. */
+/** Per-step wall-clock seconds from the snapshot timestamps; null if unknown.
+ * startedAt is often absent (the worker only sets it on a RUNNING event, which
+ * Batch doesn't always deliver), so fall back to queuedAt as the start marker. */
 function stepDuration(s: DftUnitSnapshot | undefined): number | null {
-  if (!s || s.startedAt == null || s.finishedAt == null) return null;
-  const d = s.finishedAt - s.startedAt;
+  if (!s || s.finishedAt == null) return null;
+  const start = s.startedAt ?? s.queuedAt;
+  if (start == null) return null;
+  const d = s.finishedAt - start;
+  return d >= 0 ? d : null;
+}
+
+/** Total wall-clock for the whole workflow = last unit's finish minus the first
+ * unit's start (or queue), which reflects real elapsed time better than summing
+ * per-unit durations (units run sequentially on separate VMs). */
+function workflowWallSeconds(snaps: (DftUnitSnapshot | undefined)[]): number | null {
+  const starts = snaps
+    .map((s) => s?.startedAt ?? s?.queuedAt)
+    .filter((v): v is number => v != null);
+  const ends = snaps.map((s) => s?.finishedAt).filter((v): v is number => v != null);
+  if (starts.length === 0 || ends.length === 0) return null;
+  const d = Math.max(...ends) - Math.min(...starts);
   return d >= 0 ? d : null;
 }
 
@@ -151,8 +168,7 @@ export function toWorkflowRow(wf: DftWorkflow): WorkflowRow {
       durationSec: stepDuration(snap)
     };
   });
-  const known = steps.map((st) => st.durationSec).filter((d): d is number => d != null);
-  const totalDurationSec = known.length > 0 ? known.reduce((a, b) => a + b, 0) : null;
+  const totalDurationSec = workflowWallSeconds((wf.units ?? []).map((u) => wf.snapshot?.[u.id]));
   return {
     id: wf.id,
     name: wf.global?.prefix ?? wf.id,

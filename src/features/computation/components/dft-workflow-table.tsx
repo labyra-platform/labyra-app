@@ -63,21 +63,18 @@ type Filter = 'all' | 'running' | 'completed' | 'failed';
 const href = (id: string) => `/dashboard/computation/${id}`;
 
 /** Compact Hubbard-U summary, e.g. "W-5d 6.2 · O-2p 9". */
+// Exact local timestamp: HH:MM:SS DD/MM/YYYY (no relative "22m ago").
+const p2 = (n: number) => String(n).padStart(2, '0');
 const fmtDate = (ms: number | null) => {
   if (ms == null) return '—';
   const d = new Date(ms);
-  const now = Date.now();
-  const day = 86400000;
-  // Recent → relative ("2h ago", "3d ago"); older → absolute date.
-  const diff = now - ms;
-  if (diff < day) {
-    const h = Math.floor(diff / 3600000);
-    if (h < 1) return `${Math.max(1, Math.floor(diff / 60000))}m ago`;
-    return `${h}h ago`;
-  }
-  if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const time = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+  const date = `${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${d.getFullYear()}`;
+  return `${time} ${date}`;
 };
+
+// 1 Rydberg = 13.605693122994 eV (CODATA).
+const RY_TO_EV = 13.605693122994;
 const fmtU = (r: WorkflowRow) => r.hubbard.map((h) => `${h.manifold} ${h.value}`).join(' · ');
 
 function ResultCellView({ cell }: { cell: ResultCell }) {
@@ -102,7 +99,7 @@ function ResultCellView({ cell }: { cell: ResultCell }) {
         {cell.energyRy != null ? (
           <span className='text-muted-foreground'>
             {cell.gapEv != null ? ' · ' : ''}
-            {cell.energyRy.toFixed(2)} Ry
+            {cell.energyRy.toFixed(2)} Ry ({(cell.energyRy * RY_TO_EV).toFixed(1)} eV)
           </span>
         ) : null}
       </span>
@@ -123,9 +120,12 @@ function ResultCellView({ cell }: { cell: ResultCell }) {
 
 interface Props {
   rows: WorkflowRow[];
+  /** Optional email → display-name map (resolved server-side) for legacy jobs
+   * that stored an email in createdBy. New jobs store the name directly. */
+  creatorNames?: Record<string, string>;
 }
 
-export function DftWorkflowTable({ rows }: Props) {
+export function DftWorkflowTable({ rows, creatorNames = {} }: Props) {
   const t = useTranslations('computation');
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -342,7 +342,7 @@ export function DftWorkflowTable({ rows }: Props) {
                       <div className='tabular-nums'>{fmtDate(r.createdAt)}</div>
                       {r.createdBy ? (
                         <div className='text-muted-foreground max-w-[140px] truncate'>
-                          {r.createdBy}
+                          {creatorNames[r.createdBy] ?? r.createdBy}
                         </div>
                       ) : null}
                     </TableCell>

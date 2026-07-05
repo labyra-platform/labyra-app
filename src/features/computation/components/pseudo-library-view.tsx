@@ -138,7 +138,7 @@ export function PseudoLibraryView() {
   return (
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
-        <p className='text-muted-foreground max-w-2xl text-pretty text-sm'>
+        <p className='text-muted-foreground max-w-3xl text-balance text-sm'>
           {t('pseudoLibraryHint')}
         </p>
         <Button variant='outline' disabled={uploading} onClick={() => fileRef.current?.click()}>

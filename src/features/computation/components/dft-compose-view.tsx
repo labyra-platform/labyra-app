@@ -143,7 +143,7 @@ export function DftComposeView({
   const [runId, setRunId] = useState('');
   const [runBrowserOpen, setRunBrowserOpen] = useState(false);
   const [existingIds, setExistingIds] = useState<Set<string>>(new Set());
-  const [preset, setPreset] = useState<string>('bulk-large');
+  const [preset, setPreset] = useState<string>('c2d-standard-32');
   const [pickedProject, setPickedProject] = useState<string>(projectId ?? '');
   const activeProject = projects.find((p) => p.id === (pickedProject || projectId)) ?? null;
   // Structures belonging to the picked project (for the second dropdown).

@@ -1958,7 +1958,7 @@
     "composeInputRefresh": "Làm mới input",
     "backToJobs": "Về danh sách job",
     "pseudoTab": "Giả thế",
-    "pseudoLibraryHint": "File UPF đã tải được nạp vào pseudo_dir của mọi run. Cutoff hiển thị là mức tối thiểu tác giả khuyến nghị từ header mỗi file — đặt global ecutwfc/ecutrho bằng hoặc cao hơn giá trị lớn nhất trong các nguyên tố của bạn.",
+    "pseudoLibraryHint": "File UPF đã tải được nạp vào mọi run. Cutoff hiển thị là mức tối thiểu tác giả khuyến nghị; đặt global ecutwfc/ecutrho bằng hoặc cao hơn giá trị lớn nhất trong các nguyên tố.",
     "pseudoUpload": "Tải lên .UPF",
     "pseudoLoading": "Đang tải thư viện…",
     "pseudoEmpty": "Chưa có giả thế nào — tải lên các file .UPF mà phép tính cần.",
@@ -2053,7 +2053,8 @@
     "runIdDeleteConfirm": "Xóa vĩnh viễn run \"{id}\"? Thao tác này xóa workflow và kết quả của nó.",
     "runIdCollidesTag": "hiện tại",
     "runIdCollidesWarn": "⚠ \"{id}\" đã tồn tại — launch sẽ ĐÈ lên nó.",
-    "runIdOverwriteConfirm": "Run tên \"{id}\" đã tồn tại. Launch sẽ ĐÈ lên nó và kết quả cũ. Tiếp tục?"
+    "runIdOverwriteConfirm": "Run tên \"{id}\" đã tồn tại. Launch sẽ ĐÈ lên nó và kết quả cũ. Tiếp tục?",
+    "completedLabel": "Hoàn thành"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

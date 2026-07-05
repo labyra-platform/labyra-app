@@ -35,44 +35,12 @@ interface MachineSpec {
   noteKey?: string;
 }
 
-/** Mirrors worker MACHINE_PRESETS (src/dft/batch_client.py). */
+/** Presets tab shows only the small, free-tier-eligible e2 options for quick
+ * tests. Real compute machines live in the per-family tabs (C2/C2D/N2/…), so the
+ * large c2d/n2/c2/gpu presets are intentionally not duplicated here. */
 const GCP_MACHINES: MachineSpec[] = [
-  { preset: 'low', machineType: 'e2 (auto)', vcpu: 4, memGb: 16, gpu: null },
-  { preset: 'standard', machineType: 'e2 (auto)', vcpu: 8, memGb: 32, gpu: null },
-  { preset: 'bulk-amd', machineType: 'c2d-standard-16', vcpu: 16, memGb: 64, gpu: null },
-  { preset: 'bulk-large', machineType: 'c2d-standard-32', vcpu: 32, memGb: 128, gpu: null },
-  {
-    preset: 'bulk-amd-xl',
-    machineType: 'c2d-standard-56',
-    vcpu: 56,
-    memGb: 224,
-    gpu: null,
-    noteKey: 'machineC2dXlNote'
-  },
-  {
-    preset: 'bulk-n2',
-    machineType: 'n2-standard-96',
-    vcpu: 96,
-    memGb: 384,
-    gpu: null,
-    noteKey: 'machineN2Note'
-  },
-  {
-    preset: 'bulk',
-    machineType: 'c2-standard-60',
-    vcpu: 60,
-    memGb: 240,
-    gpu: null,
-    noteKey: 'machineC2QuotaNote'
-  },
-  {
-    preset: 'high-gpu',
-    machineType: 'g2-standard-8',
-    vcpu: 8,
-    memGb: 32,
-    gpu: 'NVIDIA L4',
-    noteKey: 'machineGpuNote'
-  }
+  { preset: 'low', machineType: 'e2-standard-4', vcpu: 4, memGb: 16, gpu: null },
+  { preset: 'standard', machineType: 'e2-standard-8', vcpu: 8, memGb: 32, gpu: null }
 ];
 
 /** HPC-relevant families (Cluster-Toolkit-supported compute-optimized + N2).
@@ -160,7 +128,11 @@ export function MachinePickerDialog({
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<string>('gcp');
   const [selected, setSelected] = useState<string>(value);
-  const [family, setFamily] = useState<string>('presets');
+  // Open on the tab that holds the current value: a family tab if the value is
+  // one of that family's machine types, else the presets tab.
+  const familyOf = (v: string) =>
+    FAMILIES.find((f) => f.sizes.some((n) => `${f.id}-standard-${n}` === v))?.id ?? 'presets';
+  const [family, setFamily] = useState<string>(() => familyOf(value));
 
   const confirm = () => {
     onChange(selected);
@@ -172,7 +144,10 @@ export function MachinePickerDialog({
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
-        if (o) setSelected(value);
+        if (o) {
+          setSelected(value);
+          setFamily(familyOf(value));
+        }
       }}
     >
       <DialogTrigger asChild>

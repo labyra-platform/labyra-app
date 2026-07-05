@@ -65,16 +65,17 @@ const href = (id: string) => `/dashboard/computation/${id}`;
 /** Compact Hubbard-U summary, e.g. "W-5d 6.2 · O-2p 9". */
 // Exact local timestamp: HH:MM:SS DD/MM/YYYY (no relative "22m ago").
 const p2 = (n: number) => String(n).padStart(2, '0');
-const fmtDate = (ms: number | null) => {
+const fmtTime = (ms: number | null) => {
   if (ms == null) return '—';
   const d = new Date(ms);
-  const time = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
-  const date = `${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${d.getFullYear()}`;
-  return `${time} ${date}`;
+  return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+};
+const fmtDay = (ms: number | null) => {
+  if (ms == null) return '';
+  const d = new Date(ms);
+  return `${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${d.getFullYear()}`;
 };
 
-// 1 Rydberg = 13.605693122994 eV (CODATA).
-const RY_TO_EV = 13.605693122994;
 const fmtU = (r: WorkflowRow) => r.hubbard.map((h) => `${h.manifold} ${h.value}`).join(' · ');
 
 function ResultCellView({ cell }: { cell: ResultCell }) {
@@ -96,11 +97,8 @@ function ResultCellView({ cell }: { cell: ResultCell }) {
             ) : null}
           </>
         ) : null}
-        {cell.energyRy != null ? (
-          <span className='text-muted-foreground'>
-            {cell.gapEv != null ? ' · ' : ''}
-            {cell.energyRy.toFixed(2)} Ry ({(cell.energyRy * RY_TO_EV).toFixed(1)} eV)
-          </span>
+        {cell.energyRy != null && cell.gapEv == null ? (
+          <span className='text-muted-foreground'>{t('completedLabel')}</span>
         ) : null}
       </span>
     );
@@ -339,7 +337,10 @@ export function DftWorkflowTable({ rows, creatorNames = {} }: Props) {
                       {formatDuration(r.totalDurationSec) ?? '—'}
                     </TableCell>
                     <TableCell className='text-xs'>
-                      <div className='tabular-nums'>{fmtDate(r.createdAt)}</div>
+                      <div className='tabular-nums'>{fmtTime(r.createdAt)}</div>
+                      <div className='text-muted-foreground tabular-nums'>
+                        {fmtDay(r.createdAt)}
+                      </div>
                       {r.createdBy ? (
                         <div className='text-muted-foreground max-w-[140px] truncate'>
                           {creatorNames[r.createdBy] ?? r.createdBy}

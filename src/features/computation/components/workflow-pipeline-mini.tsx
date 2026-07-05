@@ -63,8 +63,6 @@ export function WorkflowPipelineMini({ steps, className }: Props) {
   if (steps.length === 0) {
     return <span className='text-muted-foreground text-xs'>—</span>;
   }
-  const totalSec = steps.reduce((acc, s) => acc + (s.durationSec ?? 0), 0);
-  const total = totalSec > 0 ? formatDuration(totalSec) : null;
   return (
     <div className={cn('flex items-center gap-1', className)}>
       {steps.map((s, i) => {
@@ -81,18 +79,10 @@ export function WorkflowPipelineMini({ steps, className }: Props) {
               />
             ) : null}
             <DotIcon status={s.status} />
-            <span className='text-muted-foreground hidden text-[11px] lg:inline'>
-              {s.label}
-              {dur ? <span className='text-muted-foreground/70'> {dur}</span> : null}
-            </span>
+            <span className='text-muted-foreground hidden text-[11px] lg:inline'>{s.label}</span>
           </div>
         );
       })}
-      {total ? (
-        <span className='text-muted-foreground/70 ml-1 hidden text-[11px] tabular-nums md:inline'>
-          Σ {total}
-        </span>
-      ) : null}
     </div>
   );
 }

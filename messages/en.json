@@ -1957,7 +1957,7 @@
     "composeInputRefresh": "Refresh input",
     "backToJobs": "Back to jobs",
     "pseudoTab": "Pseudopotentials",
-    "pseudoLibraryHint": "Uploaded UPF files are staged into every run's pseudo_dir. Cutoffs shown are the author-suggested minimums from each file's header — set global ecutwfc/ecutrho at or above the largest values across your species.",
+    "pseudoLibraryHint": "Uploaded UPF files are staged into every run. Cutoffs shown are the author-suggested minimums; set global ecutwfc/ecutrho at or above the largest across your species.",
     "pseudoUpload": "Upload .UPF",
     "pseudoLoading": "Loading library…",
     "pseudoEmpty": "No pseudopotentials yet — upload the .UPF files your calculations need.",
@@ -2052,7 +2052,8 @@
     "runIdDeleteConfirm": "Delete run \"{id}\" permanently? This removes its workflow and results.",
     "runIdCollidesTag": "current",
     "runIdCollidesWarn": "⚠ \"{id}\" already exists — launching will overwrite it.",
-    "runIdOverwriteConfirm": "A run named \"{id}\" already exists. Launching will overwrite it and its results. Continue?"
+    "runIdOverwriteConfirm": "A run named \"{id}\" already exists. Launching will overwrite it and its results. Continue?",
+    "completedLabel": "Completed"
   },
   "structures": {
     "importTitle": "Import structure",

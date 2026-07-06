@@ -99,7 +99,11 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
 
   // ─── STEP 1: Parallel retrieval ─────────────────────────────────
   const embedder = getEmbeddingProvider();
-  const bm25Promise = getBM25ForTenant(req.tenantId);
+  // Paper Q&A filters to one paper — scope BM25 to that paper so retrieval stays
+  // ~2s instead of re-fitting the whole tenant corpus (60s+) on a cold instance.
+  const singlePaperId =
+    typeof req.filter?.paperId === 'string' ? (req.filter.paperId as string) : undefined;
+  const bm25Promise = getBM25ForTenant(req.tenantId, singlePaperId);
   const embedPromise = embedder.embed([req.query], 'query');
 
   const [embedResult, bm25Encoder] = await Promise.all([embedPromise, bm25Promise]);

@@ -78,12 +78,30 @@ export function invalidateBM25(tenantId: string): void {
  * Get fitted BM25 encoder for tenant. Lazy load from Firestore,
  * or trigger cold-start fit if no params yet but corpus available.
  */
-export async function getBM25ForTenant(tenantId: string): Promise<BM25Encoder | null> {
+export async function getBM25ForTenant(
+  tenantId: string,
+  paperId?: string
+): Promise<BM25Encoder | null> {
+  const cacheKey = paperId ? `${tenantId}:${paperId}` : tenantId;
   const cache = getCache();
-  const cached = cache.get(tenantId);
+  const cached = cache.get(cacheKey);
 
   if (cached && Date.now() - cached.loadedAt < CACHE_TTL_MS) {
     return cached.encoder;
+  }
+
+  // Paper-scoped fast path: fit BM25 on just this paper's chunks. Loading one
+  // paper + fitting is ~1-2s (vs 60s+ for the whole tenant corpus on a cold
+  // serverless instance), and local IDF is sufficient for ranking within a
+  // single paper — which is all paper Q&A needs.
+  if (paperId) {
+    const corpus = await getCorpus(tenantId, paperId);
+    if (corpus.length === 0) return null;
+    const encoder = new BM25Encoder(getHybridTokenizer());
+    await encoder.fit(corpus.map((e) => e.scoreText));
+    precomputeCorpusVecs(encoder, corpus);
+    cache.set(cacheKey, { encoder, corpus, loadedAt: Date.now(), corpusSize: corpus.length });
+    return encoder;
   }
 
   // Try load from Firestore
@@ -117,8 +135,41 @@ export async function getBM25ForTenant(tenantId: string): Promise<BM25Encoder | 
  * query time) and carries scoreText (contextualText||text) used for both
  * fitting and scoring so the sparse side is consistent (R318).
  */
-async function getCorpus(tenantId: string): Promise<BM25CorpusEntry[]> {
+async function getCorpus(tenantId: string, paperId?: string): Promise<BM25CorpusEntry[]> {
   const db = getAdminFirestoreService();
+
+  // Single-paper scope (paper Q&A): read just this paper's chunks. ~1-2s vs 60s+
+  // for the whole tenant corpus on a cold serverless instance.
+  if (paperId) {
+    const paperRef = db.collection(`tenants/${tenantId}/papers`).doc(paperId);
+    const [paperSnap, chunkSnap] = await Promise.all([
+      paperRef.get(),
+      paperRef.collection('chunks').get()
+    ]);
+    if (!paperSnap.exists) return [];
+    const groupId = ((paperSnap.data()?.groupId as string | undefined) ?? '').trim();
+    const scoped: BM25CorpusEntry[] = [];
+    for (const chunk of chunkSnap.docs) {
+      const data = chunk.data() as PaperChunkDoc;
+      const scoreText = data.contextualText || data.text;
+      if (!scoreText) continue;
+      scoped.push({
+        chunkId: data.id,
+        paperId,
+        groupId,
+        scoreText,
+        chunk: {
+          paperId,
+          chunkIdx: data.chunkIdx,
+          text: data.text,
+          pages: data.pages ?? [],
+          section: data.section ?? ''
+        }
+      });
+    }
+    return scoped;
+  }
+
   const papers = await db
     .collection(`tenants/${tenantId}/papers`)
     .where('status', '==', 'indexed')

@@ -2156,6 +2156,11 @@
     "no": "No",
     "viewerShow_polyhedra": "Polyhedra",
     "direct": "direct",
-    "indirect": "indirect"
+    "indirect": "indirect",
+    "viewerFullscreen": "Fullscreen",
+    "viewerSettings": "Display settings",
+    "viewerReset": "Reset view",
+    "viewerScreenshot": "Screenshot (PNG)",
+    "viewerExport": "Export"
   }
 }

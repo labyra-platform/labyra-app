@@ -2157,6 +2157,11 @@
     "no": "Không",
     "viewerShow_polyhedra": "Đa diện",
     "direct": "trực tiếp",
-    "indirect": "gián tiếp"
+    "indirect": "gián tiếp",
+    "viewerFullscreen": "Toàn màn hình",
+    "viewerSettings": "Cài đặt hiển thị",
+    "viewerReset": "Đặt lại góc nhìn",
+    "viewerScreenshot": "Chụp ảnh (PNG)",
+    "viewerExport": "Xuất file"
   }
 }

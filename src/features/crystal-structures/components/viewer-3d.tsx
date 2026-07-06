@@ -11,11 +11,11 @@
  */
 'use client';
 
-import { IconCamera, IconMaximize, IconRotate } from '@tabler/icons-react';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { StructureScene } from '@/lib/dft/worker-client';
 
 export interface ShowFlags {
@@ -30,7 +30,15 @@ export interface ShowFlags {
  * other element is treated as a coordination centre (cation). */
 const ANION_ELEMENTS = new Set(['N', 'O', 'F', 'P', 'S', 'Cl', 'Se', 'Br', 'Te', 'I']);
 
-export default function Viewer3D({ scene, show }: { scene: StructureScene; show: ShowFlags }) {
+export default function Viewer3D({
+  scene,
+  show,
+  onReady
+}: {
+  scene: StructureScene;
+  show: ShowFlags;
+  onReady?: (actions: { reset: () => void; screenshot: () => void }) => void;
+}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const groupsRef = useRef<Record<keyof ShowFlags, THREE.Group | null>>({
     atoms: null,
@@ -57,12 +65,22 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
     mount.appendChild(renderer.domElement);
 
-    threeScene.add(new THREE.AmbientLight(0xffffff, 0.75));
-    const key = new THREE.DirectionalLight(0xffffff, 0.6);
-    key.position.set(1, 1, 1);
+    // Image-based lighting for glossy, realistic spheres (Materials-Project look).
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    threeScene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    threeScene.add(new THREE.AmbientLight(0xffffff, 0.45));
+    threeScene.add(new THREE.HemisphereLight(0xffffff, 0x9aa0aa, 0.5));
+    const key = new THREE.DirectionalLight(0xffffff, 0.8);
+    key.position.set(3, 4, 5);
     threeScene.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.3);
+    fill.position.set(-4, -2, -3);
+    threeScene.add(fill);
 
     const L = scene.lattice.map((r) => new THREE.Vector3(r[0], r[1], r[2]));
     const cellCenter = new THREE.Vector3()
@@ -73,28 +91,57 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
     // Atoms
     const atomGroup = new THREE.Group();
     for (const a of scene.atoms) {
-      const geo = new THREE.SphereGeometry(Math.max(0.28, a.radius * 0.5), 24, 20);
-      const mat = new THREE.MeshPhongMaterial({ color: a.color, shininess: 60 });
+      const geo = new THREE.SphereGeometry(Math.max(0.28, a.radius * 0.5), 32, 24);
+      const mat = new THREE.MeshStandardMaterial({
+        color: a.color,
+        metalness: 0.35,
+        roughness: 0.35
+      });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(a.xyz[0], a.xyz[1], a.xyz[2]);
       atomGroup.add(mesh);
     }
 
-    // Bonds
+    // Atom lookup by rounded position (used by split bonds + polyhedra).
+    const pk = (p: number[] | readonly number[]) =>
+      `${p[0].toFixed(3)},${p[1].toFixed(3)},${p[2].toFixed(3)}`;
+    const atomAt = new Map<string, (typeof scene.atoms)[number]>();
+    for (const a of scene.atoms) atomAt.set(pk(a.xyz), a);
+
+    // Bonds — split at the midpoint, each half colored by its atom (MP style).
     const bondGroup = new THREE.Group();
-    const bondMat = new THREE.MeshPhongMaterial({ color: 0x9aa0aa });
     const up = new THREE.Vector3(0, 1, 0);
+    const bondMatCache = new Map<string, THREE.MeshStandardMaterial>();
+    const bondMatFor = (color: string) => {
+      let m = bondMatCache.get(color);
+      if (!m) {
+        m = new THREE.MeshStandardMaterial({ color, metalness: 0.3, roughness: 0.5 });
+        bondMatCache.set(color, m);
+      }
+      return m;
+    };
     for (const b of scene.bonds) {
       const start = new THREE.Vector3(b.from[0], b.from[1], b.from[2]);
       const end = new THREE.Vector3(b.to[0], b.to[1], b.to[2]);
       const dir = new THREE.Vector3().subVectors(end, start);
       const len = dir.length();
       if (len < 0.05) continue;
-      const geo = new THREE.CylinderGeometry(0.11, 0.11, len, 10);
-      const mesh = new THREE.Mesh(geo, bondMat);
-      mesh.position.copy(start).addScaledVector(dir, 0.5);
-      mesh.quaternion.setFromUnitVectors(up, dir.clone().normalize());
-      bondGroup.add(mesh);
+      const mid = new THREE.Vector3().copy(start).addScaledVector(dir, 0.5);
+      const quat = new THREE.Quaternion().setFromUnitVectors(up, dir.clone().normalize());
+      const cFrom = atomAt.get(pk(b.from))?.color ?? '#9aa0aa';
+      const cTo = atomAt.get(pk(b.to))?.color ?? '#9aa0aa';
+      // half nearest `start`
+      const gA = new THREE.CylinderGeometry(0.13, 0.13, len / 2, 12);
+      const mA = new THREE.Mesh(gA, bondMatFor(cFrom));
+      mA.position.copy(start).addScaledVector(dir, 0.25);
+      mA.quaternion.copy(quat);
+      bondGroup.add(mA);
+      // half nearest `end`
+      const gB = new THREE.CylinderGeometry(0.13, 0.13, len / 2, 12);
+      const mB = new THREE.Mesh(gB, bondMatFor(cTo));
+      mB.position.copy(mid).addScaledVector(dir, 0.25);
+      mB.quaternion.copy(quat);
+      bondGroup.add(mB);
     }
 
     // Unit cell
@@ -147,10 +194,6 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
 
     // Coordination polyhedra: for each cation, hull its bonded anion neighbours.
     const polyGroup = new THREE.Group();
-    const pk = (p: number[] | readonly number[]) =>
-      `${p[0].toFixed(3)},${p[1].toFixed(3)},${p[2].toFixed(3)}`;
-    const atomAt = new Map<string, (typeof scene.atoms)[number]>();
-    for (const a of scene.atoms) atomAt.set(pk(a.xyz), a);
     const neighborPos = new Map<string, number[][]>();
     const pushNbr = (key: string, xyz: number[]) => {
       const arr = neighborPos.get(key);
@@ -171,13 +214,14 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
       try {
         const pts = anions.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
         const geo = new ConvexGeometry(pts);
-        const mat = new THREE.MeshPhongMaterial({
+        const mat = new THREE.MeshStandardMaterial({
           color: a.color,
           transparent: true,
-          opacity: 0.4,
+          opacity: 0.5,
+          metalness: 0.1,
+          roughness: 0.6,
           side: THREE.DoubleSide,
-          flatShading: true,
-          shininess: 30
+          flatShading: true
         });
         polyGroup.add(new THREE.Mesh(geo, mat));
       } catch {
@@ -221,6 +265,10 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
       link.download = `${scene.formula ?? 'structure'}.png`;
       link.click();
     };
+    onReady?.({
+      reset: () => resetViewRef.current(),
+      screenshot: () => screenshotRef.current()
+    });
 
     let raf = 0;
     const animate = () => {
@@ -254,6 +302,7 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
       groupsRef.current = { atoms: null, bonds: null, cell: null, axes: null, polyhedra: null };
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene]);
 
   // Instant show/hide without rebuilding the scene.
@@ -269,39 +318,6 @@ export default function Viewer3D({ scene, show }: { scene: StructureScene; show:
   return (
     <div className='relative h-full w-full'>
       <div ref={mountRef} className='h-full w-full' />
-      <div className='absolute right-2 top-2 flex flex-col gap-1'>
-        <button
-          type='button'
-          onClick={() => resetViewRef.current()}
-          className='bg-background/80 hover:bg-background rounded border p-1.5 shadow-sm'
-          title='Reset view'
-          aria-label='Reset view'
-        >
-          <IconRotate className='size-4' />
-        </button>
-        <button
-          type='button'
-          onClick={() => {
-            const el = mountRef.current?.parentElement;
-            if (document.fullscreenElement) void document.exitFullscreen();
-            else void el?.requestFullscreen();
-          }}
-          className='bg-background/80 hover:bg-background rounded border p-1.5 shadow-sm'
-          title='Fullscreen'
-          aria-label='Fullscreen'
-        >
-          <IconMaximize className='size-4' />
-        </button>
-        <button
-          type='button'
-          onClick={() => screenshotRef.current()}
-          className='bg-background/80 hover:bg-background rounded border p-1.5 shadow-sm'
-          title='Screenshot (PNG)'
-          aria-label='Screenshot'
-        >
-          <IconCamera className='size-4' />
-        </button>
-      </div>
     </div>
   );
 }

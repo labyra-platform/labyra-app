@@ -44,6 +44,9 @@ export type DftCalcType =
   | 'ppbands'
   | 'dos'
   | 'pdos'
+  | 'ph'
+  | 'q2r'
+  | 'matdyn'
   | 'charge'
   | 'avgpot';
 

@@ -55,7 +55,11 @@ export type ParamKey =
   | 'trustRadiusMax'
   | 'avgNpt'
   | 'avgIdir'
-  | 'avgAwin';
+  | 'avgAwin'
+  | 'phQgrid'
+  | 'phTr2'
+  | 'phEpsil'
+  | 'phAsr';
 
 export type SmearingType = 'gaussian' | 'methfessel-paxton' | 'marzari-vanderbilt' | 'fermi-dirac';
 
@@ -116,6 +120,11 @@ export interface NodeParams {
   avgNpt: number;
   avgIdir: 1 | 2 | 3;
   avgAwin: number; // a.u.; 0 = planar average only
+  // Phonons (DFPT) — ph.x / q2r.x / matdyn.x
+  phQgrid: [number, number, number]; // ph.x monochromatic q-grid (ldisp)
+  phTr2: number; // tr2_ph — DFPT self-consistency threshold (very tight)
+  phEpsil: boolean; // dielectric + Born charges (LO–TO), insulators only
+  phAsr: 'simple' | 'crystal'; // acoustic sum rule (q2r.x / matdyn.x)
 }
 
 export interface ComposeNode {
@@ -187,7 +196,11 @@ export const DEFAULT_PARAMS: NodeParams = {
   diagoFullAcc: false,
   avgNpt: 2000,
   avgIdir: 3,
-  avgAwin: 0
+  avgAwin: 0,
+  phQgrid: [2, 2, 2],
+  phTr2: 1e-14,
+  phEpsil: false,
+  phAsr: 'crystal'
 };
 
 /** Which basic params are meaningful (and thus editable) for a calc type. */
@@ -196,6 +209,8 @@ export function editableKeys(calcType: DftCalcType): ParamKey[] {
   if (calcType === 'ppbands') return [];
   if (calcType === 'bands') return ['occupations', 'degauss', 'convThr'];
   if (calcType === 'charge') return [];
+  if (calcType === 'ph') return ['phQgrid', 'phTr2', 'phEpsil'];
+  if (calcType === 'q2r' || calcType === 'matdyn') return ['phAsr'];
   // vc-relax / relax / scf / nscf
   return ['kgrid', 'occupations', 'degauss', 'convThr'];
 }
@@ -206,7 +221,7 @@ export function editableKeys(calcType: DftCalcType): ParamKey[] {
  * none. (npool is NOT here: the worker takes it request-level, not per-unit.)
  */
 export function advancedKeys(calcType: DftCalcType): ParamKey[] {
-  if (POSTPROC_TYPES.has(calcType)) return [];
+  if (POSTPROC_TYPES.has(calcType) || PHONON_TYPES.has(calcType)) return [];
   return ['nbnd', 'smearing', 'mixingBeta', 'electronMaxstep'];
 }
 
@@ -226,6 +241,12 @@ export interface NamelistBlock {
 export function paramBlocks(calcType: DftCalcType): NamelistBlock[] {
   if (calcType === 'dos' || calcType === 'pdos') {
     return [{ name: '&DOS', keys: ['emin', 'emax', 'deltaE'] }];
+  }
+  if (calcType === 'ph') {
+    return [{ name: '&INPUTPH', keys: ['phQgrid', 'phTr2', 'phEpsil'] }];
+  }
+  if (calcType === 'q2r' || calcType === 'matdyn') {
+    return [{ name: '&INPUT', keys: ['phAsr'] }];
   }
   if (calcType === 'avgpot') {
     return [{ name: 'AVERAGE', keys: ['avgNpt', 'avgIdir', 'avgAwin'] }];
@@ -273,6 +294,17 @@ export const ARCHETYPES: Archetype[] = [
       { id: 'u6', calcType: 'dos', dependsOn: ['u5'] },
       { id: 'u7', calcType: 'pdos', dependsOn: ['u5'] }
     ]
+  },
+  {
+    id: 'phonon',
+    labelKey: 'archPhonon',
+    skeleton: [
+      { id: 'u1', calcType: 'vc-relax', dependsOn: [] },
+      { id: 'u2', calcType: 'scf', dependsOn: ['u1'] },
+      { id: 'u3', calcType: 'ph', dependsOn: ['u2'] },
+      { id: 'u4', calcType: 'q2r', dependsOn: ['u3'] },
+      { id: 'u5', calcType: 'matdyn', dependsOn: ['u4'] }
+    ]
   }
 ];
 
@@ -289,6 +321,7 @@ export function nodesFor(archetype: Archetype): ComposeNode[] {
 
 const PW_TYPES = new Set<DftCalcType>(['vc-relax', 'relax', 'scf', 'nscf', 'bands']);
 const POSTPROC_TYPES = new Set<DftCalcType>(['dos', 'pdos', 'ppbands', 'charge', 'avgpot']);
+const PHONON_TYPES = new Set<DftCalcType>(['ph', 'q2r', 'matdyn']);
 
 export interface FlavorOption {
   id: string;
@@ -335,7 +368,10 @@ export const EXE_OF: Record<DftCalcType, string> = {
   ppbands: 'bands.x',
   dos: 'dos.x',
   pdos: 'projwfc.x',
-  avgpot: 'average.x'
+  avgpot: 'average.x',
+  ph: 'ph.x',
+  q2r: 'q2r.x',
+  matdyn: 'matdyn.x'
 };
 
 /** Calc types offered in the node "execute" selector, grouped by executable. */
@@ -345,7 +381,10 @@ export const CALC_GROUPS: { exe: string; types: DftCalcType[] }[] = [
   { exe: 'bands.x', types: ['ppbands'] },
   { exe: 'dos.x', types: ['dos'] },
   { exe: 'projwfc.x', types: ['pdos'] },
-  { exe: 'average.x', types: ['avgpot'] }
+  { exe: 'average.x', types: ['avgpot'] },
+  { exe: 'ph.x', types: ['ph'] },
+  { exe: 'q2r.x', types: ['q2r'] },
+  { exe: 'matdyn.x', types: ['matdyn'] }
 ];
 
 function buildPwParams(
@@ -438,6 +477,36 @@ function buildPostprocParams(
   return { Emin: p.emin, Emax: p.emax, DeltaE: p.deltaE, ngauss: -1, name: `PBE_${prefix}` };
 }
 
+/**
+ * Phonon (DFPT) unit params. Filenames (fildyn/flfrc/fldos) are derived from the
+ * workflow prefix inside the templates, so the three substeps agree by
+ * construction: ph.x writes dynamical matrices, q2r.x → real-space force
+ * constants, matdyn.x → phonon DOS (harmonic thermodynamics).
+ */
+function buildPhononParams(calcType: DftCalcType, p: NodeParams): Record<string, unknown> {
+  if (calcType === 'ph') {
+    return {
+      ldisp: true,
+      nq1: p.phQgrid[0],
+      nq2: p.phQgrid[1],
+      nq3: p.phQgrid[2],
+      tr2_ph: p.phTr2,
+      epsil: p.phEpsil
+    };
+  }
+  if (calcType === 'q2r') {
+    return { zasr: p.phAsr };
+  }
+  // matdyn — phonon DOS on a mesh (2× the ph q-grid).
+  return {
+    asr: p.phAsr,
+    dos: true,
+    nk1: p.phQgrid[0] * 2,
+    nk2: p.phQgrid[1] * 2,
+    nk3: p.phQgrid[2] * 2
+  };
+}
+
 export function buildDefinition(
   nodes: ComposeNode[],
   structure: unknown,
@@ -459,7 +528,9 @@ export function buildDefinition(
       ? buildPwParams(n.calcType, n.params, vdw, n.kpath)
       : POSTPROC_TYPES.has(n.calcType)
         ? buildPostprocParams(n.calcType, n.params, prefix, n.flavor)
-        : {}
+        : PHONON_TYPES.has(n.calcType)
+          ? buildPhononParams(n.calcType, n.params)
+          : {}
   }));
   return { structure, global, units };
 }
@@ -477,6 +548,9 @@ export function buildUnitParams(node: ComposeNode, global: unknown): Record<stri
     return buildPwParams(node.calcType, node.params, vdw, node.kpath);
   if (POSTPROC_TYPES.has(node.calcType)) {
     return buildPostprocParams(node.calcType, node.params, prefix, node.flavor);
+  }
+  if (PHONON_TYPES.has(node.calcType)) {
+    return buildPhononParams(node.calcType, node.params);
   }
   return {};
 }

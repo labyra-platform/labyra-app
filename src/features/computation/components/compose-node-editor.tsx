@@ -475,6 +475,52 @@ export function ComposeNodeEditor({
         );
       case 'nosym':
         return chk('nosym', p.nosym, 'nosym (disable symmetry)');
+      case 'phQgrid':
+        return (
+          <div key='phQgrid' className='col-span-2 space-y-1'>
+            <Label className='text-xs'>q-grid (nq1 nq2 nq3)</Label>
+            <div className='flex gap-1.5'>
+              {[0, 1, 2].map((i) => (
+                <Input
+                  key={i}
+                  type='number'
+                  min={1}
+                  className='h-8'
+                  value={String(p.phQgrid[i])}
+                  onChange={(e) => {
+                    const g = [...p.phQgrid] as [number, number, number];
+                    g[i] = Math.max(1, Number(e.target.value) || 1);
+                    set({ phQgrid: g });
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      case 'phTr2':
+        return (
+          <div key='phTr2' className='space-y-1'>
+            <Label className='text-xs'>tr2_ph</Label>
+            {num('phTr2', p.phTr2)}
+          </div>
+        );
+      case 'phEpsil':
+        return chk('phEpsil', p.phEpsil, 'epsil (Born charges / LO–TO — insulators)');
+      case 'phAsr':
+        return (
+          <div key='phAsr' className='space-y-1'>
+            <Label className='text-xs'>acoustic sum rule</Label>
+            <Select value={p.phAsr} onValueChange={(v) => set({ phAsr: v as NodeParams['phAsr'] })}>
+              <SelectTrigger className='h-8 w-full'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='simple'>simple</SelectItem>
+                <SelectItem value='crystal'>crystal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
       case 'totCharge':
         return (
           <div key='totCharge' className='space-y-1'>

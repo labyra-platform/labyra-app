@@ -462,6 +462,66 @@ export const DFT_REFERENCE: DftRefCategory[] = [
     ]
   },
   {
+    id: 'postproc',
+    title: 'Bands, DOS & PDOS (post-processing)',
+    intro:
+      'Extracting the electronic spectrum after the SCF: eigenvalues on a k-path (bands.x), the density of states (dos.x) and the atom/orbital-projected DOS (projwfc.x). See the Foundations “band structure, DOS & projected DOS” concept.',
+    params: [
+      {
+        keyword: 'nscf k-grid density',
+        name: 'DOS/PDOS k-mesh',
+        description:
+          "DOS and PDOS need a much denser Monkhorst–Pack grid than the scf (typically 2–4× per axis) computed non-self-consistently on the converged density. Converge the DOS shape against this grid. For the tetrahedron method set occupations='tetrahedra' in the nscf.",
+        typical: '2–4× the scf grid'
+      },
+      {
+        keyword: 'filband / lsym (bands.x)',
+        name: 'Band eigenvalues on a path',
+        description:
+          'bands.x reads the bands-calculation output and writes ε(k) along the k-path to filband for plotting. lsym=.true. assigns the symmetry (irreducible representation) label of each band at high-symmetry points.',
+        typical: 'lsym=.true.'
+      },
+      {
+        keyword: 'Emin / Emax / DeltaE (dos.x)',
+        name: 'DOS energy grid',
+        description:
+          'Energy window and step for the tabulated DOS. Choose a window spanning the relevant bands (a few eV around the gap) and a fine step for sharp features.',
+        typical: 'DeltaE 0.01–0.05',
+        unit: 'eV'
+      },
+      {
+        keyword: 'ngauss / degauss (dos.x)',
+        name: 'DOS broadening',
+        description:
+          'Broadening for the DOS: ngauss selects the smearing type (0 Gaussian, 1 Methfessel–Paxton, −99 Fermi–Dirac); degauss is its width. Use a small width for detail, or the tetrahedron method (no broadening) for the sharpest DOS.',
+        typical: 'degauss 0.005–0.01',
+        unit: 'Ry',
+        note: "Tetrahedron (occupations='tetrahedra') needs no degauss."
+      },
+      {
+        keyword: 'filpdos / lsym (projwfc.x)',
+        name: 'Projected DOS',
+        description:
+          'projwfc.x projects each state onto Löwdin-orthogonalized pseudo-atomic orbitals and writes per-atom, per-(l,m) PDOS files (filpdos). It also prints Löwdin charges (integrated occupations per orbital). lsym symmetrizes the projections.',
+        typical: 'lsym=.true.'
+      },
+      {
+        keyword: 'kresolveddos (projwfc.x)',
+        name: 'k-resolved / fat bands',
+        description:
+          'kresolveddos=.true. keeps the k-dependence of the projections, enabling orbital-projected ("fat") band structures that colour each band by its atomic/orbital character — key for reading VBM/CBM composition.',
+        typical: '.true. for fat bands'
+      },
+      {
+        keyword: 'Löwdin charges',
+        name: 'Orbital populations',
+        description:
+          'The integral of the PDOS up to the Fermi level gives the Löwdin population of each orbital — a projection-based charge partitioning. Useful for oxidation-state and covalency analysis (complements Bader charges).',
+        note: 'Projection-dependent; compare trends, not absolute values.'
+      }
+    ]
+  },
+  {
     id: 'pseudo',
     title: 'Pseudopotentials',
     intro:
@@ -592,5 +652,15 @@ export const DFT_CITATIONS: DftCitation[] = [
     topic: 'Fully-relativistic PAW (SOC)',
     label: 'Dal Corso, Phys. Rev. B 82, 075116 (2010)',
     doi: '10.1103/PhysRevB.82.075116'
+  },
+  {
+    topic: 'Improved tetrahedron method (DOS)',
+    label: 'Blöchl, Jepsen, Andersen, Phys. Rev. B 49, 16223 (1994)',
+    doi: '10.1103/PhysRevB.49.16223'
+  },
+  {
+    topic: 'Löwdin orthogonalization (PDOS/charges)',
+    label: 'Löwdin, J. Chem. Phys. 18, 365 (1950)',
+    doi: '10.1063/1.1747632'
   }
 ];

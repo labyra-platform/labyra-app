@@ -405,9 +405,17 @@ export const FOUNDATIONS: Foundation[] = [
         <p>
           Convergence hinges on <strong>preconditioning</strong> — multiplying the residual by an
           approximate inverse of the kinetic operator so all plane-wave components converge at a
-          similar rate. <code>diago_thr_init</code> sets the initial eigenvalue accuracy; QE
-          tightens it automatically as the density converges (loose early diagonalization saves time
-          when the potential is still changing).
+          similar rate. The per-band residual is
+        </p>
+        <Math display tex='\mathbf{R}_i = (\hat{H}-\varepsilon_i\hat{S})\,\psi_i' />
+        <p>
+          <strong>Davidson</strong> augments the trial space with the preconditioned residuals and
+          diagonalizes <Math tex='\hat{H}' /> projected onto the enlarged subspace{' '}
+          <Math tex='\mathcal{V} = \mathrm{span}\{\psi_i,\,\hat{K}^{-1}\mathbf{R}_i\}' />, whereas{' '}
+          <strong>CG</strong> steps each band along conjugate directions built from{' '}
+          <Math tex='\mathbf{R}_i' />. <code>diago_thr_init</code> sets the initial eigenvalue
+          accuracy; QE tightens it automatically as the density converges (loose early
+          diagonalization saves time when the potential is still changing).
         </p>
       </>
     ),
@@ -440,11 +448,26 @@ export const FOUNDATIONS: Foundation[] = [
           tex='n^{(m+1)}_{\text{in}} = n^{(m)}_{\text{in}} + \beta\,\hat{G}\left(n^{(m)}_{\text{out}} - n^{(m)}_{\text{in}}\right)'
         />
         <p>
-          where <Math tex='\hat{G}' /> is the preconditioner. For metals, a Thomas–Fermi (Kerker-
-          like) preconditioner (<code>local-TF</code> / TF) suppresses the small-
-          <Math tex='q' /> divergence; <code>local-TF</code> further adapts to spatial inhomogeneity
-          — essential for slabs and molecules in vacuum where screening varies. Practical recipe:
-          start at <Math tex='\beta=0.7' />; for a stubborn magnetic/metallic/large system drop to
+          where <Math tex='\hat{G}' /> is the preconditioner. With linear mixing{' '}
+          <Math tex='\hat{G}=\hat{I}' />; the <strong>Kerker</strong> preconditioner used for metals
+          damps the divergent small-
+          <Math tex='q' /> components,
+        </p>
+        <Math display tex='\hat{G}(q) = \frac{q^2}{q^2 + q_0^2},\qquad q_0^2 = \frac{4k_F}{\pi}' />
+        <p>
+          with <Math tex='q_0' /> the Thomas–Fermi screening wavevector (atomic units). The default{' '}
+          <strong>Broyden</strong> mixer is more powerful still: it uses the density history to
+          build an approximate inverse Jacobian <Math tex='\tilde{J}^{-1}' /> (quasi-Newton in
+          density space) and updates
+        </p>
+        <Math
+          display
+          tex='n^{(m+1)} = n^{(m)} - \tilde{J}^{-1}\mathbf{R}^{(m)},\qquad \mathbf{R}^{(m)} = n^{(m)}_{\text{out}} - n^{(m)}_{\text{in}}'
+        />
+        <p>
+          <code>local-TF</code> lets the screening <Math tex='q_0' /> vary in space — essential for
+          slabs and molecules in vacuum where the density is inhomogeneous. Practical recipe: start
+          at <Math tex='\beta=0.7' />; for a stubborn magnetic/metallic/large system drop to
           0.1–0.3, raise the history depth <code>mixing_ndim</code>, and switch to{' '}
           <code>local-TF</code>. Divergence that no <Math tex='\beta' /> fixes usually signals a
           physical problem (bad starting magnetization, too little smearing, or a broken structure)
@@ -585,6 +608,74 @@ export const FOUNDATIONS: Foundation[] = [
     refs: [
       'Martin, Electronic Structure (2020), Ch. 10',
       'Dal Corso, Phys. Rev. B 82, 075116 (2010)'
+    ]
+  },
+  {
+    id: 'bands-dos',
+    title: 'Band structure, DOS & projected DOS',
+    summary: (
+      <>
+        <p>
+          Three complementary views of the electronic spectrum: the <strong>band structure</strong>{' '}
+          plots eigenvalues <Math tex='\varepsilon_{n\mathbf{k}}' /> along a k-path (revealing the
+          gap, dispersion and effective masses); the <strong>density of states</strong> (DOS) counts
+          states per unit energy; and the <strong>projected DOS</strong> (PDOS) decomposes that
+          count by atom and orbital character, showing what the band edges are made of.
+        </p>
+        <Math
+          display
+          tex='g(E) = \frac{1}{N_k}\sum_{n\mathbf{k}} \delta\!\left(E-\varepsilon_{n\mathbf{k}}\right)'
+        />
+        <p>
+          The standard pipeline is: converged <code>scf</code> → <code>bands</code> (eigenvalues on
+          a k-path) and a dense <code>nscf</code> grid → <code>dos.x</code> / <code>projwfc.x</code>{' '}
+          post-processing.
+        </p>
+      </>
+    ),
+    deeper: (
+      <>
+        <p>
+          The delta function in <Math tex='g(E)' /> is evaluated either by <strong>smearing</strong>{' '}
+          (replacing <Math tex='\delta' /> with a narrow Gaussian/MP of width <code>degauss</code>)
+          or by the <strong>tetrahedron method</strong>, which linearly interpolates the bands
+          inside BZ tetrahedra and integrates <Math tex='\delta' /> analytically — no broadening
+          parameter and much sharper features, at the price of needing a filled Monkhorst–Pack grid.
+          Both require a k-mesh <em>denser</em> than the scf (hence the separate nscf step);
+          converge the DOS shape against grid density.
+        </p>
+        <p>
+          The <strong>projected DOS</strong> projects each Bloch state onto Löwdin-orthogonalized
+          pseudo-atomic orbitals <Math tex='\phi_\mu' />:
+        </p>
+        <Math
+          display
+          tex='g_\mu(E) = \sum_{n\mathbf{k}} \left|\langle \phi_\mu | \psi_{n\mathbf{k}}\rangle\right|^2\,\delta\!\left(E-\varepsilon_{n\mathbf{k}}\right)'
+        />
+        <p>
+          Summed over an atom’s orbitals it gives the site-projected DOS; over an{' '}
+          <Math tex='\ell' /> channel it gives s/p/d character. Integrating <Math tex='g_\mu' /> up
+          to <Math tex='E_F' /> yields the <strong>Löwdin population</strong> (charge) of that
+          orbital. The band gap is{' '}
+          <Math tex='E_g = \min_{\mathbf{k}}\varepsilon_{\text{CBM}} - \max_{\mathbf{k}}\varepsilon_{\text{VBM}}' />{' '}
+          — direct if VBM and CBM lie at the same <Math tex='\mathbf{k}' />, indirect otherwise.
+          Near a band extremum the curvature sets the <strong>effective mass</strong>
+        </p>
+        <Math
+          display
+          tex='\left(m^*\right)^{-1}_{ij} = \frac{1}{\hbar^2}\,\frac{\partial^2 \varepsilon_{n\mathbf{k}}}{\partial k_i\,\partial k_j}'
+        />
+        <p>
+          which controls carrier mobility. For photoelectrochemistry the <em>orbital character</em>{' '}
+          of the VBM and CBM (from PDOS) is what matters: it identifies which states donate or
+          accept electrons and where the band edges sit relative to the redox potentials — e.g. O-2p
+          at the valence edge vs metal-d at the conduction edge in a transition-metal oxide.
+        </p>
+      </>
+    ),
+    refs: [
+      'Blöchl, Jepsen, Andersen, Phys. Rev. B 49, 16223 (1994)',
+      'Löwdin, J. Chem. Phys. 18, 365 (1950)'
     ]
   }
 ];

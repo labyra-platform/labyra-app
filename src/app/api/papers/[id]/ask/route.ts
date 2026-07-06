@@ -163,6 +163,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // user asks "why?" about a highlighted passage, the passage IS the query.
   const retrievalQuery = selectionText ? `${question}\n${selectionText}` : question;
   let hits: SearchHit[] = [];
+  let retrievalMs = 0;
+  const tRetrieve = Date.now();
   try {
     const res = await searchPapers({
       tenantId,
@@ -174,6 +176,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       isPrivileged
     });
     hits = res.hits;
+    retrievalMs = Date.now() - tRetrieve;
   } catch (e) {
     return jsonError(502, 'retrieval_failed', {
       detail: e instanceof Error ? e.message.slice(0, 300) : String(e).slice(0, 300)
@@ -214,6 +217,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // Easy factual lookup (what is X?) → Flash T2. Reasoning/synthesis/compare
   // → Sonnet T3. Selection-mode questions tend to be deeper, so we floor T3.
   let tier: AiTier = 2;
+  let classifyMs = 0;
+  const tClassify = Date.now();
   try {
     const decision = await classifyIntent(question);
     // Classifier outputs T0-T5; clamp to T2/T3 for paper_qa. T4/T5 reserved.
@@ -222,6 +227,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // Classifier is best-effort — default to Flash if it fails.
     tier = 2;
   }
+  classifyMs = Date.now() - tClassify;
   if (selectionText) tier = Math.max(tier, 3) as AiTier;
 
   // ─── Cost guard ───────────────────────────────────────────────
@@ -253,6 +259,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     async start(controller) {
       let full = '';
       let truncated = false;
+      let firstTokenMs = 0;
       try {
         for await (const event of provider.streamChat({
           model: config.model,
@@ -262,6 +269,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           messages: [{ role: 'user', content: userPrompt }]
         })) {
           if (event.type === 'text_delta') {
+            if (firstTokenMs === 0) firstTokenMs = Date.now() - started;
             full += event.delta;
             controller.enqueue(encoder.encode(event.delta));
           } else if (event.type === 'message_complete') {
@@ -289,6 +297,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         controller.close();
         return;
       }
+
+      // R404: end-to-end timing profile for bottleneck analysis. Filter Vercel
+      // logs by event=ask_timing (retrieval detail is event=search_timing).
+      // genFirstTokenMs = the "silence" the user feels once generation starts;
+      // totalMs = full request. Remove after latency is understood.
+      console.warn(
+        JSON.stringify({
+          event: 'ask_timing',
+          paperId,
+          tier,
+          retrievalMs,
+          classifyMs,
+          genFirstTokenMs: firstTokenMs,
+          genTotalMs: Date.now() - started,
+          totalMs: Date.now() - turnStarted,
+          answerChars: full.length
+        })
+      );
 
       // Trailing meta frame — citations + trust score for the UI.
       const meta: AskStreamMeta = { citations, trustScore, noAnswer: false };

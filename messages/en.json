@@ -2059,7 +2059,13 @@
     "referenceIntro": "What every parameter in the composer means, its typical value and unit, and the primary method references. Search across all parameters below.",
     "referenceSearch": "Search parameters (e.g. ecutwfc, smearing, Hubbard)…",
     "referenceNoMatch": "No parameters match your search.",
-    "referenceCitations": "Method references"
+    "referenceCitations": "Method references",
+    "refSecFoundations": "Foundations",
+    "refSecParameters": "QE parameters",
+    "refSecWorkflow": "Workflow & practice",
+    "refSecBibliography": "Bibliography",
+    "refDeeper": "Go deeper",
+    "refTextbooks": "Textbooks"
   },
   "structures": {
     "importTitle": "Import structure",

@@ -1,0 +1,127 @@
+/**
+ * DFT workflow & practice — how to actually run reliable calculations: converge
+ * the knobs, order multi-step relaxations, set up slabs/interfaces, and choose
+ * parallelization. Practical guidance to accompany the parameter reference.
+ * @phase R394
+ */
+import type { ReactNode } from 'react';
+
+export interface WorkflowTopic {
+  id: string;
+  title: string;
+  body: ReactNode;
+}
+
+export const WORKFLOW_TOPICS: WorkflowTopic[] = [
+  {
+    id: 'convergence',
+    title: 'Convergence testing',
+    body: (
+      <>
+        <p>
+          No DFT result is meaningful until the two numerical knobs are converged, in this order:
+        </p>
+        <ol className='ml-5 list-decimal space-y-1'>
+          <li>
+            <strong>Plane-wave cutoff</strong> — fix a reasonable k-mesh, then increase{' '}
+            <code>ecutwfc</code> in steps (e.g. 40 → 50 → 60 → 70 Ry) until the total energy per
+            atom changes by less than your tolerance (~1 meV/atom). Set <code>ecutrho</code> to the
+            appropriate multiple for the pseudopotential type.
+          </li>
+          <li>
+            <strong>k-point mesh</strong> — fix the converged cutoff, then densify the
+            Monkhorst–Pack grid until the energy (and, for metals, the smearing-extrapolated energy)
+            is stable. Aim for roughly uniform spacing in reciprocal length across a/b/c; a long
+            axis needs fewer k-points than a short one.
+          </li>
+        </ol>
+        <p>
+          Converge the <em>property you care about</em>, not just the total energy — band gaps,
+          magnetic moments, and adsorption energies can require tighter settings than the energy
+          alone. Energy differences between similar structures converge faster than absolute
+          energies (error cancellation), so use consistent settings across a comparison set.
+        </p>
+      </>
+    )
+  },
+  {
+    id: 'relax-order',
+    title: 'Relaxation order for heterostructures',
+    body: (
+      <>
+        <p>A WO₃/WS₂-type heterostructure must be relaxed in stages, never all at once:</p>
+        <ol className='ml-5 list-decimal space-y-1'>
+          <li>
+            <strong>Bulk phases</strong> — full variable-cell relaxation (<code>vc-relax</code>) of
+            each bulk material to obtain equilibrium lattice parameters at your level of theory.
+          </li>
+          <li>
+            <strong>Surface slab</strong> — cleave the relevant surface, add vacuum, and relax{' '}
+            <em>atomic positions only</em> at the fixed bulk-derived cell (<code>relax</code> with{' '}
+            <code>cell_dofree='2Dxy'</code> if any cell relaxation is allowed). Check surface energy
+            vs slab thickness and vacuum size.
+          </li>
+          <li>
+            <strong>Interface / adsorbate</strong> — assemble the combined system on the fixed slab
+            cell and relax positions. A large lattice mismatch (≈13–15% for WS₂ on WO₃) means the
+            overlayer is a flake or strained film, not a coherent 2D/2D epitaxial match — model it
+            accordingly.
+          </li>
+        </ol>
+        <p>
+          A single all-at-once relaxation lets lattice-mismatch strain contaminate every quantity;
+          staging isolates the physics of each interface.
+        </p>
+      </>
+    )
+  },
+  {
+    id: 'slab',
+    title: 'Slab & vacuum setup',
+    body: (
+      <>
+        <p>
+          Surfaces are modeled as periodic slabs separated by vacuum. Two convergence checks are
+          essential: <strong>vacuum thickness</strong> (enough that periodic images don’t interact —
+          typically ≥15 Å, more if there is a net dipole) and <strong>slab thickness</strong>{' '}
+          (enough bulk-like layers in the middle that the two surfaces are decoupled). For polar or
+          asymmetric slabs, apply a <strong>dipole correction</strong> so the spurious field from
+          the artificial dipole across the vacuum is removed. Freeze the innermost layers at bulk
+          positions to mimic the semi-infinite substrate if desired.
+        </p>
+      </>
+    )
+  },
+  {
+    id: 'parallel',
+    title: 'Parallelization (npool & MPI)',
+    body: (
+      <>
+        <p>
+          pw.x parallelizes over several axes; the most efficient for k-point-rich systems is{' '}
+          <strong>pool parallelization</strong> (<code>npool</code>), which splits k-points into
+          independent groups. The heuristic:
+        </p>
+        <ul className='ml-5 list-disc space-y-1'>
+          <li>
+            Total MPI ranks = <code>npool</code> × (ranks per pool). Choose <code>npool</code> as a
+            divisor of the number of <em>irreducible</em> k-points for even load balance.
+          </li>
+          <li>
+            <strong>Memory feasibility first</strong>: each pool holds a full copy of the
+            wavefunctions for its k-points, so a pool must fit in a node’s memory before you
+            optimize for speed.
+          </li>
+          <li>
+            Plane-wave (G-vector) parallelization within a pool scales the FFT/diagonalization but
+            has more communication; use it to fill ranks after pools are set.
+          </li>
+        </ul>
+        <p>
+          A dense-k, small-cell metal benefits from many pools; a large supercell with few k-points
+          benefits from G-vector parallelization instead.
+        </p>
+      </>
+    )
+  }
+];

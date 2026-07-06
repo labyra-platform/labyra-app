@@ -2060,7 +2060,13 @@
     "referenceIntro": "Ý nghĩa từng tham số trong composer, giá trị điển hình và đơn vị, cùng tài liệu phương pháp gốc. Tìm kiếm trên toàn bộ tham số bên dưới.",
     "referenceSearch": "Tìm tham số (vd ecutwfc, smearing, Hubbard)…",
     "referenceNoMatch": "Không có tham số khớp tìm kiếm.",
-    "referenceCitations": "Tài liệu phương pháp"
+    "referenceCitations": "Tài liệu phương pháp",
+    "refSecFoundations": "Cơ sở lý thuyết",
+    "refSecParameters": "Tham số QE",
+    "refSecWorkflow": "Quy trình & thực hành",
+    "refSecBibliography": "Thư mục tài liệu",
+    "refDeeper": "Đi sâu hơn",
+    "refTextbooks": "Sách giáo khoa"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

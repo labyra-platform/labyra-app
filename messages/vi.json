@@ -2182,6 +2182,8 @@
     "fileOrPasteLabel": "Nội dung file (hoặc dán)",
     "brillouinTitle": "Vùng Brillouin",
     "brillouinFailed": "Không dựng được vùng Brillouin cho cấu trúc này.",
-    "brillouinHint": "BZ thứ nhất (xanh) · điểm đối xứng cao & đường k-path (cam) · trục nghịch đảo."
+    "brillouinHint": "BZ thứ nhất (xanh) · điểm đối xứng cao & đường k-path (cam) · trục nghịch đảo.",
+    "brillouinPath": "Đường đi (band path)",
+    "brillouinCoords": "Toạ độ điểm k (fractional)"
   }
 }

@@ -2181,6 +2181,8 @@
     "fileOrPasteLabel": "File content (or paste)",
     "brillouinTitle": "Brillouin zone",
     "brillouinFailed": "Brillouin zone unavailable for this structure.",
-    "brillouinHint": "First BZ (blue) · high-symmetry k-points and band path (orange) · reciprocal axes."
+    "brillouinHint": "First BZ (blue) · high-symmetry k-points and band path (orange) · reciprocal axes.",
+    "brillouinPath": "Band path",
+    "brillouinCoords": "k-point coordinates (fractional)"
   }
 }

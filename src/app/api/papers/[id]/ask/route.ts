@@ -174,8 +174,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       isPrivileged
     });
     hits = res.hits;
-  } catch {
-    return jsonError(502, 'retrieval_failed');
+  } catch (e) {
+    return jsonError(502, 'retrieval_failed', {
+      detail: e instanceof Error ? e.message.slice(0, 300) : String(e).slice(0, 300)
+    });
   }
 
   // ─── Empty-retrieval lane: refuse without burning a model call ─
@@ -279,8 +281,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return;
           }
         }
-      } catch {
-        controller.error(new Error('answer_failed'));
+      } catch (e) {
+        // A stream `controller.error` reaches the client only as an opaque
+        // network failure, so emit the real cause as visible text instead.
+        const detail = e instanceof Error ? e.message.slice(0, 300) : 'answer_failed';
+        if (!full) controller.enqueue(encoder.encode(`⚠ AI error: ${detail}`));
+        controller.close();
         return;
       }
 

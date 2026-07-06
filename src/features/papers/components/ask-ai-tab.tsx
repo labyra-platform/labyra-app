@@ -257,7 +257,8 @@ export function AskAiTab({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? 'ask_failed');
+        const code = (data.error as string) ?? 'ask_failed';
+        throw new Error(data.detail ? `${code}: ${data.detail}` : code);
       }
 
       // Stream the answer; the tail of the body is a meta frame with citations.
@@ -348,15 +349,13 @@ export function AskAiTab({
               : error === 'rate_limited'
                 ? 'Hỏi quá nhanh — chờ một chút rồi thử lại.'
                 : error === 'Not signed in' ||
-                    error === 'missing_token' ||
-                    error === 'invalid_token' ||
-                    error === 'missing_tenant_claim'
+                    error.startsWith('missing_token') ||
+                    error.startsWith('invalid_token') ||
+                    error.startsWith('missing_tenant_claim')
                   ? 'Phiên đăng nhập có vấn đề — đăng nhập lại rồi thử lại.'
-                  : error === 'retrieval_failed'
-                    ? 'Không truy xuất được nội dung paper (embeddings/worker). Kiểm tra paper đã xử lý xong chưa và worker đang chạy.'
-                    : error === 'answer_failed'
-                      ? 'Model AI trả lỗi khi sinh câu trả lời. Kiểm tra API key/model của tenant.'
-                      : `Có lỗi khi gọi AI (${error}). Hãy thử lại.`}
+                  : error.startsWith('retrieval_failed')
+                    ? `Không truy xuất được nội dung paper (Voyage embeddings / Pinecone). ${error.includes(':') ? error.slice(error.indexOf(':') + 1).trim() : 'Kiểm tra paper đã xử lý xong + VOYAGE_API_KEY / PINECONE_API_KEY.'}`
+                    : `Có lỗi khi gọi AI (${error}). Hãy thử lại.`}
           </div>
         )}
       </div>

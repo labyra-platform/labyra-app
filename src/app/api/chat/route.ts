@@ -44,7 +44,7 @@ export const runtime = 'nodejs';
 // Bug fix: RAG chat (multi-tier + tool rounds + Pinecone hybrid search + rerank)
 // can exceed Vercel Pro's default 15s. Raise to 60s so the 20s per-tool
 // timeout is meaningful and broad queries (e.g. '2D materials') don't get cut.
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const MAX_TOOL_ROUNDS = 3;
 

@@ -34,7 +34,7 @@ import {
 } from '@/features/papers/ask/types';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const VECTOR_TOP_K = 20;
 const TOP_N = 5;

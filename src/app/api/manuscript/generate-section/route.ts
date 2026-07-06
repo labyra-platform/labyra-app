@@ -17,7 +17,7 @@ import { logger } from '@/lib/logger';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const SECTION_TYPES = new Set<ManuscriptSectionType>([
   'abstract',

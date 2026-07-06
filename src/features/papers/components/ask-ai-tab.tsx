@@ -20,7 +20,7 @@ import {
   IconCheck,
   IconChevronRight,
   IconCopy,
-  IconLoader2,
+  IconPlayerStopFilled,
   IconSparkles
 } from '@tabler/icons-react';
 import { renderToString as renderKatex } from 'katex';
@@ -191,6 +191,7 @@ export function AskAiTab({
   const [error, setError] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Auto-scroll to the latest message whenever a stream token lands.
   useEffect(() => {
@@ -229,6 +230,8 @@ export function AskAiTab({
     setInput('');
     setError(null);
     setBusy(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     const userMsg: AskMessage = {
       id: `u-${Date.now()}`,
@@ -253,7 +256,8 @@ export function AskAiTab({
       const res = await fetch(`/api/papers/${paperId}/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ question, selectionText })
+        body: JSON.stringify({ question, selectionText }),
+        signal: controller.signal
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -304,14 +308,23 @@ export function AskAiTab({
         );
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'ask_failed';
-      setError(msg);
-      setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        // User stopped generation — keep whatever streamed so far, no error.
+      } else {
+        const msg = err instanceof Error ? err.message : 'ask_failed';
+        setError(msg);
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+      }
     } finally {
+      abortRef.current = null;
       setBusy(false);
       inputRef.current?.focus();
     }
   }, [busy, input, paperId, pinnedSelection, onClearSelection]);
+
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
 
   const onKey = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -403,19 +416,19 @@ export function AskAiTab({
             />
             <button
               type='button'
-              onClick={send}
-              disabled={busy || !input.trim()}
-              aria-label='Gửi câu hỏi'
-              title='Gửi (Enter)'
+              onClick={busy ? stop : send}
+              disabled={busy ? false : !input.trim()}
+              aria-label={busy ? 'Dừng tạo câu trả lời' : 'Gửi câu hỏi'}
+              title={busy ? 'Dừng' : 'Gửi (Enter)'}
               className={cn(
                 'flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
-                busy || !input.trim()
+                !busy && !input.trim()
                   ? 'bg-muted text-muted-foreground'
                   : 'bg-primary text-primary-foreground hover:bg-primary/90'
               )}
             >
               {busy ? (
-                <IconLoader2 className='size-4 animate-spin' />
+                <IconPlayerStopFilled className='size-4' />
               ) : (
                 <IconArrowUp className='size-4' />
               )}

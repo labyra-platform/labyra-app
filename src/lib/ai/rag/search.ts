@@ -103,8 +103,16 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   // ~2s instead of re-fitting the whole tenant corpus (60s+) on a cold instance.
   const singlePaperId =
     typeof req.filter?.paperId === 'string' ? (req.filter.paperId as string) : undefined;
-  const bm25Promise = getBM25ForTenant(req.tenantId, singlePaperId);
-  const embedPromise = embedder.embed([req.query], 'query');
+  const tBm25 = Date.now();
+  const bm25Promise = getBM25ForTenant(req.tenantId, singlePaperId).then((e) => {
+    _marks.bm25_load = Date.now() - tBm25;
+    return e;
+  });
+  const tEmbed = Date.now();
+  const embedPromise = embedder.embed([req.query], 'query').then((r) => {
+    _marks.embed = Date.now() - tEmbed;
+    return r;
+  });
 
   const [embedResult, bm25Encoder] = await Promise.all([embedPromise, bm25Promise]);
   _mark('parallel_embed_and_bm25_load');

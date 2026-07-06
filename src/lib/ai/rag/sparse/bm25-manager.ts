@@ -95,16 +95,38 @@ export async function getBM25ForTenant(
   // serverless instance), and local IDF is sufficient for ranking within a
   // single paper — which is all paper Q&A needs.
   if (paperId) {
+    const t0 = Date.now();
     const corpus = await getCorpus(tenantId, paperId);
-    if (corpus.length === 0) return null;
+    if (corpus.length === 0) {
+      console.warn(
+        JSON.stringify({
+          event: 'bm25_load',
+          scope: 'paper',
+          paperId,
+          corpusSize: 0,
+          ms: Date.now() - t0
+        })
+      );
+      return null;
+    }
     const encoder = new BM25Encoder(getHybridTokenizer());
     await encoder.fit(corpus.map((e) => e.scoreText));
     precomputeCorpusVecs(encoder, corpus);
     cache.set(cacheKey, { encoder, corpus, loadedAt: Date.now(), corpusSize: corpus.length });
+    console.warn(
+      JSON.stringify({
+        event: 'bm25_load',
+        scope: 'paper',
+        paperId,
+        corpusSize: corpus.length,
+        ms: Date.now() - t0
+      })
+    );
     return encoder;
   }
 
   // Try load from Firestore
+  const tTenant = Date.now();
   const state = await loadBM25State(tenantId);
   if (state) {
     // Existing params — refit on current corpus to rebuild internal vectorizer
@@ -116,6 +138,14 @@ export async function getBM25ForTenant(
     await encoder.fit(corpus.map((e) => e.scoreText));
     precomputeCorpusVecs(encoder, corpus);
     cache.set(tenantId, { encoder, corpus, loadedAt: Date.now(), corpusSize: corpus.length });
+    console.warn(
+      JSON.stringify({
+        event: 'bm25_load',
+        scope: 'tenant',
+        corpusSize: corpus.length,
+        ms: Date.now() - tTenant
+      })
+    );
     return encoder;
   }
 

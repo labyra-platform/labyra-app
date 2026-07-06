@@ -2173,6 +2173,11 @@
     "viewerSettings": "Display settings",
     "viewerReset": "Reset view",
     "viewerScreenshot": "Screenshot (PNG)",
-    "viewerExport": "Export"
+    "viewerExport": "Export",
+    "tabFile": "File",
+    "fileFormatLabel": "Format",
+    "fileDropTitle": "Drop a file or click to browse",
+    "fileDropHint": "CIF (.cif) or POSCAR / VASP",
+    "fileOrPasteLabel": "File content (or paste)"
   }
 }

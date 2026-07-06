@@ -6,7 +6,7 @@
  */
 'use client';
 
-import { IconLoader2, IconPlus } from '@tabler/icons-react';
+import { IconLoader2, IconPlus, IconUpload } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -21,12 +21,21 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { MpSearchPanel } from '@/features/crystal-structures/components/mp-search-panel';
+import { cn } from '@/lib/utils';
 import { useRouter } from '@/i18n/navigation';
 
-type Source = 'mp_id' | 'cif' | 'poscar';
+type Source = 'mp_id' | 'file';
+type FileFormat = 'cif' | 'poscar';
 
 export function ImportStructureDialog() {
   const t = useTranslations('structures');
@@ -34,33 +43,44 @@ export function ImportStructureDialog() {
   const [open, setOpen] = useState(false);
   const [source, setSource] = useState<Source>('mp_id');
   const [mpId, setMpId] = useState('');
-  const [cifText, setCifText] = useState('');
-  const [poscarText, setPoscarText] = useState('');
+  const [fileFormat, setFileFormat] = useState<FileFormat>('cif');
+  const [fileText, setFileText] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [dragging, setDragging] = useState(false);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const filled =
-    source === 'mp_id'
-      ? mpId.trim() !== ''
-      : source === 'cif'
-        ? cifText.trim() !== ''
-        : poscarText.trim() !== '';
+  const filled = source === 'mp_id' ? mpId.trim() !== '' : fileText.trim() !== '';
   const canImport = !busy && filled;
+
+  // Read a dropped/selected file into the text area, and guess the format from
+  // its name (POSCAR/CONTCAR/.vasp → poscar; .cif → cif).
+  const readFile = (file: File) => {
+    setFileName(file.name);
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith('.cif')) setFileFormat('cif');
+    else if (lower.endsWith('.vasp') || lower.includes('poscar') || lower.includes('contcar'))
+      setFileFormat('poscar');
+    const reader = new FileReader();
+    reader.addEventListener('load', () => setFileText(String(reader.result ?? '')));
+    reader.readAsText(file);
+  };
 
   async function submit() {
     if (!canImport) return;
     setBusy(true);
     setFeedback(null);
     try {
+      const effectiveSource = source === 'mp_id' ? 'mp_id' : fileFormat;
       const res = await fetch('/api/structures/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source,
+          source: effectiveSource,
           mpId: mpId.trim() || undefined,
-          cifText: cifText || undefined,
-          poscarText: poscarText || undefined,
+          cifText: fileFormat === 'cif' ? fileText || undefined : undefined,
+          poscarText: fileFormat === 'poscar' ? fileText || undefined : undefined,
           name: name.trim() || undefined
         })
       });
@@ -71,8 +91,8 @@ export function ImportStructureDialog() {
       }
       setOpen(false);
       setMpId('');
-      setCifText('');
-      setPoscarText('');
+      setFileText('');
+      setFileName('');
       setName('');
       router.refresh();
     } catch {
@@ -97,10 +117,9 @@ export function ImportStructureDialog() {
         </DialogHeader>
 
         <Tabs value={source} onValueChange={(v) => setSource(v as Source)}>
-          <TabsList className='grid w-full grid-cols-3'>
+          <TabsList className='grid w-full grid-cols-2'>
             <TabsTrigger value='mp_id'>{t('tabMp')}</TabsTrigger>
-            <TabsTrigger value='cif'>CIF</TabsTrigger>
-            <TabsTrigger value='poscar'>POSCAR</TabsTrigger>
+            <TabsTrigger value='file'>{t('tabFile')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value='mp_id' className='space-y-3'>
@@ -126,26 +145,68 @@ export function ImportStructureDialog() {
             </div>
           </TabsContent>
 
-          <TabsContent value='cif' className='space-y-1.5'>
-            <Label htmlFor='cif-text'>{t('cifLabel')}</Label>
-            <Textarea
-              id='cif-text'
-              value={cifText}
-              onChange={(e) => setCifText(e.target.value)}
-              placeholder='data_...'
-              className='h-40 font-mono text-xs'
-            />
-          </TabsContent>
+          <TabsContent value='file' className='space-y-3'>
+            <div className='flex items-center gap-2'>
+              <Label className='shrink-0'>{t('fileFormatLabel')}</Label>
+              <Select value={fileFormat} onValueChange={(v) => setFileFormat(v as FileFormat)}>
+                <SelectTrigger className='w-44'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='cif'>CIF</SelectItem>
+                  <SelectItem value='poscar'>POSCAR / VASP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <TabsContent value='poscar' className='space-y-1.5'>
-            <Label htmlFor='poscar-text'>{t('poscarLabel')}</Label>
-            <Textarea
-              id='poscar-text'
-              value={poscarText}
-              onChange={(e) => setPoscarText(e.target.value)}
-              placeholder={'Mo1 S2\n1.0\n...'}
-              className='h-40 font-mono text-xs'
-            />
+            <label
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f) readFile(f);
+              }}
+              className={cn(
+                'flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
+                dragging ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'
+              )}
+            >
+              <IconUpload className='text-muted-foreground size-6' />
+              <span className='text-sm font-medium'>{t('fileDropTitle')}</span>
+              <span className='text-muted-foreground text-xs'>{t('fileDropHint')}</span>
+              {fileName ? (
+                <span className='text-primary mt-1 font-mono text-xs'>{fileName}</span>
+              ) : null}
+              <input
+                type='file'
+                aria-label={t('fileDropTitle')}
+                accept='.cif,.vasp,.poscar,.txt,POSCAR,CONTCAR'
+                className='hidden'
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) readFile(f);
+                }}
+              />
+            </label>
+
+            <div className='space-y-1.5'>
+              <Label htmlFor='file-text'>{t('fileOrPasteLabel')}</Label>
+              <Textarea
+                id='file-text'
+                value={fileText}
+                onChange={(e) => {
+                  setFileText(e.target.value);
+                  if (fileName) setFileName('');
+                }}
+                placeholder={fileFormat === 'cif' ? 'data_...' : 'POSCAR / VASP'}
+                className='h-36 font-mono text-xs'
+              />
+            </div>
           </TabsContent>
         </Tabs>
 

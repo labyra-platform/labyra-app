@@ -2174,6 +2174,11 @@
     "viewerSettings": "Cài đặt hiển thị",
     "viewerReset": "Đặt lại góc nhìn",
     "viewerScreenshot": "Chụp ảnh (PNG)",
-    "viewerExport": "Xuất file"
+    "viewerExport": "Xuất file",
+    "tabFile": "File",
+    "fileFormatLabel": "Định dạng",
+    "fileDropTitle": "Thả file vào đây hoặc bấm để chọn",
+    "fileDropHint": "CIF (.cif) hoặc POSCAR / VASP",
+    "fileOrPasteLabel": "Nội dung file (hoặc dán)"
   }
 }

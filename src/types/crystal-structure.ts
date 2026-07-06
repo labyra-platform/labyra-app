@@ -35,6 +35,16 @@ export interface CrystalStructure extends ProvBase {
   /** Cached Materials Project summary (band gap, hull, …) for mp-sourced
    *  structures. Absent until first fetched. */
   mpSummary?: MpSummary;
+  /** Cached first Brillouin zone + k-path, computed on first request. */
+  brillouin?: BrillouinZoneData;
+}
+
+/** First Brillouin zone geometry + high-symmetry path (reciprocal space). */
+export interface BrillouinZoneData {
+  facets: number[][][];
+  points: Record<string, number[]>;
+  segments: [string, string][];
+  reciprocal: number[][];
 }
 
 /** Materials Project summary from the worker (mp_api). */

@@ -168,6 +168,18 @@ export function analyzeStructure(structure: unknown): Promise<WorkerResult> {
   return callWorker('/dft/structure/analysis', { structure });
 }
 
+/** First Brillouin zone (facets) + high-symmetry k-points + band path. */
+export interface BrillouinZone {
+  facets: number[][][];
+  points: Record<string, number[]>;
+  segments: [string, string][];
+  reciprocal: number[][];
+}
+
+export function fetchBrillouinZone(structure: unknown): Promise<WorkerResult> {
+  return callWorker('/dft/structure/brillouin', { structure });
+}
+
 /** Materials Project summary (band gap, hull, formation energy, …) by mp-id. */
 export function fetchStructureMpSummary(mpId: string): Promise<WorkerResult> {
   return callWorker('/materials/summary', { mpId });

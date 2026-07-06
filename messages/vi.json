@@ -2179,6 +2179,9 @@
     "fileFormatLabel": "Định dạng",
     "fileDropTitle": "Thả file vào đây hoặc bấm để chọn",
     "fileDropHint": "CIF (.cif) hoặc POSCAR / VASP",
-    "fileOrPasteLabel": "Nội dung file (hoặc dán)"
+    "fileOrPasteLabel": "Nội dung file (hoặc dán)",
+    "brillouinTitle": "Vùng Brillouin",
+    "brillouinFailed": "Không dựng được vùng Brillouin cho cấu trúc này.",
+    "brillouinHint": "BZ thứ nhất (xanh) · điểm đối xứng cao & đường k-path (cam) · trục nghịch đảo."
   }
 }

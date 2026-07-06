@@ -101,6 +101,22 @@ export async function attachMpSummary(
     .set({ mpSummary: JSON.stringify(mpSummary) }, { merge: true });
 }
 
+/** Cache the Brillouin-zone geometry onto an existing structure. */
+export async function attachBrillouin(
+  tenantId: string,
+  id: string,
+  brillouin: CrystalStructure['brillouin']
+): Promise<void> {
+  if (!brillouin) return;
+  const db = getAdminFirestoreService();
+  await db
+    .collection('tenants')
+    .doc(tenantId)
+    .collection(COLLECTION)
+    .doc(id)
+    .set({ brillouin: JSON.stringify(brillouin) }, { merge: true });
+}
+
 /** Decode a stored crystalStructure doc — structure is a JSON string (new) or an
  *  object (legacy docs written before the string encoding). */
 function parseStored(raw: Record<string, unknown>): CrystalStructure {
@@ -120,7 +136,18 @@ function parseStored(raw: Record<string, unknown>): CrystalStructure {
     typeof raw.mpSummary === 'string'
       ? (JSON.parse(raw.mpSummary) as CrystalStructure['mpSummary'])
       : (raw.mpSummary as CrystalStructure['mpSummary']);
-  return { ...(raw as unknown as CrystalStructure), structure, scene, analysis, mpSummary };
+  const brillouin =
+    typeof raw.brillouin === 'string'
+      ? (JSON.parse(raw.brillouin) as CrystalStructure['brillouin'])
+      : (raw.brillouin as CrystalStructure['brillouin']);
+  return {
+    ...(raw as unknown as CrystalStructure),
+    structure,
+    scene,
+    analysis,
+    mpSummary,
+    brillouin
+  };
 }
 
 export async function listCrystalStructures(tenantId: string): Promise<CrystalStructure[]> {

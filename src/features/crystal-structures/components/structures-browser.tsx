@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { StructureViewer } from '@/features/crystal-structures/components/structure-viewer';
 import { StructureCrystalCards } from '@/features/crystal-structures/components/structure-crystal-cards';
+import { BrillouinViewer } from '@/features/crystal-structures/components/brillouin-viewer';
 import { StructureMpSummary } from '@/features/crystal-structures/components/structure-mp-summary';
 import { StructuresTable } from '@/features/crystal-structures/components/structures-table';
 import type { StructureRow } from '@/features/crystal-structures/structure-row';
@@ -82,6 +83,7 @@ export function StructuresBrowser({ rows }: { rows: StructureRow[] }) {
               onLoaded={(mp) => setBandGaps((prev) => ({ ...prev, [sel.id]: mp.bandGap }))}
             />
           ) : null}
+          <BrillouinViewer key={`bz-${sel.id}`} structureId={sel.id} />
         </div>
         <div className='space-y-2 xl:col-span-2'>
           <h2 className='text-lg font-semibold'>{t('crystalStructure')}</h2>

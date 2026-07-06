@@ -32,6 +32,52 @@ export interface DftCitation {
 
 export const DFT_REFERENCE: DftRefCategory[] = [
   {
+    id: 'xc',
+    title: 'Exchange–correlation & method level',
+    namelist: '&SYSTEM',
+    intro:
+      'Selects the functional and the correlation treatment (plain GGA, GGA+U, +U+V, meta-GGA, hybrid). This is the single biggest determinant of accuracy and cost — see the Foundations “functional ladder” concept.',
+    params: [
+      {
+        keyword: 'input_dft',
+        name: 'Functional override',
+        description:
+          "Force a specific exchange–correlation functional regardless of the pseudopotential default, e.g. 'pbe', 'pbesol', 'scan', 'r2scan', or a hybrid 'pbe0'/'hse'. Best practice: use pseudopotentials generated with the matching functional (SCAN needs SCAN-consistent pseudos for full accuracy).",
+        typical: "'pbe' (default for PBE pseudos)"
+      },
+      {
+        keyword: 'method level',
+        name: 'GGA / GGA+U / +U+V / hybrid',
+        description:
+          'Plain GGA (PBE) for general solids; GGA+U adds an on-site Hubbard correction for localized d/f states; +U+V adds inter-site coupling for covalent systems; meta-GGA (SCAN) improves energetics across chemistries; hybrids (HSE06) give accurate gaps at 10–100× cost.',
+        typical: 'GGA+U for correlated oxides'
+      },
+      {
+        keyword: 'exx_fraction / screening_parameter',
+        name: 'Hybrid mixing & screening',
+        description:
+          'For hybrids: exx_fraction is the fraction of exact (Fock) exchange (0.25 for PBE0/HSE); screening_parameter is the HSE range-separation ω (bohr⁻¹) that limits exact exchange to short range.',
+        typical: 'exx_fraction 0.25, ω ≈ 0.106',
+        unit: 'bohr⁻¹ (ω)'
+      },
+      {
+        keyword: 'ecutfock',
+        name: 'Exact-exchange cutoff',
+        description:
+          'Plane-wave cutoff for the Fock exchange operator in hybrid calculations. Can often be lower than ecutrho to save memory/time, but must be converged for the property of interest.',
+        typical: '≤ ecutrho',
+        unit: 'Ry'
+      },
+      {
+        keyword: 'nqx1 / nqx2 / nqx3',
+        name: 'Exact-exchange q-grid',
+        description:
+          'Grid of q-points for the exchange operator in hybrids. Usually coarser than the k-grid (e.g. k-grid/2) because exact exchange varies smoothly — a major cost lever.',
+        typical: 'k-grid or coarser'
+      }
+    ]
+  },
+  {
     id: 'control',
     title: 'Run control',
     namelist: '&CONTROL',
@@ -144,6 +190,35 @@ export const DFT_REFERENCE: DftRefCategory[] = [
         description:
           'Selects the lattice type. ibrav=0 means the cell is given explicitly via CELL_PARAMETERS (most flexible; used for imported/relaxed cells).',
         typical: '0 (free) with CELL_PARAMETERS'
+      },
+      {
+        keyword: 'noncolin / lspinorb',
+        name: 'Non-collinear / spin–orbit',
+        description:
+          'noncolin=.true. treats magnetization as a full 3D vector (spin spirals, canted magnets). lspinorb=.true. adds spin–orbit coupling (implies noncolin) and requires fully-relativistic pseudopotentials — needed for heavy elements (5d W), valley splitting, topology.',
+        typical: '.false. (scalar-relativistic first pass)'
+      },
+      {
+        keyword: 'assume_isolated',
+        name: 'Isolated-system correction',
+        description:
+          "Removes spurious interaction between periodic images for non-3D-periodic systems: 'martyna-tuckerman' (molecules), 'esm' (effective screening medium for slabs/electrodes), 'makov-payne' (charged-molecule energy correction). Essential for accurate molecule/slab energetics in a periodic code.",
+        typical: "'none' (bulk) | 'esm' (slab) | 'mt' (molecule)"
+      },
+      {
+        keyword: 'tot_charge',
+        name: 'Total cell charge',
+        description:
+          'Net charge added to the cell (electrons removed if positive). Used for charged defects and electrochemical/ionic states; in 3D-periodic cells a compensating jellium background is added — combine with a charged-cell correction for formation energies.',
+        typical: '0 (neutral)',
+        unit: 'e'
+      },
+      {
+        keyword: 'nosym / noinv',
+        name: 'Symmetry control',
+        description:
+          'nosym=.true. disables crystal symmetry (all k-points computed explicitly); noinv keeps rotations but drops inversion. Needed for broken-symmetry states, some magnetic orderings, or debugging symmetry-related errors — at higher cost.',
+        typical: '.false. (use symmetry)'
       }
     ]
   },
@@ -175,6 +250,15 @@ export const DFT_REFERENCE: DftRefCategory[] = [
         description:
           'U is NOT transferable between different oxidation/coordination environments of the same element. The same element in two chemical states (e.g. W⁶⁺ in WO₃ vs W⁴⁺ in WS₂) needs SEPARATE species labels so each gets its own U.',
         note: 'Give distinct atom labels per environment in the input.'
+      },
+      {
+        keyword: 'V (Hubbard_V)',
+        name: 'Inter-site Hubbard V',
+        description:
+          'Extended DFT+U+V coupling between an atom and a specific neighbor, capturing metal–ligand hybridization that on-site U alone misses. Improves gaps and energetics in partly-covalent systems (e.g. Li-ion cathodes). Specified per atom pair; can be computed by DFPT linear response.',
+        typical: 'system-dependent',
+        unit: 'eV',
+        note: 'Requires neighbor-pair bookkeeping in the HUBBARD card.'
       }
     ]
   },
@@ -232,17 +316,38 @@ export const DFT_REFERENCE: DftRefCategory[] = [
       },
       {
         keyword: 'mixing_mode',
-        name: 'Mixing scheme',
+        name: 'Mixing preconditioner',
         description:
-          "'plain' (Broyden); 'local-TF' and 'local-TF+' add Thomas–Fermi screening that helps charged/inhomogeneous or slab systems converge.",
-        typical: "'plain' | 'local-TF'"
+          "Damps the unstable long-wavelength (small-q) density components. 'plain' (Broyden) for insulators/semiconductors; 'TF' (Thomas–Fermi/Kerker screening) for metals; 'local-TF' for spatially inhomogeneous systems — slabs, molecules in vacuum, charged cells.",
+        typical: "'plain' | 'TF' (metals) | 'local-TF' (slabs)"
+      },
+      {
+        keyword: 'mixing_ndim',
+        name: 'Mixing history depth',
+        description:
+          'Number of previous iterations kept for Broyden mixing. A larger history builds a better inverse-Jacobian estimate and helps stubborn convergence, at more memory.',
+        typical: '8 (default) → 12–20 (difficult)'
       },
       {
         keyword: 'diagonalization',
-        name: 'Diagonalizer',
+        name: 'Iterative diagonalizer',
         description:
-          "Iterative eigensolver: 'david' (Davidson — fast, more memory), 'cg' (conjugate-gradient — robust, less memory), 'ppcg', 'paro'.",
-        typical: "'david'"
+          "Eigensolver for the KS Hamiltonian. 'david' (Davidson — fast, ~2–4× wavefunction memory, default); 'cg' (conjugate-gradient — robust, low memory, slower); 'ppcg' (block preconditioned CG — many bands, GPU-friendly); 'paro' (parallel orbital updating — high core counts); 'rmm-davidson' (RMM-DIIS — very fast, needs a good starting guess, QE ≥ 7.2).",
+        typical: "'david' | 'cg' (low memory)"
+      },
+      {
+        keyword: 'diago_thr_init',
+        name: 'Initial diagonalization threshold',
+        description:
+          'Eigenvalue convergence required in the FIRST SCF iterations. Loose early (the potential is still changing) then tightened automatically as the density converges — set explicitly only to debug convergence.',
+        typical: 'auto (rarely set)'
+      },
+      {
+        keyword: 'diago_david_ndim',
+        name: 'Davidson subspace size',
+        description:
+          'Working-subspace dimension for Davidson, as a multiple of the number of bands. Larger converges in fewer steps but uses more memory; reduce to 2 if memory-bound.',
+        typical: '2–4'
       },
       {
         keyword: 'electron_maxstep',
@@ -324,6 +429,35 @@ export const DFT_REFERENCE: DftRefCategory[] = [
           'Splits k-points into npool groups processed in parallel (k-point parallelization). Best efficiency when the number of irreducible k-points divides evenly by npool and each pool still fits in memory. Total MPI ranks = npool × (ranks per pool).',
         typical: 'a divisor of the irreducible k-point count',
         note: 'Memory feasibility per pool is the first gate; then maximize load balance.'
+      }
+    ]
+  },
+  {
+    id: 'bandpath',
+    title: 'Band paths & k-point conventions',
+    intro:
+      'A band structure samples eigenvalues along a path through high-symmetry k-points. The path and its labels depend on a standardization convention applied to the primitive cell — see the Foundations “band-structure paths” concept.',
+    params: [
+      {
+        keyword: 'path convention',
+        name: 'High-symmetry path scheme',
+        description:
+          'Setyawan–Curtarolo (2010): tabulated paths per Bravais lattice, common in HT databases. Hinuma/seekpath (2017): fully crystallographic, standardizes the primitive cell and handles all space groups — the platform default. Latimer–Munro (2020): materials-agnostic, unique complete path from symmetry.',
+        typical: 'seekpath (Hinuma)'
+      },
+      {
+        keyword: 'K_POINTS crystal_b',
+        name: 'Explicit path (band mode)',
+        description:
+          'For a bands calculation, the k-path is given as a list of high-symmetry vertices in crystal (reciprocal-lattice) coordinates with the number of points per segment. crystal_b/tpiba_b let QE interpolate between vertices.',
+        typical: '20–40 points per segment'
+      },
+      {
+        keyword: 'standardized cell',
+        name: 'Cell standardization',
+        description:
+          'The structure fed to the band step must be the standardized primitive cell that the chosen convention assumes; otherwise the high-symmetry coordinates no longer match their labels and the plotted gap direction can be wrong.',
+        note: 'seekpath returns the standardized cell together with the path.'
       }
     ]
   },
@@ -413,5 +547,50 @@ export const DFT_CITATIONS: DftCitation[] = [
     topic: 'Marzari–Vanderbilt (cold) smearing',
     label: 'Marzari et al., Phys. Rev. Lett. 82, 3296 (1999)',
     doi: '10.1103/PhysRevLett.82.3296'
+  },
+  {
+    topic: 'HSE screened hybrid',
+    label: 'Heyd, Scuseria, Ernzerhof, J. Chem. Phys. 118, 8207 (2003)',
+    doi: '10.1063/1.1564060'
+  },
+  {
+    topic: 'SCAN meta-GGA',
+    label: 'Sun, Ruzsinszky, Perdew, Phys. Rev. Lett. 115, 036402 (2015)',
+    doi: '10.1103/PhysRevLett.115.036402'
+  },
+  {
+    topic: 'r²SCAN meta-GGA',
+    label: 'Furness et al., J. Phys. Chem. Lett. 11, 8208 (2020)',
+    doi: '10.1021/acs.jpclett.0c02405'
+  },
+  {
+    topic: 'DFT+U+V (extended Hubbard)',
+    label: 'Campo & Cococcioni, J. Phys.: Condens. Matter 22, 055602 (2010)',
+    doi: '10.1088/0953-8984/22/5/055602'
+  },
+  {
+    topic: 'Hubbard parameters from DFPT',
+    label: 'Timrov, Marzari, Cococcioni, Phys. Rev. B 103, 045141 (2021)',
+    doi: '10.1103/PhysRevB.103.045141'
+  },
+  {
+    topic: 'k-path (Setyawan–Curtarolo)',
+    label: 'Setyawan & Curtarolo, Comput. Mater. Sci. 49, 299 (2010)',
+    doi: '10.1016/j.commatsci.2010.05.010'
+  },
+  {
+    topic: 'k-path (seekpath / Hinuma)',
+    label: 'Hinuma et al., Comput. Mater. Sci. 128, 140 (2017)',
+    doi: '10.1016/j.commatsci.2016.10.015'
+  },
+  {
+    topic: 'k-path (Latimer–Munro)',
+    label: 'Munro et al., Phys. Rev. B 101, 024105 (2020)',
+    doi: '10.1103/PhysRevB.101.024105'
+  },
+  {
+    topic: 'Fully-relativistic PAW (SOC)',
+    label: 'Dal Corso, Phys. Rev. B 82, 075116 (2010)',
+    doi: '10.1103/PhysRevB.82.075116'
   }
 ];

@@ -65,6 +65,74 @@ export const FOUNDATIONS: Foundation[] = [
     refs: ['Martin, Electronic Structure (2020), Ch. 6–7', 'Sholl & Steckel, DFT (2009), Ch. 1']
   },
   {
+    id: 'functionals',
+    title: 'The exchange–correlation ladder (LDA → hybrids)',
+    summary: (
+      <>
+        <p>
+          Everything unknown in DFT lives in the exchange–correlation functional{' '}
+          <Math tex='E_{\text{xc}}[n]' />, which must be approximated. The approximations form a
+          hierarchy — Perdew’s “Jacob’s ladder” — of increasing ingredients, accuracy and cost:
+        </p>
+        <ul className='ml-5 list-disc space-y-1'>
+          <li>
+            <strong>LDA</strong> — uses the density <Math tex='n' /> only (uniform-gas limit).
+          </li>
+          <li>
+            <strong>GGA</strong> — adds the gradient <Math tex='\nabla n' />; <strong>PBE</strong>{' '}
+            is the solid-state standard, <strong>PBEsol</strong> is tuned for lattice constants.
+          </li>
+          <li>
+            <strong>meta-GGA</strong> — adds the kinetic-energy density <Math tex='\tau' />;{' '}
+            <strong>SCAN</strong> / <strong>r²SCAN</strong> describe diverse bonding well at
+            near-GGA cost.
+          </li>
+          <li>
+            <strong>hybrids</strong> — mix in exact (Hartree–Fock) exchange; <strong>PBE0</strong>,{' '}
+            <strong>HSE06</strong> give accurate gaps at ~10–100× the cost.
+          </li>
+        </ul>
+        <p>The functional is the single most consequential choice in a calculation.</p>
+      </>
+    ),
+    deeper: (
+      <>
+        <p>
+          The core failure of LDA/GGA is <strong>self-interaction error</strong>: an electron
+          spuriously repels itself, over-delocalizing charge and shrinking band gaps. Two families
+          fix this. Hybrids replace a fraction <Math tex='a' /> of semi-local exchange with exact
+          exchange:
+        </p>
+        <Math
+          display
+          tex='E_{\text{xc}}^{\text{hyb}} = a\,E_{x}^{\text{HF}} + (1-a)\,E_{x}^{\text{DFT}} + E_{c}^{\text{DFT}}'
+        />
+        <p>
+          PBE0 uses <Math tex='a=1/4' /> from perturbation-theory arguments. <strong>HSE06</strong>{' '}
+          range-separates the exchange, applying exact exchange only at short range (screened by an
+          error-function of range <Math tex='\omega' />) — this makes it tractable for solids while
+          keeping the gap improvement, since the expensive long-range Fock term is dropped. Exact
+          exchange in a plane-wave code is costly because it couples all occupied orbital pairs; QE
+          controls this with a coarser q-grid (<code>nqx1/2/3</code>) and a separate Fock cutoff (
+          <code>ecutfock</code>). <strong>meta-GGAs</strong> take a different route: the kinetic-
+          energy density <Math tex='\tau(\mathbf{r})=\tfrac12\sum_i|\nabla\psi_i|^2' /> lets the
+          functional recognize covalent, metallic and weakly-bonded regions and adapt locally — SCAN
+          satisfies all 17 known exact constraints, and r²SCAN restores numerical smoothness. For
+          correlated <Math tex='d/f' /> oxides, <strong>DFT+U</strong> is a far cheaper, more
+          targeted cure than a hybrid. Practical guidance: PBE for general solids, PBEsol for
+          lattice/surface energetics, SCAN/r²SCAN for accurate formation energies across
+          chemistries, HSE06 when the gap must be right, and GGA+U for transition-metal oxides on a
+          budget.
+        </p>
+      </>
+    ),
+    refs: [
+      'Perdew, Burke, Ernzerhof, Phys. Rev. Lett. 77, 3865 (1996)',
+      'Heyd, Scuseria, Ernzerhof, J. Chem. Phys. 118, 8207 (2003)',
+      'Sun, Ruzsinszky, Perdew (SCAN), Phys. Rev. Lett. 115, 036402 (2015)'
+    ]
+  },
+  {
     id: 'plane-waves',
     title: 'Plane waves & energy cutoff',
     summary: (
@@ -288,6 +356,236 @@ export const FOUNDATIONS: Foundation[] = [
       </>
     ),
     refs: ['Martin, Electronic Structure (2020), Ch. 19', 'Sholl & Steckel, DFT (2009), Ch. 3']
+  },
+  {
+    id: 'diagonalization',
+    title: 'Iterative diagonalization',
+    summary: (
+      <>
+        <p>
+          In a plane-wave basis the Kohn–Sham Hamiltonian is a matrix of dimension 10⁴–10⁶ — far too
+          large to diagonalize directly, and only the lowest ~<Math tex='N_{\text{bands}}' />{' '}
+          eigenpairs are needed. Iterative subspace methods find just those, using only
+          matrix–vector products <Math tex='\hat{H}\psi' /> and a preconditioner. QE offers
+          Davidson, conjugate-gradient, PPCG, ParO and RMM-DIIS.
+        </p>
+      </>
+    ),
+    deeper: (
+      <>
+        <p>
+          All solve the generalized problem <Math tex='(\hat{H}-\varepsilon\hat{S})\psi=0' /> (with{' '}
+          <Math tex='\hat{S}' /> the overlap for US/PAW) by refining trial orbitals iteratively:
+        </p>
+        <ul className='ml-5 list-disc space-y-1'>
+          <li>
+            <strong>Davidson</strong> (<code>david</code>) — builds a small subspace from the
+            current orbitals plus their preconditioned residuals, diagonalizes the projected
+            Hamiltonian, and expands. Few Hamiltonian applications per step (fast) but stores 2–4×
+            the wavefunctions (memory-hungry). The default.
+          </li>
+          <li>
+            <strong>Conjugate gradient</strong> (<code>cg</code>) — optimizes bands essentially one
+            at a time; robust and low-memory but slower. Use when Davidson exhausts memory or stalls
+            on hard systems.
+          </li>
+          <li>
+            <strong>PPCG</strong> (<code>ppcg</code>) — projected, preconditioned block CG that
+            scales well to many bands and to GPUs.
+          </li>
+          <li>
+            <strong>ParO</strong> (<code>paro</code>) — parallel orbital-updating, good at very
+            large core counts.
+          </li>
+          <li>
+            <strong>RMM-DIIS</strong> (<code>rmm-davidson</code>, QE ≥ 7.2) — residual minimization;
+            very fast per step but needs a decent starting guess (best in the middle/end of SCF).
+          </li>
+        </ul>
+        <p>
+          Convergence hinges on <strong>preconditioning</strong> — multiplying the residual by an
+          approximate inverse of the kinetic operator so all plane-wave components converge at a
+          similar rate. <code>diago_thr_init</code> sets the initial eigenvalue accuracy; QE
+          tightens it automatically as the density converges (loose early diagonalization saves time
+          when the potential is still changing).
+        </p>
+      </>
+    ),
+    refs: ['Payne et al., Rev. Mod. Phys. 64, 1045 (1992)', 'Kresse & Furthmüller (1996)']
+  },
+  {
+    id: 'mixing',
+    title: 'Charge-density mixing & SCF convergence',
+    summary: (
+      <>
+        <p>
+          Each SCF iteration maps an input density to an output density. Feeding the output straight
+          back in generally oscillates or diverges — “charge sloshing”. Mixing blends input and
+          output with a factor <Math tex='\beta' /> (<code>mixing_beta</code>) and a history of
+          previous steps, and a preconditioner (<code>mixing_mode</code>) that damps the unstable
+          long-wavelength components.
+        </p>
+      </>
+    ),
+    deeper: (
+      <>
+        <p>
+          The instability is dielectric: a small change in the potential at long wavelength drives a
+          large change in density (poor screening), and the effect worsens for metals and large
+          cells. Broyden mixing (<code>plain</code>) uses the density history to build a
+          quasi-Newton approximation of the inverse dielectric Jacobian:
+        </p>
+        <Math
+          display
+          tex='n^{(m+1)}_{\text{in}} = n^{(m)}_{\text{in}} + \beta\,\hat{G}\left(n^{(m)}_{\text{out}} - n^{(m)}_{\text{in}}\right)'
+        />
+        <p>
+          where <Math tex='\hat{G}' /> is the preconditioner. For metals, a Thomas–Fermi (Kerker-
+          like) preconditioner (<code>local-TF</code> / TF) suppresses the small-
+          <Math tex='q' /> divergence; <code>local-TF</code> further adapts to spatial inhomogeneity
+          — essential for slabs and molecules in vacuum where screening varies. Practical recipe:
+          start at <Math tex='\beta=0.7' />; for a stubborn magnetic/metallic/large system drop to
+          0.1–0.3, raise the history depth <code>mixing_ndim</code>, and switch to{' '}
+          <code>local-TF</code>. Divergence that no <Math tex='\beta' /> fixes usually signals a
+          physical problem (bad starting magnetization, too little smearing, or a broken structure)
+          rather than a mixing issue.
+        </p>
+      </>
+    ),
+    refs: [
+      'Kresse & Furthmüller, Phys. Rev. B 54, 11169 (1996)',
+      'Kerker, Phys. Rev. B 23, 3082 (1981)'
+    ]
+  },
+  {
+    id: 'dft-u-v',
+    title: 'Extended Hubbard: DFT+U+V',
+    summary: (
+      <>
+        <p>
+          On-site DFT+U localizes electrons on a single atom, but in partly-covalent systems the
+          relevant electrons are shared with neighboring ligands. DFT+U+V adds an{' '}
+          <em>inter-site</em> interaction <Math tex='V' /> between an atom and its neighbors,
+          capturing that hybridization — often improving band gaps and energetics where pure U over-
+          or under-localizes.
+        </p>
+      </>
+    ),
+    deeper: (
+      <>
+        <p>
+          The extended functional supplements the on-site term with an inter-site coupling of the
+          generalized occupations <Math tex='n^{IJ}' /> between sites <Math tex='I' /> and a
+          neighbor <Math tex='J' />:
+        </p>
+        <Math
+          display
+          tex='E_{V} = -\,\frac{1}{2}\sum_{I\neq J} V^{IJ}\sum_{\sigma}\mathrm{Tr}\!\left[\mathbf{n}^{IJ,\sigma}\,\mathbf{n}^{JI,\sigma}\right]'
+        />
+        <p>
+          Physically <Math tex='V' /> rewards charge shared across a bond, correcting the tendency
+          of plain +U to push electrons fully onto one atom. It is important for transition-metal
+          compounds with significant metal–ligand covalency — Li-ion cathode voltages and some oxide
+          gaps are notably better with +U+V. Both <Math tex='U' /> and <Math tex='V' /> can be
+          derived from first principles by density-functional perturbation theory (Timrov, Marzari,
+          Cococcioni), avoiding empirical fitting. The cost over plain +U is modest; the bookkeeping
+          (neighbor shells, per-pair <Math tex='V' />) is the main added complexity.
+        </p>
+      </>
+    ),
+    refs: [
+      'Campo & Cococcioni, J. Phys.: Condens. Matter 22, 055602 (2010)',
+      'Timrov, Marzari, Cococcioni, Phys. Rev. B 103, 045141 (2021)'
+    ]
+  },
+  {
+    id: 'kpath',
+    title: 'Band-structure paths & k-point conventions',
+    summary: (
+      <>
+        <p>
+          A band structure plots eigenvalues along a path connecting high-symmetry points (Γ, X, M,
+          K, L, …) of the Brillouin zone, where bands typically have extrema or degeneracies. Which
+          points, in what order, and with what labels is fixed by a <em>convention</em> tied to a
+          standardized primitive cell. The common schemes are Setyawan–Curtarolo, Hinuma (seekpath),
+          and Latimer–Munro.
+        </p>
+      </>
+    ),
+    deeper: (
+      <>
+        <p>
+          The hard part is standardization: the same crystal can be written in different cells, and
+          the correct labels depend on the Bravais lattice <em>and its sub-variation</em> (e.g. the
+          distinct cases of base-centered monoclinic, which depend on cell-parameter ratios).
+          Getting this wrong mislabels points and can miss the true gap direction.
+        </p>
+        <ul className='ml-5 list-disc space-y-1'>
+          <li>
+            <strong>Setyawan–Curtarolo (2010)</strong> — tabulated paths for every Bravais lattice
+            assuming a specific standard cell; widely used, the basis of many HT databases.
+          </li>
+          <li>
+            <strong>Hinuma / seekpath (2017)</strong> — fully crystallographic: detects the space
+            group, standardizes the primitive cell, and generates correct paths for all cases
+            including the awkward centered lattices. The de-facto choice for high-throughput
+            pipelines (and what this platform uses via seekpath).
+          </li>
+          <li>
+            <strong>Latimer–Munro (2020)</strong> — a materials-agnostic scheme that derives a
+            unique, complete path purely from the symmetry, designed to be reproducible across
+            arbitrary inputs.
+          </li>
+        </ul>
+        <p>
+          Whichever convention you use, the structure fed to the band step must be the{' '}
+          <em>standardized</em> cell that convention assumes — otherwise the high-symmetry
+          coordinates no longer correspond to their labels.
+        </p>
+      </>
+    ),
+    refs: [
+      'Setyawan & Curtarolo, Comput. Mater. Sci. 49, 299 (2010)',
+      'Hinuma et al. (seekpath), Comput. Mater. Sci. 128, 140 (2017)',
+      'Munro et al. (Latimer–Munro), Phys. Rev. B 101, 024105 (2020)'
+    ]
+  },
+  {
+    id: 'soc',
+    title: 'Spin–orbit coupling & non-collinear magnetism',
+    summary: (
+      <>
+        <p>
+          Spin–orbit coupling (SOC) couples an electron’s spin to its orbital motion, splitting
+          bands — crucial for heavy elements (5d such as W), topological materials, and magnetic
+          anisotropy. Including it requires <em>fully-relativistic</em> pseudopotentials and
+          <em>non-collinear</em> two-component spinor wavefunctions (<code>lspinorb</code>, which
+          implies <code>noncolin</code>).
+        </p>
+      </>
+    ),
+    deeper: (
+      <>
+        <p>
+          A scalar-relativistic calculation keeps the large relativistic effects (mass–velocity,
+          Darwin) but averages SOC away. Switching SOC on turns each orbital into a spinor and the
+          magnetization into a full 3D vector field <Math tex='\mathbf{m}(\mathbf{r})' />, roughly
+          doubling cost and requiring <Math tex='j' />
+          -dependent (fully-relativistic) pseudopotentials. For W (5d), SOC splits the{' '}
+          <Math tex='d' /> manifold and reorders valence states — in the WS₂/WSe₂ family it produces
+          the large valence-band spin (“valley”) splitting central to their optoelectronics.{' '}
+          <strong>Non-collinear magnetism</strong> (<code>noncolin</code> without{' '}
+          <code>lspinorb</code>) is needed when moments are not parallel: canted or frustrated
+          antiferromagnets, spin spirals and skyrmions. For a first WO₃/WS₂ electronic pass,
+          scalar-relativistic PBE+U is usually adequate; add SOC when the valence-band splitting,
+          magnetic anisotropy energy, or band topology is the target.
+        </p>
+      </>
+    ),
+    refs: [
+      'Martin, Electronic Structure (2020), Ch. 10',
+      'Dal Corso, Phys. Rev. B 82, 075116 (2010)'
+    ]
   }
 ];
 

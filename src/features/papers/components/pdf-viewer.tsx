@@ -96,6 +96,7 @@ import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { usePaper } from '@/lib/firestore/queries/papers';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useReaderChromeStore } from '@/features/papers/stores/reader-chrome-store';
 import { cn } from '@/lib/utils';
 
 const Document = dynamic(() => import('react-pdf').then((m) => m.Document), {
@@ -718,6 +719,30 @@ export function PdfViewer({
     };
   }, [onScrollChange, pdfReady]);
 
+  // R402: auto-hide the toolbar + tabs while reading. Hide on scroll-down, reveal
+  // on scroll-up or near the top. Responsive (not debounced) for a natural feel.
+  const setChromeCollapsed = useReaderChromeStore((s) => s.setCollapsed);
+  const chromeCollapsed = useReaderChromeStore((s) => s.collapsed);
+  useEffect(() => {
+    const el = pagesContainerRef.current;
+    if (!el) return;
+    let last = el.scrollTop;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      if (y < 48) setChromeCollapsed(false);
+      else if (y > last + 8) setChromeCollapsed(true);
+      else if (y < last - 8) setChromeCollapsed(false);
+      last = y;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [setChromeCollapsed, pdfReady]);
+
+  // Reset chrome to visible when the viewer mounts (new paper / fullscreen).
+  useEffect(() => {
+    setChromeCollapsed(false);
+  }, [setChromeCollapsed]);
+
   // R227b: a hidden (display:none) tab loses its scroll offset. When this tab
   // becomes visible again, restore the exact saved offset (R237o) — falling
   // back to the current page's top. We briefly gate reporting so the transient
@@ -1084,12 +1109,23 @@ export function PdfViewer({
     <div
       ref={containerRef}
       className={cn(
-        'flex flex-col bg-muted/20 w-full min-w-0 max-w-full overflow-hidden',
+        'relative flex flex-col bg-muted/20 w-full min-w-0 max-w-full overflow-hidden',
         isFullscreen ? 'h-screen' : embedded ? 'h-full' : 'h-[calc(100vh-4rem)]'
       )}
     >
-      {/* Toolbar */}
-      <header className='flex items-center gap-1.5 border-b bg-background px-3 py-2 sm:gap-2 sm:px-4'>
+      {/* R402: thin hover strip — reveal the chrome without scrolling up. */}
+      <div
+        className='absolute inset-x-0 top-0 z-20 h-2'
+        onMouseEnter={() => setChromeCollapsed(false)}
+      />
+      {/* Toolbar (auto-hides while reading) */}
+      <header
+        onMouseEnter={() => setChromeCollapsed(false)}
+        className={cn(
+          'flex items-center gap-1.5 overflow-hidden border-b bg-background px-3 transition-all duration-200 sm:gap-2 sm:px-4',
+          chromeCollapsed ? 'max-h-0 border-b-0 py-0 opacity-0' : 'max-h-16 py-2 opacity-100'
+        )}
+      >
         {/* R237n: navigation sidebar toggle (thumbnails + outline). */}
         <Button
           variant={sidebarOpen ? 'secondary' : 'ghost'}

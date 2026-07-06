@@ -347,7 +347,16 @@ export function AskAiTab({
               ? 'Đã vượt hạn mức Q&A hôm nay. Hãy thử lại vào ngày mai.'
               : error === 'rate_limited'
                 ? 'Hỏi quá nhanh — chờ một chút rồi thử lại.'
-                : 'Có lỗi khi gọi AI. Hãy thử lại.'}
+                : error === 'Not signed in' ||
+                    error === 'missing_token' ||
+                    error === 'invalid_token' ||
+                    error === 'missing_tenant_claim'
+                  ? 'Phiên đăng nhập có vấn đề — đăng nhập lại rồi thử lại.'
+                  : error === 'retrieval_failed'
+                    ? 'Không truy xuất được nội dung paper (embeddings/worker). Kiểm tra paper đã xử lý xong chưa và worker đang chạy.'
+                    : error === 'answer_failed'
+                      ? 'Model AI trả lỗi khi sinh câu trả lời. Kiểm tra API key/model của tenant.'
+                      : `Có lỗi khi gọi AI (${error}). Hãy thử lại.`}
           </div>
         )}
       </div>

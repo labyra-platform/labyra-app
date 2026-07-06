@@ -15,6 +15,7 @@ import { PaperReadView } from '@/features/papers/components/paper-read-view';
 import { PaperTabsBar } from '@/features/papers/components/paper-tabs-bar';
 import { ReaderSidePanel } from '@/features/papers/components/reader-side-panel';
 import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
+import { useReaderChromeStore } from '@/features/papers/stores/reader-chrome-store';
 import { cn } from '@/lib/utils';
 
 function paperIdFromPath(pathname: string): string | null {
@@ -31,6 +32,8 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
   const routePaperId = paperIdFromPath(pathname);
   const onReader = routePaperId !== null;
   const hasTabs = tabs.length > 0;
+  const chromeCollapsed = useReaderChromeStore((s) => s.collapsed);
+  const setChromeCollapsed = useReaderChromeStore((s) => s.setCollapsed);
 
   useEffect(() => {
     if (!onReader) return;
@@ -49,7 +52,17 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
 
   return (
     <div className='flex h-[calc(100vh-4rem)] min-h-0 w-full flex-col'>
-      {hasTabs && <PaperTabsBar locale={locale} />}
+      {hasTabs && (
+        <div
+          onMouseEnter={onReader ? () => setChromeCollapsed(false) : undefined}
+          className={cn(
+            'overflow-hidden transition-all duration-200',
+            onReader && chromeCollapsed ? 'max-h-0 opacity-0' : 'max-h-12 opacity-100'
+          )}
+        >
+          <PaperTabsBar locale={locale} />
+        </div>
+      )}
 
       <div className='relative min-h-0 flex-1'>
         <div className={cn('h-full min-h-0 overflow-auto', onReader && 'hidden')}>{children}</div>

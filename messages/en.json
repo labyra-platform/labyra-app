@@ -2053,7 +2053,13 @@
     "runIdCollidesTag": "current",
     "runIdCollidesWarn": "⚠ \"{id}\" already exists — launching will overwrite it.",
     "runIdOverwriteConfirm": "A run named \"{id}\" already exists. Launching will overwrite it and its results. Continue?",
-    "completedLabel": "Completed"
+    "completedLabel": "Completed",
+    "referenceTab": "Reference",
+    "referenceTitle": "DFT parameter reference",
+    "referenceIntro": "What every parameter in the composer means, its typical value and unit, and the primary method references. Search across all parameters below.",
+    "referenceSearch": "Search parameters (e.g. ecutwfc, smearing, Hubbard)…",
+    "referenceNoMatch": "No parameters match your search.",
+    "referenceCitations": "Method references"
   },
   "structures": {
     "importTitle": "Import structure",

@@ -2054,7 +2054,13 @@
     "runIdCollidesTag": "hiện tại",
     "runIdCollidesWarn": "⚠ \"{id}\" đã tồn tại — launch sẽ ĐÈ lên nó.",
     "runIdOverwriteConfirm": "Run tên \"{id}\" đã tồn tại. Launch sẽ ĐÈ lên nó và kết quả cũ. Tiếp tục?",
-    "completedLabel": "Hoàn thành"
+    "completedLabel": "Hoàn thành",
+    "referenceTab": "Tài liệu",
+    "referenceTitle": "Tài liệu tham số DFT",
+    "referenceIntro": "Ý nghĩa từng tham số trong composer, giá trị điển hình và đơn vị, cùng tài liệu phương pháp gốc. Tìm kiếm trên toàn bộ tham số bên dưới.",
+    "referenceSearch": "Tìm tham số (vd ecutwfc, smearing, Hubbard)…",
+    "referenceNoMatch": "Không có tham số khớp tìm kiếm.",
+    "referenceCitations": "Tài liệu phương pháp"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

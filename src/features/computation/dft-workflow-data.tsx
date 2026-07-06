@@ -172,5 +172,59 @@ export const WORKFLOW_TOPICS: WorkflowTopic[] = [
         </p>
       </>
     )
+  },
+  {
+    id: 'phonons',
+    title: 'Phonon calculation & dynamical stability',
+    body: (
+      <>
+        <p>The DFPT phonon pipeline runs on a well-relaxed, tightly-converged geometry:</p>
+        <ol className='ml-5 list-decimal space-y-1'>
+          <li>
+            <strong>scf</strong> — with a tight <code>conv_thr</code> (phonons are second
+            derivatives; a loose density poisons the frequencies).
+          </li>
+          <li>
+            <strong>ph.x</strong> — DFPT on a q-grid (<code>ldisp</code>, <code>nq1/2/3</code>),
+            writing the dynamical matrices; set <code>epsil=.true.</code> for polar insulators.
+          </li>
+          <li>
+            <strong>q2r.x</strong> — Fourier-transform the matrices to real-space force constants
+            (with the acoustic sum rule).
+          </li>
+          <li>
+            <strong>matdyn.x</strong> — interpolate the dispersion along a q-path and/or the phonon
+            DOS (again with the acoustic sum rule).
+          </li>
+        </ol>
+        <p>What to check:</p>
+        <ul className='ml-5 list-disc space-y-1'>
+          <li>
+            <strong>Imaginary modes = instability.</strong> Negative (imaginary) frequencies mean
+            the structure is a saddle point. Distinguish genuine soft modes (a real phase
+            transition, or a wrong structure) from tiny numerical artefacts near Γ that the acoustic
+            sum rule removes. Never report properties of a structure with real imaginary phonons.
+          </li>
+          <li>
+            <strong>Enforce the acoustic sum rule</strong> (<code>asr='crystal'</code>) so the three
+            acoustic branches vanish at Γ.
+          </li>
+          <li>
+            <strong>Converge tightly</strong> — the phonon q-grid, <code>tr2_ph</code>, and the
+            underlying <code>ecutwfc</code>/k-grid all need to be tighter than for a total-energy
+            calculation.
+          </li>
+          <li>
+            <strong>Polar materials</strong> — include Born charges + dielectric (<code>epsil</code>
+            ) for the LO–TO splitting, or the optical branches near Γ will be wrong.
+          </li>
+        </ul>
+        <p>
+          A clean phonon spectrum (all real frequencies) is the standard proof that a predicted
+          structure is dynamically stable, and the phonon DOS then yields the harmonic free energy,
+          entropy and heat capacity.
+        </p>
+      </>
+    )
   }
 ];

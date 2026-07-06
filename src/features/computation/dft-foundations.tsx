@@ -677,6 +677,79 @@ export const FOUNDATIONS: Foundation[] = [
       'Blöchl, Jepsen, Andersen, Phys. Rev. B 49, 16223 (1994)',
       'Löwdin, J. Chem. Phys. 18, 365 (1950)'
     ]
+  },
+  {
+    id: 'phonons',
+    title: 'Phonons & lattice dynamics (DFPT)',
+    summary: (
+      <>
+        <p>
+          Phonons are the quantized normal modes of the vibrating lattice. Their frequencies{' '}
+          <Math tex='\omega_{\mathbf{q}\nu}' /> govern a great deal of materials physics: thermal
+          properties (heat capacity, thermal expansion, free energy),{' '}
+          <strong>dynamical stability</strong> (imaginary frequencies flag an unstable structure),
+          electron–phonon coupling (mobility, superconductivity, zero-point renormalization), and
+          the IR/Raman spectra. Density-functional perturbation theory (DFPT) computes them from the
+          linear response of the density to atomic displacements — <em>without</em> supercells.
+        </p>
+        <Math
+          display
+          tex='\sum_{J\beta} D_{\alpha\beta}^{IJ}(\mathbf{q})\,e_\beta^{J} = \omega^2(\mathbf{q})\,e_\alpha^{I}'
+        />
+        <p>
+          The eigenvalues of the dynamical matrix <Math tex='D(\mathbf{q})' /> are the squared
+          frequencies; its eigenvectors are the atomic displacement patterns of each mode.
+        </p>
+      </>
+    ),
+    deeper: (
+      <>
+        <p>
+          The dynamical matrix is the mass-weighted Fourier transform of the interatomic force
+          constants{' '}
+          <Math tex='C_{\alpha\beta}^{IJ}(\mathbf{R}) = \partial^2 E / \partial u_\alpha^{I}\,\partial u_\beta^{J}' />
+          :
+        </p>
+        <Math
+          display
+          tex='D_{\alpha\beta}^{IJ}(\mathbf{q}) = \frac{1}{\sqrt{M_I M_J}}\sum_{\mathbf{R}} C_{\alpha\beta}^{IJ}(\mathbf{R})\,e^{i\mathbf{q}\cdot\mathbf{R}}'
+        />
+        <p>
+          DFPT’s key advantage is that it obtains the force constants at <em>any</em>{' '}
+          <Math tex='\mathbf{q}' /> from the self-consistent linear response to a monochromatic
+          perturbation, solving a Sternheimer equation for the first-order wavefunctions{' '}
+          <Math tex='|\Delta\psi\rangle' /> instead of building large supercells (the alternative
+          “frozen-phonon” finite-difference route). Because frequencies are <em>second</em>{' '}
+          derivatives of the energy, they are far more sensitive to convergence than energies — a
+          tight <code>conv_thr</code>, a well-converged <code>ecutwfc</code>, and a dense k-grid are
+          essential.
+        </p>
+        <p>
+          Three physical points matter in practice. (1) <strong>Imaginary frequencies</strong> (
+          <Math tex='\omega^2 < 0' />, reported as negative) mean the structure sits at a saddle
+          point of the energy — a real dynamical instability or soft mode signalling a phase
+          transition, not just noise; always phonon-check a relaxed structure before trusting it.
+          (2) For polar insulators the long-range Coulomb field splits the longitudinal and
+          transverse optical modes at <Math tex='\Gamma' /> (<strong>LO–TO splitting</strong>),
+          which requires the Born effective charges <Math tex='Z^{*}' /> and the electronic
+          dielectric tensor <Math tex='\varepsilon_\infty' /> (<code>epsil=.true.</code>). (3) In
+          the harmonic approximation the phonon DOS gives the vibrational thermodynamics,
+        </p>
+        <Math
+          display
+          tex='F(T) = E_0 + \sum_{\mathbf{q}\nu}\left[\frac{\hbar\omega_{\mathbf{q}\nu}}{2} + k_B T\,\ln\!\left(1-e^{-\hbar\omega_{\mathbf{q}\nu}/k_B T}\right)\right]'
+        />
+        <p>
+          from which the entropy, heat capacity and (with quasi-harmonic volume dependence) thermal
+          expansion follow. The zone-center optical modes also give the IR- and Raman-active
+          frequencies used to compare against vibrational spectra.
+        </p>
+      </>
+    ),
+    refs: [
+      'Baroni, de Gironcoli, Dal Corso, Giannozzi, Rev. Mod. Phys. 73, 515 (2001)',
+      'Gonze & Lee, Phys. Rev. B 55, 10355 (1997)'
+    ]
   }
 ];
 

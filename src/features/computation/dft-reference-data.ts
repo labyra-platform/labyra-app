@@ -522,6 +522,71 @@ export const DFT_REFERENCE: DftRefCategory[] = [
     ]
   },
   {
+    id: 'phonons',
+    title: 'Phonons (DFPT: ph.x, q2r.x, matdyn.x)',
+    intro:
+      'Lattice dynamics via density-functional perturbation theory. ph.x computes dynamical matrices on a q-grid; q2r.x Fourier-transforms them to real-space force constants; matdyn.x interpolates the dispersion and DOS. See the Foundations “phonons & lattice dynamics” concept.',
+    params: [
+      {
+        keyword: 'tr2_ph (ph.x)',
+        name: 'DFPT convergence threshold',
+        description:
+          'Self-consistency threshold for the phonon (linear-response) calculation. Must be very tight — phonons are second energy derivatives — typically far smaller than an scf conv_thr.',
+        typical: '1e-14 – 1e-16',
+        note: 'Requires an equally tight scf conv_thr beforehand.'
+      },
+      {
+        keyword: 'ldisp / nq1 nq2 nq3 (ph.x)',
+        name: 'Phonon q-grid',
+        description:
+          'ldisp=.true. computes the full dispersion on a regular Monkhorst–Pack q-grid (nq1×nq2×nq3). Converge this grid like a k-grid; a single Γ-point run (ldisp=.false.) gives only zone-center modes.',
+        typical: 'e.g. 4×4×2 (converge)'
+      },
+      {
+        keyword: 'epsil (ph.x)',
+        name: 'Dielectric & Born charges',
+        description:
+          'epsil=.true. computes the electronic dielectric tensor ε∞ and Born effective charges Z* at Γ — required for the LO–TO splitting of polar insulators. Insulators/semiconductors only (must be a gap).',
+        typical: '.true. for polar insulators'
+      },
+      {
+        keyword: 'start_q / last_q (ph.x)',
+        name: 'q-point job splitting',
+        description:
+          'Compute a subset of the q-grid per job (embarrassingly parallel over q). Combine with recover=.true. to restart. Essential for spreading an expensive dispersion across many jobs.',
+        typical: 'split across jobs'
+      },
+      {
+        keyword: 'alpha_mix (ph.x)',
+        name: 'DFPT mixing',
+        description:
+          'Mixing factor for the linear-response self-consistency. Lower it if the phonon SCF is hard to converge (as with the ground-state mixing_beta).',
+        typical: '0.7 → lower if unstable'
+      },
+      {
+        keyword: 'zasr / asr (q2r.x, matdyn.x)',
+        name: 'Acoustic sum rule',
+        description:
+          "Enforces translational invariance so the three acoustic branches go to zero frequency at Γ. Without it, numerical error leaves spurious small (often imaginary) acoustic frequencies. Options: 'simple', 'crystal', 'one-dim', 'zero-dim'.",
+        typical: "'crystal'"
+      },
+      {
+        keyword: 'flfrc (q2r.x → matdyn.x)',
+        name: 'Real-space force constants',
+        description:
+          'q2r.x writes the interatomic force constants (flfrc) obtained by Fourier-transforming the dynamical matrices; matdyn.x reads them to interpolate frequencies at arbitrary q — a dispersion along a q-path or a DOS.',
+        typical: 'q2r.x → matdyn.x'
+      },
+      {
+        keyword: 'dos / nk1 nk2 nk3 (matdyn.x)',
+        name: 'Phonon DOS',
+        description:
+          'matdyn.x with dos=.true. computes the phonon density of states on a dense q-mesh (nk1×nk2×nk3) — the input to harmonic thermodynamics (free energy, entropy, heat capacity).',
+        typical: 'dense mesh (converge)'
+      }
+    ]
+  },
+  {
     id: 'pseudo',
     title: 'Pseudopotentials',
     intro:
@@ -662,5 +727,15 @@ export const DFT_CITATIONS: DftCitation[] = [
     topic: 'Löwdin orthogonalization (PDOS/charges)',
     label: 'Löwdin, J. Chem. Phys. 18, 365 (1950)',
     doi: '10.1063/1.1747632'
+  },
+  {
+    topic: 'DFPT / lattice dynamics (review)',
+    label: 'Baroni, de Gironcoli, Dal Corso, Giannozzi, Rev. Mod. Phys. 73, 515 (2001)',
+    doi: '10.1103/RevModPhys.73.515'
+  },
+  {
+    topic: 'DFPT & dynamical matrices',
+    label: 'Gonze & Lee, Phys. Rev. B 55, 10355 (1997)',
+    doi: '10.1103/PhysRevB.55.10355'
   }
 ];

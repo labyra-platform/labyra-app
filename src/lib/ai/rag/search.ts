@@ -167,7 +167,8 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
                 DEFAULT_BM25_TOP_K,
                 req.viewerGroupId,
                 req.isPrivileged,
-                collectionPaperIds
+                collectionPaperIds,
+                singlePaperId
               ),
               new Promise<never>((_resolve, reject) => {
                 bm25Timer = setTimeout(() => reject(new Error('bm25_timeout')), BM25_TIMEOUT_MS);
@@ -374,11 +375,14 @@ async function retrieveBM25(
   topK: number,
   viewerGroupId?: string | null,
   isPrivileged?: boolean,
-  collectionPaperIds?: Set<string> | null
+  collectionPaperIds?: Set<string> | null,
+  paperId?: string
 ): Promise<{ chunkId: string; score: number; chunk: BM25ChunkLite }[]> {
   // Corpus is cached alongside the encoder (built once), so this no longer
   // re-reads every chunk from Firestore on each query — the prior hot-path cost.
-  const corpus = await getBM25Corpus(tenantId);
+  // For paper Q&A, use the paper-scoped corpus (cached from the encoder step)
+  // instead of the whole tenant corpus.
+  const corpus = await getBM25Corpus(tenantId, paperId);
   if (corpus.length === 0) return [];
 
   const excludedSet = new Set([

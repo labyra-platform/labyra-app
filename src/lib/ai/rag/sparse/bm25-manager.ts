@@ -293,7 +293,11 @@ export function invalidateCache(tenantId: string): void {
  * encoder/corpus are loaded/fresh, then returns the in-memory corpus so per-query
  * BM25 retrieval needs no Firestore read.
  */
-export async function getBM25Corpus(tenantId: string): Promise<BM25CorpusEntry[]> {
-  await getBM25ForTenant(tenantId);
-  return getCache().get(tenantId)?.corpus ?? [];
+export async function getBM25Corpus(
+  tenantId: string,
+  paperId?: string
+): Promise<BM25CorpusEntry[]> {
+  const cacheKey = paperId ? `${tenantId}:${paperId}` : tenantId;
+  await getBM25ForTenant(tenantId, paperId);
+  return getCache().get(cacheKey)?.corpus ?? [];
 }

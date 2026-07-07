@@ -26,6 +26,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { copyPapersRich, renderPapersAnswerHtml } from '@/features/papers/lib/copy-rich';
+import type { NumericVerification } from '@/lib/ai/verify/numeric-claims';
 import { cn } from '@/lib/utils';
 import {
   ASK_META_SENTINEL,
@@ -54,7 +55,15 @@ function citationExcerpt(snippet: string): string {
   return words.length <= 15 ? words.join(' ') : `${words.slice(0, 15).join(' ')}…`;
 }
 
-function TrustChip({ score, noAnswer }: { score: number; noAnswer: boolean }) {
+function TrustChip({
+  score,
+  noAnswer,
+  verification
+}: {
+  score: number;
+  noAnswer: boolean;
+  verification?: NumericVerification;
+}) {
   if (noAnswer) {
     return (
       <span className='inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200'>
@@ -63,27 +72,47 @@ function TrustChip({ score, noAnswer }: { score: number; noAnswer: boolean }) {
       </span>
     );
   }
-  // Map 0-1 to a label + tone. Thresholds match the empty-retrieval line in
-  // the route so the UI tells the same story the backend just made a decision on.
+  // R416: when the answer states numeric values, verification of those values
+  // against the cited chunks is a far more honest signal than the retrieval
+  // score — so it takes over the chip. All values found → green; any missing →
+  // amber (worth a glance, the model may have mis-stated a number).
+  if (verification && verification.total > 0) {
+    const allOk = verification.verified === verification.total;
+    return (
+      <span
+        className={
+          allOk
+            ? 'inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10.5px] font-medium text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200'
+            : 'inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200'
+        }
+        title='Số liệu trong câu trả lời được đối chiếu trực tiếp với đoạn trích được trích dẫn'
+      >
+        {allOk ? '✓' : <IconAlertCircle className='size-3' />}
+        {verification.verified}/{verification.total} số liệu khớp nguồn
+      </span>
+    );
+  }
+  // No numeric claims → fall back to retrieval match (labelled as such, not as
+  // answer "confidence").
   const pct = Math.round(score * 100);
   if (score >= 0.7) {
     return (
       <span className='inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10.5px] font-medium text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200'>
-        ✓ Khớp tốt · {pct}%
+        ✓ Khớp nguồn tốt · {pct}%
       </span>
     );
   }
   if (score >= 0.5) {
     return (
       <span className='inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10.5px] font-medium text-sky-900 dark:bg-sky-950/50 dark:text-sky-200'>
-        Tham khảo · {pct}%
+        Khớp nguồn · {pct}%
       </span>
     );
   }
   return (
     <span className='inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200'>
       <IconAlertCircle className='size-3' />
-      Khớp yếu · {pct}%
+      Khớp nguồn yếu · {pct}%
     </span>
   );
 }
@@ -220,6 +249,7 @@ export function AskAiTab({
                   ...m,
                   citations: meta.citations,
                   trustScore: meta.trustScore,
+                  verification: meta.verification,
                   noAnswer: meta.noAnswer
                 }
               : m
@@ -469,17 +499,12 @@ function AssistantBubble({
             '[&_b]:font-semibold',
             '[&_i]:italic',
             '[&_.katex]:mx-0.5',
-            '[&_.ask-cite-btn]:mx-0.5',
-            '[&_.ask-cite-btn]:inline-flex',
-            '[&_.ask-cite-btn]:h-4',
-            '[&_.ask-cite-btn]:items-center',
-            '[&_.ask-cite-btn]:rounded',
-            '[&_.ask-cite-btn]:bg-primary/10',
-            '[&_.ask-cite-btn]:px-1',
-            '[&_.ask-cite-btn]:text-[10.5px]',
-            '[&_.ask-cite-btn]:font-medium',
-            '[&_.ask-cite-btn]:text-primary',
-            '[&_.ask-cite-btn]:hover:bg-primary/20',
+            '[&_.ask-cite-btn]:mx-[1.5px] [&_.ask-cite-btn]:-translate-y-1 [&_.ask-cite-btn]:align-top',
+            '[&_.ask-cite-btn]:inline-flex [&_.ask-cite-btn]:items-center [&_.ask-cite-btn]:justify-center',
+            '[&_.ask-cite-btn]:h-[14px] [&_.ask-cite-btn]:min-w-[14px] [&_.ask-cite-btn]:rounded-full [&_.ask-cite-btn]:px-[3px]',
+            '[&_.ask-cite-btn]:bg-primary [&_.ask-cite-btn]:text-primary-foreground',
+            '[&_.ask-cite-btn]:text-[8.5px] [&_.ask-cite-btn]:font-bold [&_.ask-cite-btn]:leading-none [&_.ask-cite-btn]:tabular-nums',
+            '[&_.ask-cite-btn]:cursor-pointer [&_.ask-cite-btn]:transition-colors [&_.ask-cite-btn]:hover:bg-primary/80',
             !message.content && 'text-muted-foreground'
           )}
           // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
@@ -503,7 +528,11 @@ function AssistantBubble({
         )}
         <div className='mt-1 flex items-center gap-2'>
           {(message.trustScore !== undefined || message.noAnswer) && (
-            <TrustChip score={message.trustScore ?? 0} noAnswer={message.noAnswer ?? false} />
+            <TrustChip
+              score={message.trustScore ?? 0}
+              noAnswer={message.noAnswer ?? false}
+              verification={message.verification}
+            />
           )}
           {message.content && (
             <button

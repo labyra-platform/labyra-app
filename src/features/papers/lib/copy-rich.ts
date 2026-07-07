@@ -161,8 +161,7 @@ export function renderPapersAnswerHtml(
   if (opts.citeButtons) {
     html = html.replace(
       /\[(\d{1,2})\]/g,
-      (_, n: string) =>
-        `<button type="button" data-cite="${n}" class="ask-cite-btn">[${n}]</button>`
+      (_, n: string) => `<button type="button" data-cite="${n}" class="ask-cite-btn">${n}</button>`
     );
   }
   return html.replace(

@@ -22,6 +22,7 @@ import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
 import { selectProvider } from '@/lib/ai/providers';
 import { searchPapers } from '@/lib/ai/rag/search';
 import { getBM25Corpus } from '@/lib/ai/rag/sparse/bm25-manager';
+import { verifyNumericClaims } from '@/lib/ai/verify/numeric-claims';
 import type { SearchHit } from '@/lib/ai/rag/search-types';
 import { getGroupIdFromToken, getRoleFromToken, getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
@@ -528,7 +529,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
 
       // Trailing meta frame — citations + trust score for the UI.
-      const meta: AskStreamMeta = { citations, trustScore, noAnswer: false };
+      const verification = verifyNumericClaims(full, hits);
+      console.warn(
+        JSON.stringify({
+          event: 'ask_verify',
+          paperId,
+          verified: verification.verified,
+          total: verification.total
+        })
+      );
+      const meta: AskStreamMeta = { citations, trustScore, noAnswer: false, verification };
       controller.enqueue(encoder.encode(`${ASK_META_SENTINEL}${JSON.stringify(meta)}`));
       controller.close();
 

@@ -3,6 +3,7 @@
  *
  * @phase R237am Ask AI Q&A inside a single paper
  */
+import type { NumericVerification } from '@/lib/ai/verify/numeric-claims';
 
 /** A grounded source surfaced under an assistant answer. */
 export interface AskCitation {
@@ -32,6 +33,7 @@ export interface AskMessage {
   trustScore?: number;
   /** True when retrieval found nothing relevant (we refused to hallucinate). */
   noAnswer?: boolean;
+  verification?: NumericVerification;
   /** Selection text the user attached to the question, if any. */
   selectionText?: string;
   createdAt: number;
@@ -51,4 +53,6 @@ export interface AskStreamMeta {
   citations: AskCitation[];
   trustScore: number;
   noAnswer: boolean;
+  /** Tier-1 numeric claim verification (R416). Absent when no numbers were checked. */
+  verification?: NumericVerification;
 }

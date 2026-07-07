@@ -14,7 +14,7 @@ import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { mapWithConcurrency } from '@/lib/utils/concurrency';
 import type { PaperChunkDoc } from '@/types/papers';
 import { BM25Encoder } from './bm25';
-import { loadBM25State, saveBM25State } from './firestore-store';
+import { saveBM25State } from './firestore-store';
 import { getHybridTokenizer } from './hybrid-tokenizer';
 import type { SparseVector } from './types';
 
@@ -59,7 +59,6 @@ function getCache(): Map<string, CachedEntry> {
 }
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h
-const COLD_START_MIN_PAPERS = 3;
 // R238c: cap concurrent per-paper chunk reads so a large tenant doesn't fire
 // hundreds of simultaneous Firestore round-trips at once.
 const CHUNK_FETCH_CONCURRENCY = 25;
@@ -125,38 +124,17 @@ export async function getBM25ForTenant(
     return encoder;
   }
 
-  // Try load from Firestore
-  const tTenant = Date.now();
-  const state = await loadBM25State(tenantId);
-  if (state) {
-    // Existing params — refit on current corpus to rebuild internal vectorizer
-    const corpus = await getCorpus(tenantId);
-    if (corpus.length === 0) {
-      return null;
-    }
-    const encoder = new BM25Encoder(getHybridTokenizer());
-    await encoder.fit(corpus.map((e) => e.scoreText));
-    precomputeCorpusVecs(encoder, corpus);
-    cache.set(tenantId, { encoder, corpus, loadedAt: Date.now(), corpusSize: corpus.length });
-    console.warn(
-      JSON.stringify({
-        event: 'bm25_load',
-        scope: 'tenant',
-        corpusSize: corpus.length,
-        ms: Date.now() - tTenant
-      })
-    );
-    return encoder;
-  }
-
-  // Cold start: check if enough corpus to fit
-  const corpus = await getCorpus(tenantId);
-  if (corpus.length < COLD_START_MIN_PAPERS) {
-    return null; // not enough docs yet
-  }
-
-  // Trigger cold-start fit
-  return refitTenant(tenantId);
+  // Tenant-wide (multi-paper) BM25 must NOT be fitted on the interactive request
+  // path. Reading the whole corpus + fitting is 60s+ on a cold serverless instance
+  // — a synchronous CPU fit that blocks the event loop, so even the R417 setTimeout
+  // guard in search.ts can't interrupt it; it blew past the tool timeout and made
+  // the Librarian fall back to ungrounded general knowledge. Serve from the
+  // in-memory cache only (checked above). If cold, return null so retrieval falls
+  // back to vector-only — fast and still grounded. The background refit cron warms
+  // the cache; cross-instance warmth needs a shared store (Upstash), tracked
+  // separately.
+  console.warn(JSON.stringify({ event: 'bm25_skip_tenant_cold', tenantId }));
+  return null;
 }
 
 /**

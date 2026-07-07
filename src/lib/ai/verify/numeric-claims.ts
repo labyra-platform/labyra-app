@@ -16,12 +16,16 @@ export interface NumericClaim {
   citation: number;
   /** The value as written, e.g. "2.8 eV". */
   value: string;
-  status: 'verified' | 'unverified';
+  /** verified: value found in cited chunk. contradicted: the SAME unit appears in
+   *  the chunk with a DIFFERENT value (the model likely mis-stated it — worse than
+   *  merely unsourced). unverified: value simply not present. */
+  status: 'verified' | 'unverified' | 'contradicted';
 }
 
 export interface NumericVerification {
   claims: NumericClaim[];
   verified: number;
+  contradicted: number;
   total: number;
 }
 
@@ -64,17 +68,34 @@ export function verifyNumericClaims(
       if (seen.has(key)) continue;
       seen.add(key);
       const normTok = normalize(value);
-      const verified = cites.some((n) => {
+      const claimValNorm = normalize(tok[1]);
+      const claimUnitNorm = normalize(tok[2]);
+      let verified = false;
+      let contradicted = false;
+      for (const n of cites) {
         const src = normSources[n - 1];
-        return typeof src === 'string' && src.includes(normTok);
-      });
-      claims.push({ citation: cites[0], value, status: verified ? 'verified' : 'unverified' });
+        if (typeof src !== 'string') continue;
+        if (src.includes(normTok)) {
+          verified = true;
+          break;
+        }
+        // Same unit, different value in the cited chunk → the model mis-stated it.
+        const raw = sources[n - 1]?.text ?? '';
+        for (const st of raw.matchAll(VALUE_UNIT)) {
+          if (normalize(st[2]) === claimUnitNorm && normalize(st[1]) !== claimValNorm) {
+            contradicted = true;
+          }
+        }
+      }
+      const status = verified ? 'verified' : contradicted ? 'contradicted' : 'unverified';
+      claims.push({ citation: cites[0], value, status });
     }
   }
 
   return {
     claims,
     verified: claims.filter((c) => c.status === 'verified').length,
+    contradicted: claims.filter((c) => c.status === 'contradicted').length,
     total: claims.length
   };
 }

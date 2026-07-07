@@ -72,12 +72,24 @@ function TrustChip({
       </span>
     );
   }
-  // R416: when the answer states numeric values, verification of those values
-  // against the cited chunks is a far more honest signal than the retrieval
-  // score — so it takes over the chip. All values found → green; any missing →
-  // amber (worth a glance, the model may have mis-stated a number).
+  // R416/R417: numeric values checked against the cited chunks — a far more
+  // honest signal than the retrieval score, so it takes over the chip.
+  // Contradicted (same unit, different value) → red; any unsourced → amber;
+  // all found → green.
   if (verification && verification.total > 0) {
-    const allOk = verification.verified === verification.total;
+    const { verified, contradicted, total } = verification;
+    if (contradicted > 0) {
+      return (
+        <span
+          className='inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10.5px] font-medium text-rose-900 dark:bg-rose-950/50 dark:text-rose-200'
+          title='Có số liệu trong câu trả lời mâu thuẫn với đoạn trích được trích dẫn (đơn vị khớp nhưng giá trị khác)'
+        >
+          <IconAlertCircle className='size-3' />
+          {contradicted}/{total} số liệu mâu thuẫn nguồn
+        </span>
+      );
+    }
+    const allOk = verified === total;
     return (
       <span
         className={
@@ -88,7 +100,7 @@ function TrustChip({
         title='Số liệu trong câu trả lời được đối chiếu trực tiếp với đoạn trích được trích dẫn'
       >
         {allOk ? '✓' : <IconAlertCircle className='size-3' />}
-        {verification.verified}/{verification.total} số liệu khớp nguồn
+        {verified}/{total} số liệu khớp nguồn
       </span>
     );
   }

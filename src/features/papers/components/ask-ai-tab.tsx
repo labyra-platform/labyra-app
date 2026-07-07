@@ -23,10 +23,9 @@ import {
   IconPlayerStopFilled,
   IconSparkles
 } from '@tabler/icons-react';
-import { renderToString as renderKatex } from 'katex';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { copyPapersRich } from '@/features/papers/lib/copy-rich';
+import { copyPapersRich, renderPapersAnswerHtml } from '@/features/papers/lib/copy-rich';
 import { cn } from '@/lib/utils';
 import {
   ASK_META_SENTINEL,
@@ -35,12 +34,6 @@ import {
   type AskStreamMeta
 } from '@/features/papers/ask/types';
 
-/** Heuristic: does this content actually look like LaTeX math? KaTeX warns
- *  loudly (and renders garbled output) when given Vietnamese prose like "với".
- *  We only invoke KaTeX when there's a real math signal (backslash command,
- *  caret, underscore, brace, equality, operator), otherwise fall back to a
- *  plain inline span. This makes the panel robust to a model that occasionally
- *  wraps prose in <math> by accident. */
 /**
  * R260: derive a short, distinctive phrase from a citation snippet to flash on
  * the PDF page. The PDF text layer matches per text-item, so a long multi-line
@@ -59,80 +52,6 @@ function citationPhrase(snippet: string): string {
 function citationExcerpt(snippet: string): string {
   const words = snippet.replace(/\s+/g, ' ').trim().split(' ');
   return words.length <= 15 ? words.join(' ') : `${words.slice(0, 15).join(' ')}…`;
-}
-
-function looksLikeMath(raw: string): boolean {
-  const s = raw.normalize('NFC');
-  // Quick ASCII signal — if it's pure ASCII it's most likely real LaTeX.
-  // eslint-disable-next-line no-control-regex
-  if (/^[\x00-\x7F\s]*$/.test(s) && /[\\^_{}=]/.test(s)) return true;
-  // Accented-Latin (precomposed). NFC-normalised above so NFD Vietnamese (base +
-  // combining marks) is folded to these precomposed code points first.
-  if (/[\u00C0-\u024F\u1E00-\u1EFF]/u.test(s)) {
-    return false;
-  }
-  // Mixed-but-no-Vietnamese: require at least one math command.
-  return /\\[a-zA-Z]+|[\^_{}]/.test(s);
-}
-
-/** Render one <math> block. Either real KaTeX (math-like input) or an inline
- *  fallback span (prose accidentally wrapped). Always safe HTML. */
-function renderMathBlock(latex: string): string {
-  const trimmed = latex.trim();
-  if (!looksLikeMath(trimmed)) {
-    return `<span class="text-foreground">${trimmed
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')}</span>`;
-  }
-  try {
-    return renderKatex(trimmed, {
-      throwOnError: false,
-      displayMode: false,
-      output: 'html',
-      strict: 'ignore',
-      trust: false
-    });
-  } catch {
-    return `<code class="font-mono">${trimmed.replace(/</g, '&lt;')}</code>`;
-  }
-}
-/** Defensive strip of a leaked thinking-artifact prefix (e.g. "thought}",
- *  "{thought}", a stray leading "}"). The Gemini provider already filters
- *  thought parts (R237ao), but models occasionally emit a stray fragment;
- *  this keeps the UI clean without affecting normal answers. */
-function stripThoughtArtifact(s: string): string {
-  return s.replace(/^\s*(?:\{?\s*"?(?:thought|thinking|reasoning)"?\s*[:}\]]+|\}+)\s*/i, '');
-}
-
-/** Sanitize + render the assistant answer for safe HTML output.
- *
- *  Pipeline:
- *  (1) Extract every <math> block, render via renderMathBlock (KaTeX if it
- *      looks like math, plain inline span otherwise). Replace with a sentinel.
- *  (2) HTML-escape the rest.
- *  (3) Re-enable the whitelisted inline tags <sub>/<sup>/<b>/<i>.
- *  (4) Turn citation brackets [n] into clickable buttons.
- *  (5) Swap sentinels back for the rendered math HTML. */
-function renderAnswerHtml(answer: string): string {
-  const cleaned = stripThoughtArtifact(answer.normalize('NFC'));
-  const placeholders: string[] = [];
-  const sentinel = '\u0001';
-  const withMath = cleaned.replace(/<math>([\s\S]*?)<\/math>/gi, (_, latex: string) => {
-    const idx = placeholders.push(renderMathBlock(latex)) - 1;
-    return `${sentinel}M${idx}${sentinel}`;
-  });
-  const escaped = withMath.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const whitelisted = escaped.replace(/&lt;(\/?)(sub|sup|b|i)&gt;/gi, '<$1$2>');
-  // Citation brackets: [1] → <button data-cite="1">[1]</button>
-  const cited = whitelisted.replace(
-    /\[(\d{1,2})\]/g,
-    (_, n: string) => `<button type="button" data-cite="${n}" class="ask-cite-btn">[${n}]</button>`
-  );
-  return cited.replace(
-    new RegExp(`${sentinel}M(\\d+)${sentinel}`, 'g'),
-    (_, n: string) => placeholders[Number.parseInt(n, 10)] ?? ''
-  );
 }
 
 function TrustChip({ score, noAnswer }: { score: number; noAnswer: boolean }) {
@@ -486,7 +405,10 @@ function AssistantBubble({
   onAnswerClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onJumpToPage: (page: number, y?: number, highlight?: string) => void;
 }) {
-  const html = useMemo(() => renderAnswerHtml(message.content), [message.content]);
+  const html = useMemo(
+    () => renderPapersAnswerHtml(message.content, { mathAs: 'html', citeButtons: true }),
+    [message.content]
+  );
   const [copied, setCopied] = useState(false);
   const [citeHover, setCiteHover] = useState<{
     idx: number;

@@ -311,6 +311,9 @@ export class GeminiProvider implements LLMProvider {
           // 2 attempts keeps worst case inside chat route maxDuration 60s.
           // Stream retries only the initial connection; mid-stream drop is fatal.
           httpOptions: { timeout: 40_000, retryOptions: { attempts: 2 } },
+          ...(request.thinkingBudget !== undefined
+            ? { thinkingConfig: { thinkingBudget: request.thinkingBudget } }
+            : {}),
           ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           ...(tools ? { tools } : {})
         }
@@ -422,6 +425,9 @@ export class GeminiProvider implements LLMProvider {
         systemInstruction: toSystemInstruction(request.system),
         maxOutputTokens: request.maxTokens ?? 1024,
         safetySettings: SAFETY_SETTINGS, // R189-1 (G-5)
+        ...(request.thinkingBudget !== undefined
+          ? { thinkingConfig: { thinkingBudget: request.thinkingBudget } }
+          : {}),
         ...(request.temperature !== undefined ? { temperature: request.temperature } : {})
       }
     });

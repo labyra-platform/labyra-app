@@ -38,6 +38,9 @@ export const maxDuration = 300;
 
 const VECTOR_TOP_K = 20;
 const TOP_N = 5;
+// Grounded RAG extraction needs little reasoning; disabling thinking cuts the
+// biggest chunk of time-to-first-token (Gemini 3 thinks by default). Tunable.
+const PAPER_QA_THINKING_BUDGET = 0;
 /** Below this rerank score we treat retrieval as "nothing relevant" and refuse
  *  to answer — Labyra's L1 cite-or-refuse rule. Tuned conservatively; if the
  *  best chunk in the paper barely matches the question, an answer will mostly
@@ -162,6 +165,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // Combining the search query with any selection text is intentional: when the
   // user asks "why?" about a highlighted passage, the passage IS the query.
   const retrievalQuery = selectionText ? `${question}\n${selectionText}` : question;
+  // Intent classify only needs the question, so run it in parallel with retrieval
+  // (it used to run serially after) — overlapping saves ~1s off first-token time.
+  const tClassify = Date.now();
+  let classifyMs = 0;
+  const classifyPromise: Promise<AiTier> = classifyIntent(question)
+    .then((d) => (d.tier >= 3 ? 3 : 2) as AiTier)
+    .catch(() => 2 as AiTier)
+    .then((t) => {
+      classifyMs = Date.now() - tClassify;
+      return t;
+    });
   let hits: SearchHit[] = [];
   let retrievalMs = 0;
   const tRetrieve = Date.now();
@@ -213,21 +227,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
   }
 
-  // ─── Intent classify → tier ───────────────────────────────────
-  // Easy factual lookup (what is X?) → Flash T2. Reasoning/synthesis/compare
-  // → Sonnet T3. Selection-mode questions tend to be deeper, so we floor T3.
-  let tier: AiTier = 2;
-  let classifyMs = 0;
-  const tClassify = Date.now();
-  try {
-    const decision = await classifyIntent(question);
-    // Classifier outputs T0-T5; clamp to T2/T3 for paper_qa. T4/T5 reserved.
-    if (decision.tier >= 3) tier = 3;
-  } catch {
-    // Classifier is best-effort — default to Flash if it fails.
-    tier = 2;
-  }
-  classifyMs = Date.now() - tClassify;
+  // ─── Intent tier (classify ran in parallel with retrieval above) ─
+  // Selection-mode questions tend to be deeper, so we floor T3.
+  let tier: AiTier = await classifyPromise;
   if (selectionText) tier = Math.max(tier, 3) as AiTier;
 
   // ─── Cost guard ───────────────────────────────────────────────
@@ -265,6 +267,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           model: config.model,
           maxTokens: 4096,
           temperature: 0.1, // Low — we want grounded paraphrase, not creativity.
+          thinkingBudget: PAPER_QA_THINKING_BUDGET,
           system: [{ text: system, cache: true, cacheTtl: '1h' }],
           messages: [{ role: 'user', content: userPrompt }]
         })) {

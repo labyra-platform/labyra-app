@@ -105,6 +105,12 @@ export interface LLMStreamRequest {
   maxTokens?: number;
   /** Temperature (0.0-1.0). Some models (Opus extended thinking) ignore this. */
   temperature?: number;
+  /**
+   * Thinking-token budget for Gemini 3 / thinking models. 0 disables thinking
+   * for a fast first token (grounded RAG needs little reasoning); omit to use the
+   * model default. Ignored by providers without a thinking mode.
+   */
+  thinkingBudget?: number;
   /** Tools available for the LLM to call */
   tools?: LLMToolDefinition[];
   /** Tool results from previous turn (for multi-turn tool conversations) */

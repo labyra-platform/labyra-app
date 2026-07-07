@@ -41,6 +41,38 @@ const TOP_N = 5;
 // Grounded RAG extraction needs little reasoning; disabling thinking cuts the
 // biggest chunk of time-to-first-token (Gemini 3 thinks by default). Tunable.
 const PAPER_QA_THINKING_BUDGET = 0;
+// Conversation memory — feed recent turns so follow-ups ("tại sao?", "giải thích
+// thêm") resolve against context. Kept short to bound prefill (protects TTFT).
+const HISTORY_TURNS = 6;
+const HISTORY_CONTENT_MAX = 1000;
+const FOLLOWUP_MAX_WORDS = 6;
+const FOLLOWUP_TOKENS = new Set([
+  'đó',
+  'nó',
+  'này',
+  'kia',
+  'ấy',
+  'vậy',
+  'thế',
+  'họ',
+  'chúng',
+  'thêm',
+  'nữa',
+  'tiếp',
+  'còn',
+  'sao',
+  'it',
+  'its',
+  'this',
+  'that',
+  'these',
+  'those',
+  'they',
+  'them',
+  'more',
+  'why',
+  'how'
+]);
 /** Below this rerank score we treat retrieval as "nothing relevant" and refuse
  *  to answer — Labyra's L1 cite-or-refuse rule. Tuned conservatively; if the
  *  best chunk in the paper barely matches the question, an answer will mostly
@@ -89,6 +121,44 @@ ${sourceBlocks}`;
 function buildUserPrompt(question: string, selectionText: string | undefined): string {
   if (!selectionText) return question;
   return `[Selected passage from the paper]\n${selectionText}\n\n[Question about this passage]\n${question}`;
+}
+
+/**
+ * Load the user's recent Q&A turns for this paper (oldest → newest) so follow-up
+ * questions have context. Best-effort: if the composite index (userId, createdAt)
+ * is missing, degrade to no history rather than failing the request.
+ */
+async function loadRecentTurns(
+  db: ReturnType<typeof getAdminFirestoreService>,
+  tenantId: string,
+  paperId: string,
+  userId: string,
+  limit: number
+): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
+  try {
+    const snap = await db
+      .collection(`tenants/${tenantId}/papers/${paperId}/qa`)
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
+    return snap.docs
+      .map((d) => d.data())
+      .filter(
+        (m) =>
+          (m.role === 'user' || m.role === 'assistant') &&
+          typeof m.content === 'string' &&
+          (m.content as string).trim() !== '' &&
+          m.noAnswer !== true
+      )
+      .toReversed()
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: (m.content as string).slice(0, HISTORY_CONTENT_MAX)
+      }));
+  } catch {
+    return [];
+  }
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -144,6 +214,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return jsonError(500, 'paper_fetch_failed');
   }
 
+  // ─── Load recent conversation turns (before persisting this one) ─
+  const history = await loadRecentTurns(db, tenantId, paperId, userId, HISTORY_TURNS);
+
   // ─── Persist the user turn upfront (in case the model call fails) ─
   const userMsgId = db.collection(`tenants/${tenantId}/papers/${paperId}/qa`).doc().id;
   const turnStarted = Date.now();
@@ -164,7 +237,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // ─── Retrieve (vector + BM25 + RRF + rerank, filtered to this paper) ─
   // Combining the search query with any selection text is intentional: when the
   // user asks "why?" about a highlighted passage, the passage IS the query.
-  const retrievalQuery = selectionText ? `${question}\n${selectionText}` : question;
+  // For follow-ups ("tại sao?", "giải thích thêm"), prepend the previous question
+  // so retrieval has the antecedent — cheaply, without an extra LLM rewrite call.
+  const words = question
+    .toLowerCase()
+    .split(/[\s,.!?;:]+/)
+    .filter(Boolean);
+  const isFollowUp =
+    history.length > 0 &&
+    (words.length <= FOLLOWUP_MAX_WORDS || words.some((w) => FOLLOWUP_TOKENS.has(w)));
+  const lastUserTurn = history.toReversed().find((t) => t.role === 'user');
+  const contextPrefix = isFollowUp && lastUserTurn ? `${lastUserTurn.content}\n` : '';
+  const retrievalQuery = `${contextPrefix}${selectionText ? `${question}\n${selectionText}` : question}`;
   // Intent classify only needs the question, so run it in parallel with retrieval
   // (it used to run serially after) — overlapping saves ~1s off first-token time.
   const tClassify = Date.now();
@@ -269,7 +353,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           temperature: 0.1, // Low — we want grounded paraphrase, not creativity.
           thinkingBudget: PAPER_QA_THINKING_BUDGET,
           system: [{ text: system, cache: true, cacheTtl: '1h' }],
-          messages: [{ role: 'user', content: userPrompt }]
+          messages: [...history, { role: 'user', content: userPrompt }]
         })) {
           if (event.type === 'text_delta') {
             if (firstTokenMs === 0) firstTokenMs = Date.now() - started;

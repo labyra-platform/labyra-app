@@ -136,27 +136,40 @@ async function loadRecentTurns(
   limit: number
 ): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
   try {
+    // Order by createdAt only (single-field, auto-indexed) and filter userId in
+    // memory — avoids requiring a composite (userId, createdAt) index. Over-fetch
+    // so the user's recent turns survive interleaving from other group members.
     const snap = await db
       .collection(`tenants/${tenantId}/papers/${paperId}/qa`)
-      .where('userId', '==', userId)
       .orderBy('createdAt', 'desc')
-      .limit(limit)
+      .limit(limit * 4)
       .get();
-    return snap.docs
+    const turns = snap.docs
       .map((d) => d.data())
       .filter(
         (m) =>
+          m.userId === userId &&
           (m.role === 'user' || m.role === 'assistant') &&
           typeof m.content === 'string' &&
           (m.content as string).trim() !== '' &&
           m.noAnswer !== true
       )
+      .slice(0, limit)
       .toReversed()
       .map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: (m.content as string).slice(0, HISTORY_CONTENT_MAX)
       }));
-  } catch {
+    console.warn(JSON.stringify({ event: 'history_loaded', paperId, turns: turns.length }));
+    return turns;
+  } catch (e) {
+    console.warn(
+      JSON.stringify({
+        event: 'history_load_failed',
+        paperId,
+        detail: e instanceof Error ? e.message.slice(0, 200) : String(e).slice(0, 200)
+      })
+    );
     return [];
   }
 }

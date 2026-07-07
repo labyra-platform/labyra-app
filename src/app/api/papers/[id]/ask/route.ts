@@ -174,6 +174,44 @@ async function loadRecentTurns(
   }
 }
 
+const LOCATOR_KINDS: { re: RegExp; labels: string[] }[] = [
+  {
+    re: /(phương\s*trình|công\s*thức|equation|\beq\b|\beqn\b)/i,
+    labels: ['Eq.', 'Equation', 'equation']
+  },
+  { re: /(hình(\s*vẽ)?|figure|\bfig\b)/i, labels: ['Fig.', 'Figure', 'figure'] },
+  { re: /(bảng|table)/i, labels: ['Table', 'table'] }
+];
+
+/** Extract the numbers a locator query targets, expanding ranges (11 đến 13 → 11,12,13). */
+function extractLocatorNumbers(q: string): number[] {
+  const range = /(\d+)\s*(?:-|–|—|đến|tới|to|through)\s*(\d+)/i.exec(q);
+  if (range) {
+    const a = Number(range[1]);
+    const b = Number(range[2]);
+    if (b >= a && b - a <= 20) return Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  }
+  return [...q.matchAll(/\b(\d{1,3})\b/g)].map((m) => Number(m[1])).slice(0, 8);
+}
+
+/** "giải thích phương trình 11 đến 13" retrieves poorly because it references
+ *  equation NUMBERS (locators) in Vietnamese while the paper writes "Eq. (11)" in
+ *  English. Expand with the cross-lingual + numbered forms so BM25 can match the
+ *  discussing chunk. Retrieval-side only — the deeper fix is indexing
+ *  equations/figures/tables as numbered units. */
+function expandLocatorQuery(q: string): { query: string; isLocator: boolean } {
+  const kind = LOCATOR_KINDS.find((k) => k.re.test(q));
+  if (!kind) return { query: q, isLocator: false };
+  const nums = extractLocatorNumbers(q);
+  if (nums.length === 0) return { query: q, isLocator: false };
+  const terms: string[] = [];
+  for (const n of nums) {
+    for (const label of kind.labels) terms.push(`${label} ${n}`, `${label} (${n})`);
+    terms.push(`(${n})`);
+  }
+  return { query: `${q} ${terms.join(' ')}`, isLocator: true };
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: paperId } = await params;
 
@@ -261,7 +299,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     (words.length <= FOLLOWUP_MAX_WORDS || words.some((w) => FOLLOWUP_TOKENS.has(w)));
   const lastUserTurn = history.toReversed().find((t) => t.role === 'user');
   const contextPrefix = isFollowUp && lastUserTurn ? `${lastUserTurn.content}\n` : '';
-  const retrievalQuery = `${contextPrefix}${selectionText ? `${question}\n${selectionText}` : question}`;
+  // Expand "phương trình 11 đến 13" / "hình 2" locators to their cross-lingual
+  // numbered forms so retrieval finds the chunk that discusses them.
+  const locator = expandLocatorQuery(question);
+  const baseQuery = selectionText ? `${locator.query}\n${selectionText}` : locator.query;
+  const retrievalQuery = `${contextPrefix}${baseQuery}`;
   // Intent classify only needs the question, so run it in parallel with retrieval
   // (it used to run serially after) — overlapping saves ~1s off first-token time.
   const tClassify = Date.now();
@@ -295,8 +337,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   // ─── Empty-retrieval lane: refuse without burning a model call ─
+  // Locator queries (equation/figure/table by number) get a lower bar — the
+  // element is in the paper even when its chunk scores low semantically.
   const topScore = hits[0]?.score ?? 0;
-  if (hits.length === 0 || topScore < EMPTY_RETRIEVAL_THRESHOLD) {
+  const emptyThreshold = locator.isLocator ? 0.15 : EMPTY_RETRIEVAL_THRESHOLD;
+  if (hits.length === 0 || topScore < emptyThreshold) {
     const noAnswer = 'Tôi không tìm thấy nội dung này trong paper.';
     const meta: AskStreamMeta = { citations: [], trustScore: topScore, noAnswer: true };
     const assistantMsgId = db.collection(`tenants/${tenantId}/papers/${paperId}/qa`).doc().id;

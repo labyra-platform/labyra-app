@@ -18,9 +18,11 @@ export type AiTier = 0 | 1 | 2 | 3 | 4 | 5;
 /** Single message in a chat thread */
 export interface GroundingDetails {
   unverifiedNumbers: number;
+  contradictedNumbers: number;
   unsourcedClaims: number;
   details: {
     numbers: Array<{ value: number; raw: string; context: string }>;
+    contradicted: Array<{ value: number; raw: string; context: string }>;
     claims: Array<{ sentence: string; reason: string; line: number }>;
   };
 }
@@ -177,9 +179,11 @@ export type ChatStreamEventV2 =
   | {
       type: 'grounding';
       unverifiedNumbers: number;
+      contradictedNumbers: number;
       unsourcedClaims: number;
       details: {
         numbers: Array<{ value: number; raw: string; context: string }>;
+        contradicted: Array<{ value: number; raw: string; context: string }>;
         claims: Array<{ sentence: string; reason: string; line: number }>;
       };
     }

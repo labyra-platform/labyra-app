@@ -1027,9 +1027,11 @@ export async function POST(request: Request) {
             send({
               type: 'grounding',
               unverifiedNumbers: grounding.unverifiedNumbers.length,
+              contradictedNumbers: grounding.contradictedNumbers.length,
               unsourcedClaims: grounding.unsourcedClaims.length,
               details: {
                 numbers: grounding.unverifiedNumbers.slice(0, 5),
+                contradicted: grounding.contradictedNumbers.slice(0, 5),
                 claims: grounding.unsourcedClaims.slice(0, 5)
               }
             });

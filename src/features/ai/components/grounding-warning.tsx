@@ -10,16 +10,19 @@ import type { NumberMatch, UnsourcedClaim } from '@/lib/ai/grounding';
 
 export interface GroundingDetails {
   unverifiedNumbers: number;
+  contradictedNumbers: number;
   unsourcedClaims: number;
   details: {
     numbers: NumberMatch[];
+    contradicted: NumberMatch[];
     claims: UnsourcedClaim[];
   };
 }
 
 export function GroundingWarning({ grounding }: { grounding: GroundingDetails }) {
   const [open, setOpen] = useState(false);
-  const total = grounding.unverifiedNumbers + grounding.unsourcedClaims;
+  const total =
+    grounding.unverifiedNumbers + grounding.contradictedNumbers + grounding.unsourcedClaims;
 
   if (total === 0) return null;
 
@@ -63,6 +66,25 @@ export function GroundingWarning({ grounding }: { grounding: GroundingDetails })
             </div>
 
             <div className='px-5 py-4 space-y-4'>
+              {grounding.details.contradicted?.length > 0 && (
+                <div>
+                  <h4 className='text-sm font-semibold mb-2 text-rose-700 dark:text-rose-400'>
+                    Số liệu mâu thuẫn nguồn ({grounding.contradictedNumbers})
+                  </h4>
+                  <p className='text-xs text-muted-foreground mb-2'>
+                    Giá trị có trong nguồn nhưng với ĐƠN VỊ khác — AI có thể nêu sai đại lượng.
+                  </p>
+                  <ul className='space-y-1.5'>
+                    {grounding.details.contradicted.map((n, i) => (
+                      <li key={i} className='text-xs bg-muted/50 rounded px-2 py-1.5'>
+                        <code className='font-mono text-rose-700 dark:text-rose-400'>{n.raw}</code>
+                        <span className='text-muted-foreground ml-2'>...{n.context}...</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {grounding.details.numbers.length > 0 && (
                 <div>
                   <h4 className='text-sm font-semibold mb-2 text-amber-700 dark:text-amber-400'>

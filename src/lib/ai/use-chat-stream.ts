@@ -245,6 +245,7 @@ export function useChatStream(): UseChatStreamResult {
                         ...m,
                         grounding: {
                           unverifiedNumbers: event.unverifiedNumbers,
+                          contradictedNumbers: event.contradictedNumbers,
                           unsourcedClaims: event.unsourcedClaims,
                           details: event.details
                         }

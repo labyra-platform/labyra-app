@@ -71,6 +71,59 @@ export function normalizeNumber(n: number): string {
   return n.toFixed(2);
 }
 
+/** Normalise the unit part of a raw token ("2.5 eV" → "ev", "450 °C" → "°c"). */
+function extractUnit(raw: string): string {
+  return raw
+    .replace(/^-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?/, '')
+    .replace(/\s+/g, '')
+    .replace(/[µμ]/g, 'u')
+    .replace(/⁻¹/g, '-1')
+    .toLowerCase();
+}
+
+/**
+ * Map each numeric value seen in the chunks to the set of units it appears with.
+ * Lets us catch "contradicted" numbers: the value IS in the sources, but only
+ * with a DIFFERENT unit (model likely mis-stated it — the Librarian analog of the
+ * Ask-AI Tier-1 contradicted status, without needing per-citation ref alignment).
+ */
+export function buildNumberUnitMap(chunkTexts: string[]): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  for (const text of chunkTexts) {
+    for (const n of extractNumbers(text)) {
+      const unit = extractUnit(n.raw);
+      if (!unit) continue;
+      const key = normalizeNumber(n.value);
+      const set = map.get(key) ?? new Set<string>();
+      set.add(unit);
+      map.set(key, set);
+    }
+  }
+  return map;
+}
+
+/**
+ * Numbers whose VALUE appears in the sources but with a DIFFERENT unit than the
+ * answer states — a stronger signal than merely unsourced (the model got the
+ * quantity wrong, not just uncited). Disjoint from findUnverifiedNumbers: those
+ * are values absent from the corpus; these are values present-but-wrong-unit.
+ */
+export function findContradictedNumbers(
+  responseText: string,
+  unitMap: Map<string, Set<string>>
+): NumberMatch[] {
+  const out: NumberMatch[] = [];
+  for (const n of extractNumbers(responseText)) {
+    const unit = extractUnit(n.raw);
+    if (!unit) continue;
+    const units = unitMap.get(normalizeNumber(n.value));
+    if (units && units.size > 0 && !units.has(unit)) {
+      out.push(n);
+    }
+  }
+  return out;
+}
+
 /**
  * Check whether AI response contains numbers not in whitelist.
  */

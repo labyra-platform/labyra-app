@@ -20,6 +20,11 @@ const DEFAULT_TOP_N = 5;
 // ADR-033 T-4: BM25 fail-soft budget. The scan-all-chunks path is the slow one
 // at scale; beyond this, fall back to vector-only instead of timing out search.
 const BM25_TIMEOUT_MS = 5000;
+// The tenant-wide BM25 corpus fit is 60s+ on a cold serverless instance (single
+// paper is <1s). Bound the LOAD so library-wide search falls back to vector-only
+// instead of blocking past the caller's timeout. Warm/paper-scoped loads never
+// hit this.
+const BM25_LOAD_TIMEOUT_MS = 8000;
 
 // Sections to exclude from retrieval (boilerplate, citations, low-info)
 // References dense with keywords cause BM25 to surface them in top results.
@@ -104,7 +109,19 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
   const singlePaperId =
     typeof req.filter?.paperId === 'string' ? (req.filter.paperId as string) : undefined;
   const tBm25 = Date.now();
-  const bm25Promise = getBM25ForTenant(req.tenantId, singlePaperId).then((e) => {
+  let bm25LoadTimer: ReturnType<typeof setTimeout> | undefined;
+  const bm25Promise = Promise.race([
+    getBM25ForTenant(req.tenantId, singlePaperId).then((e) => {
+      if (bm25LoadTimer) clearTimeout(bm25LoadTimer);
+      return e;
+    }),
+    new Promise<null>((resolve) => {
+      bm25LoadTimer = setTimeout(() => {
+        console.warn(JSON.stringify({ event: 'bm25_load_timeout', tenantId: req.tenantId }));
+        resolve(null);
+      }, BM25_LOAD_TIMEOUT_MS);
+    })
+  ]).then((e) => {
     _marks.bm25_load = Date.now() - tBm25;
     return e;
   });

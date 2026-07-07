@@ -67,3 +67,30 @@ export function cleanExcerpt(s: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/**
+ * Safety net for when the model forgets to wrap math in $…$ (the prompt asks it
+ * to, but it occasionally emits bare LaTeX like "(\alpha h\nu)^{1/2}" or
+ * "\(E_g\)", which react-markdown then shows raw). Only touches spans that are
+ * unambiguously LaTeX — a backslash-command or a \(…\)/\[…\] delimiter — so
+ * ordinary parenthesised prose is never wrapped. Runs BEFORE unwrapViMath.
+ */
+export function wrapBareLatex(md: string): string {
+  const spans: string[] = [];
+  const S = '\u0001';
+  // Protect existing math so we don't double-wrap.
+  let s = md
+    .replace(/\$\$[\s\S]+?\$\$/g, (m) => `${S}${spans.push(m) - 1}${S}`)
+    .replace(/(?<![\\$])\$(?!\$)[^$\n]+?\$(?!\$)/g, (m) => `${S}${spans.push(m) - 1}${S}`);
+  // Explicit LaTeX delimiters → dollar form (remark-math only understands $).
+  s = s
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_, x: string) => `$$${x}$$`)
+    .replace(/\\\(([\s\S]+?)\\\)/g, (_, x: string) => `$${x}$`);
+  // A parenthesised expression containing a LaTeX command, optionally with a
+  // trailing power/subscript: (\alpha h\nu)^{1/2}.
+  s = s.replace(
+    /\([^$()\n]*\\[a-zA-Z]+[^$()\n]*\)(?:\s*[\^_]\{[^}\n]*\}|\s*[\^_][A-Za-z0-9]+)?/g,
+    (m) => `$${m}$`
+  );
+  return s.replace(new RegExp(`${S}(\\d+)${S}`, 'g'), (_, i: string) => spans[Number(i)] ?? '');
+}

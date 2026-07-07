@@ -28,7 +28,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { unwrapViMath } from '../lib/sanitize-vi-math';
+import { unwrapViMath, wrapBareLatex } from '../lib/sanitize-vi-math';
 import { rehypeNumericTableCols } from '../lib/rehype-numeric-table-cols';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -216,7 +216,7 @@ function MessageBubbleInner({
   // R240: strip math delimiters the model wrongly wrapped around Vietnamese prose
   // before react-markdown renders it. Used for both rendering and the copy action.
   const renderContent = streaming ? throttled : (message.content ?? '');
-  const safeContent = useMemo(() => unwrapViMath(renderContent), [renderContent]);
+  const safeContent = useMemo(() => unwrapViMath(wrapBareLatex(renderContent)), [renderContent]);
 
   // Number citations by order of FIRST appearance in the answer (Vancouver style),
   // not by retrieval rank. Maps the model's original ref → display number. Based on

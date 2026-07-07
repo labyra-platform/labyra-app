@@ -91,7 +91,24 @@ function buildSystemPrompt(args: {
   paperTitle: string;
   hasSelection: boolean;
   hits: SearchHit[];
+  summaryMode?: boolean;
 }): string {
+  if (args.summaryMode) {
+    const fullText = args.hits.map((h) => h.text).join('\n\n');
+    return `You are Labyra's reading assistant for a single scientific paper. Below is the FULL TEXT of the paper "${args.paperTitle}" (assembled from its extracted chunks in order). Produce a comprehensive, well-structured summary.
+
+Rules (every one is mandatory):
+1. GROUNDED. Summarize ONLY what the paper states. Do NOT add outside facts, background, or comparisons the paper itself does not make. If the paper doesn't cover something, don't mention it.
+2. COVER THE WHOLE PAPER. You have the entire text, so do not stop at the abstract — cover the objective, materials/methods, the concrete key results (report the actual values, samples, conditions the paper gives), and the conclusions.
+3. STRUCTURE. Organize with **bold** section labels and "- " bullet lists (e.g. **Mục tiêu**, **Phương pháp**, **Kết quả chính**, **Kết luận**). Keep it scannable.
+4. KEEP HEDGES. Preserve the paper's uncertainty ("may", "suggests" → "có thể", "gợi ý"). Never upgrade certainty or overstate findings.
+5. FORMATTING & FIDELITY. Standard Markdown. Write mathematics as LaTeX delimited by $…$ or $$…$$. Reproduce chemical formulae, units, and symbols verbatim (cm⁻¹, WO₃, °C).
+6. ANSWER IN VIETNAMESE by default unless the user clearly writes in English (then mirror it).
+
+FULL PAPER TEXT:
+${fullText}`;
+  }
+
   const sourceBlocks = args.hits
     .map(
       (h, i) =>
@@ -123,6 +140,18 @@ ${sourceBlocks}`;
 function buildUserPrompt(question: string, selectionText: string | undefined): string {
   if (!selectionText) return question;
   return `[Selected passage from the paper]\n${selectionText}\n\n[Question about this passage]\n${question}`;
+}
+
+// "tóm tắt bài này" / "summarize" is a GLOBAL operation — RAG's top-K retrieval
+// can't serve it (5 chunks ≠ the whole paper). Detect it and switch to full-doc
+// mode: load the entire paper into context instead of retrieving. ~15-20k tokens
+// for a typical paper fits the model's window.
+const SUMMARY_MARKERS =
+  /(tóm\s*tắt|tóm\s*lược|tổng\s*quan|tổng\s*hợp lại|summary|summari[sz]e|overview|nội\s*dung\s*chính|ý\s*chính|main\s*(finding|point|idea|contribution)|key\s*(finding|point|takeaway)|bài\s*(báo|này)\s*(nói|viết|về|trình\s*bày)\s*(gì|về)|what\s*(is|does|are)\s*(this|the)\s*paper)/i;
+const SUMMARY_CHAR_CAP = 60000;
+
+function isSummaryQuery(q: string): boolean {
+  return SUMMARY_MARKERS.test(q);
 }
 
 /**
@@ -345,25 +374,57 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       classifyMs = Date.now() - tClassify;
       return t;
     });
+  const summaryMode = !selectionText && isSummaryQuery(question);
   let hits: SearchHit[] = [];
   let retrievalMs = 0;
   const tRetrieve = Date.now();
-  try {
-    const res = await searchPapers({
-      tenantId,
-      query: retrievalQuery,
-      filter: { paperId },
-      vectorTopK: VECTOR_TOP_K,
-      topN: TOP_N,
-      viewerGroupId,
-      isPrivileged
-    });
-    hits = res.hits;
-    retrievalMs = Date.now() - tRetrieve;
-  } catch (e) {
-    return jsonError(502, 'retrieval_failed', {
-      detail: e instanceof Error ? e.message.slice(0, 300) : String(e).slice(0, 300)
-    });
+  if (summaryMode) {
+    // Full-doc mode: load the whole paper (chunks in order) rather than
+    // retrieving a top-K that could never represent the whole document.
+    try {
+      const corpus = await getBM25Corpus(tenantId, paperId);
+      let acc = 0;
+      for (const e of corpus.toSorted((a, b) => a.chunk.chunkIdx - b.chunk.chunkIdx)) {
+        if (acc + e.chunk.text.length > SUMMARY_CHAR_CAP) break;
+        acc += e.chunk.text.length;
+        hits.push({
+          paperId: e.chunk.paperId,
+          chunkIdx: e.chunk.chunkIdx,
+          text: e.chunk.text,
+          pages: e.chunk.pages,
+          section: e.chunk.section,
+          paperTitle,
+          paperAuthors: [],
+          paperYear: 0,
+          paperDoi: '',
+          score: 1,
+          vectorScore: 0
+        });
+      }
+      retrievalMs = Date.now() - tRetrieve;
+    } catch (e) {
+      return jsonError(502, 'retrieval_failed', {
+        detail: e instanceof Error ? e.message.slice(0, 300) : String(e).slice(0, 300)
+      });
+    }
+  } else {
+    try {
+      const res = await searchPapers({
+        tenantId,
+        query: retrievalQuery,
+        filter: { paperId },
+        vectorTopK: VECTOR_TOP_K,
+        topN: TOP_N,
+        viewerGroupId,
+        isPrivileged
+      });
+      hits = res.hits;
+      retrievalMs = Date.now() - tRetrieve;
+    } catch (e) {
+      return jsonError(502, 'retrieval_failed', {
+        detail: e instanceof Error ? e.message.slice(0, 300) : String(e).slice(0, 300)
+      });
+    }
   }
 
   // ─── Locator lookup: scan the paper's chunks directly for the exact numbered
@@ -371,7 +432,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // by semantic similarity and can push the target chunk out of top-K even when
   // it exists; this deterministic pass fixes that. The corpus is already cached
   // from the BM25 leg above, so this is ~free.
-  if (locator.isLocator && locator.kind) {
+  if (!summaryMode && locator.isLocator && locator.kind) {
     try {
       const corpus = await getBM25Corpus(tenantId, paperId);
       const re = locatorPattern(locator.kind, locator.numbers);
@@ -408,8 +469,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // element is in the paper even when its chunk scores low semantically.
   const topScore = hits[0]?.score ?? 0;
   const emptyThreshold = locator.isLocator ? 0.15 : EMPTY_RETRIEVAL_THRESHOLD;
-  if (hits.length === 0 || topScore < emptyThreshold) {
-    const noAnswer = 'Tôi không tìm thấy nội dung này trong paper.';
+  // Summary mode is grounded in the whole paper, so the retrieval-score gate
+  // doesn't apply — but if the paper has no chunks yet, say so plainly.
+  const noContent = summaryMode
+    ? hits.length === 0
+    : hits.length === 0 || topScore < emptyThreshold;
+  if (noContent) {
+    const noAnswer = summaryMode
+      ? 'Paper này chưa xử lý xong nội dung, chưa thể tóm tắt. Thử lại sau giây lát.'
+      : 'Tôi không tìm thấy nội dung này trong paper.';
     const meta: AskStreamMeta = { citations: [], trustScore: topScore, noAnswer: true };
     const assistantMsgId = db.collection(`tenants/${tenantId}/papers/${paperId}/qa`).doc().id;
     await db
@@ -447,18 +515,29 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!guard.allowed) return jsonError(402, 'cost_guard_blocked', { reason: guard.reason });
 
   // ─── Build prompt + citations payload ─────────────────────────
-  const system = buildSystemPrompt({ paperTitle, hasSelection: Boolean(selectionText), hits });
+  const system = buildSystemPrompt({
+    paperTitle,
+    hasSelection: Boolean(selectionText),
+    hits,
+    summaryMode
+  });
   const userPrompt = buildUserPrompt(question, selectionText);
-  const citations: AskCitation[] = hits.map((h, i) => ({
-    idx: i + 1,
-    chunkId: `${h.paperId}-${h.chunkIdx}`,
-    chunkIdx: h.chunkIdx,
-    page: h.pages[0] ?? 1,
-    section: h.section,
-    snippet: h.text.slice(0, 240),
-    score: h.score
-  }));
-  const trustScore = citations.reduce((s, c) => s + c.score, 0) / Math.max(citations.length, 1);
+  // A whole-paper summary is grounded in the entire document; per-chunk citations
+  // aren't meaningful (and there could be dozens), and trust is inherently high.
+  const citations: AskCitation[] = summaryMode
+    ? []
+    : hits.map((h, i) => ({
+        idx: i + 1,
+        chunkId: `${h.paperId}-${h.chunkIdx}`,
+        chunkIdx: h.chunkIdx,
+        page: h.pages[0] ?? 1,
+        section: h.section,
+        snippet: h.text.slice(0, 240),
+        score: h.score
+      }));
+  const trustScore = summaryMode
+    ? 1
+    : citations.reduce((s, c) => s + c.score, 0) / Math.max(citations.length, 1);
 
   // ─── Stream the grounded answer ───────────────────────────────
   const { provider, config } = selectProvider(tier);

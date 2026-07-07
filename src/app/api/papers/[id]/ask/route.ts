@@ -21,6 +21,7 @@ import { classifyIntent } from '@/lib/ai/dispatcher/intent-classifier';
 import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
 import { selectProvider } from '@/lib/ai/providers';
 import { searchPapers } from '@/lib/ai/rag/search';
+import { getBM25Corpus } from '@/lib/ai/rag/sparse/bm25-manager';
 import type { SearchHit } from '@/lib/ai/rag/search-types';
 import { getGroupIdFromToken, getRoleFromToken, getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
@@ -174,13 +175,22 @@ async function loadRecentTurns(
   }
 }
 
-const LOCATOR_KINDS: { re: RegExp; labels: string[] }[] = [
+interface LocatorKind {
+  re: RegExp;
+  labels: string[];
+  /** Equations are numbered "(11)"; figures/tables are not, so only equations
+   *  match a bare-parenthesised number. */
+  bareParens: boolean;
+}
+
+const LOCATOR_KINDS: LocatorKind[] = [
   {
     re: /(phương\s*trình|công\s*thức|equation|\beq\b|\beqn\b)/i,
-    labels: ['Eq.', 'Equation', 'equation']
+    labels: ['Eq.', 'Equation', 'equation'],
+    bareParens: true
   },
-  { re: /(hình(\s*vẽ)?|figure|\bfig\b)/i, labels: ['Fig.', 'Figure', 'figure'] },
-  { re: /(bảng|table)/i, labels: ['Table', 'table'] }
+  { re: /(hình(\s*vẽ)?|figure|\bfig\b)/i, labels: ['Fig.', 'Figure', 'figure'], bareParens: false },
+  { re: /(bảng|table)/i, labels: ['Table', 'table'], bareParens: false }
 ];
 
 /** Extract the numbers a locator query targets, expanding ranges (11 đến 13 → 11,12,13). */
@@ -197,19 +207,38 @@ function extractLocatorNumbers(q: string): number[] {
 /** "giải thích phương trình 11 đến 13" retrieves poorly because it references
  *  equation NUMBERS (locators) in Vietnamese while the paper writes "Eq. (11)" in
  *  English. Expand with the cross-lingual + numbered forms so BM25 can match the
- *  discussing chunk. Retrieval-side only — the deeper fix is indexing
- *  equations/figures/tables as numbered units. */
-function expandLocatorQuery(q: string): { query: string; isLocator: boolean } {
-  const kind = LOCATOR_KINDS.find((k) => k.re.test(q));
-  if (!kind) return { query: q, isLocator: false };
-  const nums = extractLocatorNumbers(q);
-  if (nums.length === 0) return { query: q, isLocator: false };
+ *  discussing chunk, and expose kind+numbers for the deterministic chunk lookup. */
+function expandLocatorQuery(q: string): {
+  query: string;
+  isLocator: boolean;
+  kind: LocatorKind | null;
+  numbers: number[];
+} {
+  const kind = LOCATOR_KINDS.find((k) => k.re.test(q)) ?? null;
+  if (!kind) return { query: q, isLocator: false, kind: null, numbers: [] };
+  const numbers = extractLocatorNumbers(q);
+  if (numbers.length === 0) return { query: q, isLocator: false, kind: null, numbers: [] };
   const terms: string[] = [];
-  for (const n of nums) {
+  for (const n of numbers) {
     for (const label of kind.labels) terms.push(`${label} ${n}`, `${label} (${n})`);
-    terms.push(`(${n})`);
+    if (kind.bareParens) terms.push(`(${n})`);
   }
-  return { query: `${q} ${terms.join(' ')}`, isLocator: true };
+  return { query: `${q} ${terms.join(' ')}`, isLocator: true, kind, numbers };
+}
+
+/** Exact-match regex for a locator: "Eq. 11" / "Eq. (11)" / "Equation 11" and,
+ *  for equations, the bare "(11)" numbering convention. Scans the paper's chunks
+ *  directly — deterministic lookup, not fuzzy retrieval. */
+function locatorPattern(kind: LocatorKind, numbers: number[]): RegExp {
+  const labelPart = kind.labels
+    .map((l) => l.replace(/\./g, '\\.').replace(/\s+/g, '\\s*'))
+    .join('|');
+  const parts = numbers.map((n) => {
+    const forms = [`(?:${labelPart})\\s*\\(?\\s*${n}\\b`];
+    if (kind.bareParens) forms.push(`\\(\\s*${n}\\s*\\)`);
+    return `(?:${forms.join('|')})`;
+  });
+  return new RegExp(parts.join('|'), 'i');
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -334,6 +363,43 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return jsonError(502, 'retrieval_failed', {
       detail: e instanceof Error ? e.message.slice(0, 300) : String(e).slice(0, 300)
     });
+  }
+
+  // ─── Locator lookup: scan the paper's chunks directly for the exact numbered
+  // element (Eq. (11), Fig. 2, …) and prepend the matches. Fuzzy retrieval ranks
+  // by semantic similarity and can push the target chunk out of top-K even when
+  // it exists; this deterministic pass fixes that. The corpus is already cached
+  // from the BM25 leg above, so this is ~free.
+  if (locator.isLocator && locator.kind) {
+    try {
+      const corpus = await getBM25Corpus(tenantId, paperId);
+      const re = locatorPattern(locator.kind, locator.numbers);
+      const matched: SearchHit[] = corpus
+        .filter((e) => re.test(e.chunk.text))
+        .slice(0, 4)
+        .map((e) => ({
+          paperId: e.chunk.paperId,
+          chunkIdx: e.chunk.chunkIdx,
+          text: e.chunk.text,
+          pages: e.chunk.pages,
+          section: e.chunk.section,
+          paperTitle,
+          paperAuthors: [],
+          paperYear: 0,
+          paperDoi: '',
+          score: 0.9,
+          vectorScore: 0
+        }));
+      if (matched.length > 0) {
+        const seen = new Set(matched.map((h) => h.chunkIdx));
+        hits = [...matched, ...hits.filter((h) => !seen.has(h.chunkIdx))].slice(
+          0,
+          TOP_N + matched.length
+        );
+      }
+    } catch {
+      // Best-effort — fall back to the fuzzy retrieval hits.
+    }
   }
 
   // ─── Empty-retrieval lane: refuse without burning a model call ─

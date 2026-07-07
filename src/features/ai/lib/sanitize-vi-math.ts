@@ -49,3 +49,21 @@ export function unwrapViMath(md: string): string {
 
   return out;
 }
+
+/**
+ * Clean a raw source-chunk excerpt for a readable preview. OCR leaves LaTeX
+ * ({WO}_3, $E_g$) and HTML (<sup>[27]</sup>) in the chunk text; rendered as
+ * math it collapses whitespace and shows raw markup. Strip it all down to
+ * plain, space-preserving text — a source preview needs to be legible, not
+ * typeset (the full paper is one click away).
+ */
+export function cleanExcerpt(s: string): string {
+  return s
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\$\$?/g, '')
+    .replace(/\\(?:text|mathrm|mathbf|mathit)\{([^}]*)\}/g, '$1')
+    .replace(/\\[a-zA-Z]+/g, ' ')
+    .replace(/[{}]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}

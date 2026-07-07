@@ -7,12 +7,7 @@ import { IconExternalLink, IconFileText } from '@tabler/icons-react';
  * @phase R160-ai-5d-3b · R256 shadcn Dialog
  */
 import { useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import rehypeKatex from 'rehype-katex';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import { unwrapViMath } from '../lib/sanitize-vi-math';
-import 'katex/dist/katex.min.css';
+import { cleanExcerpt } from '../lib/sanitize-vi-math';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { SourceHit } from './sources-panel';
 
@@ -97,14 +92,7 @@ export function CitationModal({ source, displayRef, onClose }: CitationModalProp
                   Relevance {s.score != null ? `${(s.score * 100).toFixed(0)}%` : '—'}
                 </span>
               </div>
-              <div className='lb-md text-sm leading-relaxed'>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
-                >
-                  {unwrapViMath(s.excerpt)}
-                </ReactMarkdown>
-              </div>
+              <div className='lb-md text-sm leading-relaxed'>{cleanExcerpt(s.excerpt)}</div>
             </div>
 
             {/* Footer with DOI link */}

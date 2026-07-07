@@ -7,6 +7,7 @@ import { IconChevronDown, IconChevronRight, IconFileText } from '@tabler/icons-r
  */
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { cleanExcerpt } from '../lib/sanitize-vi-math';
 
 export interface SourceHit {
   ref: number;
@@ -85,7 +86,7 @@ export function SourcesPanel({
                         .join(' · ')}
                     </div>
                     <div className='mt-2 text-sm text-muted-foreground line-clamp-3 leading-relaxed'>
-                      {s.excerpt}
+                      {cleanExcerpt(s.excerpt)}
                     </div>
                     {s.paperDoi && (
                       <a

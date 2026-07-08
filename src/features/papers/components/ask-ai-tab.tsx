@@ -23,6 +23,7 @@ import {
   IconPlayerStopFilled,
   IconPlus,
   IconSparkles,
+  IconTelescope,
   IconTrash
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -152,6 +153,7 @@ export function AskAiTab({
   const [messages, setMessages] = useState<AskMessage[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [researchMode, setResearchMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -240,7 +242,7 @@ export function AskAiTab({
     async (override?: string) => {
       const question = (override ?? input).trim();
       if (!question || busy) return;
-      const selectionText = override === undefined ? pinnedSelection : undefined;
+      const selectionText = override !== undefined || researchMode ? undefined : pinnedSelection;
       if (override === undefined) setInput('');
       setError(null);
       setBusy(true);
@@ -267,10 +269,10 @@ export function AskAiTab({
         const user = getFirebaseAuth().currentUser;
         if (!user) throw new Error('Not signed in');
         const token = await user.getIdToken();
-        const res = await fetch(`/api/papers/${paperId}/ask`, {
+        const res = await fetch(`/api/papers/${paperId}/${researchMode ? 'research' : 'ask'}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ question, selectionText }),
+          body: JSON.stringify(researchMode ? { question } : { question, selectionText }),
           signal: controller.signal
         });
         if (!res.ok) {
@@ -339,7 +341,7 @@ export function AskAiTab({
         inputRef.current?.focus();
       }
     },
-    [busy, input, paperId, pinnedSelection, onClearSelection]
+    [busy, input, paperId, pinnedSelection, onClearSelection, researchMode]
   );
 
   const stop = useCallback(() => {
@@ -439,12 +441,35 @@ export function AskAiTab({
           )}
         >
           <div className='flex items-end gap-1.5 p-1.5'>
+            <button
+              type='button'
+              onClick={() => setResearchMode((v) => !v)}
+              disabled={busy}
+              aria-pressed={researchMode}
+              title={
+                researchMode
+                  ? 'Nghiên cứu sâu: BẬT — phân rã câu hỏi thành nhiều khía cạnh rồi tổng hợp có cấu trúc'
+                  : 'Nghiên cứu sâu: phân rã câu hỏi, truy hồi từng khía cạnh, tổng hợp báo cáo'
+              }
+              className={cn(
+                'flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors disabled:opacity-50',
+                researchMode
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              <IconTelescope className='size-4' />
+            </button>
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKey}
-              placeholder='Hãy hỏi tôi bất cứ điều gì về paper này…'
+              placeholder={
+                researchMode
+                  ? 'Nghiên cứu sâu về paper này…'
+                  : 'Hãy hỏi tôi bất cứ điều gì về paper này…'
+              }
               aria-label='Câu hỏi cho AI'
               rows={1}
               disabled={busy}

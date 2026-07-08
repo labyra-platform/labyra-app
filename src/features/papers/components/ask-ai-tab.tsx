@@ -21,6 +21,7 @@ import {
   IconChevronRight,
   IconCopy,
   IconPlayerStopFilled,
+  IconPlus,
   IconSparkles,
   IconTrash
 } from '@tabler/icons-react';
@@ -33,7 +34,9 @@ import {
   ASK_META_SENTINEL,
   type AskCitation,
   type AskMessage,
-  type AskStreamMeta
+  type AskStreamMeta,
+  splitFollowups,
+  stripFollowupArtifact
 } from '@/features/papers/ask/types';
 
 /**
@@ -233,105 +236,111 @@ export function AskAiTab({
     [onJumpToPage]
   );
 
-  const send = useCallback(async () => {
-    const question = input.trim();
-    if (!question || busy) return;
-    const selectionText = pinnedSelection;
-    setInput('');
-    setError(null);
-    setBusy(true);
-    const controller = new AbortController();
-    abortRef.current = controller;
+  const send = useCallback(
+    async (override?: string) => {
+      const question = (override ?? input).trim();
+      if (!question || busy) return;
+      const selectionText = override === undefined ? pinnedSelection : undefined;
+      if (override === undefined) setInput('');
+      setError(null);
+      setBusy(true);
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    const userMsg: AskMessage = {
-      id: `u-${Date.now()}`,
-      role: 'user',
-      content: question,
-      selectionText,
-      createdAt: Date.now()
-    };
-    const assistantId = `a-${Date.now()}`;
-    setMessages((prev) => [
-      ...prev,
-      userMsg,
-      { id: assistantId, role: 'assistant', content: '', createdAt: Date.now() }
-    ]);
-    if (selectionText) onClearSelection?.();
+      const userMsg: AskMessage = {
+        id: `u-${Date.now()}`,
+        role: 'user',
+        content: question,
+        selectionText,
+        createdAt: Date.now()
+      };
+      const assistantId = `a-${Date.now()}`;
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        { id: assistantId, role: 'assistant', content: '', createdAt: Date.now() }
+      ]);
+      if (selectionText) onClearSelection?.();
 
-    try {
-      const { getFirebaseAuth } = await import('@/lib/firebase/client');
-      const user = getFirebaseAuth().currentUser;
-      if (!user) throw new Error('Not signed in');
-      const token = await user.getIdToken();
-      const res = await fetch(`/api/papers/${paperId}/ask`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ question, selectionText }),
-        signal: controller.signal
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const code = (data.error as string) ?? 'ask_failed';
-        throw new Error(data.detail ? `${code}: ${data.detail}` : code);
-      }
-
-      // Stream the answer; the tail of the body is a meta frame with citations.
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error('ask_failed');
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let answerSoFar = '';
-      let meta: AskStreamMeta | null = null;
-
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const sentinelAt = buffer.indexOf(ASK_META_SENTINEL);
-        if (sentinelAt === -1) {
-          answerSoFar = buffer;
-        } else {
-          answerSoFar = buffer.slice(0, sentinelAt);
-          const metaJson = buffer.slice(sentinelAt + ASK_META_SENTINEL.length);
-          try {
-            meta = JSON.parse(metaJson) as AskStreamMeta;
-          } catch {
-            meta = null;
-          }
+      try {
+        const { getFirebaseAuth } = await import('@/lib/firebase/client');
+        const user = getFirebaseAuth().currentUser;
+        if (!user) throw new Error('Not signed in');
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/papers/${paperId}/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ question, selectionText }),
+          signal: controller.signal
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const code = (data.error as string) ?? 'ask_failed';
+          throw new Error(data.detail ? `${code}: ${data.detail}` : code);
         }
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId ? { ...m, content: answerSoFar.trim() } : m))
-        );
+
+        // Stream the answer; the tail of the body is a meta frame with citations.
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error('ask_failed');
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let answerSoFar = '';
+        let meta: AskStreamMeta | null = null;
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const sentinelAt = buffer.indexOf(ASK_META_SENTINEL);
+          if (sentinelAt === -1) {
+            answerSoFar = buffer;
+          } else {
+            answerSoFar = buffer.slice(0, sentinelAt);
+            const metaJson = buffer.slice(sentinelAt + ASK_META_SENTINEL.length);
+            try {
+              meta = JSON.parse(metaJson) as AskStreamMeta;
+            } catch {
+              meta = null;
+            }
+          }
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: answerSoFar.trim() } : m))
+          );
+        }
+        if (meta) {
+          const { answer, questions } = splitFollowups(answerSoFar);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    content: answer.trim(),
+                    citations: meta.citations,
+                    trustScore: meta.trustScore,
+                    verification: meta.verification,
+                    noAnswer: meta.noAnswer,
+                    suggestedQuestions: questions.length > 0 ? questions : undefined
+                  }
+                : m
+            )
+          );
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          // User stopped generation — keep whatever streamed so far, no error.
+        } else {
+          const msg = err instanceof Error ? err.message : 'ask_failed';
+          setError(msg);
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        }
+      } finally {
+        abortRef.current = null;
+        setBusy(false);
+        inputRef.current?.focus();
       }
-      if (meta) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? {
-                  ...m,
-                  citations: meta.citations,
-                  trustScore: meta.trustScore,
-                  verification: meta.verification,
-                  noAnswer: meta.noAnswer
-                }
-              : m
-          )
-        );
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        // User stopped generation — keep whatever streamed so far, no error.
-      } else {
-        const msg = err instanceof Error ? err.message : 'ask_failed';
-        setError(msg);
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
-      }
-    } finally {
-      abortRef.current = null;
-      setBusy(false);
-      inputRef.current?.focus();
-    }
-  }, [busy, input, paperId, pinnedSelection, onClearSelection]);
+    },
+    [busy, input, paperId, pinnedSelection, onClearSelection]
+  );
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -368,7 +377,7 @@ export function AskAiTab({
       {/* Conversation */}
       <div ref={scrollerRef} className='min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-4 text-sm'>
         {isEmpty && <EmptyState />}
-        {messages.map((m) =>
+        {messages.map((m, i) =>
           m.role === 'user' ? (
             <UserBubble key={m.id} content={m.content} selectionText={m.selectionText} />
           ) : (
@@ -377,6 +386,8 @@ export function AskAiTab({
               message={m}
               onAnswerClick={handleAnswerClick(m)}
               onJumpToPage={onJumpToPage}
+              onAsk={send}
+              isLast={i === messages.length - 1}
             />
           )
         )}
@@ -441,7 +452,7 @@ export function AskAiTab({
             />
             <button
               type='button'
-              onClick={busy ? stop : send}
+              onClick={() => (busy ? stop() : void send())}
               disabled={busy ? false : !input.trim()}
               aria-label={busy ? 'Dừng tạo câu trả lời' : 'Gửi câu hỏi'}
               title={busy ? 'Dừng' : 'Gửi (Enter)'}
@@ -505,14 +516,22 @@ function UserBubble({ content, selectionText }: { content: string; selectionText
 function AssistantBubble({
   message,
   onAnswerClick,
-  onJumpToPage
+  onJumpToPage,
+  onAsk,
+  isLast
 }: {
   message: AskMessage;
   onAnswerClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onJumpToPage: (page: number, y?: number, highlight?: string) => void;
+  onAsk: (question: string) => void;
+  isLast: boolean;
 }) {
   const html = useMemo(
-    () => renderPapersAnswerHtml(message.content, { mathAs: 'html', citeButtons: true }),
+    () =>
+      renderPapersAnswerHtml(stripFollowupArtifact(message.content), {
+        mathAs: 'html',
+        citeButtons: true
+      }),
     [message.content]
   );
   const [copied, setCopied] = useState(false);
@@ -629,6 +648,21 @@ function AssistantBubble({
       </div>
       {message.citations && message.citations.length > 0 && (
         <CitationList citations={message.citations} onJumpToPage={onJumpToPage} />
+      )}
+      {isLast && message.suggestedQuestions && message.suggestedQuestions.length > 0 && (
+        <div className='mt-2 flex flex-col gap-1'>
+          {message.suggestedQuestions.map((q, i) => (
+            <button
+              key={i}
+              type='button'
+              onClick={() => onAsk(q)}
+              className='flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground'
+            >
+              <IconPlus size={13} className='shrink-0 text-primary/60' />
+              <span>{q}</span>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

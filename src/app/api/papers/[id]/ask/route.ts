@@ -33,7 +33,8 @@ import {
   type AskCitation,
   type AskMessage,
   type AskRequestBody,
-  type AskStreamMeta
+  type AskStreamMeta,
+  splitFollowups
 } from '@/features/papers/ask/types';
 
 export const runtime = 'nodejs';
@@ -135,7 +136,9 @@ Rules (every one is mandatory):
   }
 
 SOURCE PASSAGES:
-${sourceBlocks}`;
+${sourceBlocks}
+
+FOLLOW-UP QUESTIONS. After your answer — and ONLY if you actually answered from the sources (never after the no-answer reply) — append a line containing exactly [[FOLLOWUP]] and then 2-3 short questions the reader might naturally ask next about this paper, one per line, in the same language as your answer. Each must be answerable from this paper; keep them specific and distinct. Do not number them or add any other text after them.`;
 }
 
 function buildUserPrompt(question: string, selectionText: string | undefined): string {
@@ -609,7 +612,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
 
       // Trailing meta frame — citations + trust score for the UI.
-      const verification = verifyNumericClaims(full, hits);
+      const { answer: answerText, questions: suggestedQuestions } = splitFollowups(full);
+      const verification = verifyNumericClaims(answerText, hits);
       console.warn(
         JSON.stringify({
           event: 'ask_verify',
@@ -624,7 +628,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
       // Persist the assistant turn (best-effort; truncated answers are kept so
       // the user sees what was generated, but flagged via the saved content).
-      const trimmed = full.trim();
+      const trimmed = answerText.trim();
       if (trimmed) {
         const assistantMsgId = db.collection(`tenants/${tenantId}/papers/${paperId}/qa`).doc().id;
         void db
@@ -639,6 +643,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             citations,
             trustScore,
             verification,
+            suggestedQuestions,
             noAnswer: false,
             truncated,
             createdAt: Timestamp.fromMillis(Date.now())
@@ -703,6 +708,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           trustScore: typeof m.trustScore === 'number' ? m.trustScore : undefined,
           noAnswer: m.noAnswer === true ? true : undefined,
           verification: (m.verification as NumericVerification | undefined) ?? undefined,
+          suggestedQuestions: Array.isArray(m.suggestedQuestions)
+            ? (m.suggestedQuestions as string[])
+            : undefined,
           createdAt: typeof created?.toMillis === 'function' ? created.toMillis() : Date.now()
         };
       });

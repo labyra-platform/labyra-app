@@ -34,9 +34,48 @@ export interface AskMessage {
   /** True when retrieval found nothing relevant (we refused to hallucinate). */
   noAnswer?: boolean;
   verification?: NumericVerification;
+  /** Perplexity-style follow-up questions the model proposed after the answer. */
+  suggestedQuestions?: string[];
   /** Selection text the user attached to the question, if any. */
   selectionText?: string;
   createdAt: number;
+}
+
+/** After the answer, the model may emit this marker followed by 2-3 follow-up
+ *  questions (one per line). Chosen not to collide with Markdown (unlike "---").
+ *  The client strips it from the rendered answer and shows chips; the route
+ *  strips it before verifying/persisting. */
+export const FOLLOWUP_SENTINEL = '[[FOLLOWUP]]';
+
+/** Split a completed answer into its prose and the follow-up questions. */
+export function splitFollowups(text: string): { answer: string; questions: string[] } {
+  const idx = text.indexOf(FOLLOWUP_SENTINEL);
+  if (idx === -1) return { answer: text, questions: [] };
+  const answer = text.slice(0, idx).trimEnd();
+  const questions = text
+    .slice(idx + FOLLOWUP_SENTINEL.length)
+    .split('\n')
+    .map((l) =>
+      l
+        .replace(/^[\s\-*\d.)\]]+/, '')
+        .replace(/\[\[.*$/, '')
+        .trim()
+    )
+    .filter((l) => l.length > 3 && l.endsWith('?'))
+    .slice(0, 3);
+  return { answer, questions };
+}
+
+/** For streaming display: hide the answer's follow-up block AND any half-streamed
+ *  sentinel at the tail so the marker never flashes on screen. */
+export function stripFollowupArtifact(text: string): string {
+  const clean = splitFollowups(text).answer;
+  for (let i = Math.min(FOLLOWUP_SENTINEL.length - 1, clean.length); i > 0; i--) {
+    if (clean.endsWith(FOLLOWUP_SENTINEL.slice(0, i))) {
+      return clean.slice(0, clean.length - i);
+    }
+  }
+  return clean;
 }
 
 export interface AskRequestBody {

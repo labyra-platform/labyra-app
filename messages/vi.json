@@ -627,7 +627,11 @@
     "createFromFilter": "Tạo collection ({count})",
     "createFromFilterTitle": "Tạo collection từ bộ lọc",
     "createFromFilterDesc": "{count} papers đang lọc sẽ được thêm vào collection mới. Paper khớp bộ lọc sau này KHÔNG tự thêm.",
-    "createdFromFilter": "Đã tạo \"{name}\" với {count} papers"
+    "createdFromFilter": "Đã tạo \"{name}\" với {count} papers",
+    "exportPdfs": "Xuất PDF",
+    "exporting": "Đang xuất…",
+    "exportEmpty": "Collection này chưa có paper nào để tải.",
+    "exportFailed": "Xuất thất bại. Thử lại nhé."
   },
   "materials": {
     "title": "Vật liệu",

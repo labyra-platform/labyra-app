@@ -47,6 +47,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CollectionItem } from '@/features/papers/collections/collection-item';
+import { useAuth } from '@/lib/auth/use-auth';
 import { siblingNameExists } from '@/features/papers/collections/collection-tree';
 import {
   type CollectionSelection,
@@ -80,6 +81,42 @@ type EditState = {
 
 export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProps) {
   const t = useTranslations('collections');
+  const { user } = useAuth();
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  const handleExport = async (id: string, name: string) => {
+    if (!user || exportingId) return;
+    setExportingId(id);
+    const toastId = toast.loading(t('exporting'));
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/collections/${id}/export`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.status === 422) {
+        toast.error(t('exportEmpty'), { id: toastId });
+        return;
+      }
+      if (!res.ok) {
+        toast.error(t('exportFailed'), { id: toastId });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.dismiss(toastId);
+    } catch {
+      toast.error(t('exportFailed'), { id: toastId });
+    } finally {
+      setExportingId(null);
+    }
+  };
   const tenantId = useTenantId();
   const queryClient = useQueryClient();
   const { collections, tree, isLoading } = useCollections();
@@ -279,6 +316,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
                 onDelete={(id, name) => setDeleteTarget({ id, name })}
                 onMoveToRoot={handleMoveToRoot}
                 onDropPaper={handleDropPaper}
+                onExport={handleExport}
               />
             ))
           )}

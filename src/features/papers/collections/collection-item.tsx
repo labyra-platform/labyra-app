@@ -14,6 +14,7 @@ import {
   IconArrowBackUp,
   IconChevronRight,
   IconDotsVertical,
+  IconDownload,
   IconFolder,
   IconFolderOpen,
   IconPencil,
@@ -59,6 +60,8 @@ export interface CollectionItemProps {
   onRenameCancel: () => void;
   onDelete: (id: string, name: string) => void;
   onMoveToRoot: (id: string) => void;
+  /** Download the collection's paper PDFs as a folder-named .zip. */
+  onExport: (id: string, name: string) => void;
   /** Drop a dragged paper into this collection. */
   onDropPaper: (collectionId: string, paperId: string) => void;
 }
@@ -75,6 +78,7 @@ export function CollectionItem({
   onRenameCancel,
   onDelete,
   onMoveToRoot,
+  onExport,
   onDropPaper
 }: CollectionItemProps) {
   const t = useTranslations('collections');
@@ -116,6 +120,10 @@ export function CollectionItem({
           {t('moveToRoot')}
         </Item>
       )}
+      <Item onClick={() => onExport(collection.id, collection.name)}>
+        <IconDownload size={14} />
+        {t('exportPdfs')}
+      </Item>
       <Separator />
       <Item variant='destructive' onClick={() => onDelete(collection.id, collection.name)}>
         <IconTrash size={14} />
@@ -257,6 +265,7 @@ export function CollectionItem({
               onDelete={onDelete}
               onMoveToRoot={onMoveToRoot}
               onDropPaper={onDropPaper}
+              onExport={onExport}
             />
           ))}
         </CollapsibleContent>

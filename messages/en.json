@@ -626,7 +626,11 @@
     "createFromFilter": "New collection ({count})",
     "createFromFilterTitle": "New collection from filter",
     "createFromFilterDesc": "These {count} filtered papers will be added to a new collection. Papers matching the filter later are not added automatically.",
-    "createdFromFilter": "Created \"{name}\" with {count} papers"
+    "createdFromFilter": "Created \"{name}\" with {count} papers",
+    "exportPdfs": "Export PDFs",
+    "exporting": "Exporting…",
+    "exportEmpty": "This collection has no downloadable papers.",
+    "exportFailed": "Export failed. Please try again."
   },
   "materials": {
     "title": "Materials",

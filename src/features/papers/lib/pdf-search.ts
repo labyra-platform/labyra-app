@@ -60,3 +60,30 @@ export function highlightItemClass(
 export function highlightItem(str: string, query: string, caseSensitive: boolean): string {
   return highlightItemClass(str, query, caseSensitive, 'psm');
 }
+
+/**
+ * Citation flash. PDF text items are frequently single words (justified layout),
+ * so matching a whole multi-word cited phrase INSIDE one item almost never hits.
+ * Instead, light up any item that belongs to the phrase: the item's text sits
+ * inside the phrase (word-split layers), or the phrase sits inside a long line
+ * item (line-based layers). Matching is normalised (case/punctuation-insensitive)
+ * and marks the whole item so the cited region flashes as `<mark class="pcm">`.
+ */
+function normForMatch(x: string): string {
+  return x
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function citeMarkItem(str: string, phrase: string): string {
+  if (!phrase) return escapeHtml(str);
+  const ns = normForMatch(str);
+  const np = normForMatch(phrase);
+  if (ns.length < 4 || np.length < 4) return escapeHtml(str);
+  if (np.includes(ns) || ns.includes(np)) {
+    return `<mark class="pcm">${escapeHtml(str)}</mark>`;
+  }
+  return escapeHtml(str);
+}

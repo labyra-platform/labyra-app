@@ -69,11 +69,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider';
 import { getCachedPdf, setCachedPdf } from '@/features/papers/lib/pdf-cache';
 import { PdfHighlightLayer } from '@/features/papers/components/pdf-highlight-layer';
-import {
-  countOccurrences,
-  highlightItem,
-  highlightItemClass
-} from '@/features/papers/lib/pdf-search';
+import { citeMarkItem, countOccurrences, highlightItem } from '@/features/papers/lib/pdf-search';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PdfDrawLayer } from '@/features/papers/components/pdf-draw-layer';
 import { PdfTranslateLayer } from '@/features/papers/components/pdf-translate-layer';
@@ -967,7 +963,7 @@ export function PdfViewer({
   const renderSearchText = useCallback(
     (item: { str: string }) =>
       citeHighlight
-        ? highlightItemClass(item.str, citeHighlight, false, 'pcm')
+        ? citeMarkItem(item.str, citeHighlight)
         : highlightItem(item.str, searchQuery, searchCaseSensitive),
     [citeHighlight, searchQuery, searchCaseSensitive]
   );

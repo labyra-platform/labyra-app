@@ -559,7 +559,7 @@ function AssistantBubble({
           page: cite.page,
           section: cite.section,
           top: rect.bottom + 6,
-          left: rect.left
+          left: Math.max(8, Math.min(rect.left, window.innerWidth - 288))
         };
       });
     },

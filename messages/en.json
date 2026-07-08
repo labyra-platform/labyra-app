@@ -1721,7 +1721,13 @@
     "kindProcess": "Process",
     "kindData": "Data",
     "nodeSubtitle": "Detail",
-    "nodeSubtitlePlaceholder": "e.g. stir · 30 min"
+    "nodeSubtitlePlaceholder": "e.g. stir · 30 min",
+    "nodeInputs": "Inputs (reagents / parameters)",
+    "addInput": "Add",
+    "noInputs": "No inputs yet — add reagents or parameters for this step.",
+    "inputLabelPlaceholder": "e.g. Na₂WO₄·2H₂O",
+    "inputValuePlaceholder": "1.32 g",
+    "removeInput": "Remove input"
   },
   "computation": {
     "description": "DFT / MD / ML-potential computation jobs and their results.",

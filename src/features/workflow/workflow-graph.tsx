@@ -40,6 +40,24 @@ export function WorkflowNodeCard({ data }: NodeProps<WfNode>) {
       <Handle type='target' position={Position.Left} className='!bg-muted-foreground' />
       <p className='truncate font-medium'>{data.label}</p>
       {data.subtitle && <p className='mt-0.5 truncate text-[10px] opacity-70'>{data.subtitle}</p>}
+      {Array.isArray(data.inputs) && data.inputs.length > 0 && (
+        <div className='mt-1 space-y-0.5 border-t border-border/60 pt-1'>
+          {(data.inputs as { id: string; label: string; value?: string }[])
+            .slice(0, 4)
+            .map((inp) => (
+              <div
+                key={inp.id}
+                className='flex items-center justify-between gap-2 text-[9.5px] leading-tight opacity-80'
+              >
+                <span className='truncate'>{inp.label || '—'}</span>
+                {inp.value ? <span className='shrink-0 tabular-nums'>{inp.value}</span> : null}
+              </div>
+            ))}
+          {data.inputs.length > 4 && (
+            <div className='text-[9.5px] opacity-60'>+{data.inputs.length - 4}</div>
+          )}
+        </div>
+      )}
       <Handle type='source' position={Position.Right} className='!bg-muted-foreground' />
     </div>
   );

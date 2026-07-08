@@ -1722,7 +1722,13 @@
     "kindProcess": "Quy trình",
     "kindData": "Dữ liệu",
     "nodeSubtitle": "Chi tiết",
-    "nodeSubtitlePlaceholder": "vd: khuấy · 30 phút"
+    "nodeSubtitlePlaceholder": "vd: khuấy · 30 phút",
+    "nodeInputs": "Đầu vào (hoá chất / thông số)",
+    "addInput": "Thêm",
+    "noInputs": "Chưa có đầu vào — thêm hoá chất hoặc thông số cho bước này.",
+    "inputLabelPlaceholder": "vd Na₂WO₄·2H₂O",
+    "inputValuePlaceholder": "1.32 g",
+    "removeInput": "Xoá đầu vào"
   },
   "computation": {
     "description": "Tác vụ tính toán DFT / MD / ML-potential và kết quả.",

@@ -39,7 +39,7 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
     if (!onReader) return;
     const id = setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
     return () => clearTimeout(id);
-  }, [routePaperId, onReader]);
+  }, [onReader]);
 
   // R237am: Ask AI citation jump bus. Lives here (not in PaperReadView) so the
   // side panel that drives jumps doesn't blink when papers are switched.
@@ -97,7 +97,10 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
               {renderIds.map((pid) => (
                 <div
                   key={pid}
-                  className={cn('absolute inset-0 flex', pid !== routePaperId && 'hidden')}
+                  className={cn(
+                    'absolute inset-0 flex',
+                    pid !== routePaperId && 'invisible pointer-events-none'
+                  )}
                 >
                   <PaperReadView
                     paperId={pid}

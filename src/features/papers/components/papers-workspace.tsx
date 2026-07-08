@@ -50,6 +50,27 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
     setJumpRequest({ page, y, highlight, nonce: Date.now() });
   }, []);
 
+  // Keep-alive: mount a tab's reader on first visit and keep it mounted while the
+  // tab stays open, so switching tabs is instant (no PDF re-fetch / re-render),
+  // Zotero-style. Only the active tab is visible; the rest are display:none.
+  const [mountedIds, setMountedIds] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    if (!routePaperId) return;
+    setMountedIds((prev) => (prev.has(routePaperId) ? prev : new Set(prev).add(routePaperId)));
+  }, [routePaperId]);
+  useEffect(() => {
+    const open = new Set(tabs.map((t) => t.paperId));
+    setMountedIds((prev) => {
+      const next = new Set([...prev].filter((id) => open.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [tabs]);
+  const renderIds = useMemo(() => {
+    const ids = tabs.map((t) => t.paperId).filter((pid) => mountedIds.has(pid));
+    if (routePaperId && !ids.includes(routePaperId)) ids.push(routePaperId);
+    return ids;
+  }, [tabs, mountedIds, routePaperId]);
+
   return (
     <div className='flex h-[calc(100vh-4rem)] min-h-0 w-full flex-col'>
       {hasTabs && (
@@ -67,17 +88,25 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
       <div className='relative min-h-0 flex-1'>
         <div className={cn('h-full min-h-0 overflow-auto', onReader && 'hidden')}>{children}</div>
 
-        {/* Reader + persistent side panel. The PDF column re-mounts on paper
-            switch (key); the side panel does not, so Ask AI / Info / Citations
-            stays open and on the current tab as the user navigates. */}
+        {/* Keep every visited tab's reader mounted; show only the active one.
+            Switching tabs toggles CSS visibility — the PDF is never re-fetched or
+            re-mounted, so it's instant. jumpRequest targets the active reader. */}
         {onReader && routePaperId && (
           <div className='absolute inset-0 flex'>
-            <PaperReadView
-              key={routePaperId}
-              paperId={routePaperId}
-              active
-              jumpRequest={jumpRequest}
-            />
+            <div className='relative min-w-0 flex-1'>
+              {renderIds.map((pid) => (
+                <div
+                  key={pid}
+                  className={cn('absolute inset-0 flex', pid !== routePaperId && 'hidden')}
+                >
+                  <PaperReadView
+                    paperId={pid}
+                    active={pid === routePaperId}
+                    jumpRequest={pid === routePaperId ? jumpRequest : undefined}
+                  />
+                </div>
+              ))}
+            </div>
             <ReaderSidePanel paperId={routePaperId} onJumpToPage={handleJumpToPage} />
           </div>
         )}

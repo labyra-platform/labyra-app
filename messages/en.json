@@ -2069,7 +2069,8 @@
     "refSecWorkflow": "Workflow & practice",
     "refSecBibliography": "Bibliography",
     "refDeeper": "Go deeper",
-    "refTextbooks": "Textbooks"
+    "refTextbooks": "Textbooks",
+    "analysisTab": "Analysis"
   },
   "structures": {
     "importTitle": "Import structure",

@@ -2070,7 +2070,8 @@
     "refSecWorkflow": "Quy trình & thực hành",
     "refSecBibliography": "Thư mục tài liệu",
     "refDeeper": "Đi sâu hơn",
-    "refTextbooks": "Sách giáo khoa"
+    "refTextbooks": "Sách giáo khoa",
+    "analysisTab": "Phân tích"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

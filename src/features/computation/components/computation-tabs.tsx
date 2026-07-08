@@ -15,6 +15,7 @@ import {
   IconCube,
   IconDatabase,
   IconBook2,
+  IconFlask2,
   IconGitCompare,
   IconListDetails,
   IconTools,
@@ -80,6 +81,12 @@ const TABS: Tab[] = [
     labelKey: 'compareTitle',
     Icon: IconGitCompare,
     isActive: (p) => p.startsWith('/dashboard/computation/compare')
+  },
+  {
+    href: '/dashboard/computation/analysis',
+    labelKey: 'analysisTab',
+    Icon: IconFlask2,
+    isActive: (p) => p.startsWith('/dashboard/computation/analysis')
   },
   {
     href: '/dashboard/computation/reference',

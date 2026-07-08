@@ -22,7 +22,7 @@ import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
 import { selectProvider } from '@/lib/ai/providers';
 import { searchPapers } from '@/lib/ai/rag/search';
 import { getBM25Corpus } from '@/lib/ai/rag/sparse/bm25-manager';
-import { verifyNumericClaims } from '@/lib/ai/verify/numeric-claims';
+import { verifyNumericClaims, type NumericVerification } from '@/lib/ai/verify/numeric-claims';
 import type { SearchHit } from '@/lib/ai/rag/search-types';
 import { getGroupIdFromToken, getRoleFromToken, getTenantIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
@@ -31,6 +31,7 @@ import type { AiTier } from '@/types/ai';
 import {
   ASK_META_SENTINEL,
   type AskCitation,
+  type AskMessage,
   type AskRequestBody,
   type AskStreamMeta
 } from '@/features/papers/ask/types';
@@ -637,6 +638,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             content: trimmed,
             citations,
             trustScore,
+            verification,
             noAnswer: false,
             truncated,
             createdAt: Timestamp.fromMillis(Date.now())
@@ -653,4 +655,97 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       'X-Ask-Stream': '1'
     }
   });
+}
+
+const HISTORY_MAX_LOAD = 200;
+
+/** Load this user's saved Q&A turns for the paper so the Ask AI panel can restore
+ *  the conversation on mount (backend already persists every turn). */
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: paperId } = await params;
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) return jsonError(401, 'missing_token');
+  let decoded;
+  try {
+    decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
+  } catch {
+    return jsonError(401, 'invalid_token');
+  }
+  const tenantId = getTenantIdFromToken(decoded);
+  if (!tenantId) return jsonError(403, 'missing_tenant_claim');
+  const userId = decoded.uid;
+
+  try {
+    const db = getAdminFirestoreService();
+    // Order by createdAt only (auto-indexed) and filter userId in memory to avoid
+    // requiring a composite index; take the most recent, then restore order.
+    const snap = await db
+      .collection(`tenants/${tenantId}/papers/${paperId}/qa`)
+      .orderBy('createdAt', 'desc')
+      .limit(HISTORY_MAX_LOAD)
+      .get();
+    const messages: AskMessage[] = snap.docs
+      .map((d) => d.data())
+      .filter(
+        (m) =>
+          m.userId === userId &&
+          (m.role === 'user' || m.role === 'assistant') &&
+          typeof m.content === 'string'
+      )
+      .toReversed()
+      .map((m) => {
+        const created = m.createdAt as { toMillis?: () => number } | undefined;
+        return {
+          id: typeof m.id === 'string' ? m.id : '',
+          role: m.role as 'user' | 'assistant',
+          content: m.content as string,
+          citations: Array.isArray(m.citations) ? (m.citations as AskCitation[]) : undefined,
+          trustScore: typeof m.trustScore === 'number' ? m.trustScore : undefined,
+          noAnswer: m.noAnswer === true ? true : undefined,
+          verification: (m.verification as NumericVerification | undefined) ?? undefined,
+          createdAt: typeof created?.toMillis === 'function' ? created.toMillis() : Date.now()
+        };
+      });
+    return Response.json({ messages });
+  } catch (e) {
+    return jsonError(500, 'history_load_failed', {
+      detail: e instanceof Error ? e.message.slice(0, 200) : String(e).slice(0, 200)
+    });
+  }
+}
+
+/** Delete this user's entire Q&A history for the paper. */
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: paperId } = await params;
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) return jsonError(401, 'missing_token');
+  let decoded;
+  try {
+    decoded = await getAdminAuthService().verifyIdToken(authHeader.slice('Bearer '.length));
+  } catch {
+    return jsonError(401, 'invalid_token');
+  }
+  const tenantId = getTenantIdFromToken(decoded);
+  if (!tenantId) return jsonError(403, 'missing_tenant_claim');
+  const userId = decoded.uid;
+
+  try {
+    const db = getAdminFirestoreService();
+    const snap = await db
+      .collection(`tenants/${tenantId}/papers/${paperId}/qa`)
+      .where('userId', '==', userId)
+      .get();
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += 450) {
+      const batch = db.batch();
+      for (const d of docs.slice(i, i + 450)) batch.delete(d.ref);
+      // eslint-disable-next-line no-await-in-loop
+      await batch.commit();
+    }
+    return Response.json({ deleted: docs.length });
+  } catch (e) {
+    return jsonError(500, 'history_delete_failed', {
+      detail: e instanceof Error ? e.message.slice(0, 200) : String(e).slice(0, 200)
+    });
+  }
 }

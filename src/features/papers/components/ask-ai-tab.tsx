@@ -21,7 +21,8 @@ import {
   IconChevronRight,
   IconCopy,
   IconPlayerStopFilled,
-  IconSparkles
+  IconSparkles,
+  IconTrash
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -152,6 +153,55 @@ export function AskAiTab({
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Restore this paper's saved Ask AI conversation on mount (the backend persists
+  // every turn). Best-effort — start empty on failure.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { getFirebaseAuth } = await import('@/lib/firebase/client');
+        const user = getFirebaseAuth().currentUser;
+        if (!user) return;
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/papers/${paperId}/ask`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { messages?: AskMessage[] };
+        if (!cancelled && Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages(data.messages);
+        }
+      } catch {
+        // ignore — conversation just starts empty
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [paperId]);
+
+  const handleClearChat = useCallback(async () => {
+    if (busy || messages.length === 0) return;
+    if (!window.confirm('Xóa toàn bộ hội thoại Ask AI của paper này?')) return;
+    const snapshot = messages;
+    setMessages([]);
+    setError(null);
+    try {
+      const { getFirebaseAuth } = await import('@/lib/firebase/client');
+      const user = getFirebaseAuth().currentUser;
+      if (!user) throw new Error('not signed in');
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/papers/${paperId}/ask`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('delete failed');
+    } catch {
+      setMessages(snapshot);
+      setError('Không xóa được hội thoại. Thử lại nhé.');
+    }
+  }, [busy, messages, paperId]);
 
   // Auto-scroll to the latest message whenever a stream token lands.
   useEffect(() => {
@@ -301,6 +351,20 @@ export function AskAiTab({
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
+      {!isEmpty && (
+        <div className='flex shrink-0 items-center justify-end border-b border-border/50 px-3 py-1.5'>
+          <button
+            type='button'
+            onClick={handleClearChat}
+            disabled={busy}
+            className='inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50'
+            title='Xóa toàn bộ hội thoại Ask AI của paper này'
+          >
+            <IconTrash size={13} />
+            Xóa hội thoại
+          </button>
+        </div>
+      )}
       {/* Conversation */}
       <div ref={scrollerRef} className='min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-4 text-sm'>
         {isEmpty && <EmptyState />}

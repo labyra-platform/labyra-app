@@ -9,6 +9,7 @@ import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 import { NavBack } from '@/components/nav/nav-back';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExperimentForm } from '@/features/experiments/components/experiment-form';
+import { ProtocolInstanceView } from '@/features/protocol/protocol-instance-view';
 import { SpectraList } from '@/features/spectra/components/spectra-list';
 import { useExperiment } from '@/lib/firestore/queries/experiments';
 
@@ -52,6 +53,7 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
         <TabsList>
           <TabsTrigger value='edit'>{t('tabEdit')}</TabsTrigger>
           <TabsTrigger value='spectra'>{t('tabSpectra')}</TabsTrigger>
+          <TabsTrigger value='protocol'>{t('tabProtocol')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value='edit' className='mt-6'>
@@ -62,6 +64,10 @@ export default function ExperimentDetailPage({ params }: { params: Promise<{ id:
           {/* R186-2b: upload moved to Sample detail. Read-only list here. */}
           <p className='text-xs text-muted-foreground'>{tSpectra('uploadFromSampleHint')}</p>
           <SpectraList experimentId={id} />
+        </TabsContent>
+
+        <TabsContent value='protocol' className='mt-6'>
+          <ProtocolInstanceView experimentId={id} />
         </TabsContent>
       </Tabs>
     </PageContainer>

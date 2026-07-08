@@ -862,7 +862,8 @@
     "undo": "Hoàn tác",
     "toastRestored": "Đã khôi phục",
     "toastRestoreFailed": "Khôi phục thất bại",
-    "toastBulkDeleted": "Đã xoá {count}"
+    "toastBulkDeleted": "Đã xoá {count}",
+    "tabProtocol": "Quy trình"
   },
   "equipment": {
     "title": "Thiết bị",
@@ -1728,7 +1729,20 @@
     "noInputs": "Chưa có đầu vào — thêm hoá chất hoặc thông số cho bước này.",
     "inputLabelPlaceholder": "vd Na₂WO₄·2H₂O",
     "inputValuePlaceholder": "1.32 g",
-    "removeInput": "Xoá đầu vào"
+    "removeInput": "Xoá đầu vào",
+    "instanceAttachTitle": "Chưa gắn quy trình",
+    "instanceAttachHint": "Clone một template để chạy cho thí nghiệm này. Instance là bản chụp của template — sửa template sau không ảnh hưởng mẻ này.",
+    "instanceSelectTemplate": "Chọn template…",
+    "instanceNoTemplates": "Chưa có quy trình mẫu — tạo một cái trước.",
+    "instanceAttach": "Gắn quy trình",
+    "instanceAttaching": "Đang gắn…",
+    "instanceAttachFailed": "Không gắn được. Thử lại.",
+    "instanceFromTemplate": "Từ template",
+    "instanceEditHint": "Chỉnh thông số, đánh dấu trạng thái bước, link measurement — làm ở bước tiếp theo.",
+    "status_planned": "Dự kiến",
+    "status_running": "Đang chạy",
+    "status_done": "Xong",
+    "status_error": "Lỗi"
   },
   "computation": {
     "description": "Tác vụ tính toán DFT / MD / ML-potential và kết quả.",

@@ -861,7 +861,8 @@
     "undo": "Undo",
     "toastRestored": "Restored",
     "toastRestoreFailed": "Restore failed",
-    "toastBulkDeleted": "{count} deleted"
+    "toastBulkDeleted": "{count} deleted",
+    "tabProtocol": "Protocol"
   },
   "equipment": {
     "title": "Equipment",
@@ -1727,7 +1728,20 @@
     "noInputs": "No inputs yet — add reagents or parameters for this step.",
     "inputLabelPlaceholder": "e.g. Na₂WO₄·2H₂O",
     "inputValuePlaceholder": "1.32 g",
-    "removeInput": "Remove input"
+    "removeInput": "Remove input",
+    "instanceAttachTitle": "No protocol attached",
+    "instanceAttachHint": "Clone a template to run it for this experiment. It snapshots the template — later template edits won't change this run.",
+    "instanceSelectTemplate": "Select a template…",
+    "instanceNoTemplates": "No protocol templates yet — create one first.",
+    "instanceAttach": "Attach protocol",
+    "instanceAttaching": "Attaching…",
+    "instanceAttachFailed": "Could not attach. Try again.",
+    "instanceFromTemplate": "From template",
+    "instanceEditHint": "Overriding values, marking step status and linking measurements are coming next.",
+    "status_planned": "Planned",
+    "status_running": "Running",
+    "status_done": "Done",
+    "status_error": "Error"
   },
   "computation": {
     "description": "DFT / MD / ML-potential computation jobs and their results.",

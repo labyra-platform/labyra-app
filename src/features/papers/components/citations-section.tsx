@@ -81,6 +81,7 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
 
   const [outExpanded, setOutExpanded] = useState(false);
   const [inExpanded, setInExpanded] = useState(false);
+  const [jumpRef, setJumpRef] = useState('');
   // R237cp: filter by publisher + Open-Access (replaces the old confidence chips)
   const [filter, setFilter] = useState<CitationFilterValue>(() => createDefaultFilter());
 
@@ -169,6 +170,22 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
     [inSorted, filter]
   );
 
+  const jumpToRef = useCallback(() => {
+    const n = Number.parseInt(jumpRef, 10);
+    if (!Number.isFinite(n)) return;
+    if (!outFiltered.some((c) => c.number === n)) return; // not in the current list
+    setOutExpanded(true); // make sure it's rendered even if collapsed
+    setJumpRef('');
+    // Let the expanded list render, then bring the reference into view + flash it.
+    setTimeout(() => {
+      const el = document.getElementById(`cite-ref-${n}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-primary');
+      setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 1600);
+    }, 60);
+  }, [jumpRef, outFiltered]);
+
   // No stats doc + no citations → don't render section at all (paper not yet processed)
   const hasAnyData = stats !== null || outCitations.length > 0 || inCitations.length > 0;
   if (!hasAnyData && !outLoading && !inLoading) {
@@ -210,6 +227,24 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
             </p>
           </div>
           <div className='flex shrink-0 items-center gap-3'>
+            {outSorted.length > COLLAPSED_LIMIT && (
+              <input
+                type='number'
+                inputMode='numeric'
+                value={jumpRef}
+                onChange={(e) => setJumpRef(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    jumpToRef();
+                  }
+                }}
+                placeholder='#'
+                aria-label='Nhảy tới tài liệu tham khảo theo số'
+                title='Nhập số thứ tự TLTK rồi Enter để nhảy tới'
+                className='h-6 w-12 rounded border border-input bg-transparent px-1.5 text-xs tabular-nums outline-none focus:border-primary'
+              />
+            )}
             {unresolvedCount > 0 && !outLoading && (
               <button
                 type='button'
@@ -263,7 +298,13 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
         ) : (
           <div className='space-y-1.5'>
             {outVisible.map((c) => (
-              <CitationCard key={c.id} citation={c} />
+              <div
+                key={c.id}
+                id={c.number !== undefined ? `cite-ref-${c.number}` : undefined}
+                className='rounded-lg transition-shadow'
+              >
+                <CitationCard citation={c} />
+              </div>
             ))}
           </div>
         )}

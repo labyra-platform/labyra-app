@@ -390,6 +390,17 @@ mark.pcm {
   }
 }
 
+/* PDF text selection. The react-pdf text layer is transparent text painted over
+   the page canvas, so the browser's opaque default ::selection reads as solid
+   blocks sitting over the rendered text (looks like an overlapping layer). A
+   translucent highlight tints the text like a normal selection instead. */
+.textLayer ::selection {
+  background: hsl(217 91% 60% / 0.28);
+}
+.textLayer ::-moz-selection {
+  background: hsl(217 91% 60% / 0.28);
+}
+
 /* ── R323: hide number-input spinner arrows (▲▼) app-wide ────────────────────
    The browser's default up/down spinners on <input type="number"> (e.g. the
    Compare target value, composer per-node params) read as visual noise in this

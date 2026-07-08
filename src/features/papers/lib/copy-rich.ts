@@ -159,6 +159,16 @@ export function renderPapersAnswerHtml(
   const withTags = escaped.replace(/&lt;(\/?)(sub|sup|b|i)&gt;/gi, '<$1$2>');
   let html = renderMarkdownBlocks(withTags);
   if (opts.citeButtons) {
+    // "[2, 3, 4]" → "[2][3][4]" (one bracket, comma-separated numbers).
+    html = html.replace(/\[(\d{1,2}(?:\s*,\s*\d{1,2})+)\]/g, (_, grp: string) =>
+      grp
+        .split(/\s*,\s*/)
+        .map((d) => `[${d}]`)
+        .join('')
+    );
+    // "[2], [3]" → "[2][3]" (drop the comma/space between consecutive refs) so
+    // the chips sit adjacent instead of "chip, chip, chip".
+    html = html.replace(/(\[\d{1,2}\])\s*,?\s*(?=\[\d{1,2}\])/g, '$1');
     html = html.replace(
       /\[(\d{1,2})\]/g,
       (_, n: string) => `<button type="button" data-cite="${n}" class="ask-cite-btn">${n}</button>`

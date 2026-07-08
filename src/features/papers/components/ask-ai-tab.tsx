@@ -47,8 +47,38 @@ import {
  * within one line/item and are enough to draw the eye to the cited passage.
  */
 function citationPhrase(snippet: string): string {
-  const cleaned = snippet.replace(/\s+/g, ' ').trim();
-  return cleaned.split(' ').slice(0, 7).join(' ').slice(0, 56).trim();
+  // A contiguous run of plain-prose words from the cited chunk, used to flash the
+  // cited text in the PDF. cleanSnippet strips LaTeX/HTML; we then skip formula
+  // residue (digits, subscripts) so the phrase is prose that matches the PDF text
+  // layer verbatim — highlightItemClass needs an exact substring within one item,
+  // and a phrase carrying "WO_3"/"E_g" never matches "WO₃"/"E_g" as rendered.
+  const words = cleanSnippet(snippet).split(' ');
+  const prose: string[] = [];
+  for (const w of words) {
+    if (w === '' || /[\d_^\\]/.test(w)) {
+      if (prose.length >= 3) break;
+      prose.length = 0;
+      continue;
+    }
+    prose.push(w);
+    if (prose.length >= 6) break;
+  }
+  return prose.join(' ').slice(0, 48).trim();
+}
+
+/**
+ * Strip OCR LaTeX/HTML artefacts ($\text{WO}_3$, <sup>[27]</sup>) out of a raw
+ * chunk snippet so citation previews read as plain text instead of raw markup.
+ */
+function cleanSnippet(s: string): string {
+  return s
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\$\$?/g, '')
+    .replace(/\\(?:text|mathrm|mathbf|mathit)\{([^}]*)\}/g, '$1')
+    .replace(/\\[a-zA-Z]+/g, ' ')
+    .replace(/[{}]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
@@ -56,80 +86,24 @@ function citationPhrase(snippet: string): string {
  * (§11 L2). Capped at 15 words so it stays a glance, not a wall of text.
  */
 function citationExcerpt(snippet: string): string {
-  const words = snippet.replace(/\s+/g, ' ').trim().split(' ');
+  const words = cleanSnippet(snippet).split(' ');
   return words.length <= 15 ? words.join(' ') : `${words.slice(0, 15).join(' ')}…`;
 }
 
 function TrustChip({
-  score,
-  noAnswer,
-  verification
+  noAnswer
 }: {
   score: number;
   noAnswer: boolean;
   verification?: NumericVerification;
 }) {
-  if (noAnswer) {
-    return (
-      <span className='inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200'>
-        <IconAlertCircle className='size-3' />
-        Không có trong paper
-      </span>
-    );
-  }
-  // R416/R417: numeric values checked against the cited chunks — a far more
-  // honest signal than the retrieval score, so it takes over the chip.
-  // Contradicted (same unit, different value) → red; any unsourced → amber;
-  // all found → green.
-  if (verification && verification.total > 0) {
-    const { verified, contradicted, total } = verification;
-    if (contradicted > 0) {
-      return (
-        <span
-          className='inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10.5px] font-medium text-rose-900 dark:bg-rose-950/50 dark:text-rose-200'
-          title='Có số liệu trong câu trả lời mâu thuẫn với đoạn trích được trích dẫn (đơn vị khớp nhưng giá trị khác)'
-        >
-          <IconAlertCircle className='size-3' />
-          {contradicted}/{total} số liệu mâu thuẫn nguồn
-        </span>
-      );
-    }
-    const allOk = verified === total;
-    return (
-      <span
-        className={
-          allOk
-            ? 'inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10.5px] font-medium text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200'
-            : 'inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200'
-        }
-        title='Số liệu trong câu trả lời được đối chiếu trực tiếp với đoạn trích được trích dẫn'
-      >
-        {allOk ? '✓' : <IconAlertCircle className='size-3' />}
-        {verified}/{total} số liệu khớp nguồn
-      </span>
-    );
-  }
-  // No numeric claims → fall back to retrieval match (labelled as such, not as
-  // answer "confidence").
-  const pct = Math.round(score * 100);
-  if (score >= 0.7) {
-    return (
-      <span className='inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10.5px] font-medium text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200'>
-        ✓ Khớp nguồn tốt · {pct}%
-      </span>
-    );
-  }
-  if (score >= 0.5) {
-    return (
-      <span className='inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10.5px] font-medium text-sky-900 dark:bg-sky-950/50 dark:text-sky-200'>
-        Khớp nguồn · {pct}%
-      </span>
-    );
-  }
+  // Verification / source-match badge removed per product decision; only the
+  // critical "not found in the paper" signal remains.
+  if (!noAnswer) return null;
   return (
     <span className='inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200'>
       <IconAlertCircle className='size-3' />
-      Khớp nguồn yếu · {pct}%
+      Không có trong paper
     </span>
   );
 }
@@ -466,9 +440,7 @@ export function AskAiTab({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKey}
               placeholder={
-                researchMode
-                  ? 'Nghiên cứu sâu về paper này…'
-                  : 'Hãy hỏi tôi bất cứ điều gì về paper này…'
+                researchMode ? 'Nghiên cứu sâu về paper này…' : 'Hỏi bất cứ điều gì về paper này…'
               }
               aria-label='Câu hỏi cho AI'
               rows={1}
@@ -732,7 +704,7 @@ function CitationList({
                 {c.section ? ` · ${c.section}` : ''}
               </span>
               <span className='line-clamp-2 text-[11.5px] italic text-muted-foreground'>
-                &ldquo;{c.snippet}&rdquo;
+                &ldquo;{cleanSnippet(c.snippet)}&rdquo;
               </span>
             </span>
           </button>

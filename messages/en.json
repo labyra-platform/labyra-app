@@ -1737,11 +1737,15 @@
     "instanceAttaching": "Attaching…",
     "instanceAttachFailed": "Could not attach. Try again.",
     "instanceFromTemplate": "From template",
-    "instanceEditHint": "Overriding values, marking step status and linking measurements are coming next.",
+    "instanceEditHint": "Click a step to set its status and override reagent/parameter values for this run. Linking measurements is next.",
     "status_planned": "Planned",
     "status_running": "Running",
     "status_done": "Done",
-    "status_error": "Error"
+    "status_error": "Error",
+    "stepStatus": "Status",
+    "stepNote": "Note",
+    "notePlaceholder": "What actually happened at this step…",
+    "close": "Close"
   },
   "computation": {
     "description": "DFT / MD / ML-potential computation jobs and their results.",

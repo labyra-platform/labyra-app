@@ -1738,11 +1738,15 @@
     "instanceAttaching": "Đang gắn…",
     "instanceAttachFailed": "Không gắn được. Thử lại.",
     "instanceFromTemplate": "Từ template",
-    "instanceEditHint": "Chỉnh thông số, đánh dấu trạng thái bước, link measurement — làm ở bước tiếp theo.",
+    "instanceEditHint": "Click một bước để đặt trạng thái và ghi đè thông số/hoá chất cho mẻ này. Link measurement ở bước tiếp theo.",
     "status_planned": "Dự kiến",
     "status_running": "Đang chạy",
     "status_done": "Xong",
-    "status_error": "Lỗi"
+    "status_error": "Lỗi",
+    "stepStatus": "Trạng thái",
+    "stepNote": "Ghi chú",
+    "notePlaceholder": "Thực tế xảy ra ở bước này…",
+    "close": "Đóng"
   },
   "computation": {
     "description": "Tác vụ tính toán DFT / MD / ML-potential và kết quả.",

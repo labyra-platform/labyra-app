@@ -10,7 +10,7 @@
  */
 import { IconPlugConnected } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ListSkeleton } from '@/components/ui/list-skeleton';
@@ -22,13 +22,17 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { useProtocolInstance } from '@/features/protocol/use-protocol-instance';
+import { ProtocolInstanceInspector } from '@/features/protocol/protocol-instance-inspector';
 import { useProtocolTemplates } from '@/features/protocol/use-protocol-templates';
 import { layoutLayered } from '@/features/workflow/layout';
 import type { WfEdge, WfNode } from '@/features/workflow/types';
 import { WorkflowGraph } from '@/features/workflow/workflow-graph';
 import { useTenantId } from '@/lib/auth/use-claims';
-import { createInstanceFromTemplate } from '@/lib/firestore/queries/protocol-instances';
-import type { ProtocolStepStatus } from '@/types/protocol-instance';
+import {
+  createInstanceFromTemplate,
+  updateInstanceSteps
+} from '@/lib/firestore/queries/protocol-instances';
+import type { ProtocolInstanceStep, ProtocolStepStatus } from '@/types/protocol-instance';
 
 const STATUS_DOT: Record<ProtocolStepStatus, string> = {
   planned: 'bg-muted-foreground/40',
@@ -53,6 +57,18 @@ export function ProtocolInstanceView({ experimentId }: { experimentId: string })
   const [templateId, setTemplateId] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const selectedStep = instance?.steps.find((s) => s.id === selectedId) ?? null;
+
+  const patchStep = useCallback(
+    (patch: Partial<ProtocolInstanceStep>) => {
+      if (!instance || !tenantId || !selectedId) return;
+      const steps = instance.steps.map((s) => (s.id === selectedId ? { ...s, ...patch } : s));
+      void updateInstanceSteps(tenantId, experimentId, steps);
+    },
+    [instance, tenantId, selectedId, experimentId]
+  );
 
   const edges = useMemo<WfEdge[]>(
     () =>
@@ -141,7 +157,22 @@ export function ProtocolInstanceView({ experimentId }: { experimentId: string })
           ))}
         </div>
       </div>
-      <WorkflowGraph nodes={nodes} edges={edges} className='h-[460px] rounded-lg border' />
+      <div className='flex gap-3'>
+        <WorkflowGraph
+          nodes={nodes}
+          edges={edges}
+          onNodeClick={setSelectedId}
+          className='h-[460px] flex-1 rounded-lg border'
+        />
+        {selectedStep && (
+          <ProtocolInstanceInspector
+            key={selectedStep.id}
+            step={selectedStep}
+            onPatch={patchStep}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
+      </div>
       <p className='text-[11px] text-muted-foreground'>{t('instanceEditHint')}</p>
     </div>
   );

@@ -19,6 +19,8 @@ import {
   YAxis
 } from 'recharts';
 import { formatDuration } from '@/features/computation/workflow-row';
+import { Button } from '@/components/ui/button';
+import { exportPng, exportSvg } from '@/features/computation/components/chart-export';
 import type { DftWorkflow } from '@/types/dft';
 
 interface IonicStep {
@@ -88,12 +90,27 @@ function ConvTooltip({
   );
 }
 
+function downloadConvergenceCsv(data: ConvergenceData) {
+  const lines = ['iteration,scf_accuracy_ry,cpu_seconds'];
+  data.scf_accuracy.forEach((acc, i) => {
+    lines.push(`${i + 1},${acc},${data.scf_seconds?.[i] ?? ''}`);
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'convergence-scf.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
   const t = useTranslations('computation');
   const [data, setData] = useState<ConvergenceData | null>(null);
   const dataRef = useRef<ConvergenceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     if (!dataRef.current) setLoading(true);
@@ -160,6 +177,12 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
   }
 
   const secs = data.scf_seconds ?? [];
+  const exportChart = (fmt: 'svg' | 'png') => {
+    const svg = chartRef.current?.querySelector('svg');
+    if (!svg) return;
+    if (fmt === 'svg') exportSvg(svg as unknown as SVGSVGElement, 'convergence-scf.svg');
+    else void exportPng(svg as unknown as SVGSVGElement, 'convergence-scf.png', 2);
+  };
   const scfRows = data.scf_accuracy.map((a, i) => ({
     step: i + 1,
     acc: a,
@@ -223,8 +246,36 @@ export function DftConvergenceTab({ workflow }: { workflow: DftWorkflow }) {
 
       {scfRows.length > 0 ? (
         <div>
-          <p className='text-muted-foreground mb-1 text-xs'>{t('scfAccuracyTitle')}</p>
-          <div className='h-48'>
+          <div className='mb-1 flex items-center justify-between'>
+            <p className='text-muted-foreground text-xs'>{t('scfAccuracyTitle')}</p>
+            <div className='flex items-center gap-1.5'>
+              <Button
+                variant='outline'
+                size='sm'
+                className='h-6 px-2 text-xs'
+                onClick={() => exportChart('svg')}
+              >
+                SVG
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                className='h-6 px-2 text-xs'
+                onClick={() => exportChart('png')}
+              >
+                PNG
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                className='h-6 px-2 text-xs'
+                onClick={() => downloadConvergenceCsv(data)}
+              >
+                CSV
+              </Button>
+            </div>
+          </div>
+          <div ref={chartRef} className='h-48'>
             <ResponsiveContainer width='100%' height='100%'>
               <LineChart data={scfRows} margin={{ top: 8, right: 16, bottom: 16, left: 0 }}>
                 <CartesianGrid strokeDasharray='3 3' className='stroke-border' />

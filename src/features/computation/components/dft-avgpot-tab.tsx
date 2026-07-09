@@ -10,7 +10,7 @@
 
 import { IconDownload, IconLoader2 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -22,6 +22,7 @@ import {
   YAxis
 } from 'recharts';
 import { Button } from '@/components/ui/button';
+import { exportPng, exportSvg } from '@/features/computation/components/chart-export';
 import type { DftWorkflow } from '@/types/dft';
 
 interface AvgpotData {
@@ -53,6 +54,7 @@ export function DftAvgpotTab({ workflow }: { workflow: DftWorkflow }) {
   const [data, setData] = useState<AvgpotData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!unit) return;
@@ -107,6 +109,13 @@ export function DftAvgpotTab({ workflow }: { workflow: DftWorkflow }) {
 
   const rows = data.z.map((z, i) => ({ z, planar: data.planar[i], macro: data.macro[i] }));
 
+  const exportChart = (fmt: 'svg' | 'png') => {
+    const svg = chartRef.current?.querySelector('svg');
+    if (!svg) return;
+    if (fmt === 'svg') exportSvg(svg as unknown as SVGSVGElement, `avgpot-${data.unitId}.svg`);
+    else void exportPng(svg as unknown as SVGSVGElement, `avgpot-${data.unitId}.png`, 2);
+  };
+
   return (
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
@@ -114,12 +123,20 @@ export function DftAvgpotTab({ workflow }: { workflow: DftWorkflow }) {
           {t('avgpotVacuum')}:{' '}
           <span className='font-mono font-medium tabular-nums'>{data.vacuumEv.toFixed(3)} eV</span>
         </p>
-        <Button variant='outline' size='sm' onClick={() => downloadCsv(data)}>
-          <IconDownload className='mr-1 size-3.5' />
-          CSV
-        </Button>
+        <div className='flex items-center gap-1.5'>
+          <Button variant='outline' size='sm' onClick={() => exportChart('svg')}>
+            SVG
+          </Button>
+          <Button variant='outline' size='sm' onClick={() => exportChart('png')}>
+            PNG
+          </Button>
+          <Button variant='outline' size='sm' onClick={() => downloadCsv(data)}>
+            <IconDownload className='mr-1 size-3.5' />
+            CSV
+          </Button>
+        </div>
       </div>
-      <div className='h-[420px] w-full'>
+      <div ref={chartRef} className='h-[420px] w-full'>
         <ResponsiveContainer width='100%' height='100%'>
           <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
             <CartesianGrid strokeDasharray='3 3' className='opacity-40' />

@@ -34,7 +34,8 @@ interface ResultsData {
 
 const PALETTE = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2'];
 
-function kLabel(k: number[]): string {
+function kLabel(k: number[] | null | undefined): string {
+  if (!Array.isArray(k) || k.length === 0) return '—';
   if (k.every((x) => Math.abs(x) < 1e-4)) return 'Γ';
   return `(${k.map((x) => x.toFixed(3)).join(', ')})`;
 }
@@ -121,10 +122,11 @@ export function DftResultsTab({ workflow }: { workflow: DftWorkflow }) {
   if (!data) return null;
 
   const bg = data.bandGap;
+  const hasBandGap = bg != null && bg.band_gap_ev != null;
   const fermi = data.dos?.fermiEv ?? data.fermiEv ?? null;
   const relaxed = workflow.results?.relaxedStructure;
   const empty =
-    !bg &&
+    !hasBandGap &&
     !data.dos &&
     !data.pdosCharacter &&
     data.totalEnergyRy == null &&
@@ -138,7 +140,7 @@ export function DftResultsTab({ workflow }: { workflow: DftWorkflow }) {
 
   return (
     <div className='mx-auto max-w-3xl space-y-3'>
-      {bg ? (
+      {bg && bg.band_gap_ev != null ? (
         <div className='rounded-lg border p-4'>
           <div className='flex flex-wrap items-center gap-2'>
             <span className='text-2xl font-semibold tabular-nums'>
@@ -151,10 +153,10 @@ export function DftResultsTab({ workflow }: { workflow: DftWorkflow }) {
           </div>
           <dl className='mt-2'>
             <Row label='VBM'>
-              {bg.vbm_ev.toFixed(4)} eV · {kLabel(bg.vbm_k)}
+              {bg.vbm_ev != null ? `${bg.vbm_ev.toFixed(4)} eV` : '—'} · {kLabel(bg.vbm_k)}
             </Row>
             <Row label='CBM'>
-              {bg.cbm_ev.toFixed(4)} eV · {kLabel(bg.cbm_k)}
+              {bg.cbm_ev != null ? `${bg.cbm_ev.toFixed(4)} eV` : '—'} · {kLabel(bg.cbm_k)}
             </Row>
           </dl>
         </div>

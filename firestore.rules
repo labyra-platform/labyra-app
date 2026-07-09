@@ -73,6 +73,14 @@ service cloud.firestore {
       match /experiments/{experimentId} {
         allow read: if belongsToTenant(tenantId) || isSuperAdmin();
         allow write: if isWriter(tenantId) || isSuperAdmin();
+
+        // Protocol instance (R271): an experiment's run, cloned from a template.
+        // Firestore rules don't cascade to subcollections, so it needs its own
+        // match. read = tenant member, write = writer (admin/member).
+        match /protocol/{document=**} {
+          allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+          allow write: if isWriter(tenantId) || isSuperAdmin();
+        }
       }
 
       // Spectra is the canonical name (worker is source of truth).

@@ -1746,7 +1746,9 @@
     "stepStatus": "Trạng thái",
     "stepNote": "Ghi chú",
     "notePlaceholder": "Thực tế xảy ra ở bước này…",
-    "close": "Đóng"
+    "close": "Đóng",
+    "linkedMeasurements": "Measurement đã liên kết",
+    "noMeasurements": "Chưa có measurement nào upload cho thí nghiệm này."
   },
   "computation": {
     "description": "Tác vụ tính toán DFT / MD / ML-potential và kết quả.",

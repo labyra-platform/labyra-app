@@ -24,20 +24,29 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useSpectraByExperiment } from '@/lib/firestore/queries/spectra';
 import { PROTOCOL_STEP_STATUSES } from '@/types/protocol-instance';
 import type { ProtocolInstanceStep, ProtocolStepStatus } from '@/types/protocol-instance';
 import type { ProtocolInput } from '@/types/protocol-template';
 
 interface Props {
   step: ProtocolInstanceStep;
+  experimentId: string;
   onPatch: (patch: Partial<ProtocolInstanceStep>) => void;
   onClose: () => void;
 }
 
-export function ProtocolInstanceInspector({ step, onPatch, onClose }: Props) {
+export function ProtocolInstanceInspector({ step, experimentId, onPatch, onClose }: Props) {
   const t = useTranslations('protocolTemplates');
+  const { spectra } = useSpectraByExperiment(experimentId);
   const [inputs, setInputs] = useState<ProtocolInput[]>(step.inputs);
   const [note, setNote] = useState(step.note ?? '');
+
+  const linkedIds = step.measurementIds ?? [];
+  const toggleMeasurement = (id: string) => {
+    const next = linkedIds.includes(id) ? linkedIds.filter((x) => x !== id) : [...linkedIds, id];
+    onPatch({ measurementIds: next.length > 0 ? next : undefined });
+  };
 
   // Re-seed local drafts when a different step is selected.
   useEffect(() => {
@@ -147,6 +156,39 @@ export function ProtocolInstanceInspector({ step, onPatch, onClose }: Props) {
           placeholder={t('notePlaceholder')}
           className='text-xs'
         />
+      </div>
+
+      <div className='space-y-1.5'>
+        <Label className='text-xs'>
+          {t('linkedMeasurements')}
+          {linkedIds.length > 0 && (
+            <span className='ml-1 text-muted-foreground'>({linkedIds.length})</span>
+          )}
+        </Label>
+        {spectra.length === 0 ? (
+          <p className='text-[11px] text-muted-foreground'>{t('noMeasurements')}</p>
+        ) : (
+          <div className='max-h-32 space-y-0.5 overflow-y-auto rounded-md border p-1.5'>
+            {spectra.map((sp) => (
+              <label
+                key={sp.id}
+                className='flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-[11px] hover:bg-muted'
+              >
+                <input
+                  type='checkbox'
+                  checked={linkedIds.includes(sp.id)}
+                  onChange={() => toggleMeasurement(sp.id)}
+                  aria-label={sp.originalFilename}
+                  className='size-3 shrink-0'
+                />
+                <span className='truncate'>{sp.originalFilename}</span>
+                <span className='ml-auto shrink-0 uppercase text-muted-foreground'>
+                  {sp.spectrumType}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

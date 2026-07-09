@@ -168,6 +168,7 @@ export function ProtocolInstanceView({ experimentId }: { experimentId: string })
           <ProtocolInstanceInspector
             key={selectedStep.id}
             step={selectedStep}
+            experimentId={experimentId}
             onPatch={patchStep}
             onClose={() => setSelectedId(null)}
           />

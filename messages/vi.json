@@ -1748,7 +1748,15 @@
     "notePlaceholder": "Thực tế xảy ra ở bước này…",
     "close": "Đóng",
     "linkedMeasurements": "Measurement đã liên kết",
-    "noMeasurements": "Chưa có measurement nào upload cho thí nghiệm này."
+    "noMeasurements": "Chưa có measurement nào upload cho thí nghiệm này.",
+    "diffTitle": "So sánh các mẻ quy trình",
+    "diffSubtitle": "Diff hai thí nghiệm chạy cùng một quy trình mẫu.",
+    "diffSelectExperiment": "Chọn thí nghiệm…",
+    "diffRunA": "Mẻ A",
+    "diffRunB": "Mẻ B",
+    "diffMissingInstance": "Một hoặc cả hai thí nghiệm chưa gắn quy trình.",
+    "diffDifferentTemplates": "Hai mẻ dùng template khác nhau — chọn hai mẻ cùng quy trình để so sánh.",
+    "diffNoInputs": "Bước này không có input."
   },
   "computation": {
     "description": "Tác vụ tính toán DFT / MD / ML-potential và kết quả.",

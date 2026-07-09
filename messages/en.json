@@ -1747,7 +1747,15 @@
     "notePlaceholder": "What actually happened at this step…",
     "close": "Close",
     "linkedMeasurements": "Linked measurements",
-    "noMeasurements": "No measurements uploaded to this experiment yet."
+    "noMeasurements": "No measurements uploaded to this experiment yet.",
+    "diffTitle": "Compare protocol runs",
+    "diffSubtitle": "Diff two experiments running the same protocol template.",
+    "diffSelectExperiment": "Select an experiment…",
+    "diffRunA": "Run A",
+    "diffRunB": "Run B",
+    "diffMissingInstance": "One or both experiments have no protocol instance attached yet.",
+    "diffDifferentTemplates": "These runs use different templates — pick two that share the same protocol to compare.",
+    "diffNoInputs": "No inputs on this step."
   },
   "computation": {
     "description": "DFT / MD / ML-potential computation jobs and their results.",

@@ -5,13 +5,13 @@
  */
 import PageContainer from '@/components/layout/page-container';
 import { ComputationTabs } from '@/features/computation/components/computation-tabs';
-import { DftHerAnalysisView } from '@/features/computation/components/dft-her-analysis-view';
+import { DftAnalysisView } from '@/features/computation/components/dft-analysis-view';
 
 export default function ComputationAnalysisPage() {
   return (
     <PageContainer>
       <ComputationTabs />
-      <DftHerAnalysisView />
+      <DftAnalysisView />
     </PageContainer>
   );
 }

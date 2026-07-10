@@ -19,6 +19,13 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DftAvgpotTab } from '@/features/computation/components/dft-avgpot-tab';
 import { WorkflowPipelineRail } from '@/features/computation/components/workflow-pipeline-mini';
@@ -35,6 +42,7 @@ import { DftPrelaunchChecklist } from '@/features/computation/components/dft-pre
 import { DftNodePanel } from '@/features/computation/components/dft-node-panel';
 import { DownloadWorkflowJson } from '@/features/computation/components/download-workflow-json';
 import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
+import { useRouter } from '@/i18n/navigation';
 import type { DftUnitSnapshot, DftWorkflow } from '@/types/dft';
 
 const STATUS_DOT: Record<string, string> = {
@@ -54,8 +62,21 @@ function unitDuration(s: DftUnitSnapshot | undefined): string | null {
   return formatDuration(s.finishedAt - start);
 }
 
-export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
+export interface DftJobOption {
+  id: string;
+  name: string;
+  status?: string;
+}
+
+export function DftWorkflowWorkspace({
+  workflow,
+  allJobs = []
+}: {
+  workflow: DftWorkflow;
+  allJobs?: DftJobOption[];
+}) {
   const t = useTranslations('computation');
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showRail, setShowRail] = useState(true);
   const units = useMemo(() => workflow.units ?? [], [workflow.units]);
@@ -73,22 +94,49 @@ export function DftWorkflowWorkspace({ workflow }: { workflow: DftWorkflow }) {
         className={showRail ? 'flex w-56 shrink-0 flex-col overflow-y-auto border-r' : 'hidden'}
       >
         <div className='border-b p-3'>
-          <p className='truncate text-sm font-medium'>{g?.prefix ?? workflow.id}</p>
+          <div className='flex items-center gap-2'>
+            {allJobs.length > 1 ? (
+              <Select
+                value={workflow.id}
+                onValueChange={(id) => {
+                  if (id !== workflow.id) router.push(`/dashboard/computation/${id}`);
+                }}
+              >
+                <SelectTrigger
+                  className='h-8 min-w-0 flex-1 text-sm font-medium'
+                  aria-label={t('switchJob')}
+                >
+                  <SelectValue placeholder={g?.prefix ?? workflow.id} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allJobs.map((j) => (
+                    <SelectItem key={j.id} value={j.id}>
+                      {j.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className='min-w-0 flex-1 truncate text-sm font-medium'>
+                {g?.prefix ?? workflow.id}
+              </p>
+            )}
+            {workflow.overallStatus ? (
+              <div className='flex shrink-0 items-center gap-1'>
+                <Badge variant='secondary' className='text-[10px]'>
+                  {workflow.overallStatus}
+                </Badge>
+                {workflow.overallStatus === 'running' ? (
+                  <CancelWorkflowButton workflowId={workflow.id} variant='ghost' />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
           <WorkflowReconciler
             workflowId={workflow.id}
             active={workflow.overallStatus === 'running'}
           />
           <JobsAutoRefresh active={workflow.overallStatus === 'running'} />
-          {workflow.overallStatus ? (
-            <div className='mt-1 flex items-center gap-2'>
-              <Badge variant='secondary' className='text-[10px]'>
-                {workflow.overallStatus}
-              </Badge>
-              {workflow.overallStatus === 'running' ? (
-                <CancelWorkflowButton workflowId={workflow.id} variant='ghost' />
-              ) : null}
-            </div>
-          ) : null}
         </div>
         <div className='p-2'>
           <p className='text-muted-foreground px-1 pb-1 text-xs font-medium'>{t('units')}</p>

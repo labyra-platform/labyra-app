@@ -2104,7 +2104,8 @@
     "refSecBibliography": "Bibliography",
     "refDeeper": "Go deeper",
     "refTextbooks": "Textbooks",
-    "analysisTab": "Analysis"
+    "analysisTab": "Analysis",
+    "switchJob": "Switch job"
   },
   "structures": {
     "importTitle": "Import structure",

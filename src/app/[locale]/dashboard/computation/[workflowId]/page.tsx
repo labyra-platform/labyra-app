@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { DftWorkflowWorkspace } from '@/features/computation/components/dft-workflow-workspace';
 import { Link } from '@/i18n/navigation';
 import { getCurrentTenantId } from '@/lib/auth/server';
-import { getDftWorkflow } from '@/lib/firebase/dft/service';
+import { getDftWorkflow, listDftWorkflows } from '@/lib/firebase/dft/service';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +32,14 @@ export default async function DftWorkflowPage({ params }: PageProps) {
   const workflow = await getDftWorkflow(tenantId, workflowId);
   if (!workflow) notFound();
 
+  const allJobs = (await listDftWorkflows(tenantId))
+    .map((w) => ({
+      id: w.id,
+      name: w.global?.prefix ?? w.id,
+      status: w.overallStatus ?? undefined
+    }))
+    .toSorted((a, b) => a.name.localeCompare(b.name));
+
   return (
     <PageContainer>
       <Button asChild variant='ghost' size='sm' className='-ml-2 mb-2 w-fit'>
@@ -40,7 +48,7 @@ export default async function DftWorkflowPage({ params }: PageProps) {
           {t('backToJobs')}
         </Link>
       </Button>
-      <DftWorkflowWorkspace workflow={workflow} />
+      <DftWorkflowWorkspace workflow={workflow} allJobs={allJobs} />
     </PageContainer>
   );
 }

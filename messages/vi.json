@@ -2105,7 +2105,8 @@
     "refSecBibliography": "Thư mục tài liệu",
     "refDeeper": "Đi sâu hơn",
     "refTextbooks": "Sách giáo khoa",
-    "analysisTab": "Phân tích"
+    "analysisTab": "Phân tích",
+    "switchJob": "Chuyển job"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

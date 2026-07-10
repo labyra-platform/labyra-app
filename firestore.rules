@@ -90,6 +90,13 @@ service cloud.firestore {
         allow write: if isWriter(tenantId) || isSuperAdmin();
       }
 
+      // DFT step presets (R280): a member's reusable parameter sets, read/written
+      // from the client (compose node editor).
+      match /dftStepPresets/{presetId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+      }
+
       match /equipment/{equipmentId} {
         allow read: if belongsToTenant(tenantId) || isSuperAdmin();
         allow write: if isWriter(tenantId) || isSuperAdmin();

@@ -42,6 +42,7 @@ import {
   type RestartMode,
   type SmearingType
 } from '../compose-model';
+import { ComposeStepPresets } from '@/features/computation/components/compose-step-presets';
 
 interface Props {
   node: ComposeNode;
@@ -663,6 +664,10 @@ export function ComposeNodeEditor({
       <div className='text-muted-foreground flex items-center justify-between text-xs'>
         <span className='font-mono'>{EXE_OF[node.calcType]}</span>
         {node.dependsOn.length > 0 ? <span>← {node.dependsOn.join(', ')}</span> : null}
+      </div>
+
+      <div className='flex justify-end'>
+        <ComposeStepPresets calcType={node.calcType} params={node.params} onApply={onChange} />
       </div>
 
       {FLAVORS[node.calcType] ? (

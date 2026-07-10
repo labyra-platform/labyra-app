@@ -2105,7 +2105,15 @@
     "refDeeper": "Go deeper",
     "refTextbooks": "Textbooks",
     "analysisTab": "Analysis",
-    "switchJob": "Switch job"
+    "switchJob": "Switch job",
+    "presets": "Presets",
+    "presetSaveTitle": "Save current parameters",
+    "presetSave": "Save preset",
+    "presetNamePlaceholder": "e.g. WS₂ monolayer scf",
+    "presetSaveHint": "Saves this {type} step's parameters to reuse later.",
+    "presetLoadTitle": "Saved {type} presets",
+    "presetNone": "No saved presets for this step type yet.",
+    "presetDelete": "Delete preset"
   },
   "structures": {
     "importTitle": "Import structure",

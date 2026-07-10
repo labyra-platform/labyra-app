@@ -2106,7 +2106,15 @@
     "refDeeper": "Đi sâu hơn",
     "refTextbooks": "Sách giáo khoa",
     "analysisTab": "Phân tích",
-    "switchJob": "Chuyển job"
+    "switchJob": "Chuyển job",
+    "presets": "Preset",
+    "presetSaveTitle": "Lưu thông số hiện tại",
+    "presetSave": "Lưu preset",
+    "presetNamePlaceholder": "vd WS₂ đơn lớp scf",
+    "presetSaveHint": "Lưu thông số của step {type} này để dùng lại sau.",
+    "presetLoadTitle": "Preset {type} đã lưu",
+    "presetNone": "Chưa có preset nào cho loại step này.",
+    "presetDelete": "Xoá preset"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

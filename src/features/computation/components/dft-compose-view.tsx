@@ -48,6 +48,7 @@ import {
   type NodeParams
 } from '../compose-model';
 import { ComposeInputPreview } from './compose-input-preview';
+import { ComposeStepPresets } from './compose-step-presets';
 import { MachinePickerDialog } from './machine-picker-dialog';
 import { ComposeNodeEditor } from './compose-node-editor';
 import { GlobalSettingsEditor } from './global-settings-editor';
@@ -681,6 +682,13 @@ export function DftComposeView({
                     unitId={selNode.id}
                     upstreamRelax={upstreamRelaxOf(selNode.id, nodes)}
                     onStatus={(st) => setPreviewOk(st.ok)}
+                    headerAction={
+                      <ComposeStepPresets
+                        calcType={selNode.calcType}
+                        params={selNode.params}
+                        onApply={(p) => updateNode(selNode.id, p)}
+                      />
+                    }
                   />
                   <ComposeNodeEditor
                     node={selNode}

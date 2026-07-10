@@ -7,7 +7,7 @@
  *
  * @phase R280 — step presets
  */
-import { IconDeviceFloppy, IconStar, IconTrash } from '@tabler/icons-react';
+import { IconBookmark, IconDeviceFloppy, IconTrash } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -54,12 +54,14 @@ export function ComposeStepPresets({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant='outline' size='sm' className='h-8 shrink-0 gap-1.5'>
-          <IconStar className='size-3.5' />
-          {t('presets')}
-          {forType.length > 0 ? (
-            <span className='text-muted-foreground'>({forType.length})</span>
-          ) : null}
+        <Button
+          variant='ghost'
+          size='icon'
+          className='size-7'
+          title={t('presets')}
+          aria-label={t('presets')}
+        >
+          <IconBookmark className='size-4' />
         </Button>
       </PopoverTrigger>
       <PopoverContent align='end' className='w-72 space-y-3'>

@@ -16,7 +16,7 @@ import {
   IconRefresh
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 /** In-session cache of rendered .in text, keyed by structure+global+params+calc. */
@@ -41,7 +41,8 @@ export function ComposeInputPreview({
   params,
   unitId,
   onStatus,
-  upstreamRelax
+  upstreamRelax,
+  headerAction
 }: {
   calcType: string;
   structure: unknown;
@@ -54,6 +55,8 @@ export function ComposeInputPreview({
   /** If set, this unit's ATOMIC_POSITIONS are replaced at runtime by the relaxed
    * output of this upstream relax/vc-relax unit — a marker is shown in the preview. */
   upstreamRelax?: string | null;
+  /** Rendered in the header before the download button (e.g. a preset control). */
+  headerAction?: ReactNode;
 }) {
   const t = useTranslations('computation');
   const [text, setText] = useState('');
@@ -151,6 +154,7 @@ export function ComposeInputPreview({
           {t('composeInputTitle')}
         </button>
         <div className='flex items-center gap-0.5'>
+          {headerAction}
           <Button
             variant='ghost'
             size='icon'

@@ -11,6 +11,15 @@ import { DftBandAlignmentView } from '@/features/computation/components/dft-band
 import { DftHerAnalysisView } from '@/features/computation/components/dft-her-analysis-view';
 import { cn } from '@/lib/utils';
 
+/** A completed workflow's parsed energies, for auto-filling the analysis tools. */
+export interface DftEnergyOption {
+  id: string;
+  name: string;
+  energyRy: number | null;
+  vbmEv: number | null;
+  cbmEv: number | null;
+}
+
 type Tool = 'her' | 'bands';
 
 const TOOLS: { id: Tool; label: string }[] = [
@@ -18,7 +27,7 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'bands', label: 'Band alignment' }
 ];
 
-export function DftAnalysisView() {
+export function DftAnalysisView({ workflows = [] }: { workflows?: DftEnergyOption[] }) {
   const [tool, setTool] = useState<Tool>('her');
   return (
     <div className='space-y-4'>
@@ -39,7 +48,11 @@ export function DftAnalysisView() {
           </button>
         ))}
       </div>
-      {tool === 'her' ? <DftHerAnalysisView /> : <DftBandAlignmentView />}
+      {tool === 'her' ? (
+        <DftHerAnalysisView workflows={workflows} />
+      ) : (
+        <DftBandAlignmentView workflows={workflows} />
+      )}
     </div>
   );
 }

@@ -5,11 +5,20 @@
  * e.g. vacuum) and get the offsets, the junction type, and a band diagram — the
  * key PEC descriptor for a WO₃/WS₂-type Type-II heterojunction.
  */
+import { IconDatabaseImport } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { computeBandAlignment } from '@/features/computation/band-alignment';
+import type { DftEnergyOption } from '@/features/computation/components/dft-analysis-view';
 import { cn } from '@/lib/utils';
 
 const W = 620;
@@ -27,7 +36,9 @@ function MaterialInputs({
   cbm,
   onName,
   onVbm,
-  onCbm
+  onCbm,
+  workflows,
+  onPickBands
 }: {
   title: string;
   name: string;
@@ -36,15 +47,49 @@ function MaterialInputs({
   onName: (v: string) => void;
   onVbm: (v: string) => void;
   onCbm: (v: string) => void;
+  workflows: DftEnergyOption[];
+  onPickBands: (vbm: number, cbm: number) => void;
 }) {
+  const withBands = workflows.filter((w) => w.vbmEv != null && w.cbmEv != null);
   return (
     <div className='space-y-2 rounded-lg border p-3'>
-      <Input
-        value={name}
-        onChange={(e) => onName(e.target.value)}
-        placeholder={title}
-        className='h-8 text-sm font-medium'
-      />
+      <div className='flex items-center gap-1.5'>
+        <Input
+          value={name}
+          onChange={(e) => onName(e.target.value)}
+          placeholder={title}
+          className='h-8 flex-1 text-sm font-medium'
+        />
+        {withBands.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant='outline'
+                size='icon'
+                className='size-8 shrink-0'
+                title='Điền VBM/CBM từ workflow đã tính'
+                aria-label='Điền VBM/CBM từ workflow'
+              >
+                <IconDatabaseImport className='size-4' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end' className='max-h-64 overflow-y-auto'>
+              {withBands.map((w) => (
+                <DropdownMenuItem
+                  key={w.id}
+                  onClick={() => onPickBands(w.vbmEv as number, w.cbmEv as number)}
+                  className='gap-3 text-xs'
+                >
+                  <span className='truncate'>{w.name}</span>
+                  <span className='ml-auto font-mono tabular-nums text-muted-foreground'>
+                    {(w.vbmEv as number).toFixed(2)} / {(w.cbmEv as number).toFixed(2)}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </div>
       <div className='grid grid-cols-2 gap-2'>
         <div className='space-y-1'>
           <Label className='text-[11px]'>VBM [eV]</Label>
@@ -73,7 +118,7 @@ function MaterialInputs({
   );
 }
 
-export function DftBandAlignmentView() {
+export function DftBandAlignmentView({ workflows = [] }: { workflows?: DftEnergyOption[] }) {
   const [nameA, setNameA] = useState('WO₃');
   const [vbmA, setVbmA] = useState('');
   const [cbmA, setCbmA] = useState('');
@@ -131,6 +176,11 @@ export function DftBandAlignmentView() {
             onName={setNameA}
             onVbm={setVbmA}
             onCbm={setCbmA}
+            workflows={workflows}
+            onPickBands={(v, c) => {
+              setVbmA(String(v));
+              setCbmA(String(c));
+            }}
           />
           <MaterialInputs
             title='Vật liệu B'
@@ -140,6 +190,11 @@ export function DftBandAlignmentView() {
             onName={setNameB}
             onVbm={setVbmB}
             onCbm={setCbmB}
+            workflows={workflows}
+            onPickBands={(v, c) => {
+              setVbmB(String(v));
+              setCbmB(String(c));
+            }}
           />
           {result && (
             <div className='space-y-2 rounded-lg border p-3 text-sm'>

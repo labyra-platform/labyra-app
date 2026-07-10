@@ -6,11 +6,19 @@
  * plus the H⁺+e⁻ → H* → ½H₂ free-energy step diagram. Path:
  * /[locale]/dashboard/computation/analysis.
  */
-import { IconDownload, IconInfoCircle } from '@tabler/icons-react';
+import { IconDatabaseImport, IconDownload, IconInfoCircle } from '@tabler/icons-react';
 import { useMemo, useRef, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { DftEnergyOption } from '@/features/computation/components/dft-analysis-view';
 import {
   computeHer,
   DEFAULT_H_CORRECTION_EV,
@@ -27,30 +35,66 @@ function EnergyField({
   label,
   hint,
   value,
-  onChange
+  onChange,
+  workflows,
+  onPick
 }: {
   label: string;
   hint: string;
   value: string;
   onChange: (v: string) => void;
+  workflows: DftEnergyOption[];
+  onPick: (energyRy: number) => void;
 }) {
+  const withEnergy = workflows.filter((w) => w.energyRy != null);
   return (
     <div className='space-y-1'>
       <Label className='text-xs font-medium'>{label}</Label>
-      <Input
-        type='number'
-        inputMode='decimal'
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder='0.0000'
-        className='h-8 font-mono text-sm tabular-nums'
-      />
+      <div className='flex items-center gap-1.5'>
+        <Input
+          type='number'
+          inputMode='decimal'
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder='0.0000'
+          className='h-8 flex-1 font-mono text-sm tabular-nums'
+        />
+        {withEnergy.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant='outline'
+                size='icon'
+                className='size-8 shrink-0'
+                title='Điền từ workflow đã tính'
+                aria-label='Điền năng lượng từ workflow'
+              >
+                <IconDatabaseImport className='size-4' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end' className='max-h-64 overflow-y-auto'>
+              {withEnergy.map((w) => (
+                <DropdownMenuItem
+                  key={w.id}
+                  onClick={() => onPick(w.energyRy as number)}
+                  className='gap-3 font-mono text-xs tabular-nums'
+                >
+                  <span className='truncate font-sans'>{w.name}</span>
+                  <span className='ml-auto text-muted-foreground'>
+                    {(w.energyRy as number).toFixed(4)} Ry
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </div>
       <p className='text-[11px] text-muted-foreground'>{hint}</p>
     </div>
   );
 }
 
-export function DftHerAnalysisView() {
+export function DftHerAnalysisView({ workflows = [] }: { workflows?: DftEnergyOption[] }) {
   const [unit, setUnit] = useState<'Ry' | 'eV'>('Ry');
   const [eSlab, setESlab] = useState('');
   const [eSlabH, setESlabH] = useState('');
@@ -156,18 +200,33 @@ export function DftHerAnalysisView() {
             hint='Năng lượng tổng slab bề mặt sạch (relax xong).'
             value={eSlab}
             onChange={setESlab}
+            workflows={workflows}
+            onPick={(ry) => {
+              setESlab(String(ry));
+              setUnit('Ry');
+            }}
           />
           <EnergyField
             label={`E(slab + nH) [${unit}]`}
             hint='Năng lượng tổng slab có n nguyên tử H hấp phụ.'
             value={eSlabH}
             onChange={setESlabH}
+            workflows={workflows}
+            onPick={(ry) => {
+              setESlabH(String(ry));
+              setUnit('Ry');
+            }}
           />
           <EnergyField
             label={`E(H₂) [${unit}]`}
             hint='Năng lượng phân tử H₂ pha khí (cùng ecutwfc).'
             value={eH2}
             onChange={setEH2}
+            workflows={workflows}
+            onPick={(ry) => {
+              setEH2(String(ry));
+              setUnit('Ry');
+            }}
           />
           <div className='grid grid-cols-2 gap-3'>
             <div className='space-y-1'>

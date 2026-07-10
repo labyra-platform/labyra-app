@@ -214,7 +214,9 @@ export function DftResultsTab({ workflow }: { workflow: DftWorkflow }) {
             <Row label={t('totalEnergy')}>{data.totalEnergyRy.toFixed(4)} Ry</Row>
           ) : null}
           {data.nElectrons != null ? <Row label={t('electrons')}>{data.nElectrons}</Row> : null}
-          {data.scfGap ? <Row label={t('scfGapHl')}>{data.scfGap.gapEv.toFixed(2)} eV</Row> : null}
+          {data.scfGap && data.scfGap.gapEv != null ? (
+            <Row label={t('scfGapHl')}>{data.scfGap.gapEv.toFixed(2)} eV</Row>
+          ) : null}
           {data.scfIterations != null ? (
             <Row label={t('scfIterations')}>{data.scfIterations}</Row>
           ) : null}

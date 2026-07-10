@@ -6,7 +6,7 @@ import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
 import { NotificationCard } from '@/components/ui/notification-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useNotificationStore } from '../utils/store';
+import { useNotifications } from '@/features/notifications/use-notifications';
 
 const actionRoutes: Record<string, string> = {
   view: '/dashboard/workspaces',
@@ -17,7 +17,7 @@ const actionRoutes: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
+  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   const router = useRouter();
   const count = unreadCount();
 

@@ -38,6 +38,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Icons } from '@/components/icons';
 import { PaperMetadataEditor } from '@/features/papers/components/paper-metadata-editor';
 import { getFirebaseAuth } from '@/lib/firebase/client';
+import { createNotification } from '@/lib/firestore/queries/notifications';
 import { toast } from 'sonner';
 import { aggregateJournalStats } from '@/features/papers/lib/journal-stats';
 import { PapersLandscape } from '@/features/papers/components/papers-landscape';
@@ -130,6 +131,8 @@ export function PaperList({
   // R283d: toast when a paper becomes a DOI duplicate. Existing duplicates at
   // mount are remembered silently so only newly-detected ones notify.
   const tDup = useTranslations('papers');
+  const notifTenantId = useTenantId();
+  const notifUid = getFirebaseAuth().currentUser?.uid ?? null;
   const seenDuplicatesRef = useRef<Set<string> | null>(null);
   useEffect(() => {
     if (seenDuplicatesRef.current === null) {
@@ -142,9 +145,17 @@ export function PaperList({
       if (p.status === 'duplicate' && p.id && !seenDuplicatesRef.current.has(p.id)) {
         seenDuplicatesRef.current.add(p.id);
         toast.error(tDup('duplicateDetected'), { description: p.title || undefined });
+        if (notifTenantId && notifUid) {
+          void createNotification(notifTenantId, notifUid, {
+            title: tDup('duplicateDetected'),
+            body: p.title || '',
+            type: 'paper',
+            href: `/${locale}/dashboard/papers`
+          });
+        }
       }
     }
-  }, [papers, tDup]);
+  }, [papers, tDup, notifTenantId, notifUid, locale]);
   const [filter, setFilter] = useState<PaperFilterValue>(() => createEmptyPaperFilter());
   const [sort, setSort] = useState<SortKey>('recent');
   const [view, setView] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen

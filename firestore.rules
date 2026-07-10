@@ -97,6 +97,13 @@ service cloud.firestore {
         allow write: if isWriter(tenantId) || isSuperAdmin();
       }
 
+      // Per-user notifications (R290): only the owner reads/writes their own.
+      // The worker (Admin SDK) bypasses rules to create job-done notifications.
+      match /userNotifications/{uid}/items/{notifId} {
+        allow read, write: if (belongsToTenant(tenantId) && request.auth.uid == uid)
+          || isSuperAdmin();
+      }
+
       match /equipment/{equipmentId} {
         allow read: if belongsToTenant(tenantId) || isSuperAdmin();
         allow write: if isWriter(tenantId) || isSuperAdmin();

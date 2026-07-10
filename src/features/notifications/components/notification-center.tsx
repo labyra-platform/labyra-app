@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Link } from '@/i18n/navigation';
-import { useNotificationStore } from '../utils/store';
+import { useNotifications } from '@/features/notifications/use-notifications';
 
 const MAX_VISIBLE = 5;
 
@@ -21,7 +21,7 @@ const actionRoutes: Record<string, string> = {
 };
 
 export function NotificationCenter() {
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
+  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   const router = useRouter();
   const count = unreadCount();
   const visibleNotifications = notifications.slice(0, MAX_VISIBLE);

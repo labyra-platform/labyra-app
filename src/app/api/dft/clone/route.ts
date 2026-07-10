@@ -71,7 +71,9 @@ export async function POST(request: Request) {
       workflowId: newRunId,
       workflow: { structure: base.structure, global: mergedGlobal, units: base.units },
       machinePreset,
-      maxRunSec: MAX_RUN_SEC
+      maxRunSec: MAX_RUN_SEC,
+      createdBy: user.name ?? user.email ?? user.uid,
+      createdByUid: user.uid
     });
     if (!result.ok) {
       return NextResponse.json(

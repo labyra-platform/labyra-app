@@ -41,7 +41,8 @@ export async function POST(request: Request) {
       workflow,
       machinePreset,
       maxRunSec: MAX_RUN_SEC,
-      createdBy: user.name ?? user.email ?? user.uid
+      createdBy: user.name ?? user.email ?? user.uid,
+      createdByUid: user.uid
     });
     if (!result.ok) {
       return NextResponse.json(

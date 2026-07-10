@@ -82,6 +82,7 @@ export interface SubmitWorkflowBody {
   machinePreset: string;
   maxRunSec?: number;
   createdBy?: string;
+  createdByUid?: string;
 }
 
 export function submitWorkflowToWorker(body: SubmitWorkflowBody): Promise<WorkerResult> {

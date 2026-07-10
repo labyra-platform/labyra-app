@@ -111,7 +111,14 @@ export function DftWorkflowWorkspace({
                 <SelectContent>
                   {allJobs.map((j) => (
                     <SelectItem key={j.id} value={j.id}>
-                      {j.name}
+                      <span className='flex items-center gap-2'>
+                        <span
+                          className={`size-2 shrink-0 rounded-full ${
+                            (j.status && STATUS_DOT[j.status]) || 'bg-muted-foreground/30'
+                          }`}
+                        />
+                        {j.name}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

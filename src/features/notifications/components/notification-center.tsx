@@ -1,13 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { NotificationCard } from '@/components/ui/notification-card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useNotifications } from '@/features/notifications/use-notifications';
 
 const MAX_VISIBLE = 5;
@@ -22,6 +22,7 @@ const actionRoutes: Record<string, string> = {
 
 export function NotificationCenter() {
   const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
+  const t = useTranslations('common');
   const router = useRouter();
   const count = unreadCount();
   const visibleNotifications = notifications.slice(0, MAX_VISIBLE);
@@ -80,14 +81,29 @@ export function NotificationCenter() {
                   body={notification.body}
                   status={notification.status}
                   createdAt={notification.createdAt}
-                  actions={notification.actions}
+                  actions={
+                    notification.actions ??
+                    (notification.href
+                      ? [
+                          {
+                            id: 'open',
+                            label: t('notificationView'),
+                            type: 'redirect',
+                            style: 'primary'
+                          }
+                        ]
+                      : undefined)
+                  }
                   onMarkAsRead={markAsRead}
                   onAction={(notifId, actionId) => {
-                    const route = actionRoutes[actionId];
-                    if (route) {
-                      markAsRead(notifId);
-                      router.push(route);
+                    markAsRead(notifId);
+                    const n = notifications.find((x) => x.id === notifId);
+                    if (n?.href) {
+                      router.push(n.href);
+                      return;
                     }
+                    const route = actionRoutes[actionId];
+                    if (route) router.push(route);
                   }}
                 />
               ))}

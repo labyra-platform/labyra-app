@@ -150,12 +150,12 @@ export function PaperList({
             title: tDup('duplicateDetected'),
             body: p.title || '',
             type: 'paper',
-            href: `/${locale}/dashboard/papers`
+            href: `/dashboard/papers`
           });
         }
       }
     }
-  }, [papers, tDup, notifTenantId, notifUid, locale]);
+  }, [papers, tDup, notifTenantId, notifUid]);
   const [filter, setFilter] = useState<PaperFilterValue>(() => createEmptyPaperFilter());
   const [sort, setSort] = useState<SortKey>('recent');
   const [view, setView] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen

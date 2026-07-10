@@ -10,7 +10,8 @@
     "delete": "Xóa",
     "edit": "Sửa",
     "search": "Tìm kiếm",
-    "actions": "Tác vụ"
+    "actions": "Tác vụ",
+    "notificationView": "Xem"
   },
   "nav": {
     "dashboard": "Bảng điều khiển",

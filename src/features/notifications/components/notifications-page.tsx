@@ -1,12 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Icons } from '@/components/icons';
 import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
 import { NotificationCard } from '@/components/ui/notification-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNotifications } from '@/features/notifications/use-notifications';
+import { useRouter } from '@/i18n/navigation';
 
 const actionRoutes: Record<string, string> = {
   view: '/dashboard/workspaces',
@@ -18,6 +19,7 @@ const actionRoutes: Record<string, string> = {
 
 export default function NotificationsPage() {
   const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications();
+  const t = useTranslations('common');
   const router = useRouter();
   const count = unreadCount();
 
@@ -44,14 +46,29 @@ export default function NotificationsPage() {
             body={notification.body}
             status={notification.status}
             createdAt={notification.createdAt}
-            actions={notification.actions}
+            actions={
+              notification.actions ??
+              (notification.href
+                ? [
+                    {
+                      id: 'open',
+                      label: t('notificationView'),
+                      type: 'redirect',
+                      style: 'primary'
+                    }
+                  ]
+                : undefined)
+            }
             onMarkAsRead={markAsRead}
             onAction={(notifId, actionId) => {
-              const route = actionRoutes[actionId];
-              if (route) {
-                markAsRead(notifId);
-                router.push(route);
+              markAsRead(notifId);
+              const n = notifications.find((x) => x.id === notifId);
+              if (n?.href) {
+                router.push(n.href);
+                return;
               }
+              const route = actionRoutes[actionId];
+              if (route) router.push(route);
             }}
           />
         ))}

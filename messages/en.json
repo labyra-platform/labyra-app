@@ -10,7 +10,8 @@
     "delete": "Delete",
     "edit": "Edit",
     "search": "Search",
-    "actions": "Actions"
+    "actions": "Actions",
+    "notificationView": "View"
   },
   "nav": {
     "dashboard": "Dashboard",

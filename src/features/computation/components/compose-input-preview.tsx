@@ -18,6 +18,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { highlightQeInput } from '@/features/computation/qe-highlight';
 
 /** In-session cache of rendered .in text, keyed by structure+global+params+calc. */
 const previewCache = new Map<string, string>();
@@ -184,9 +185,10 @@ export function ComposeInputPreview({
       {!open ? null : error ? (
         <p className='text-destructive px-3 py-2 text-xs'>{error}</p>
       ) : text ? (
-        <pre className='max-h-56 overflow-auto px-3 py-2 font-mono text-[11px] leading-relaxed'>
-          {text}
-        </pre>
+        <pre
+          className='max-h-56 overflow-auto px-3 py-2 font-mono text-[11px] leading-relaxed'
+          dangerouslySetInnerHTML={{ __html: highlightQeInput(text) }}
+        />
       ) : (
         <p className='text-muted-foreground px-3 py-2 text-xs'>{t('composeInputEmpty')}</p>
       )}

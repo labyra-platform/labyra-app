@@ -401,6 +401,49 @@ mark.pcm {
   background: hsl(217 91% 60% / 0.28);
 }
 
+/* Quantum ESPRESSO input syntax highlight (compose input preview), tuned to read
+   on the muted panel background in light + dark. */
+.qe-namelist,
+.qe-card {
+  color: hsl(217 91% 45%);
+  font-weight: 600;
+}
+.qe-key {
+  color: hsl(174 65% 30%);
+}
+.qe-string {
+  color: hsl(142 64% 36%);
+}
+.qe-number {
+  color: hsl(28 82% 45%);
+}
+.qe-const {
+  color: hsl(280 60% 52%);
+}
+.qe-comment {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+.qe-punct {
+  color: var(--muted-foreground);
+}
+.dark .qe-namelist,
+.dark .qe-card {
+  color: hsl(213 93% 68%);
+}
+.dark .qe-key {
+  color: hsl(172 66% 55%);
+}
+.dark .qe-string {
+  color: hsl(142 60% 62%);
+}
+.dark .qe-number {
+  color: hsl(32 95% 62%);
+}
+.dark .qe-const {
+  color: hsl(280 70% 72%);
+}
+
 /* ── R323: hide number-input spinner arrows (▲▼) app-wide ────────────────────
    The browser's default up/down spinners on <input type="number"> (e.g. the
    Compare target value, composer per-node params) read as visual noise in this

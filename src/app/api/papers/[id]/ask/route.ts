@@ -100,15 +100,19 @@ function buildSystemPrompt(args: {
     args.locale === 'en'
       ? "ANSWER IN ENGLISH by default; if the user clearly writes the question in another language, mirror the user's language."
       : "ANSWER IN VIETNAMESE by default unless the user clearly writes the question in English (then mirror the user's language).";
+  const noAnswerReply =
+    args.locale === 'en'
+      ? 'I could not find this in the document.'
+      : 'Tôi không tìm thấy nội dung này trong tài liệu.';
   if (args.summaryMode) {
     const fullText = args.hits.map((h) => h.text).join('\n\n');
-    return `You are Labyra's reading assistant for a single scientific paper. Below is the FULL TEXT of the paper "${args.paperTitle}" (assembled from its extracted chunks in order). Produce a comprehensive, well-structured summary.
+    return `You are Labyra's reading assistant for a single scientific document. Below is the FULL TEXT of the document "${args.paperTitle}" (assembled from its extracted chunks in order). Produce a comprehensive, well-structured summary.
 
 Rules (every one is mandatory):
-1. GROUNDED. Summarize ONLY what the paper states. Do NOT add outside facts, background, or comparisons the paper itself does not make. If the paper doesn't cover something, don't mention it.
-2. COVER THE WHOLE PAPER. You have the entire text, so do not stop at the abstract — cover the objective, materials/methods, the concrete key results (report the actual values, samples, conditions the paper gives), and the conclusions.
+1. GROUNDED. Summarize ONLY what the document states. Do NOT add outside facts, background, or comparisons the document itself does not make. If the document doesn't cover something, don't mention it.
+2. COVER THE WHOLE DOCUMENT. You have the entire text, so do not stop at the abstract — cover the objective, materials/methods, the concrete key results (report the actual values, samples, conditions the document gives), and the conclusions.
 3. STRUCTURE. Organize with **bold** section labels and "- " bullet lists (e.g. **Mục tiêu**, **Phương pháp**, **Kết quả chính**, **Kết luận**). Keep it scannable.
-4. KEEP HEDGES. Preserve the paper's uncertainty ("may", "suggests" → "có thể", "gợi ý"). Never upgrade certainty or overstate findings.
+4. KEEP HEDGES. Preserve the document's uncertainty ("may", "suggests" → "có thể", "gợi ý"). Never upgrade certainty or overstate findings.
 5. FORMATTING & FIDELITY. Standard Markdown. Write mathematics as LaTeX delimited by $…$ or $$…$$. Reproduce chemical formulae, units, and symbols verbatim (cm⁻¹, WO₃, °C).
 6. ${answerLangRule}
 
@@ -123,32 +127,32 @@ ${fullText}`;
     )
     .join('\n\n');
 
-  return `You are Labyra's reading assistant for a single scientific paper. Answer ONLY from the SOURCE PASSAGES below — these are chunks retrieved from the paper "${args.paperTitle}". You are NOT allowed to draw on outside knowledge, training data, or general scientific common sense.
+  return `You are Labyra's reading assistant for a single scientific document. Answer ONLY from the SOURCE PASSAGES below — these are chunks retrieved from the document "${args.paperTitle}". You are NOT allowed to draw on outside knowledge, training data, or general scientific common sense.
 
 Rules (every one is mandatory):
 1. CITE OR REFUSE. Every factual sentence must be backed by one of the numbered sources and end with its bracket, e.g. "The catalyst is IrNC@TiO2 [2]." If no source supports a claim, do not write the claim.
 2. NO-ANSWER PATH. If the sources don't actually contain the answer, reply with exactly:
-   "Tôi không tìm thấy nội dung này trong paper."
-   (followed by a one-sentence explanation of what the paper does cover, if anything). Never invent.
-3. KEEP HEDGES. If the paper says "may", "could", "suggests", "possibly", reproduce that hedge ("có thể", "gợi ý"). Never upgrade certainty.
-4. NO OUTSIDE FACTS. Do not add common-knowledge context the paper itself doesn't state. If a number, value, or claim is not in the sources, omit it.
+   "${noAnswerReply}"
+   (followed by a one-sentence explanation of what the document does cover, if anything). Never invent.
+3. KEEP HEDGES. If the document says "may", "could", "suggests", "possibly", reproduce that hedge ("có thể", "gợi ý"). Never upgrade certainty.
+4. NO OUTSIDE FACTS. Do not add common-knowledge context the document itself doesn't state. If a number, value, or claim is not in the sources, omit it.
 5. FORMATTING & CHEMICAL FIDELITY. Structure the answer in standard Markdown: **bold** for key terms, "- " bullet lists for enumerations, short paragraphs. Write ALL mathematics as LaTeX delimited by $…$ (inline) or $$…$$ (a standalone displayed equation) — e.g. $E_F(\\text{bulk})$, $$\\Delta G_{H^*}=E_{ads}-\\tfrac12 E_{H_2}$$. Reproduce chemical formulae, units, and symbols verbatim (NaOH, H₂O₂, IrCl₃·xH₂O, cm⁻¹); prefer LaTeX for formulae with sub/superscripts ($\\text{WO}_3$, $\\text{cm}^{-1}$) so they render and paste into Word as real equations. Never put Vietnamese or prose inside the math delimiters — they are for formulae only.
 6. ${answerLangRule}${
     args.hasSelection
       ? `
-7. SELECTION MODE. The user has highlighted a specific passage. Start your answer with a 1–2 sentence direct quote from THAT passage (in the original language, marked with «…»), then provide your grounded interpretation citing the numbered sources. Do not stray to other parts of the paper unless the question explicitly asks you to.`
+7. SELECTION MODE. The user has highlighted a specific passage. Start your answer with a 1–2 sentence direct quote from THAT passage (in the original language, marked with «…»), then provide your grounded interpretation citing the numbered sources. Do not stray to other parts of the document unless the question explicitly asks you to.`
       : ''
   }
 
 SOURCE PASSAGES:
 ${sourceBlocks}
 
-FOLLOW-UP QUESTIONS. After your answer — and ONLY if you actually answered from the sources (never after the no-answer reply) — append a line containing exactly [[FOLLOWUP]] and then 2-3 short questions the reader might naturally ask next about this paper, one per line, in the same language as your answer. Each must be answerable from this paper; keep them specific and distinct. Do not number them or add any other text after them.`;
+FOLLOW-UP QUESTIONS. After your answer — and ONLY if you actually answered from the sources (never after the no-answer reply) — append a line containing exactly [[FOLLOWUP]] and then 2-3 short questions the reader might naturally ask next about this document, one per line, in the same language as your answer. Each must be answerable from this document; keep them specific and distinct. Do not number them or add any other text after them.`;
 }
 
 function buildUserPrompt(question: string, selectionText: string | undefined): string {
   if (!selectionText) return question;
-  return `[Selected passage from the paper]\n${selectionText}\n\n[Question about this passage]\n${question}`;
+  return `[Selected passage from the document]\n${selectionText}\n\n[Question about this passage]\n${question}`;
 }
 
 // "tóm tắt bài này" / "summarize" is a GLOBAL operation — RAG's top-K retrieval
@@ -156,7 +160,7 @@ function buildUserPrompt(question: string, selectionText: string | undefined): s
 // mode: load the entire paper into context instead of retrieving. ~15-20k tokens
 // for a typical paper fits the model's window.
 const SUMMARY_MARKERS =
-  /(tóm\s*tắt|tóm\s*lược|tổng\s*quan|tổng\s*hợp lại|summary|summari[sz]e|overview|nội\s*dung\s*chính|ý\s*chính|main\s*(finding|point|idea|contribution)|key\s*(finding|point|takeaway)|bài\s*(báo|này)\s*(nói|viết|về|trình\s*bày)\s*(gì|về)|what\s*(is|does|are)\s*(this|the)\s*paper)/i;
+  /(tóm\s*tắt|tóm\s*lược|tổng\s*quan|tổng\s*hợp lại|summary|summari[sz]e|overview|nội\s*dung\s*chính|ý\s*chính|main\s*(finding|point|idea|contribution)|key\s*(finding|point|takeaway)|bài\s*(báo|này)\s*(nói|viết|về|trình\s*bày)\s*(gì|về)|what\s*(is|does|are)\s*(this|the)\s*(paper|document|book|chapter))/i;
 const SUMMARY_CHAR_CAP = 60000;
 
 function isSummaryQuery(q: string): boolean {
@@ -485,8 +489,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     : hits.length === 0 || topScore < emptyThreshold;
   if (noContent) {
     const noAnswer = summaryMode
-      ? 'Paper này chưa xử lý xong nội dung, chưa thể tóm tắt. Thử lại sau giây lát.'
-      : 'Tôi không tìm thấy nội dung này trong paper.';
+      ? body.locale === 'en'
+        ? 'This document has not finished processing yet, so it cannot be summarized. Try again shortly.'
+        : 'Tài liệu này chưa xử lý xong nội dung, chưa thể tóm tắt. Thử lại sau giây lát.'
+      : body.locale === 'en'
+        ? 'I could not find this in the document.'
+        : 'Tôi không tìm thấy nội dung này trong tài liệu.';
     const meta: AskStreamMeta = { citations: [], trustScore: topScore, noAnswer: true };
     const assistantMsgId = db.collection(`tenants/${tenantId}/papers/${paperId}/qa`).doc().id;
     await db

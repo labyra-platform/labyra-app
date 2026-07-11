@@ -49,7 +49,7 @@ async function decompose(question: string, paperTitle: string): Promise<string[]
       thinkingBudget: 0,
       system: [
         {
-          text: `You decompose a research question about a single scientific paper into ${SUBQ_COUNT} focused, non-overlapping sub-questions that together cover it comprehensively. Each must be answerable from the paper, and phrased in the same language as the question. Return ONLY a JSON array of ${SUBQ_COUNT} strings — no prose, no numbering.`
+          text: `You decompose a research question about a single scientific document into ${SUBQ_COUNT} focused, non-overlapping sub-questions that together cover it comprehensively. Each must be answerable from the document, and phrased in the same language as the question. Return ONLY a JSON array of ${SUBQ_COUNT} strings — no prose, no numbering.`
         }
       ],
       messages: [
@@ -86,7 +86,7 @@ function buildSynthesisPrompt(
     )
     .join('\n\n');
   const aspects = subQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n');
-  return `You are Labyra's deep-research assistant for the paper "${paperTitle}". Write a comprehensive, well-structured research answer to the user's question, grounded ONLY in the numbered SOURCE PASSAGES below. Do not use outside knowledge.
+  return `You are Labyra's deep-research assistant for the document "${paperTitle}". Write a comprehensive, well-structured research answer to the user's question, grounded ONLY in the numbered SOURCE PASSAGES below. Do not use outside knowledge.
 
 Organise the answer around these aspects (a bold header per aspect):
 ${aspects}
@@ -137,7 +137,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const db = getAdminFirestoreService();
-  let paperTitle = 'this paper';
+  let paperTitle = 'this document';
   try {
     const snap = await db.doc(`tenants/${tenantId}/papers/${paperId}`).get();
     if (!snap.exists) return jsonError(404, 'paper_not_found');
@@ -192,7 +192,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         if (hits.length === 0) {
           controller.enqueue(
             encoder.encode(
-              'Tôi không tìm thấy nội dung liên quan trong paper để nghiên cứu câu hỏi này.'
+              body.locale === 'en'
+                ? 'I could not find relevant content in the document to research this question.'
+                : 'Tôi không tìm thấy nội dung liên quan trong tài liệu để nghiên cứu câu hỏi này.'
             )
           );
           const meta: AskStreamMeta = { citations: [], trustScore: 0, noAnswer: true };

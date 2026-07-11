@@ -352,7 +352,7 @@ export function AskAiTab({
       )}
       {/* Conversation */}
       <div ref={scrollerRef} className='min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-4 text-sm'>
-        {isEmpty && <EmptyState />}
+        {isEmpty && <EmptyState onAsk={(q) => void send(q)} />}
         {messages.map((m, i) =>
           m.role === 'user' ? (
             <UserBubble key={m.id} content={m.content} selectionText={m.selectionText} />
@@ -477,17 +477,36 @@ export function AskAiTab({
   );
 }
 
-function EmptyState() {
+const STARTER_QUESTIONS = [
+  'Tóm tắt đóng góp chính của paper',
+  'Phương pháp hoặc quy trình chính là gì?',
+  'Kết quả quan trọng nhất là gì?',
+  'Hạn chế và hướng phát triển?'
+];
+
+function EmptyState({ onAsk }: { onAsk: (q: string) => void }) {
   return (
-    <div className='flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground'>
-      <div className='flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary'>
+    <div className='flex h-full flex-col items-center justify-center gap-3 px-4 text-center text-muted-foreground'>
+      <div className='bg-primary/10 text-primary flex size-10 items-center justify-center rounded-full'>
         <IconSparkles className='size-5' />
       </div>
-      <p className='text-sm font-medium text-foreground'>Hỏi AI về paper này</p>
-      <p className='text-xs leading-relaxed'>
+      <p className='text-foreground text-sm font-medium'>Hỏi AI về paper này</p>
+      <p className='max-w-sm text-xs leading-relaxed'>
         Mỗi câu trả lời sẽ trích nguồn chính xác từ paper. Bạn có thể bôi đen một đoạn để hỏi cụ thể
         về đoạn đó.
       </p>
+      <div className='mt-1 flex w-full max-w-sm flex-col gap-1.5'>
+        {STARTER_QUESTIONS.map((q) => (
+          <button
+            key={q}
+            type='button'
+            onClick={() => onAsk(q)}
+            className='hover:bg-muted hover:text-foreground rounded-lg border px-3 py-2 text-left text-xs transition-colors'
+          >
+            {q}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

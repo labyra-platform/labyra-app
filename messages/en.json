@@ -72,7 +72,8 @@
     "protocolTemplates": "Protocol Templates",
     "studio": "Studio",
     "projects": "Projects",
-    "aiScience": "AI Science"
+    "aiScience": "AI Science",
+    "accountSettings": "Account"
   },
   "groups": {
     "title": "Research Groups",
@@ -1548,6 +1549,29 @@
       "empty": "Nothing remembered yet. Enable memory above and chat to let the assistant learn.",
       "delete": "Delete",
       "deleted": "Fact deleted"
+    },
+    "account": {
+      "title": "Account",
+      "subtitle": "Manage your profile, appearance, and language.",
+      "profileTitle": "Profile",
+      "profileDesc": "Your name and avatar as shown across the app.",
+      "noName": "(no name set)",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Your name",
+      "save": "Save",
+      "email": "Email",
+      "appearanceTitle": "Appearance",
+      "appearanceDesc": "How the app looks on this device.",
+      "themeMode": "Theme",
+      "themeModeDesc": "Switch between light and dark.",
+      "colorTheme": "Colour theme",
+      "colorThemeDesc": "Accent palette for the interface.",
+      "languageTitle": "Language",
+      "languageDesc": "Interface language.",
+      "language": "Language",
+      "languageHint": "Applies across the app.",
+      "profileSaved": "Profile updated.",
+      "profileSaveError": "Couldn't update profile. Try again."
     }
   },
   "manuscript": {

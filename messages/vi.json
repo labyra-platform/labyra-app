@@ -72,7 +72,8 @@
     "protocolTemplates": "Mẫu quy trình",
     "studio": "Studio",
     "projects": "Đề tài",
-    "aiScience": "AI Science"
+    "aiScience": "AI Science",
+    "accountSettings": "Tài khoản"
   },
   "groups": {
     "title": "Nhóm nghiên cứu",
@@ -1549,6 +1550,29 @@
       "empty": "Chưa ghi nhớ gì. Bật ghi nhớ ở trên và trò chuyện để trợ lý học.",
       "delete": "Xóa",
       "deleted": "Đã xóa"
+    },
+    "account": {
+      "title": "Tài khoản",
+      "subtitle": "Quản lý hồ sơ, giao diện và ngôn ngữ.",
+      "profileTitle": "Hồ sơ",
+      "profileDesc": "Tên và ảnh đại diện hiển thị trong ứng dụng.",
+      "noName": "(chưa đặt tên)",
+      "displayName": "Tên hiển thị",
+      "displayNamePlaceholder": "Tên của bạn",
+      "save": "Lưu",
+      "email": "Email",
+      "appearanceTitle": "Giao diện",
+      "appearanceDesc": "Cách ứng dụng hiển thị trên thiết bị này.",
+      "themeMode": "Chế độ",
+      "themeModeDesc": "Chuyển sáng/tối.",
+      "colorTheme": "Bảng màu",
+      "colorThemeDesc": "Màu nhấn cho giao diện.",
+      "languageTitle": "Ngôn ngữ",
+      "languageDesc": "Ngôn ngữ giao diện.",
+      "language": "Ngôn ngữ",
+      "languageHint": "Áp dụng toàn ứng dụng.",
+      "profileSaved": "Đã cập nhật hồ sơ.",
+      "profileSaveError": "Không cập nhật được. Thử lại."
     }
   },
   "manuscript": {

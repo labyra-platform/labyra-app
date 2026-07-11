@@ -314,6 +314,14 @@ export const navGroups: NavGroup[] = [
         access: { role: 'admin' }
       },
       {
+        title: 'Account',
+        titleKey: 'nav.accountSettings',
+        url: '/dashboard/settings/account',
+        icon: 'account',
+        shortcut: ['a', 'c'],
+        items: []
+      },
+      {
         title: 'Members',
         titleKey: 'nav.members',
         url: '/dashboard/members',

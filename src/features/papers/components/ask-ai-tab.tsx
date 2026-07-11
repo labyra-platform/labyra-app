@@ -26,6 +26,7 @@ import {
   IconTelescope,
   IconTrash
 } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { copyPapersRich, renderPapersAnswerHtml } from '@/features/papers/lib/copy-rich';
@@ -97,13 +98,14 @@ function TrustChip({
   noAnswer: boolean;
   verification?: NumericVerification;
 }) {
+  const t = useTranslations('papersAsk');
   // Verification / source-match badge removed per product decision; only the
   // critical "not found in the paper" signal remains.
   if (!noAnswer) return null;
   return (
     <span className='inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200'>
       <IconAlertCircle className='size-3' />
-      Không có trong paper
+      {t('noAnswerBadge')}
     </span>
   );
 }
@@ -124,6 +126,7 @@ export function AskAiTab({
   pinnedSelection,
   onClearSelection
 }: AskAiTabProps) {
+  const t = useTranslations('papersAsk');
   const [messages, setMessages] = useState<AskMessage[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -162,7 +165,7 @@ export function AskAiTab({
 
   const handleClearChat = useCallback(async () => {
     if (busy || messages.length === 0) return;
-    if (!window.confirm('Xóa toàn bộ hội thoại Ask AI của paper này?')) return;
+    if (!window.confirm(t('clearConfirm'))) return;
     const snapshot = messages;
     setMessages([]);
     setError(null);
@@ -178,9 +181,9 @@ export function AskAiTab({
       if (!res.ok) throw new Error('delete failed');
     } catch {
       setMessages(snapshot);
-      setError('Không xóa được hội thoại. Thử lại nhé.');
+      setError(t('clearError'));
     }
-  }, [busy, messages, paperId]);
+  }, [busy, messages, paperId, t]);
 
   // Auto-scroll to the latest message whenever a stream token lands.
   useEffect(() => {
@@ -343,10 +346,10 @@ export function AskAiTab({
             onClick={handleClearChat}
             disabled={busy}
             className='inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50'
-            title='Xóa toàn bộ hội thoại Ask AI của paper này'
+            title={t('clearTitle')}
           >
             <IconTrash size={13} />
-            Xóa hội thoại
+            {t('clearButton')}
           </button>
         </div>
       )}
@@ -370,17 +373,17 @@ export function AskAiTab({
         {error && (
           <div className='rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive'>
             {error === 'cost_guard_blocked'
-              ? 'Đã vượt hạn mức Q&A hôm nay. Hãy thử lại vào ngày mai.'
+              ? t('errRateDaily')
               : error === 'rate_limited'
-                ? 'Hỏi quá nhanh — chờ một chút rồi thử lại.'
+                ? t('errRateFast')
                 : error === 'Not signed in' ||
                     error.startsWith('missing_token') ||
                     error.startsWith('invalid_token') ||
                     error.startsWith('missing_tenant_claim')
-                  ? 'Phiên đăng nhập có vấn đề — đăng nhập lại rồi thử lại.'
+                  ? t('errAuth')
                   : error.startsWith('retrieval_failed')
-                    ? `Không truy xuất được nội dung paper (Voyage embeddings / Pinecone). ${error.includes(':') ? error.slice(error.indexOf(':') + 1).trim() : 'Kiểm tra paper đã xử lý xong + VOYAGE_API_KEY / PINECONE_API_KEY.'}`
-                    : `Có lỗi khi gọi AI (${error}). Hãy thử lại.`}
+                    ? `${t('errRetrieval')} ${error.includes(':') ? error.slice(error.indexOf(':') + 1).trim() : t('errConfig')}`
+                    : t('errGeneric', { error })}
           </div>
         )}
       </div>
@@ -389,14 +392,14 @@ export function AskAiTab({
       {pinnedSelection && (
         <div className='mx-3 mt-2 rounded-md border-l-2 border-primary/60 bg-muted/40 px-2.5 py-1.5'>
           <div className='mb-0.5 flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground'>
-            <span>Đoạn đã chọn từ paper</span>
+            <span>{t('selectionLabel')}</span>
             <button
               type='button'
               onClick={() => onClearSelection?.()}
               className='hover:text-foreground'
-              aria-label='Bỏ đoạn đã chọn'
+              aria-label={t('clearSelection')}
             >
-              Bỏ
+              {t('clearShort')}
             </button>
           </div>
           <p className='line-clamp-2 text-xs italic text-muted-foreground'>{pinnedSelection}</p>
@@ -420,11 +423,7 @@ export function AskAiTab({
               onClick={() => setResearchMode((v) => !v)}
               disabled={busy}
               aria-pressed={researchMode}
-              title={
-                researchMode
-                  ? 'Nghiên cứu sâu: BẬT — phân rã câu hỏi thành nhiều khía cạnh rồi tổng hợp có cấu trúc'
-                  : 'Nghiên cứu sâu: phân rã câu hỏi, truy hồi từng khía cạnh, tổng hợp báo cáo'
-              }
+              title={researchMode ? t('researchOnTip') : t('researchOffTip')}
               className={cn(
                 'flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors disabled:opacity-50',
                 researchMode
@@ -439,10 +438,8 @@ export function AskAiTab({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKey}
-              placeholder={
-                researchMode ? 'Nghiên cứu sâu về paper này…' : 'Hỏi bất cứ điều gì về paper này…'
-              }
-              aria-label='Câu hỏi cho AI'
+              placeholder={researchMode ? t('placeholderResearch') : t('placeholderAsk')}
+              aria-label={t('questionAria')}
               rows={1}
               disabled={busy}
               className='max-h-[200px] min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed'
@@ -451,8 +448,8 @@ export function AskAiTab({
               type='button'
               onClick={() => (busy ? stop() : void send())}
               disabled={busy ? false : !input.trim()}
-              aria-label={busy ? 'Dừng tạo câu trả lời' : 'Gửi câu hỏi'}
-              title={busy ? 'Dừng' : 'Gửi (Enter)'}
+              aria-label={busy ? t('stopAria') : t('sendAria')}
+              title={busy ? t('stopTitle') : t('sendTitle')}
               className={cn(
                 'flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
                 !busy && !input.trim()
@@ -468,56 +465,50 @@ export function AskAiTab({
             </button>
           </div>
         </div>
-        <p className='mt-1.5 px-1 text-[10.5px] text-muted-foreground'>
-          Câu trả lời chỉ dựa vào nội dung paper. Nếu không tìm thấy, tôi sẽ nói &quot;không tìm
-          thấy&quot;.
-        </p>
+        <p className='mt-1.5 px-1 text-[10.5px] text-muted-foreground'>{t('inputFootnote')}</p>
       </div>
     </div>
   );
 }
 
-const STARTER_QUESTIONS = [
-  'Tóm tắt đóng góp chính của paper',
-  'Phương pháp hoặc quy trình chính là gì?',
-  'Kết quả quan trọng nhất là gì?',
-  'Hạn chế và hướng phát triển?'
-];
+const STARTER_KEYS = ['starter1', 'starter2', 'starter3', 'starter4'] as const;
 
 function EmptyState({ onAsk }: { onAsk: (q: string) => void }) {
+  const t = useTranslations('papersAsk');
   return (
     <div className='flex h-full flex-col items-center justify-center gap-3 px-4 text-center text-muted-foreground'>
       <div className='bg-primary/10 text-primary flex size-10 items-center justify-center rounded-full'>
         <IconSparkles className='size-5' />
       </div>
-      <p className='text-foreground text-sm font-medium'>Hỏi AI về paper này</p>
-      <p className='max-w-sm text-xs leading-relaxed'>
-        Mỗi câu trả lời sẽ trích nguồn chính xác từ paper. Bạn có thể bôi đen một đoạn để hỏi cụ thể
-        về đoạn đó.
-      </p>
+      <p className='text-foreground text-sm font-medium'>{t('emptyTitle')}</p>
+      <p className='max-w-sm text-xs leading-relaxed'>{t('emptyDesc')}</p>
       <div className='mt-1 flex w-full max-w-sm flex-col gap-1.5'>
-        {STARTER_QUESTIONS.map((q) => (
-          <button
-            key={q}
-            type='button'
-            onClick={() => onAsk(q)}
-            className='hover:bg-muted hover:text-foreground rounded-lg border px-3 py-2 text-left text-xs transition-colors'
-          >
-            {q}
-          </button>
-        ))}
+        {STARTER_KEYS.map((k) => {
+          const q = t(k);
+          return (
+            <button
+              key={k}
+              type='button'
+              onClick={() => onAsk(q)}
+              className='hover:bg-muted hover:text-foreground rounded-lg border px-3 py-2 text-left text-xs transition-colors'
+            >
+              {q}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 function UserBubble({ content, selectionText }: { content: string; selectionText?: string }) {
+  const t = useTranslations('papersAsk');
   return (
     <div className='flex flex-col items-end gap-1.5'>
       {selectionText && (
         <div className='max-w-[88%] rounded-md border-l-2 border-primary/60 bg-muted/40 px-2.5 py-1.5'>
           <div className='mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground'>
-            Hỏi về đoạn
+            {t('askAboutSelection')}
           </div>
           <p className='line-clamp-2 text-[11.5px] italic text-muted-foreground'>{selectionText}</p>
         </div>
@@ -542,6 +533,7 @@ function AssistantBubble({
   onAsk: (question: string) => void;
   isLast: boolean;
 }) {
+  const t = useTranslations('papersAsk');
   const html = useMemo(
     () =>
       renderPapersAnswerHtml(stripFollowupArtifact(message.content), {
@@ -623,7 +615,7 @@ function AssistantBubble({
           dangerouslySetInnerHTML={{
             __html: message.content
               ? html
-              : '<span class="inline-flex items-center gap-1"><span class="ask-dot">●</span> Đang tìm trong paper…</span>'
+              : `<span class="inline-flex items-center gap-1"><span class="ask-dot">●</span> ${t('searchingInPaper')}</span>`
           }}
         />
         {citeHover && (
@@ -650,8 +642,8 @@ function AssistantBubble({
               type='button'
               onClick={handleCopy}
               className='ml-auto inline-flex items-center gap-1 rounded p-1 text-[10.5px] text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100'
-              aria-label='Copy answer'
-              title='Copy (giữ định dạng cho Word)'
+              aria-label={t('copyAria')}
+              title={t('copyTitle')}
             >
               {copied ? (
                 <IconCheck className='size-3.5 text-primary' />
@@ -691,6 +683,7 @@ function CitationList({
   citations: AskCitation[];
   onJumpToPage: (page: number, y?: number, highlight?: string) => void;
 }) {
+  const t = useTranslations('papersAsk');
   const [open, setOpen] = useState(false);
   return (
     <Collapsible
@@ -703,7 +696,7 @@ function CitationList({
           className={cn('size-3 transition-transform', open && 'rotate-90')}
           aria-hidden
         />
-        {citations.length} trích nguồn
+        {t('citationCount', { count: citations.length })}
       </CollapsibleTrigger>
       <CollapsibleContent className='mt-2 space-y-1.5'>
         {citations.map((c) => (

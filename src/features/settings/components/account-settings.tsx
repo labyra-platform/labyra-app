@@ -36,7 +36,7 @@ function initialsOf(name: string, email: string): string {
 
 export function AccountSettings() {
   const t = useTranslations('settings.account');
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const email = user?.email ?? '';
   const [name, setName] = useState(user?.displayName ?? '');
   const [saving, setSaving] = useState(false);
@@ -48,6 +48,7 @@ export function AccountSettings() {
     setSaving(true);
     try {
       await updateProfile(user, { displayName: name.trim() });
+      await refreshUser();
       toast.success(t('profileSaved'));
     } catch {
       toast.error(t('profileSaveError'));

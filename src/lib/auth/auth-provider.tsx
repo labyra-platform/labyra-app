@@ -13,7 +13,7 @@
 
 import { onAuthStateChanged, onIdTokenChanged, type User } from 'firebase/auth';
 import type React from 'react';
-import { createContext, type ReactNode, useEffect, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useEffect, useState } from 'react';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 
 export interface AuthClaims {
@@ -26,6 +26,8 @@ export interface AuthContextValue {
   user: User | null;
   claims: AuthClaims;
   loading: boolean;
+  /** Reload the current user + force a re-render (e.g. after updateProfile). */
+  refreshUser: () => Promise<void>;
 }
 
 // L4: type guard thay vì `as AuthClaims` cast
@@ -44,13 +46,24 @@ function parseAuthClaims(claims: unknown): AuthClaims {
 export const AuthContext = createContext<AuthContextValue>({
   user: null,
   claims: {},
-  loading: true
+  loading: true,
+  refreshUser: async () => {}
 });
 
 export function AuthProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<AuthClaims>({});
   const [loading, setLoading] = useState(true);
+  // The Firebase User is mutated in place by updateProfile (same reference), so a
+  // bare setUser won't re-render; this tick forces consumers to re-read.
+  const [, forceTick] = useState(0);
+
+  const refreshUser = useCallback(async () => {
+    const auth = getFirebaseAuth();
+    await auth.currentUser?.reload();
+    setUser(auth.currentUser);
+    forceTick((t) => t + 1);
+  }, []);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -95,5 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }): React.React
     };
   }, []);
 
-  return <AuthContext.Provider value={{ user, claims, loading }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, claims, loading, refreshUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

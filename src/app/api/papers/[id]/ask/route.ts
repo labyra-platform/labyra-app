@@ -94,7 +94,12 @@ function buildSystemPrompt(args: {
   hasSelection: boolean;
   hits: SearchHit[];
   summaryMode?: boolean;
+  locale?: string;
 }): string {
+  const answerLangRule =
+    args.locale === 'en'
+      ? "ANSWER IN ENGLISH by default; if the user clearly writes the question in another language, mirror the user's language."
+      : "ANSWER IN VIETNAMESE by default unless the user clearly writes the question in English (then mirror the user's language).";
   if (args.summaryMode) {
     const fullText = args.hits.map((h) => h.text).join('\n\n');
     return `You are Labyra's reading assistant for a single scientific paper. Below is the FULL TEXT of the paper "${args.paperTitle}" (assembled from its extracted chunks in order). Produce a comprehensive, well-structured summary.
@@ -105,7 +110,7 @@ Rules (every one is mandatory):
 3. STRUCTURE. Organize with **bold** section labels and "- " bullet lists (e.g. **Mục tiêu**, **Phương pháp**, **Kết quả chính**, **Kết luận**). Keep it scannable.
 4. KEEP HEDGES. Preserve the paper's uncertainty ("may", "suggests" → "có thể", "gợi ý"). Never upgrade certainty or overstate findings.
 5. FORMATTING & FIDELITY. Standard Markdown. Write mathematics as LaTeX delimited by $…$ or $$…$$. Reproduce chemical formulae, units, and symbols verbatim (cm⁻¹, WO₃, °C).
-6. ANSWER IN VIETNAMESE by default unless the user clearly writes in English (then mirror it).
+6. ${answerLangRule}
 
 FULL PAPER TEXT:
 ${fullText}`;
@@ -128,7 +133,7 @@ Rules (every one is mandatory):
 3. KEEP HEDGES. If the paper says "may", "could", "suggests", "possibly", reproduce that hedge ("có thể", "gợi ý"). Never upgrade certainty.
 4. NO OUTSIDE FACTS. Do not add common-knowledge context the paper itself doesn't state. If a number, value, or claim is not in the sources, omit it.
 5. FORMATTING & CHEMICAL FIDELITY. Structure the answer in standard Markdown: **bold** for key terms, "- " bullet lists for enumerations, short paragraphs. Write ALL mathematics as LaTeX delimited by $…$ (inline) or $$…$$ (a standalone displayed equation) — e.g. $E_F(\\text{bulk})$, $$\\Delta G_{H^*}=E_{ads}-\\tfrac12 E_{H_2}$$. Reproduce chemical formulae, units, and symbols verbatim (NaOH, H₂O₂, IrCl₃·xH₂O, cm⁻¹); prefer LaTeX for formulae with sub/superscripts ($\\text{WO}_3$, $\\text{cm}^{-1}$) so they render and paste into Word as real equations. Never put Vietnamese or prose inside the math delimiters — they are for formulae only.
-6. ANSWER IN VIETNAMESE by default unless the user clearly writes the question in English (then mirror the user's language).${
+6. ${answerLangRule}${
     args.hasSelection
       ? `
 7. SELECTION MODE. The user has highlighted a specific passage. Start your answer with a 1–2 sentence direct quote from THAT passage (in the original language, marked with «…»), then provide your grounded interpretation citing the numbered sources. Do not stray to other parts of the paper unless the question explicitly asks you to.`
@@ -523,7 +528,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     paperTitle,
     hasSelection: Boolean(selectionText),
     hits,
-    summaryMode
+    summaryMode,
+    locale: body.locale
   });
   const userPrompt = buildUserPrompt(question, selectionText);
   // A whole-paper summary is grounded in the entire document; per-chunk citations

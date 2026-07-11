@@ -72,8 +72,13 @@ async function decompose(question: string, paperTitle: string): Promise<string[]
 function buildSynthesisPrompt(
   paperTitle: string,
   subQuestions: string[],
-  hits: SearchHit[]
+  hits: SearchHit[],
+  locale?: string
 ): string {
+  const answerLangRule =
+    locale === 'en'
+      ? 'Answer in English by default unless the question is in another language.'
+      : 'Answer in Vietnamese by default unless the question is in English.';
   const sourceBlocks = hits
     .map(
       (h, i) =>
@@ -91,7 +96,7 @@ Rules (mandatory):
 2. STRUCTURE. Use **bold** aspect headers and short paragraphs / "- " bullets. Be thorough but strictly grounded.
 3. COVERAGE. If the sources don't cover an aspect, say so briefly instead of padding.
 4. KEEP HEDGES; reproduce chemical formulae/units verbatim; write math as LaTeX $…$ or $$…$$.
-5. Answer in Vietnamese by default unless the question is in English.
+5. ${answerLangRule}
 After the answer, append a line with exactly [[FOLLOWUP]] then 2-3 short follow-up questions (one per line).
 
 SOURCE PASSAGES:
@@ -119,7 +124,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const rl = await checkRateLimit(rateLimitKey('paper-research', tenantId), 20, 60);
   if (!rl.allowed) return jsonError(429, 'rate_limited', { retryAfter: rl.resetSec });
 
-  let body: { question?: string };
+  let body: { question?: string; locale?: string };
   try {
     body = (await request.json()) as { question?: string };
   } catch {
@@ -198,7 +203,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         // 4. Synthesise the report (tier 3 for quality), streaming.
         const { provider, config } = selectProvider(3);
-        const system = buildSynthesisPrompt(paperTitle, subQuestions, hits);
+        const system = buildSynthesisPrompt(paperTitle, subQuestions, hits, body.locale);
         let full = '';
         for await (const event of provider.streamChat({
           model: config.model,

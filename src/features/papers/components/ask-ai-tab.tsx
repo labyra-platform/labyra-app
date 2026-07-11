@@ -26,7 +26,7 @@ import {
   IconTelescope,
   IconTrash
 } from '@tabler/icons-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { copyPapersRich, renderPapersAnswerHtml } from '@/features/papers/lib/copy-rich';
@@ -127,6 +127,7 @@ export function AskAiTab({
   onClearSelection
 }: AskAiTabProps) {
   const t = useTranslations('papersAsk');
+  const locale = useLocale();
   const [messages, setMessages] = useState<AskMessage[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -249,7 +250,9 @@ export function AskAiTab({
         const res = await fetch(`/api/papers/${paperId}/${researchMode ? 'research' : 'ask'}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(researchMode ? { question } : { question, selectionText }),
+          body: JSON.stringify(
+            researchMode ? { question, locale } : { question, selectionText, locale }
+          ),
           signal: controller.signal
         });
         if (!res.ok) {
@@ -318,7 +321,7 @@ export function AskAiTab({
         inputRef.current?.focus();
       }
     },
-    [busy, input, paperId, pinnedSelection, onClearSelection, researchMode]
+    [busy, input, paperId, pinnedSelection, onClearSelection, researchMode, locale]
   );
 
   const stop = useCallback(() => {

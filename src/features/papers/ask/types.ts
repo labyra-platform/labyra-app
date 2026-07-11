@@ -82,6 +82,8 @@ export interface AskRequestBody {
   question: string;
   /** Optional passage the user is asking about (Ctrl+drag → Ask AI). */
   selectionText?: string;
+  /** UI locale ('en' | 'vi') — the model answers in this language by default. */
+  locale?: string;
 }
 
 /** Trailing JSON frame appended to the answer stream so the client can render

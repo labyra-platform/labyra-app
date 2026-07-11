@@ -8,7 +8,7 @@
 
 import { IconChevronRight, IconSearch } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { FOUNDATIONS, DFT_TEXTBOOKS } from '@/features/computation/dft-foundations';
@@ -20,6 +20,42 @@ type SectionId = 'foundations' | 'parameters' | 'workflow' | 'bibliography';
 
 function scrollToAnchor(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Track which of `ids` is the active section as the user scrolls (scroll-spy).
+ * The active one is the topmost section whose top has crossed into a band near
+ * the top of the viewport. Re-observes when the id set changes (section switch).
+ */
+function useScrollSpy(ids: string[]): string | null {
+  const key = ids.join('|');
+  const [active, setActive] = useState<string | null>(ids[0] ?? null);
+
+  useEffect(() => {
+    const els = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (els.length === 0) {
+      setActive(null);
+      return;
+    }
+    setActive(els[0]!.id);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .toSorted((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length > 0) setActive(visible[0]!.target.id);
+      },
+      { rootMargin: '-8% 0px -75% 0px', threshold: 0 }
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+    // key encodes ids; re-run only when the observed set changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  return active;
 }
 
 /** One theory concept: summary always visible, deeper block collapsible. */
@@ -97,6 +133,9 @@ export function DftReferenceView() {
     { id: 'bibliography', label: t('refSecBibliography'), anchors: [] }
   ];
 
+  const activeAnchorIds = NAV.find((s) => s.id === activeSection)?.anchors.map((a) => a.id) ?? [];
+  const activeAnchor = useScrollSpy(activeAnchorIds);
+
   return (
     <div className='space-y-4'>
       <div>
@@ -142,7 +181,12 @@ export function DftReferenceView() {
                         <button
                           type='button'
                           onClick={() => scrollToAnchor(a.id)}
-                          className='text-muted-foreground hover:text-foreground block py-0.5 text-left text-xs'
+                          className={cn(
+                            'block py-0.5 text-left text-xs transition-colors',
+                            a.id === activeAnchor
+                              ? 'text-foreground font-medium'
+                              : 'text-muted-foreground hover:text-foreground'
+                          )}
                         >
                           {a.label}
                         </button>

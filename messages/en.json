@@ -2138,7 +2138,10 @@
     "presetSaveHint": "Saves this {type} step's parameters to reuse later.",
     "presetLoadTitle": "Saved {type} presets",
     "presetNone": "No saved presets for this step type yet.",
-    "presetDelete": "Delete preset"
+    "presetDelete": "Delete preset",
+    "paginationRange": "{from}–{to} of {total}",
+    "paginationPrev": "Previous",
+    "paginationNext": "Next"
   },
   "structures": {
     "importTitle": "Import structure",

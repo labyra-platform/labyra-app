@@ -2139,7 +2139,10 @@
     "presetSaveHint": "Lưu thông số của step {type} này để dùng lại sau.",
     "presetLoadTitle": "Preset {type} đã lưu",
     "presetNone": "Chưa có preset nào cho loại step này.",
-    "presetDelete": "Xoá preset"
+    "presetDelete": "Xoá preset",
+    "paginationRange": "{from}–{to} / {total}",
+    "paginationPrev": "Trước",
+    "paginationNext": "Sau"
   },
   "structures": {
     "importTitle": "Nhập cấu trúc",

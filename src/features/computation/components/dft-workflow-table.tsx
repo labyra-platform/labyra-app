@@ -14,7 +14,7 @@
 
 import { IconSearch, IconTrash } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -59,6 +59,8 @@ const STATUS_ORDER: Record<StatusKind, number> = {
 };
 
 type Filter = 'all' | 'running' | 'completed' | 'failed';
+
+const ROWS_PER_PAGE = 15;
 
 const href = (id: string) => `/dashboard/computation/${id}`;
 
@@ -152,6 +154,12 @@ export function DftWorkflowTable({ rows, creatorNames = {} }: Props) {
     created: (r) => r.createdAt
   });
   const sortedView = sortable.sorted;
+
+  const [page, setPage] = useState(0);
+  useEffect(() => setPage(0), [query, filter]);
+  const pageCount = Math.max(1, Math.ceil(sortedView.length / ROWS_PER_PAGE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = sortedView.slice(safePage * ROWS_PER_PAGE, (safePage + 1) * ROWS_PER_PAGE);
 
   const filters: Filter[] = ['all', 'running', 'completed', 'failed'];
 
@@ -299,7 +307,7 @@ export function DftWorkflowTable({ rows, creatorNames = {} }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedView.map((r) => (
+                {pageRows.map((r) => (
                   <TableRow
                     key={r.id}
                     data-state={selected.has(r.id) ? 'selected' : undefined}
@@ -364,7 +372,7 @@ export function DftWorkflowTable({ rows, creatorNames = {} }: Props) {
           </div>
 
           <div className='space-y-3 md:hidden'>
-            {view.map((r) => (
+            {pageRows.map((r) => (
               <div key={r.id} className='rounded-lg border p-3'>
                 <div className='flex items-center gap-2'>
                   <Checkbox
@@ -394,6 +402,39 @@ export function DftWorkflowTable({ rows, creatorNames = {} }: Props) {
               </div>
             ))}
           </div>
+
+          {sortedView.length > ROWS_PER_PAGE ? (
+            <div className='flex items-center justify-between pt-3'>
+              <span className='text-muted-foreground text-xs tabular-nums'>
+                {t('paginationRange', {
+                  from: safePage * ROWS_PER_PAGE + 1,
+                  to: Math.min((safePage + 1) * ROWS_PER_PAGE, sortedView.length),
+                  total: sortedView.length
+                })}
+              </span>
+              <div className='flex items-center gap-2'>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={safePage === 0}
+                >
+                  {t('paginationPrev')}
+                </Button>
+                <span className='text-muted-foreground text-xs tabular-nums'>
+                  {safePage + 1}/{pageCount}
+                </span>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                  disabled={safePage >= pageCount - 1}
+                >
+                  {t('paginationNext')}
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </>
       )}
     </div>

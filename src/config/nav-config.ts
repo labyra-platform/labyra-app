@@ -216,7 +216,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Papers',
+        title: 'Documents',
         titleKey: 'nav.papers',
         url: '/dashboard/papers',
         icon: 'papers',

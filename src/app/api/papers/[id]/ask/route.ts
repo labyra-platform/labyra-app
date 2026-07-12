@@ -236,15 +236,19 @@ const LOCATOR_KINDS: LocatorKind[] = [
   { re: /(bảng|table)/i, labels: ['Table', 'table'], bareParens: false }
 ];
 
-/** Extract the numbers a locator query targets, expanding ranges (11 đến 13 → 11,12,13). */
-function extractLocatorNumbers(q: string): number[] {
+/** Extract the identifiers a locator query targets. Handles sectioned/dotted
+ *  textbook ids (2.3.31, 14.3.3b) first, then integer ranges (11 đến 13), then
+ *  bare integers (papers: Eq (11)). Returns strings so dotted ids survive. */
+function extractLocatorNumbers(q: string): string[] {
+  const dotted = [...q.matchAll(/\b(\d+(?:\.\d+)+[a-z]?)\b/gi)].map((m) => m[1]);
+  if (dotted.length > 0) return [...new Set(dotted)].slice(0, 8);
   const range = /(\d+)\s*(?:-|–|—|đến|tới|to|through)\s*(\d+)/i.exec(q);
   if (range) {
     const a = Number(range[1]);
     const b = Number(range[2]);
-    if (b >= a && b - a <= 20) return Array.from({ length: b - a + 1 }, (_, i) => a + i);
+    if (b >= a && b - a <= 20) return Array.from({ length: b - a + 1 }, (_, i) => String(a + i));
   }
-  return [...q.matchAll(/\b(\d{1,3})\b/g)].map((m) => Number(m[1])).slice(0, 8);
+  return [...q.matchAll(/\b(\d{1,3}[a-z]?)\b/gi)].map((m) => m[1]).slice(0, 8);
 }
 
 /** "giải thích phương trình 11 đến 13" retrieves poorly because it references
@@ -255,9 +259,15 @@ function expandLocatorQuery(q: string): {
   query: string;
   isLocator: boolean;
   kind: LocatorKind | null;
-  numbers: number[];
+  numbers: string[];
 } {
-  const kind = LOCATOR_KINDS.find((k) => k.re.test(q)) ?? null;
+  // A bare multi-dot id like "2.3.31" is almost always an equation/section
+  // reference (decimals have a single dot), so treat it as an equation locator
+  // even when the keyword ("phương trình"/"equation") is absent.
+  const kind =
+    LOCATOR_KINDS.find((k) => k.re.test(q)) ??
+    (/\b\d+\.\d+\.\d+[a-z]?\b/i.test(q) ? LOCATOR_KINDS[0] : undefined) ??
+    null;
   if (!kind) return { query: q, isLocator: false, kind: null, numbers: [] };
   const numbers = extractLocatorNumbers(q);
   if (numbers.length === 0) return { query: q, isLocator: false, kind: null, numbers: [] };
@@ -272,13 +282,14 @@ function expandLocatorQuery(q: string): {
 /** Exact-match regex for a locator: "Eq. 11" / "Eq. (11)" / "Equation 11" and,
  *  for equations, the bare "(11)" numbering convention. Scans the paper's chunks
  *  directly — deterministic lookup, not fuzzy retrieval. */
-function locatorPattern(kind: LocatorKind, numbers: number[]): RegExp {
+function locatorPattern(kind: LocatorKind, numbers: string[]): RegExp {
   const labelPart = kind.labels
     .map((l) => l.replace(/\./g, '\\.').replace(/\s+/g, '\\s*'))
     .join('|');
   const parts = numbers.map((n) => {
-    const forms = [`(?:${labelPart})\\s*\\(?\\s*${n}\\b`];
-    if (kind.bareParens) forms.push(`\\(\\s*${n}\\s*\\)`);
+    const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const forms = [`(?:${labelPart})\\s*\\(?\\s*${esc}\\b`];
+    if (kind.bareParens) forms.push(`\\(\\s*${esc}\\s*\\)`);
     return `(?:${forms.join('|')})`;
   });
   return new RegExp(parts.join('|'), 'i');

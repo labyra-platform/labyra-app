@@ -23,7 +23,7 @@
  */
 import 'server-only';
 import { logger } from '@/lib/logger';
-import type { OcrMode, OcrPage, OcrProvider, OcrResult } from './types';
+import type { OcrFigure, OcrMode, OcrPage, OcrProvider, OcrResult } from './types';
 
 const DEFAULT_MARKER_URL = 'https://www.datalab.to/api/v1/marker';
 const POLL_INTERVAL_MS = 2000;
@@ -43,6 +43,8 @@ interface MarkerResultResponse {
   output_format?: string;
   markdown?: string;
   page_count?: number;
+  /** Datalab Marker returns extracted figures as { filename: base64 }. */
+  images?: Record<string, string>;
   metadata?: Record<string, unknown>;
 }
 
@@ -153,6 +155,29 @@ export class DatalabOcrProvider implements OcrProvider {
     const latencyMs = Date.now() - startedAt;
     const costUsd = Number(((apiPageCount / 1000) * this.costPer1000Pages).toFixed(6));
 
+    // Extracted figures — best-effort; never let image parsing break OCR.
+    let figures: OcrFigure[] | undefined;
+    try {
+      const imgs = result.images;
+      if (imgs && typeof imgs === 'object' && Object.keys(imgs).length > 0) {
+        const pageOf = new Map<string, number>();
+        for (const pg of pages) {
+          for (const m of pg.text.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)) {
+            const ref = m[1].trim();
+            if (!pageOf.has(ref)) pageOf.set(ref, pg.pageNumber);
+          }
+        }
+        figures = Object.entries(imgs).map(([name, dataBase64]) => ({
+          name,
+          page: pageOf.get(name) ?? 0,
+          mimeType: /\.png$/i.test(name) ? 'image/png' : 'image/jpeg',
+          dataBase64
+        }));
+      }
+    } catch {
+      figures = undefined;
+    }
+
     logger.info('ocr.datalab.complete', {
       feature: 'ocr',
       provider: this.id,
@@ -169,6 +194,7 @@ export class DatalabOcrProvider implements OcrProvider {
       costUsd,
       provider: this.id,
       engineVersion: 'datalab-marker',
+      figures,
       meta: { endpoint: url, requestId: submit.request_id }
     };
   }

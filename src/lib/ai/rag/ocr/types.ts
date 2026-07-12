@@ -27,6 +27,19 @@ export interface OcrPage {
   confidence?: number;
 }
 
+export interface OcrFigure {
+  /** Engine image filename, e.g. "_page_3_Figure_2.jpeg". */
+  name: string;
+  /** 1-indexed page the figure appears on (0 if unknown). */
+  page: number;
+  /** e.g. 'image/jpeg' | 'image/png'. */
+  mimeType: string;
+  /** Base64 image bytes — transient, present only until uploaded to storage. */
+  dataBase64?: string;
+  /** gs:// path once persisted to storage. */
+  storagePath?: string;
+}
+
 export interface OcrResult {
   pages: OcrPage[];
   /** Total pages processed */
@@ -45,6 +58,8 @@ export interface OcrResult {
   language?: string;
   /** Set when a fallback engine produced the result (= the engine tried first) */
   fallbackFrom?: string;
+  /** Extracted figures/images, if the engine returns them (Datalab Marker). */
+  figures?: OcrFigure[];
   /** Raw, non-load-bearing engine metadata for observability/debugging */
   meta?: Record<string, unknown>;
 }

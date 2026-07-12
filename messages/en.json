@@ -597,7 +597,11 @@
     "shareSelectedSuccess": "Shared {count} to group",
     "shareSelectedPartial": "{failed} failed to share",
     "refJumpAria": "Jump to a reference by number",
-    "refJumpTitle": "Type a reference number, then Enter to jump"
+    "refJumpTitle": "Type a reference number, then Enter to jump",
+    "figures": "Figures",
+    "figuresEmptyTitle": "No figures",
+    "figuresEmptyBody": "Figures appear here after the document is processed.",
+    "figurePageLabel": "Page {page}"
   },
   "collections": {
     "title": "Collections",

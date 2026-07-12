@@ -21,6 +21,7 @@ import {
   IconChevronRight,
   IconExternalLink,
   IconHighlight,
+  IconPhoto,
   IconInfoCircle,
   IconLanguage,
   IconQuote,
@@ -46,6 +47,7 @@ import type { AnnotationColor, HighlightAnnotation } from '@/types/annotations';
 import type { Paper } from '@/types/papers';
 import { AskAiTab } from './ask-ai-tab';
 import { CitationsSection } from './citations-section';
+import { FiguresTab } from './figures-tab';
 
 /** Solid (opaque) swatch per highlight color — used for the list's left bar so
  *  it reads clearly, unlike the translucent on-page HIGHLIGHT_FILL. */
@@ -133,13 +135,13 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
   // doesn't remount on paper switch (it lives above PaperReadView and isn't
   // keyed), a local state survives the switch — exactly the desired behaviour.
   const [panelTab, setPanelTab] = useState<
-    'info' | 'citations' | 'highlights' | 'translations' | 'ai'
+    'info' | 'citations' | 'highlights' | 'translations' | 'figures' | 'ai'
   >('info');
 
   const [panelOpen, setPanelOpen] = useState(false);
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
   const switchPanelTab = useCallback(
-    (next: 'info' | 'citations' | 'highlights' | 'translations' | 'ai') => {
+    (next: 'info' | 'citations' | 'highlights' | 'translations' | 'figures' | 'ai') => {
       setPanelTab(next);
       setPanelOpen(true);
     },
@@ -211,6 +213,12 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
                 label={t('translations')}
               />
               <PanelTabButton
+                active={panelTab === 'figures'}
+                onClick={() => switchPanelTab('figures')}
+                icon={<IconPhoto className='size-4' />}
+                label={t('figures')}
+              />
+              <PanelTabButton
                 active={panelTab === 'ai'}
                 onClick={() => switchPanelTab('ai')}
                 icon={<IconSparkles className='size-4' />}
@@ -232,6 +240,8 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
             <HighlightsTab paperId={paperId} onJumpToPage={onJumpToPage} />
           ) : panelTab === 'translations' ? (
             <TranslationsTab paperId={paperId} onJumpToPage={onJumpToPage} />
+          ) : panelTab === 'figures' ? (
+            <FiguresTab paperId={paperId} onJumpToPage={onJumpToPage} />
           ) : (
             <div className='min-h-0 flex-1 overflow-y-auto p-4'>
               {loading ? (

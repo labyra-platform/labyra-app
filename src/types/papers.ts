@@ -49,6 +49,14 @@ export interface PaperCostBreakdown {
   total: number;
 }
 
+/** A figure/image extracted from the document, stored in Firebase Storage. */
+export interface PaperFigure {
+  name: string;
+  page: number;
+  mimeType: string;
+  storagePath: string;
+}
+
 // R164-phase-1-types: Paper now extends ProvBase (PROV-O architecture per ADR-016).
 // Existing fields preserved; schemaVersion bumped 1 → 2.
 import type { ProvBase } from './prov-base';
@@ -92,6 +100,9 @@ export interface Paper extends ProvBase {
   duplicateOf?: string;
   abstract: string;
   pageCount: number;
+  /** R470: figures extracted from the document (Datalab), populated by the worker. */
+  figures?: PaperFigure[];
+  figureCount?: number;
 
   /**
    * Link to the paper's Supplementary Information (R237bv). User-provided

@@ -598,7 +598,11 @@
     "shareSelectedSuccess": "Đã chia sẻ {count} bài cho nhóm",
     "shareSelectedPartial": "{failed} bài chia sẻ thất bại",
     "refJumpAria": "Nhảy tới tài liệu tham khảo theo số",
-    "refJumpTitle": "Nhập số thứ tự TLTK rồi Enter để nhảy tới"
+    "refJumpTitle": "Nhập số thứ tự TLTK rồi Enter để nhảy tới",
+    "figures": "Hình",
+    "figuresEmptyTitle": "Chưa có hình",
+    "figuresEmptyBody": "Hình xuất hiện ở đây sau khi tài liệu được xử lý.",
+    "figurePageLabel": "Trang {page}"
   },
   "collections": {
     "title": "Bộ sưu tập",

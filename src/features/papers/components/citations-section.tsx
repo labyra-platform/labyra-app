@@ -240,8 +240,8 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
                   }
                 }}
                 placeholder='#'
-                aria-label='Nhảy tới tài liệu tham khảo theo số'
-                title='Nhập số thứ tự TLTK rồi Enter để nhảy tới'
+                aria-label={t('refJumpAria')}
+                title={t('refJumpTitle')}
                 className='h-6 w-12 rounded border border-input bg-transparent px-1.5 text-xs tabular-nums outline-none focus:border-primary'
               />
             )}

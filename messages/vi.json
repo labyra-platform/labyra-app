@@ -596,7 +596,9 @@
     "reprocessSelectedPartial": "{failed} bài xử lý lại thất bại",
     "shareSelected": "Chia sẻ nhóm",
     "shareSelectedSuccess": "Đã chia sẻ {count} bài cho nhóm",
-    "shareSelectedPartial": "{failed} bài chia sẻ thất bại"
+    "shareSelectedPartial": "{failed} bài chia sẻ thất bại",
+    "refJumpAria": "Nhảy tới tài liệu tham khảo theo số",
+    "refJumpTitle": "Nhập số thứ tự TLTK rồi Enter để nhảy tới"
   },
   "collections": {
     "title": "Bộ sưu tập",

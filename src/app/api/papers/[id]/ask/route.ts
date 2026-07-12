@@ -40,8 +40,8 @@ import {
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-const VECTOR_TOP_K = 20;
-const TOP_N = 5;
+const VECTOR_TOP_K = 40;
+const TOP_N = 8;
 // Grounded RAG extraction needs little reasoning; disabling thinking cuts the
 // biggest chunk of time-to-first-token (Gemini 3 thinks by default). Tunable.
 const PAPER_QA_THINKING_BUDGET = 0;

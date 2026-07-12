@@ -13,9 +13,9 @@ import { getVectorStore } from './vector-store';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import type { PaperChunkMetadata } from './vector-store/pinecone';
 
-const DEFAULT_VECTOR_TOP_K = 20;
-const DEFAULT_BM25_TOP_K = 20;
-const DEFAULT_FUSED_TOP_K = 20;
+const DEFAULT_VECTOR_TOP_K = 40;
+const DEFAULT_BM25_TOP_K = 40;
+const DEFAULT_FUSED_TOP_K = 40;
 const DEFAULT_TOP_N = 5;
 // ADR-033 T-4: BM25 fail-soft budget. The scan-all-chunks path is the slow one
 // at scale; beyond this, fall back to vector-only instead of timing out search.

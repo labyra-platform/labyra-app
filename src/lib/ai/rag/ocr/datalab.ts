@@ -195,7 +195,13 @@ export class DatalabOcrProvider implements OcrProvider {
       provider: this.id,
       engineVersion: 'datalab-marker',
       figures,
-      meta: { endpoint: url, requestId: submit.request_id }
+      meta: {
+        endpoint: url,
+        requestId: submit.request_id,
+        datalabResponseKeys: Object.keys(result),
+        datalabImageCount:
+          result.images && typeof result.images === 'object' ? Object.keys(result.images).length : 0
+      }
     };
   }
 

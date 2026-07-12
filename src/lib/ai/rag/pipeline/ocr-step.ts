@@ -69,6 +69,13 @@ export async function runOcrStep(input: OcrStepInput): Promise<OcrResult> {
     .doc(`tenants/${tenantId}/papers/${paperId}`)
     .update({
       pageCount: result.pageCount,
+      _ocrDebug: {
+        provider: result.provider,
+        datalabResponseKeys: (result.meta?.datalabResponseKeys as string[] | undefined) ?? null,
+        datalabImageCount: (result.meta?.datalabImageCount as number | undefined) ?? null,
+        figuresBuilt: result.figures?.length ?? 0,
+        figuresStored: storedFigures.length
+      },
       ...(storedFigures.length > 0
         ? { figures: storedFigures, figureCount: storedFigures.length }
         : {})

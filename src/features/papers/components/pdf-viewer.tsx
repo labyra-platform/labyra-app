@@ -715,23 +715,40 @@ export function PdfViewer({
     };
   }, [onScrollChange, pdfReady]);
 
-  // R402: auto-hide the toolbar + tabs while reading. Hide on scroll-down, reveal
-  // on scroll-up or near the top. Responsive (not debounced) for a natural feel.
+  // R468: auto-hide the toolbar + tabs by MOUSE POSITION, not scroll (scroll-up
+  // reveal felt jittery). While the cursor sits in the reading area, collapse the
+  // chrome after a 3 s dwell; move the cursor back into the top strip to reveal it.
   const setChromeCollapsed = useReaderChromeStore((s) => s.setCollapsed);
   const chromeCollapsed = useReaderChromeStore((s) => s.collapsed);
   useEffect(() => {
     const el = pagesContainerRef.current;
     if (!el) return;
-    let last = el.scrollTop;
-    const onScroll = () => {
-      const y = el.scrollTop;
-      if (y < 48) setChromeCollapsed(false);
-      else if (y > last + 8) setChromeCollapsed(true);
-      else if (y < last - 8) setChromeCollapsed(false);
-      last = y;
+    const REVEAL_ZONE_PX = 64; // top strip that re-reveals the chrome
+    const HIDE_DELAY_MS = 3000;
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+    const clear = () => {
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+      }
     };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
+    const onMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      if (e.clientY - rect.top < REVEAL_ZONE_PX) {
+        clear();
+        setChromeCollapsed(false);
+      } else if (!hideTimer) {
+        hideTimer = setTimeout(() => {
+          setChromeCollapsed(true);
+          hideTimer = null;
+        }, HIDE_DELAY_MS);
+      }
+    };
+    el.addEventListener('mousemove', onMove, { passive: true });
+    return () => {
+      clear();
+      el.removeEventListener('mousemove', onMove);
+    };
   }, [setChromeCollapsed, pdfReady]);
 
   // Reset chrome to visible when the viewer mounts (new paper / fullscreen).

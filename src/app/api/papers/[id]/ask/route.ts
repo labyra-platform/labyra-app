@@ -28,6 +28,7 @@ import { getGroupIdFromToken, getRoleFromToken, getTenantIdFromToken } from '@/l
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiTier } from '@/types/ai';
+import type { PaperFigure } from '@/types/papers';
 import {
   ASK_META_SENTINEL,
   type AskCitation,
@@ -95,6 +96,7 @@ function buildSystemPrompt(args: {
   hits: SearchHit[];
   summaryMode?: boolean;
   locale?: string;
+  figures?: PaperFigure[];
 }): string {
   const answerLangRule =
     args.locale === 'en'
@@ -104,6 +106,24 @@ function buildSystemPrompt(args: {
     args.locale === 'en'
       ? 'I could not find this in the document.'
       : 'Tôi không tìm thấy nội dung này trong tài liệu.';
+  const hitPages = new Set(args.hits.flatMap((h) => h.pages));
+  const hitText = args.hits.map((h) => h.text).join(' ');
+  const relevantFigures = (args.figures ?? []).filter((f) => {
+    if (f.page > 0 && hitPages.has(f.page)) return true;
+    // Page association can be off, so also match by a figure number the retrieved
+    // text actually refers to (a chunk saying "Figure 2" + a figure named
+    // "..._Figure_2.jpeg" is a strong signal).
+    const num = /(?:figure|fig|picture|pic)[_\s-]*(\d+)/i.exec(f.name)?.[1];
+    return num
+      ? new RegExp(`(?:figure|fig\\.?|hình|picture)\\s*0*${num}\\b`, 'i').test(hitText)
+      : false;
+  });
+  const figuresBlock =
+    relevantFigures.length > 0
+      ? `\n\nAVAILABLE FIGURES FROM THIS DOCUMENT. You CAN embed a figure in your answer — you are not limited to describing it. If one of these directly illustrates a point you make, put its marker on its own line: [[FIG:exact_name]] (copy the EXACT name below, never invent one, skip if none fits). Do NOT say you cannot show images — use the marker instead:\n${relevantFigures
+          .map((f) => `- ${f.name} (page ${f.page})`)
+          .join('\n')}`
+      : '';
   if (args.summaryMode) {
     const fullText = args.hits.map((h) => h.text).join('\n\n');
     return `You are Labyra's reading assistant for a single scientific document. Below is the FULL TEXT of the document "${args.paperTitle}" (assembled from its extracted chunks in order). Produce a comprehensive, well-structured summary.
@@ -145,7 +165,7 @@ Rules (every one is mandatory):
   }
 
 SOURCE PASSAGES:
-${sourceBlocks}
+${sourceBlocks}${figuresBlock}
 
 FOLLOW-UP QUESTIONS. After your answer — and ONLY if you actually answered from the sources (never after the no-answer reply) — append a line containing exactly [[FOLLOWUP]] and then 2-3 short questions the reader might naturally ask next about this document, one per line, in the same language as your answer. Each must be answerable from this document; keep them specific and distinct. Do not number them or add any other text after them.`;
 }
@@ -339,11 +359,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   // ─── Fetch paper title (for the prompt + UI continuity) ───────
   let paperTitle = '';
+  let paperFigures: PaperFigure[] = [];
   try {
     const paperSnap = await db.doc(`tenants/${tenantId}/papers/${paperId}`).get();
     if (!paperSnap.exists) return jsonError(404, 'paper_not_found');
-    const paperData = paperSnap.data() as { title?: string } | undefined;
+    const paperData = paperSnap.data() as { title?: string; figures?: PaperFigure[] } | undefined;
     paperTitle = paperData?.title ?? '';
+    paperFigures = paperData?.figures ?? [];
   } catch {
     return jsonError(500, 'paper_fetch_failed');
   }
@@ -548,7 +570,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     hasSelection: Boolean(selectionText),
     hits,
     summaryMode,
-    locale: body.locale
+    locale: body.locale,
+    figures: paperFigures
   });
   const userPrompt = buildUserPrompt(question, selectionText);
   // A whole-paper summary is grounded in the entire document; per-chunk citations

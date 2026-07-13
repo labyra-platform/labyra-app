@@ -140,6 +140,39 @@ export function AskAiTab({
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const [figuresByName, setFiguresByName] = useState<Record<string, { url: string; page: number }>>(
+    {}
+  );
+
+  // Fetch this document's figures (name → signed URL) so the assistant can embed
+  // the ones it references with [[FIG:name]] markers.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { getFirebaseAuth } = await import('@/lib/firebase/client');
+        const user = getFirebaseAuth().currentUser;
+        if (!user) return;
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/papers/${paperId}/figures`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          figures?: { name: string; page: number; url: string }[];
+        };
+        if (cancelled) return;
+        const map: Record<string, { url: string; page: number }> = {};
+        for (const f of data.figures ?? []) map[f.name] = { url: f.url, page: f.page };
+        setFiguresByName(map);
+      } catch {
+        // ignore — figures just won't render inline
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [paperId]);
 
   // Restore this paper's saved Ask AI conversation on mount (the backend persists
   // every turn). Best-effort — start empty on failure.
@@ -374,6 +407,7 @@ export function AskAiTab({
               onJumpToPage={onJumpToPage}
               onAsk={send}
               isLast={i === messages.length - 1}
+              figuresByName={figuresByName}
             />
           )
         )}
@@ -527,27 +561,47 @@ function UserBubble({ content, selectionText }: { content: string; selectionText
   );
 }
 
+const FIG_MARKER_RE = /\[\[FIG:([^\]]+)\]\]/g;
+
+/** Pull [[FIG:name]] markers out of the answer, returning the cleaned text and
+ *  the de-duplicated figure names the model referenced. */
+function stripFigureMarkers(text: string): { text: string; figureNames: string[] } {
+  const names: string[] = [];
+  const cleaned = text.replace(FIG_MARKER_RE, (_m, name: string) => {
+    const n = name.trim();
+    if (n && !names.includes(n)) names.push(n);
+    return '';
+  });
+  return { text: cleaned.replace(/\n{3,}/g, '\n\n').trim(), figureNames: names };
+}
+
 function AssistantBubble({
   message,
   onAnswerClick,
   onJumpToPage,
   onAsk,
-  isLast
+  isLast,
+  figuresByName
 }: {
   message: AskMessage;
   onAnswerClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onJumpToPage: (page: number, y?: number, highlight?: string) => void;
   onAsk: (question: string) => void;
   isLast: boolean;
+  figuresByName: Record<string, { url: string; page: number }>;
 }) {
   const t = useTranslations('papersAsk');
+  const { cleanText, figureNames } = useMemo(() => {
+    const stripped = stripFigureMarkers(stripFollowupArtifact(message.content));
+    return { cleanText: stripped.text, figureNames: stripped.figureNames };
+  }, [message.content]);
   const html = useMemo(
     () =>
-      renderPapersAnswerHtml(stripFollowupArtifact(message.content), {
+      renderPapersAnswerHtml(cleanText, {
         mathAs: 'html',
         citeButtons: true
       }),
-    [message.content]
+    [cleanText]
   );
   const [copied, setCopied] = useState(false);
   const [citeHover, setCiteHover] = useState<{
@@ -625,6 +679,31 @@ function AssistantBubble({
               : `<span class="inline-flex items-center gap-1"><span class="ask-dot">●</span> ${t('searchingInPaper')}</span>`
           }}
         />
+        {figureNames.length > 0 && (
+          <div className='mt-3 space-y-2'>
+            {figureNames.map((name) => {
+              const fig = figuresByName[name];
+              if (!fig) return null;
+              return (
+                <button
+                  key={name}
+                  type='button'
+                  onClick={() => onJumpToPage(fig.page)}
+                  className='hover:border-primary block w-full overflow-hidden rounded-lg border text-left transition-colors'
+                >
+                  {/* Signed external URL — next/image isn't a fit for short-lived links. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={fig.url} alt={name} className='bg-muted w-full' loading='lazy' />
+                  {fig.page > 0 && (
+                    <div className='text-muted-foreground px-2 py-1 text-[10.5px]'>
+                      p. {fig.page}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
         {citeHover && (
           <div
             className='pointer-events-none fixed z-50 max-w-[280px] rounded-md border bg-popover px-2.5 py-1.5 text-popover-foreground shadow-md'

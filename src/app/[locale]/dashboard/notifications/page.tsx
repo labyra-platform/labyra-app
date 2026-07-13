@@ -1,9 +1,9 @@
-import NotificationsPage from '@/features/notifications/components/notifications-page';
+import { redirect } from 'next/navigation';
 
-export const metadata = {
-  title: 'Dashboard: Notifications'
-};
-
-export default function Page() {
-  return <NotificationsPage />;
+/**
+ * Legacy path — notifications moved under Settings (R485). Keeps old
+ * bookmarks/deep links working.
+ */
+export default async function LegacyNotificationsRedirect() {
+  redirect('/dashboard/settings/notifications');
 }

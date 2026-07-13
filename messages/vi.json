@@ -1563,7 +1563,7 @@
       "deleted": "Đã xóa"
     },
     "account": {
-      "title": "Tài khoản",
+      "title": "Chung",
       "subtitle": "Quản lý hồ sơ, giao diện và ngôn ngữ.",
       "profileTitle": "Hồ sơ",
       "profileDesc": "Tên và ảnh đại diện hiển thị trong ứng dụng.",
@@ -1584,6 +1584,26 @@
       "languageHint": "Áp dụng toàn ứng dụng.",
       "profileSaved": "Đã cập nhật hồ sơ.",
       "profileSaveError": "Không cập nhật được. Thử lại."
+    },
+    "tabs": {
+      "ariaLabel": "Các mục cài đặt",
+      "general": "Chung",
+      "ai": "Tùy chỉnh AI",
+      "group": "Nhóm",
+      "notifications": "Thông báo",
+      "labContext": "Bối cảnh Lab"
+    },
+    "group": {
+      "title": "Nhóm",
+      "subtitle": "Nhóm nghiên cứu mà tài khoản của bạn đang thuộc về.",
+      "noGroup": "Chưa có nhóm",
+      "noGroupDesc": "Bạn chưa được thêm vào nhóm nghiên cứu nào. Hãy liên hệ quản trị viên của lab.",
+      "unnamedGroup": "Nhóm của tôi",
+      "membersCount": "{count} thành viên",
+      "empty": "Nhóm này chưa có thành viên nào.",
+      "lead": "Trưởng nhóm",
+      "you": "Bạn",
+      "loadError": "Không tải được thông tin nhóm. Vui lòng thử lại sau."
     }
   },
   "manuscript": {

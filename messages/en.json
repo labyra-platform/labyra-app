@@ -1562,7 +1562,7 @@
       "deleted": "Fact deleted"
     },
     "account": {
-      "title": "Account",
+      "title": "General",
       "subtitle": "Manage your profile, appearance, and language.",
       "profileTitle": "Profile",
       "profileDesc": "Your name and avatar as shown across the app.",
@@ -1583,6 +1583,26 @@
       "languageHint": "Applies across the app.",
       "profileSaved": "Profile updated.",
       "profileSaveError": "Couldn't update profile. Try again."
+    },
+    "tabs": {
+      "ariaLabel": "Settings sections",
+      "general": "General",
+      "ai": "AI Preferences",
+      "group": "Group",
+      "notifications": "Notifications",
+      "labContext": "Lab Context"
+    },
+    "group": {
+      "title": "Group",
+      "subtitle": "The research group your account belongs to.",
+      "noGroup": "No group yet",
+      "noGroupDesc": "You have not been assigned to a research group. Ask your lab admin to add you to one.",
+      "unnamedGroup": "My group",
+      "membersCount": "{count, plural, one {# member} other {# members}}",
+      "empty": "No members in this group yet.",
+      "lead": "Lead",
+      "you": "You",
+      "loadError": "Could not load your group. Please try again later."
     }
   },
   "manuscript": {

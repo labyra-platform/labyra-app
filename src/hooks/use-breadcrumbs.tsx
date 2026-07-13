@@ -39,13 +39,19 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
     { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
     { title: 'Users', titleKey: 'nav.users', link: '/dashboard/users' }
   ],
-  '/dashboard/notifications': [
+  '/dashboard/settings/notifications': [
     { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
+    { title: 'Settings', titleKey: 'nav.settings', link: '/dashboard/settings/account' },
     {
       title: 'Notifications',
       titleKey: 'nav.notifications',
-      link: '/dashboard/notifications'
+      link: '/dashboard/settings/notifications'
     }
+  ],
+  '/dashboard/settings/group': [
+    { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },
+    { title: 'Settings', titleKey: 'nav.settings', link: '/dashboard/settings/account' },
+    { title: 'Group', titleKey: 'settings.tabs.group', link: '/dashboard/settings/group' }
   ],
   '/dashboard/papers': [
     { title: 'Dashboard', titleKey: 'nav.dashboard', link: '/dashboard' },

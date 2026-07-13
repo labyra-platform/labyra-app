@@ -297,31 +297,6 @@ export const navGroups: NavGroup[] = [
         access: { role: 'admin' }
       },
       {
-        title: 'AI Preferences',
-        titleKey: 'nav.aiPreferences',
-        url: '/dashboard/settings/ai-preferences',
-        icon: 'settings',
-        shortcut: ['a', 'p'],
-        items: []
-      },
-      {
-        title: 'Lab Context',
-        titleKey: 'nav.labContext',
-        url: '/dashboard/settings/lab-context',
-        icon: 'adjustments',
-        shortcut: ['l', 'c'],
-        items: [],
-        access: { role: 'admin' }
-      },
-      {
-        title: 'Account',
-        titleKey: 'nav.accountSettings',
-        url: '/dashboard/settings/account',
-        icon: 'account',
-        shortcut: ['a', 'c'],
-        items: []
-      },
-      {
         title: 'Members',
         titleKey: 'nav.members',
         url: '/dashboard/members',
@@ -330,20 +305,14 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Account',
-        titleKey: 'nav.account',
-        url: '#',
-        icon: 'account',
-        isActive: true,
-        items: [
-          {
-            title: 'Notifications',
-            titleKey: 'nav.notifications',
-            url: '/dashboard/notifications',
-            icon: 'notification',
-            shortcut: ['n', 'n']
-          }
-        ]
+        // R485: unified settings — General (was Account) + AI Preferences +
+        // Group + Notifications + Lab Context live as tabs under one page.
+        title: 'Settings',
+        titleKey: 'nav.settings',
+        url: '/dashboard/settings/account',
+        icon: 'settings',
+        shortcut: ['s', 's'],
+        items: []
       }
     ]
   },

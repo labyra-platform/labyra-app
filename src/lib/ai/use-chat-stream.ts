@@ -17,6 +17,8 @@ export interface UseChatStreamResult {
   sessionUsage: AiCostBreakdown;
   conversationId: string | null;
   send: (text: string, files?: File[]) => Promise<void>;
+  /** Abort the in-flight generation, keeping whatever streamed so far. */
+  stop: () => void;
   reset: () => void;
   loadConversation: (messages: AiMessage[], conversationId: string) => void;
 }
@@ -56,6 +58,13 @@ export function useChatStream(): UseChatStreamResult {
     setLastUsage(null);
     setSessionUsage(ZERO_USAGE);
     setConversationId(null);
+    setIsStreaming(false);
+  }, []);
+
+  // Stop generation but keep the partial reply (unlike reset, which clears all).
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
     setIsStreaming(false);
   }, []);
 
@@ -319,6 +328,7 @@ export function useChatStream(): UseChatStreamResult {
     sessionUsage,
     conversationId,
     send,
+    stop,
     reset,
     loadConversation
   };

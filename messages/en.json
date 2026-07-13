@@ -252,7 +252,8 @@
     "send": "Send",
     "attachAdd": "Attach image",
     "attachRemove": "Remove",
-    "attachDrop": "Drop images to attach"
+    "attachDrop": "Drop images to attach",
+    "stop": "Stop"
   },
   "papers": {
     "uploadPageTitle": "Upload document",
@@ -603,7 +604,8 @@
     "figuresEmptyBody": "Figures appear here after the document is processed.",
     "figurePageLabel": "Page {page}",
     "favorite": "Add to favorites",
-    "unfavorite": "Remove from favorites"
+    "unfavorite": "Remove from favorites",
+    "filterFailed": "Failed"
   },
   "collections": {
     "title": "Collections",

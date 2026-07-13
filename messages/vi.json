@@ -252,7 +252,8 @@
     "send": "Gửi",
     "attachAdd": "Đính ảnh",
     "attachRemove": "Xoá",
-    "attachDrop": "Thả ảnh để đính kèm"
+    "attachDrop": "Thả ảnh để đính kèm",
+    "stop": "Dừng"
   },
   "papers": {
     "uploadPageTitle": "Tải lên tài liệu",
@@ -604,7 +605,8 @@
     "figuresEmptyBody": "Hình xuất hiện ở đây sau khi tài liệu được xử lý.",
     "figurePageLabel": "Trang {page}",
     "favorite": "Thêm vào yêu thích",
-    "unfavorite": "Bỏ yêu thích"
+    "unfavorite": "Bỏ yêu thích",
+    "filterFailed": "Lỗi"
   },
   "collections": {
     "title": "Bộ sưu tập",

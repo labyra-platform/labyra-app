@@ -17,7 +17,6 @@ import {
   IconFileText,
   IconFolderPlus,
   IconLayoutList,
-  IconLayoutRows,
   IconLoader2,
   IconUpload,
   IconRefresh,
@@ -163,8 +162,9 @@ export function PaperList({
   }, [papers, tDup, notifTenantId, notifUid]);
   const [filter, setFilter] = useState<PaperFilterValue>(() => createEmptyPaperFilter());
   const [sort, setSort] = useState<SortKey>('recent');
-  const [view, setView] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen
+  const [view] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen
   const [mainView, setMainView] = useState<MainView>('list'); // R237cl: list vs overview dashboard
+  const [showFailedOnly, setShowFailedOnly] = useState(false);
   // R324: bulk selection (checkbox multi-select + bulk archive).
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -195,6 +195,9 @@ export function PaperList({
           : !collectionFilter.ids.has(p.id)
       );
     }
+    if (showFailedOnly) {
+      passed = passed.filter((p) => p.status === 'failed');
+    }
     // R222: client-side sort (data already in memory; no extra query).
     const sorted = [...passed];
     switch (sort) {
@@ -212,7 +215,7 @@ export function PaperList({
         break;
     }
     return sorted;
-  }, [papers, filter, sort, collectionFilter]);
+  }, [papers, filter, sort, collectionFilter, showFailedOnly]);
 
   if (loading) {
     return (
@@ -465,20 +468,21 @@ export function PaperList({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* R223c: only 2 modes → single toggle button (1 click) instead of a
-              dropdown (2 clicks). Icon shows the mode you'll switch TO. */}
+          {/* Quick filter: show only documents whose processing failed. */}
           <button
             type='button'
-            onClick={() => setView((v) => (v === 'compact' ? 'comfortable' : 'compact'))}
-            aria-label={view === 'compact' ? t('viewComfortable') : t('viewCompact')}
-            title={view === 'compact' ? t('viewComfortable') : t('viewCompact')}
-            className='inline-flex items-center rounded-md border p-1.5 hover:bg-muted/50'
-          >
-            {view === 'compact' ? (
-              <IconLayoutRows className='size-3.5' />
-            ) : (
-              <IconLayoutList className='size-3.5' />
+            onClick={() => setShowFailedOnly((v) => !v)}
+            aria-label={t('filterFailed')}
+            title={t('filterFailed')}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
+              showFailedOnly
+                ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                : 'hover:bg-muted/50'
             )}
+          >
+            <IconAlertTriangle className='size-3.5' />
+            {t('filterFailed')}
           </button>
         </div>
       </div>

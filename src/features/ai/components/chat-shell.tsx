@@ -52,6 +52,7 @@ export function ChatShell() {
     sessionUsage,
     conversationId,
     send,
+    stop,
     reset,
     loadConversation
   } = useChatStream();
@@ -187,7 +188,7 @@ export function ChatShell() {
           )}
 
           <div className='shrink-0'>
-            <MessageInput onSend={send} disabled={isStreaming} />
+            <MessageInput onSend={send} isStreaming={isStreaming} onStop={stop} />
           </div>
         </div>
       </div>

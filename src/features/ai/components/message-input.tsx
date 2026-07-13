@@ -11,7 +11,13 @@
  * Holds File objects locally; actual upload happens in the send handler
  * (use-chat-stream) which has the conversationId.
  */
-import { IconPaperclip, IconArrowUp, IconX, IconPhoto } from '@tabler/icons-react';
+import {
+  IconPaperclip,
+  IconArrowUp,
+  IconX,
+  IconPhoto,
+  IconPlayerStopFilled
+} from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -29,11 +35,15 @@ interface PendingFile {
 
 export function MessageInput({
   onSend,
-  disabled
+  isStreaming = false,
+  onStop
 }: {
   onSend: (text: string, files: File[]) => void;
-  disabled?: boolean;
+  isStreaming?: boolean;
+  onStop?: () => void;
 }) {
+  // While streaming, the composer is inert and the send button becomes Stop.
+  const disabled = isStreaming;
   const t = useTranslations('ai');
   const [text, setText] = useState('');
   const [files, setFiles] = useState<PendingFile[]>([]);
@@ -177,20 +187,32 @@ export function MessageInput({
           className='max-h-[200px] min-h-[36px] flex-1 resize-none bg-transparent px-1 py-2 text-sm leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed'
         />
 
-        <button
-          type='button'
-          onClick={handleSend}
-          disabled={!canSend}
-          aria-label={t('send')}
-          className={cn(
-            'flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
-            canSend
-              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-              : 'bg-muted text-muted-foreground'
-          )}
-        >
-          <IconArrowUp className='size-5' />
-        </button>
+        {isStreaming ? (
+          <button
+            type='button'
+            onClick={onStop}
+            aria-label={t('stop')}
+            title={t('stop')}
+            className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90'
+          >
+            <IconPlayerStopFilled className='size-4' />
+          </button>
+        ) : (
+          <button
+            type='button'
+            onClick={handleSend}
+            disabled={!canSend}
+            aria-label={t('send')}
+            className={cn(
+              'flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors',
+              canSend
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'bg-muted text-muted-foreground'
+            )}
+          >
+            <IconArrowUp className='size-5' />
+          </button>
+        )}
       </div>
 
       {/* drag hint overlay */}

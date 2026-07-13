@@ -753,7 +753,7 @@ function AssistantBubble({
               className='flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1.5 text-left text-[12px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground'
             >
               <IconPlus size={13} className='shrink-0 text-primary/60' />
-              <span>{q}</span>
+              <span>{formatSciNode(cleanSnippet(q))}</span>
             </button>
           ))}
         </div>

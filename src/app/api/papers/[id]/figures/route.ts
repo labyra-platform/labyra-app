@@ -29,7 +29,35 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!snap.exists) return Response.json({ error: 'not_found' }, { status: 404 });
 
   const paper = snap.data() as Paper;
-  const figures = paper.figures ?? [];
+  let figures: { name: string; page: number; mimeType: string; storagePath: string }[] = (
+    paper.figures ?? []
+  ).map((f) => ({
+    name: f.name,
+    page: f.page,
+    mimeType: f.mimeType,
+    storagePath: f.storagePath
+  }));
+
+  // Fallback: the images live in storage even if the doc's figures[] metadata is
+  // missing (e.g. it was never written or got lost). List the folder directly so
+  // the figures still show — pages are unknown here, so default to 0.
+  if (figures.length === 0) {
+    try {
+      const { getAdminStorageService } = await import('@/lib/firebase/admin');
+      const prefix = `tenants/${tenantId}/papers/${paperId}/figures/`;
+      const [files] = await getAdminStorageService().bucket().getFiles({ prefix });
+      figures = files
+        .filter((file) => !file.name.endsWith('/'))
+        .map((file) => ({
+          name: file.name.slice(prefix.length),
+          page: 0,
+          mimeType: /\.png$/i.test(file.name) ? 'image/png' : 'image/jpeg',
+          storagePath: file.name
+        }));
+    } catch {
+      // No fallback available — return whatever we have.
+    }
+  }
 
   const signed = await Promise.all(
     figures.map(async (f) => {

@@ -25,6 +25,7 @@ import { getBM25Corpus } from '@/lib/ai/rag/sparse/bm25-manager';
 import { verifyNumericClaims, type NumericVerification } from '@/lib/ai/verify/numeric-claims';
 import type { SearchHit } from '@/lib/ai/rag/search-types';
 import { getGroupIdFromToken, getRoleFromToken, getTenantIdFromToken } from '@/lib/auth/token';
+import { loadProceduralMemory } from '@/lib/ai/memory/loader';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiTier } from '@/types/ai';
@@ -97,11 +98,18 @@ function buildSystemPrompt(args: {
   summaryMode?: boolean;
   locale?: string;
   figures?: PaperFigure[];
+  verbosity?: 'concise' | 'normal' | 'detailed';
 }): string {
   const answerLangRule =
     args.locale === 'en'
       ? "ANSWER IN ENGLISH by default; if the user clearly writes the question in another language, mirror the user's language."
       : "ANSWER IN VIETNAMESE by default unless the user clearly writes the question in English (then mirror the user's language).";
+  const lengthRule =
+    args.verbosity === 'concise'
+      ? ' Keep the answer SHORT and direct: the essential points in a few sentences, no padding.'
+      : args.verbosity === 'detailed'
+        ? ' Give a THOROUGH answer: cover the relevant grounded points fully, with explanation and detail.'
+        : '';
   const noAnswerReply =
     args.locale === 'en'
       ? 'I could not find this in the document.'
@@ -134,7 +142,7 @@ Rules (every one is mandatory):
 3. STRUCTURE. Organize with **bold** section labels and "- " bullet lists (e.g. **Mục tiêu**, **Phương pháp**, **Kết quả chính**, **Kết luận**). Keep it scannable.
 4. KEEP HEDGES. Preserve the document's uncertainty ("may", "suggests" → "có thể", "gợi ý"). Never upgrade certainty or overstate findings.
 5. FORMATTING & FIDELITY. Standard Markdown. Write mathematics as LaTeX delimited by $…$ or $$…$$. Reproduce chemical formulae, units, and symbols verbatim (cm⁻¹, WO₃, °C).
-6. ${answerLangRule}
+6. ${answerLangRule}${lengthRule}
 
 FULL PAPER TEXT:
 ${fullText}`;
@@ -157,7 +165,7 @@ Rules (every one is mandatory):
 3. KEEP HEDGES. If the document says "may", "could", "suggests", "possibly", reproduce that hedge ("có thể", "gợi ý"). Never upgrade certainty.
 4. NO OUTSIDE FACTS. Do not add common-knowledge context the document itself doesn't state. If a number, value, or claim is not in the sources, omit it.
 5. FORMATTING & CHEMICAL FIDELITY. Structure the answer in standard Markdown: **bold** for key terms, "- " bullet lists for enumerations, short paragraphs. Write ALL mathematics as LaTeX delimited by $…$ (inline) or $$…$$ (a standalone displayed equation) — e.g. $E_F(\\text{bulk})$, $$\\Delta G_{H^*}=E_{ads}-\\tfrac12 E_{H_2}$$. Reproduce chemical formulae, units, and symbols verbatim (NaOH, H₂O₂, IrCl₃·xH₂O, cm⁻¹); prefer LaTeX for formulae with sub/superscripts ($\\text{WO}_3$, $\\text{cm}^{-1}$) so they render and paste into Word as real equations. Never put Vietnamese or prose inside the math delimiters — they are for formulae only.
-6. ${answerLangRule}${
+6. ${answerLangRule}${lengthRule}${
     args.hasSelection
       ? `
 7. SELECTION MODE. The user has highlighted a specific passage. Start your answer with a 1–2 sentence direct quote from THAT passage (in the original language, marked with «…»), then provide your grounded interpretation citing the numbered sources. Do not stray to other parts of the document unless the question explicitly asks you to.`
@@ -330,6 +338,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const tenantId = getTenantIdFromToken(decoded);
   if (!tenantId) return jsonError(403, 'missing_tenant_claim');
   const userId = decoded.uid;
+  const verbosity = (await loadProceduralMemory(userId).catch(() => null))?.verbosity;
   const role = getRoleFromToken(decoded);
   const isPrivileged = role === 'admin' || role === 'superadmin';
   const viewerGroupId = getGroupIdFromToken(decoded) ?? null;
@@ -571,7 +580,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     hits,
     summaryMode,
     locale: body.locale,
-    figures: paperFigures
+    figures: paperFigures,
+    verbosity
   });
   const userPrompt = buildUserPrompt(question, selectionText);
   // A whole-paper summary is grounded in the entire document; per-chunk citations

@@ -30,6 +30,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { copyPapersRich, renderPapersAnswerHtml } from '@/features/papers/lib/copy-rich';
+import { formatSciNode } from '@/features/spectra/utils/format-units';
 import type { NumericVerification } from '@/lib/ai/verify/numeric-claims';
 import { cn } from '@/lib/utils';
 import {
@@ -74,10 +75,13 @@ function citationPhrase(snippet: string): string {
 function cleanSnippet(s: string): string {
   return s
     .replace(/<[^>]+>/g, ' ')
+    .replace(/_\{([^}]*)\}/g, '$1') // WO_{2.92} → WO2.92
+    .replace(/\^\{([^}]*)\}/g, '$1') // superscript braces
     .replace(/\$\$?/g, '')
     .replace(/\\(?:text|mathrm|mathbf|mathit)\{([^}]*)\}/g, '$1')
     .replace(/\\[a-zA-Z]+/g, ' ')
     .replace(/[{}]/g, '')
+    .replace(/_([A-Za-z0-9])/g, '$1') // WO_3 → WO3, E_g → Eg
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -719,7 +723,7 @@ function CitationList({
                 {c.section ? ` · ${c.section}` : ''}
               </span>
               <span className='line-clamp-2 text-[11.5px] italic text-muted-foreground'>
-                &ldquo;{cleanSnippet(c.snippet)}&rdquo;
+                &ldquo;{formatSciNode(cleanSnippet(c.snippet))}&rdquo;
               </span>
             </span>
           </button>

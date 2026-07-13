@@ -44,21 +44,48 @@ async function searchPapersHandler(input: Record<string, unknown>, ctx: ToolCont
     isPrivileged: ctx.isPrivileged
   });
 
+  // R477: attach figures on each hit's pages so the assistant can embed them.
+  // Best-effort — a lookup failure just omits figures.
+  const { getAdminFirestoreService } = await import('@/lib/firebase/admin');
+  const db = getAdminFirestoreService();
+  const uniquePaperIds = [...new Set(result.hits.map((h) => h.paperId))];
+  const figuresByPaper = new Map<string, { name: string; page: number }[]>();
+  await Promise.all(
+    uniquePaperIds.map(async (pid) => {
+      try {
+        const snap = await db.doc(`tenants/${ctx.tenantId}/papers/${pid}`).get();
+        figuresByPaper.set(
+          pid,
+          (snap.data()?.figures as { name: string; page: number }[] | undefined) ?? []
+        );
+      } catch {
+        figuresByPaper.set(pid, []);
+      }
+    })
+  );
+
   // Compact result for LLM context (preserve structure for UI use)
   return {
     query,
-    hits: result.hits.map((h, idx) => ({
-      ref: idx + 1, // citation number [1], [2], ...
-      paperId: h.paperId,
-      paperTitle: h.paperTitle,
-      paperAuthors: h.paperAuthors,
-      paperYear: h.paperYear,
-      paperDoi: h.paperDoi,
-      pages: h.pages,
-      section: h.section,
-      excerpt: h.text.length > 500 ? `${h.text.slice(0, 500)}…` : h.text,
-      score: Number(h.score.toFixed(3))
-    })),
+    hits: result.hits.map((h, idx) => {
+      const hitPages = new Set(h.pages);
+      const figures = (figuresByPaper.get(h.paperId) ?? [])
+        .filter((f) => f.page > 0 && hitPages.has(f.page))
+        .map((f) => f.name);
+      return {
+        ref: idx + 1, // citation number [1], [2], ...
+        paperId: h.paperId,
+        paperTitle: h.paperTitle,
+        paperAuthors: h.paperAuthors,
+        paperYear: h.paperYear,
+        paperDoi: h.paperDoi,
+        pages: h.pages,
+        section: h.section,
+        excerpt: h.text.length > 500 ? `${h.text.slice(0, 500)}…` : h.text,
+        score: Number(h.score.toFixed(3)),
+        ...(figures.length > 0 ? { figures } : {})
+      };
+    }),
     totalHits: result.hits.length,
     cost: result.cost,
     latencyMs: result.latencyMs
@@ -77,6 +104,7 @@ const searchPapersTool: RegisteredTool = {
     // for any content question (even vague "tóm tắt" / "summarize") using a
     // broad topic-keyword query derived from the scoped paper titles.
     'When the system prompt mentions a Scoped Library, ALWAYS call this tool for any content question — even vague ones like "tóm tắt" or "summarize" — using a broad topic-keyword query derived from the scoped paper titles. Do not ask the user to clarify scope first. ' +
+    'A hit may include a "figures" array (figure filenames on its cited pages). You CAN embed a figure in your reply — to show one (e.g. a SEM image the user asked for), put its marker on its own line: [[FIG:paperId:filename]] using that hit\'s exact paperId and filename. Never say you cannot show images; use the marker. Only embed figures that directly illustrate your point, and you may embed several when the user asks to see multiple. ' +
     'If results seem irrelevant or empty, mention this to the user instead of inventing answers.',
   parameters: {
     type: 'object',

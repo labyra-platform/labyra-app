@@ -112,6 +112,25 @@ const CIRCLED_ONE = 0x2460; // ① ; ⑳ = U+2473 (20)
 // digits ①..⑳ (Gemini sometimes "prettifies" [n] into these). Both → chip(s).
 const CITATION_RE = /\[([\d\s,]+)\]|([\u2460-\u2473])/g;
 
+// R477: the assistant embeds document figures as [[FIG:paperId:filename]].
+const ASSISTANT_FIG_RE = /\[\[FIG:([^:\]]+):([^\]]+)\]\]/g;
+
+function stripAssistantFigures(text: string): {
+  text: string;
+  figures: { paperId: string; name: string }[];
+} {
+  const figures: { paperId: string; name: string }[] = [];
+  const cleaned = text.replace(ASSISTANT_FIG_RE, (_m, paperId: string, name: string) => {
+    const p = paperId.trim();
+    const n = name.trim();
+    if (p && n && !figures.some((f) => f.paperId === p && f.name === n)) {
+      figures.push({ paperId: p, name: n });
+    }
+    return '';
+  });
+  return { text: cleaned.replace(/\n{3,}/g, '\n\n'), figures };
+}
+
 function renderWithCitations(
   text: string,
   totalSources: number,
@@ -216,7 +235,55 @@ function MessageBubbleInner({
   // R240: strip math delimiters the model wrongly wrapped around Vietnamese prose
   // before react-markdown renders it. Used for both rendering and the copy action.
   const renderContent = streaming ? throttled : (message.content ?? '');
-  const safeContent = useMemo(() => unwrapViMath(wrapBareLatex(renderContent)), [renderContent]);
+  const { text: safeContent, figures: figureRefs } = useMemo(
+    () => stripAssistantFigures(unwrapViMath(wrapBareLatex(renderContent))),
+    [renderContent]
+  );
+
+  // R477: fetch signed URLs for the figures the assistant embedded.
+  const [figUrls, setFigUrls] = useState<Record<string, Record<string, string>>>({});
+  useEffect(() => {
+    const paperIds = [...new Set(figureRefs.map((f) => f.paperId))];
+    if (paperIds.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { getFirebaseAuth } = await import('@/lib/firebase/client');
+        const user = getFirebaseAuth().currentUser;
+        if (!user) return;
+        const token = await user.getIdToken();
+        const entries = await Promise.all(
+          paperIds.map(async (pid) => {
+            try {
+              const res = await fetch(`/api/papers/${pid}/figures`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (!res.ok) return [pid, {}] as const;
+              const data = (await res.json()) as {
+                figures?: { name: string; url: string }[];
+              };
+              const map: Record<string, string> = {};
+              for (const f of data.figures ?? []) map[f.name] = f.url;
+              return [pid, map] as const;
+            } catch {
+              return [pid, {}] as const;
+            }
+          })
+        );
+        if (cancelled) return;
+        setFigUrls((prev) => {
+          const next = { ...prev };
+          for (const [pid, map] of entries) next[pid] = map;
+          return next;
+        });
+      } catch {
+        // ignore — figures just won't render
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [figureRefs]);
 
   // Number citations by order of FIRST appearance in the answer (Vancouver style),
   // not by retrieval rank. Maps the model's original ref → display number. Based on
@@ -322,6 +389,24 @@ function MessageBubbleInner({
             {message.tier && <TierBadge tier={message.tier} />}
             {/* Tool calls hidden from UI (ai-5d-3c) — sources accessible via citation chip modal */}
             <div className='lb-md'>{rendered}</div>
+            {figureRefs.length > 0 && (
+              <div className='mt-3 space-y-2'>
+                {figureRefs.map((fig) => {
+                  const url = figUrls[fig.paperId]?.[fig.name];
+                  if (!url) return null;
+                  return (
+                    <div
+                      key={`${fig.paperId}:${fig.name}`}
+                      className='overflow-hidden rounded-lg border'
+                    >
+                      {/* Signed external URL — next/image isn't a fit for short-lived links. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={fig.name} className='bg-muted w-full' loading='lazy' />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <CitationModal
               source={activeSource}
               displayRef={activeRef !== null ? citationOrder.get(activeRef) : undefined}

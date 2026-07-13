@@ -68,9 +68,18 @@ async function searchPapersHandler(input: Record<string, unknown>, ctx: ToolCont
   return {
     query,
     hits: result.hits.map((h, idx) => {
-      const hitPages = new Set(h.pages);
       const figures = (figuresByPaper.get(h.paperId) ?? [])
-        .filter((f) => f.page > 0 && hitPages.has(f.page))
+        .filter((f) => {
+          if (f.page <= 0) return false;
+          // The figure's page or one immediately adjacent — an in-text mention of
+          // a figure often sits a page or two away from the figure itself.
+          if (h.pages.some((p) => Math.abs(p - f.page) <= 1)) return true;
+          // Or the hit text names this figure's number (when the filename keeps it).
+          const num = /(?:figure|fig|picture|pic)[_\s-]*(\d+)/i.exec(f.name)?.[1];
+          return num
+            ? new RegExp(`(?:figure|fig\\.?|hình|picture)\\s*0*${num}\\b`, 'i').test(h.text)
+            : false;
+        })
         .map((f) => f.name);
       return {
         ref: idx + 1, // citation number [1], [2], ...
@@ -104,7 +113,7 @@ const searchPapersTool: RegisteredTool = {
     // for any content question (even vague "tóm tắt" / "summarize") using a
     // broad topic-keyword query derived from the scoped paper titles.
     'When the system prompt mentions a Scoped Library, ALWAYS call this tool for any content question — even vague ones like "tóm tắt" or "summarize" — using a broad topic-keyword query derived from the scoped paper titles. Do not ask the user to clarify scope first. ' +
-    'A hit may include a "figures" array (figure filenames on its cited pages). You CAN embed a figure in your reply — to show one (e.g. a SEM image the user asked for), put its marker on its own line: [[FIG:paperId:filename]] using that hit\'s exact paperId and filename. Never say you cannot show images; use the marker. Only embed figures that directly illustrate your point, and you may embed several when the user asks to see multiple. ' +
+    'A hit may include a "figures" array (figure filenames on/near its cited pages). You CAN embed a figure in your reply — to show one (e.g. a SEM image the user asked for), put its marker on its own line: [[FIG:paperId:filename]] using that hit\'s exact paperId and filename. Never say you cannot show images; use the marker. When the user asks to SEE or SHOW figures/images (e.g. "cho tôi xem", "show me", "các hình SEM"), you MUST embed the available matching figures with these markers — writing a text description like "Hình 9: ..." INSTEAD of embedding is wrong. Only skip figures that are clearly unrelated, and embed several when the user asks for multiple. ' +
     'If results seem irrelevant or empty, mention this to the user instead of inventing answers.',
   parameters: {
     type: 'object',

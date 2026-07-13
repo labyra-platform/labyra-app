@@ -68,19 +68,13 @@ async function searchPapersHandler(input: Record<string, unknown>, ctx: ToolCont
   return {
     query,
     hits: result.hits.map((h, idx) => {
+      // Give the assistant every figure of this hit's paper (name + page). Page
+      // association vs. the retrieved chunk pages is unreliable, so rather than
+      // pre-filtering, we let the model pick figures by page relevance to what
+      // it's discussing (a caption on page 12 → the figure on page 12).
       const figures = (figuresByPaper.get(h.paperId) ?? [])
-        .filter((f) => {
-          if (f.page <= 0) return false;
-          // The figure's page or one immediately adjacent — an in-text mention of
-          // a figure often sits a page or two away from the figure itself.
-          if (h.pages.some((p) => Math.abs(p - f.page) <= 1)) return true;
-          // Or the hit text names this figure's number (when the filename keeps it).
-          const num = /(?:figure|fig|picture|pic)[_\s-]*(\d+)/i.exec(f.name)?.[1];
-          return num
-            ? new RegExp(`(?:figure|fig\\.?|hình|picture)\\s*0*${num}\\b`, 'i').test(h.text)
-            : false;
-        })
-        .map((f) => f.name);
+        .filter((f) => f.page > 0)
+        .map((f) => ({ name: f.name, page: f.page }));
       return {
         ref: idx + 1, // citation number [1], [2], ...
         paperId: h.paperId,
@@ -113,7 +107,7 @@ const searchPapersTool: RegisteredTool = {
     // for any content question (even vague "tóm tắt" / "summarize") using a
     // broad topic-keyword query derived from the scoped paper titles.
     'When the system prompt mentions a Scoped Library, ALWAYS call this tool for any content question — even vague ones like "tóm tắt" or "summarize" — using a broad topic-keyword query derived from the scoped paper titles. Do not ask the user to clarify scope first. ' +
-    'A hit may include a "figures" array (figure filenames on/near its cited pages). You CAN embed a figure in your reply — to show one (e.g. a SEM image the user asked for), put its marker on its own line: [[FIG:paperId:filename]] using that hit\'s exact paperId and filename. Never say you cannot show images; use the marker. When the user asks to SEE or SHOW figures/images (e.g. "cho tôi xem", "show me", "các hình SEM"), you MUST embed the available matching figures with these markers — writing a text description like "Hình 9: ..." INSTEAD of embedding is wrong. Only skip figures that are clearly unrelated, and embed several when the user asks for multiple. ' +
+    'Each hit includes a "figures" array — every figure of that paper as {name, page}. You CAN embed a figure in your reply: put its marker on its own line as [[FIG:paperId:filename]] (that hit\'s exact paperId and the figure\'s filename). Never say you cannot show images. When the user asks to SEE or SHOW figures/images (e.g. "cho tôi xem", "show me", "các hình SEM"), you MUST embed them instead of only describing — choose figures whose page matches the content you cite (e.g. a caption or discussion of an SEM image on page N → embed the figure whose page is N). Writing a text line like "Hình 9: ..." INSTEAD of embedding is wrong. Embed several when the user asks for multiple. ' +
     'If results seem irrelevant or empty, mention this to the user instead of inventing answers.',
   parameters: {
     type: 'object',

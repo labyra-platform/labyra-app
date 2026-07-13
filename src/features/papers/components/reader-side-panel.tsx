@@ -157,15 +157,25 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
 
   return (
     <>
-      {/* Collapse handle — always visible at the panel's left edge */}
+      {/* Collapse handle. When open it sits at the panel edge; when collapsed it
+          vanishes (transparent) and the chevron only fades in on hover, so reading
+          is uninterrupted but the panel is still one click away. */}
       <button
         type='button'
         onClick={togglePanel}
         aria-label={panelOpen ? t('panelCollapse') : t('panelExpand')}
         title={panelOpen ? t('panelCollapse') : t('panelExpand')}
-        className='group relative flex w-6 shrink-0 items-center justify-center border-l bg-muted/40 transition-colors hover:bg-muted'
+        className={cn(
+          'group relative flex w-6 shrink-0 items-center justify-center transition-colors',
+          panelOpen ? 'border-l bg-muted/40 hover:bg-muted' : 'bg-transparent'
+        )}
       >
-        <span className='flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-all duration-200 group-hover:scale-110 group-hover:border-primary group-hover:text-primary'>
+        <span
+          className={cn(
+            'flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-all duration-200 group-hover:scale-110 group-hover:border-primary group-hover:text-primary',
+            !panelOpen && 'opacity-0 group-hover:opacity-100'
+          )}
+        >
           <IconChevronRight
             className={cn('size-3.5 transition-transform duration-300', !panelOpen && 'rotate-180')}
           />

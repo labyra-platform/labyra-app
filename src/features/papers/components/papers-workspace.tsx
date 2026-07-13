@@ -72,7 +72,12 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
   }, [tabs, mountedIds, routePaperId]);
 
   return (
-    <div className='flex h-[calc(100vh-4rem)] min-h-0 w-full flex-col'>
+    <div
+      className={cn(
+        'flex min-h-0 w-full flex-col',
+        onReader && chromeCollapsed ? 'h-[100dvh]' : 'h-[calc(100vh-4rem)]'
+      )}
+    >
       {hasTabs && (
         <div
           onMouseEnter={onReader ? () => setChromeCollapsed(false) : undefined}

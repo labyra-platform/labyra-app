@@ -602,7 +602,9 @@
     "figures": "Hình",
     "figuresEmptyTitle": "Chưa có hình",
     "figuresEmptyBody": "Hình xuất hiện ở đây sau khi tài liệu được xử lý.",
-    "figurePageLabel": "Trang {page}"
+    "figurePageLabel": "Trang {page}",
+    "favorite": "Thêm vào yêu thích",
+    "unfavorite": "Bỏ yêu thích"
   },
   "collections": {
     "title": "Bộ sưu tập",
@@ -639,7 +641,8 @@
     "exportPdfs": "Xuất PDF",
     "exporting": "Đang xuất…",
     "exportEmpty": "Collection này chưa có paper nào để tải.",
-    "exportFailed": "Xuất thất bại. Thử lại nhé."
+    "exportFailed": "Xuất thất bại. Thử lại nhé.",
+    "favorites": "Yêu thích"
   },
   "materials": {
     "title": "Vật liệu",

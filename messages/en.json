@@ -601,7 +601,9 @@
     "figures": "Figures",
     "figuresEmptyTitle": "No figures",
     "figuresEmptyBody": "Figures appear here after the document is processed.",
-    "figurePageLabel": "Page {page}"
+    "figurePageLabel": "Page {page}",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites"
   },
   "collections": {
     "title": "Collections",
@@ -638,7 +640,8 @@
     "exportPdfs": "Export PDFs",
     "exporting": "Exporting…",
     "exportEmpty": "This collection has no downloadable papers.",
-    "exportFailed": "Export failed. Please try again."
+    "exportFailed": "Export failed. Please try again.",
+    "favorites": "Favorites"
   },
   "materials": {
     "title": "Materials",

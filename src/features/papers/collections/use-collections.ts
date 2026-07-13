@@ -24,6 +24,7 @@ export const PAPER_DND_MIME = 'application/x-labyra-paper';
 /** Which scope the papers view is filtered to. */
 export type CollectionSelection =
   | { kind: 'all' }
+  | { kind: 'favorites' }
   | { kind: 'unfiled' }
   | { kind: 'collection'; collectionId: string };
 

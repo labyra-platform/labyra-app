@@ -15,14 +15,19 @@ import {
   type CollectionSelection,
   useCollections
 } from '@/features/papers/collections/use-collections';
+import { useFavorites } from '@/features/papers/collections/use-favorites';
 import { PaperList } from '@/features/papers/components/paper-list';
 
 export function PapersLibraryView() {
   const [selection, setSelection] = useState<CollectionSelection>({ kind: 'all' });
   const { collections } = useCollections();
+  const { favoriteIds } = useFavorites();
 
   const collectionFilter = useMemo<CollectionPaperFilter | null>(() => {
     if (selection.kind === 'all') return null;
+    if (selection.kind === 'favorites') {
+      return { kind: 'include', ids: favoriteIds };
+    }
     if (selection.kind === 'unfiled') {
       const filed = new Set<string>();
       for (const c of collections) {
@@ -32,7 +37,7 @@ export function PapersLibraryView() {
     }
     const selected = collections.find((c) => c.id === selection.collectionId);
     return { kind: 'include', ids: new Set(selected?.paperIds ?? []) };
-  }, [selection, collections]);
+  }, [selection, collections, favoriteIds]);
 
   return (
     <div className='flex gap-4'>

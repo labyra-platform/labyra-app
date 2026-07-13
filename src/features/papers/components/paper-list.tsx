@@ -9,6 +9,8 @@
 
 import {
   IconArrowsSort,
+  IconStar,
+  IconStarFilled,
   IconChartHistogram,
   IconAlertTriangle,
   IconExternalLink,
@@ -24,6 +26,8 @@ import {
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+
+import { useFavorites } from '@/features/papers/collections/use-favorites';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createEmptyPaperFilter,
@@ -128,6 +132,7 @@ export function PaperList({
   const params = useParams();
   const locale = params.locale as string;
   const { papers, loading } = usePapers();
+  const { isFavorite, toggle: toggleFavorite } = useFavorites();
   // R283d: toast when a paper becomes a DOI duplicate. Existing duplicates at
   // mount are remembered silently so only newly-detected ones notify.
   const tDup = useTranslations('papers');
@@ -563,6 +568,8 @@ export function PaperList({
               selected={selectedIds.has(paper.id)}
               onToggleSelect={toggleOne}
               onDomainClick={toggleDomainFilter}
+              favorite={isFavorite(paper.id)}
+              onToggleFavorite={toggleFavorite}
             />
           ))}
         </div>
@@ -577,7 +584,9 @@ function PaperRow({
   view,
   selected,
   onToggleSelect,
-  onDomainClick
+  onDomainClick,
+  favorite,
+  onToggleFavorite
 }: {
   paper: Paper;
   locale: string;
@@ -585,6 +594,8 @@ function PaperRow({
   selected: boolean;
   onToggleSelect: (id: string) => void;
   onDomainClick: (slug: string) => void;
+  favorite: boolean;
+  onToggleFavorite: (id: string) => void;
 }) {
   const t = useTranslations('papers');
   const router = useRouter();
@@ -755,6 +766,22 @@ function PaperRow({
                 {t(`status.${paper.status}`)}
               </span>
             )}
+            <button
+              type='button'
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(paper.id);
+              }}
+              className='rounded p-1 text-muted-foreground transition-colors hover:bg-muted'
+              aria-label={favorite ? t('unfavorite') : t('favorite')}
+              title={favorite ? t('unfavorite') : t('favorite')}
+            >
+              {favorite ? (
+                <IconStarFilled className='size-4 text-amber-500' />
+              ) : (
+                <IconStar className='size-4' />
+              )}
+            </button>
             <PaperRowMenu
               paperId={paper.id}
               status={paper.status}

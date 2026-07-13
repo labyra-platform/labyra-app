@@ -162,6 +162,13 @@ service cloud.firestore {
           && resource.data.createdBy == request.auth.uid;
       }
 
+      // Favorite papers (per-user). A single doc per user (id == uid) holding a
+      // paperIds array; readable/writable only by that user within their tenant.
+      match /favorites/{userId} {
+        allow read, write: if belongsToTenant(tenantId)
+          && userId == request.auth.uid;
+      }
+
       // Manuscripts (AI Science). Per-user, owner-only (createdBy == auth.uid)
       // within the tenant — same scope model as collections.
       match /manuscripts/{manuscriptId} {

@@ -10,7 +10,7 @@
  *
  * @phase R-collection-3
  */
-import { IconDotsVertical, IconFiles, IconLibrary, IconPlus } from '@tabler/icons-react';
+import { IconDotsVertical, IconFiles, IconLibrary, IconPlus, IconStar } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -53,6 +53,7 @@ import {
   type CollectionSelection,
   useCollections
 } from '@/features/papers/collections/use-collections';
+import { useFavorites } from '@/features/papers/collections/use-favorites';
 import { ProjectSelect } from '@/features/projects/project-select';
 import {
   addPapersToCollection,
@@ -81,6 +82,7 @@ type EditState = {
 
 export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProps) {
   const t = useTranslations('collections');
+  const { favoriteIds } = useFavorites();
   const { user } = useAuth();
   const [exportingId, setExportingId] = useState<string | null>(null);
 
@@ -236,6 +238,21 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
         >
           <IconFiles size={15} className='text-muted-foreground' />
           {t('allPapers')}
+        </button>
+
+        <button
+          type='button'
+          onClick={() => onSelect({ kind: 'favorites' })}
+          className={cn(
+            'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm hover:bg-accent',
+            selection.kind === 'favorites' && 'bg-accent font-medium'
+          )}
+        >
+          <IconStar size={15} className='text-amber-500' />
+          {t('favorites')}
+          {favoriteIds.size > 0 && (
+            <span className='ml-auto text-xs text-muted-foreground'>{favoriteIds.size}</span>
+          )}
         </button>
 
         {/* My library (papers not in any collection) — also hosts "New

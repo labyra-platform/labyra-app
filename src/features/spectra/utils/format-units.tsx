@@ -170,9 +170,9 @@ export function formatSciNode(text: string): React.ReactNode {
   // Normalize ASCII sci patterns to tags so everything is tag-based.
   // Subscript only short digit runs (≤3) — real formula counts are tiny (W18O49);
   // long runs are identifiers/codes (e.g. "S40820-026-...") that must stay literal. @R259
-  s = s.replace(/([A-Za-z)\]])(\d+)/g, (match, prefix: string, digits: string) =>
-    digits.length <= 3 ? `${prefix}<sub>${digits}</sub>` : match
-  ); // H2O → H<sub>2</sub>
+  s = s.replace(/([A-Za-z)\]])(\d+(?:\.\d+)?)/g, (match, prefix: string, digits: string) =>
+    digits.replace(/\./g, '').length <= 3 ? `${prefix}<sub>${digits}</sub>` : match
+  ); // H2O → H<sub>2</sub>, WO2.92 → WO<sub>2.92</sub>
   s = s.replace(
     /(\bcm|nm|um|mm|km|s|m|Hz|kg|g|mg|J|eV|K|mol|L|N)([+\-\u2212]\d+)/g,
     '$1<sup>$2</sup>'

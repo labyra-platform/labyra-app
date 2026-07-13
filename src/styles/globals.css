@@ -376,17 +376,16 @@
    Coverage). Amber + ring distinguishes it from the Ctrl+F search marks
    (`.psm`, default yellow); it auto-clears after ~4.5s (see pdf-viewer). */
 mark.pcm {
-  background-color: hsl(45 93% 60% / 0.85);
+  background-color: hsl(45 93% 55% / 0.38);
   border-radius: 2px;
-  box-shadow: 0 0 0 1.5px hsl(38 92% 50% / 0.7);
-  animation: pcm-flash 0.4s ease-out;
+  animation: pcm-flash 0.5s ease-out;
 }
 @keyframes pcm-flash {
   from {
-    background-color: hsl(45 96% 64% / 0.95);
+    background-color: hsl(45 96% 58% / 0.6);
   }
   to {
-    background-color: hsl(45 93% 60% / 0.85);
+    background-color: hsl(45 93% 55% / 0.38);
   }
 }
 

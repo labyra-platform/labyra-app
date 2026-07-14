@@ -45,7 +45,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { IconLayoutGrid, IconX } from '@tabler/icons-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { type CSSProperties, Fragment, useState } from 'react';
+import { type CSSProperties, Fragment, useEffect, useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -57,6 +57,7 @@ import {
   ContextMenuTrigger
 } from '@/components/ui/context-menu';
 import { Icons } from '@/components/icons';
+import { useAuth } from '@/lib/auth/use-auth';
 import { Input } from '@/components/ui/input';
 import { TAB_GROUP_COLOR_STYLES } from '@/features/papers/lib/tab-group-colors';
 import { formatSciNode } from '@/features/spectra/utils/format-units';
@@ -134,6 +135,13 @@ const restrictToHorizontal: NonNullable<Parameters<typeof DndContext>[0]['modifi
 }) => ({ ...transform, y: 0 });
 
 export function PaperTabsBar({ locale }: { locale: string }) {
+  // R495: wipe persisted tabs when a different account signs in (same browser).
+  const { user } = useAuth();
+  const ensureOwner = usePaperTabsStore((s) => s.ensureOwner);
+  useEffect(() => {
+    if (user?.uid) ensureOwner(user.uid);
+  }, [user?.uid, ensureOwner]);
+
   const t = useTranslations('papers');
   const router = useRouter();
   const pathname = usePathname() ?? '';

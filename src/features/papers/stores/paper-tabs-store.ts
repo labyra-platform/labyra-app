@@ -84,6 +84,10 @@ export interface TabGroup {
 const DEFAULT_PDF: TabPdfState = { page: 1, zoom: 1, scrollTop: 0 };
 
 interface PaperTabsState {
+  /** R495: uid that owns the persisted tab set. On sign-in with a different
+   *  uid the whole set is wiped — same-browser accounts must never inherit
+   *  each other's open tabs (titles alone leak group-scoped papers). */
+  ownerUid: string | null;
   tabs: PaperTab[];
   activeTabId: string | null;
   /** Recency order of paperIds (most-recent last); used to pick the next active
@@ -92,6 +96,7 @@ interface PaperTabsState {
   /** R230: tab groups. */
   groups: TabGroup[];
 
+  ensureOwner: (uid: string) => void;
   openTab: (paperId: string, title?: string) => void;
   closeTab: (paperId: string) => void;
   setActive: (paperId: string) => void;
@@ -144,10 +149,25 @@ export const usePaperTabsStore = create<PaperTabsState>()(
   persist(
     (set, get) => ({
       tabs: [],
+      ownerUid: null,
       activeTabId: null,
       recency: [],
       groups: [],
       signedUrls: {},
+
+      ensureOwner: (uid) =>
+        set((state) => {
+          if (state.ownerUid === uid) return state;
+          return {
+            ...state,
+            ownerUid: uid,
+            tabs: [],
+            activeTabId: null,
+            recency: [],
+            groups: [],
+            signedUrls: {}
+          };
+        }),
 
       openTab: (paperId, title) =>
         set((state) => {

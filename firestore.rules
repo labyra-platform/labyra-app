@@ -238,13 +238,29 @@ service cloud.firestore {
           ));
         allow write: if false;
 
+        // R495: chunk text IS paper content — inherit the parent's group guard
+        // (one extra document read per rule evaluation; acceptable).
         match /chunks/{chunkId} {
-          allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+          allow read: if isSuperAdmin() ||
+            (belongsToTenant(tenantId) && (
+              isAdmin(tenantId) ||
+              get(/databases/$(database)/documents/tenants/$(tenantId)/papers/$(paperId))
+                .data.get('groupId', 'lab-shared') == 'lab-shared' ||
+              get(/databases/$(database)/documents/tenants/$(tenantId)/papers/$(paperId))
+                .data.get('groupId', 'lab-shared') == request.auth.token.groupId
+            ));
           allow write: if false;
         }
 
         match /_stats/{statsId} {
-          allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+          allow read: if isSuperAdmin() ||
+            (belongsToTenant(tenantId) && (
+              isAdmin(tenantId) ||
+              get(/databases/$(database)/documents/tenants/$(tenantId)/papers/$(paperId))
+                .data.get('groupId', 'lab-shared') == 'lab-shared' ||
+              get(/databases/$(database)/documents/tenants/$(tenantId)/papers/$(paperId))
+                .data.get('groupId', 'lab-shared') == request.auth.token.groupId
+            ));
           allow write: if false;
         }
 

@@ -1633,7 +1633,12 @@
       "saving": "Saving…",
       "saved": "Feature access updated.",
       "saveError": "Could not save. Try again.",
-      "loadError": "Could not load feature access."
+      "loadError": "Could not load feature access.",
+      "scopeLabel": "Scope",
+      "scopeDefault": "Default — all groups",
+      "overrideActive": "This group has its own settings.",
+      "followsDefault": "Currently following the default. Save to create a group-specific override.",
+      "useDefault": "Use default"
     }
   },
   "manuscript": {

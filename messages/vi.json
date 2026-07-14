@@ -1634,7 +1634,12 @@
       "saving": "Đang lưu…",
       "saved": "Đã cập nhật quyền tính năng.",
       "saveError": "Không lưu được. Thử lại.",
-      "loadError": "Không tải được quyền tính năng."
+      "loadError": "Không tải được quyền tính năng.",
+      "scopeLabel": "Phạm vi",
+      "scopeDefault": "Mặc định — mọi nhóm",
+      "overrideActive": "Nhóm này đang có thiết lập riêng.",
+      "followsDefault": "Đang theo mặc định. Lưu để tạo thiết lập riêng cho nhóm.",
+      "useDefault": "Dùng mặc định"
     }
   },
   "manuscript": {

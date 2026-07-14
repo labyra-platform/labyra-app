@@ -1,17 +1,26 @@
 /**
- * GET/PUT /api/tenant/feature-access — per-tenant feature gating (R487).
+ * GET/PUT /api/tenant/feature-access — per-tenant + per-group feature gating
+ * (R487, R491).
  *
- * Stored at tenants/{tid}/featureAccess/main as { disabled: string[] }.
- * Read: any tenant member (the sidebar needs it). Write: admin/superadmin.
- * Keys are validated against the nav-config whitelist so a typo can never
- * silently gate nothing (or everything). Admins are never affected by the
- * gate itself — enforcement lives client-side in use-nav + the route guard.
+ * Stored at tenants/{tid}/featureAccess/main as
+ *   { disabled: string[], groups?: Record<groupId, string[]> }.
+ * A group with an entry in `groups` uses it as a FULL OVERRIDE of the default;
+ * groups without one (and group-less users) use `disabled`.
+ *
+ * GET: any member — returns { disabled } RESOLVED for the caller's group, so
+ *   the sidebar/guard never change. Admins may pass ?full=true to receive
+ *   { disabled, groups, groupList } for the settings form.
+ * PUT: admin — body { disabled, groupId? , reset? }. No groupId → default;
+ *   groupId → that group's override; reset:true → drop the override.
+ * Keys are whitelist-validated. Admins are never gated (client-side rule).
  */
+import { FieldValue } from 'firebase-admin/firestore';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { allFeatureKeys } from '@/config/nav-config';
 import { authenticate, authenticateAdmin } from '@/lib/api/auth-helper';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
+import { getGroup, listGroups } from '@/lib/firebase/groups/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
@@ -23,10 +32,22 @@ function featureAccessRef(tenantId: string) {
 export async function GET(req: NextRequest) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+  const full = req.nextUrl.searchParams.get('full') === 'true';
+  const isAdmin = auth.role === 'admin' || auth.role === 'superadmin';
   try {
     const snap = await featureAccessRef(auth.tenantId).get();
-    const disabled = snap.exists ? ((snap.data()?.disabled as string[] | undefined) ?? []) : [];
-    return NextResponse.json({ disabled });
+    const data = snap.exists ? snap.data() : undefined;
+    const disabled = (data?.disabled as string[] | undefined) ?? [];
+    const groups = (data?.groups as Record<string, string[]> | undefined) ?? {};
+
+    if (full && isAdmin) {
+      const groupList = (await listGroups(auth.tenantId)).map((g) => ({ id: g.id, name: g.name }));
+      return NextResponse.json({ disabled, groups, groupList });
+    }
+
+    // R491: resolve for the caller — group override wins, else tenant default.
+    const resolved = auth.groupId && groups[auth.groupId] ? groups[auth.groupId] : disabled;
+    return NextResponse.json({ disabled: resolved });
   } catch (err) {
     console.error('GET /api/tenant/feature-access', err);
     return new NextResponse('lookup_failed', { status: 500 });
@@ -47,7 +68,12 @@ export async function PUT(req: NextRequest) {
 
   const valid = new Set(allFeatureKeys());
   const schema = z.object({
-    disabled: z.array(z.string().refine((k) => valid.has(k))).max(valid.size)
+    disabled: z
+      .array(z.string().refine((k) => valid.has(k)))
+      .max(valid.size)
+      .default([]),
+    groupId: z.string().min(1).optional(),
+    reset: z.boolean().optional()
   });
 
   let parsed;
@@ -58,11 +84,29 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    await featureAccessRef(auth.tenantId).set({
-      disabled: [...new Set(parsed.disabled)],
-      updatedAt: Date.now(),
-      updatedBy: auth.uid
-    });
+    if (parsed.groupId) {
+      const group = await getGroup(auth.tenantId, parsed.groupId);
+      if (!group) return NextResponse.json({ error: 'unknown_group' }, { status: 400 });
+      const patch: Record<string, unknown> = { updatedAt: Date.now(), updatedBy: auth.uid };
+      patch[`groups.${parsed.groupId}`] = parsed.reset
+        ? FieldValue.delete()
+        : [...new Set(parsed.disabled)];
+      // set+merge cannot express map-key delete; ensure doc exists then update.
+      const ref = featureAccessRef(auth.tenantId);
+      if (!(await ref.get()).exists) {
+        await ref.set({ disabled: [], updatedAt: Date.now(), updatedBy: auth.uid });
+      }
+      await ref.update(patch);
+    } else {
+      await featureAccessRef(auth.tenantId).set(
+        {
+          disabled: [...new Set(parsed.disabled)],
+          updatedAt: Date.now(),
+          updatedBy: auth.uid
+        },
+        { merge: true }
+      );
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('PUT /api/tenant/feature-access', err);

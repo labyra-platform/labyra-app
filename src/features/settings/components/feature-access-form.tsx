@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * Feature-access form (R487) — admin toggles which features (sidebar tabs from
- * Lineage up) tenant members can access. Admins themselves are never gated.
- * Dashboard is not listed: it is the redirect target for blocked routes.
+ * Feature-access form (R487, R491) — admin toggles which features tenant
+ * members can use, per scope: the tenant default, or a per-group override
+ * (full override; groups without one follow the default). Admins are never
+ * gated. Dashboard is not listed: it is the blocked-route redirect target.
  */
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
@@ -11,12 +12,26 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { gateableFeatures } from '@/config/nav-config';
 import { refreshFeatureAccess } from '@/hooks/use-feature-access';
 
 const FEATURES = gateableFeatures();
+const DEFAULT_SCOPE = '__default__';
+
+interface FullAccess {
+  disabled: string[];
+  groups: Record<string, string[]>;
+  groupList: { id: string; name: string }[];
+}
 
 async function authHeader(): Promise<{ Authorization: string }> {
   const { getFirebaseAuth } = await import('@/lib/firebase/client');
@@ -52,19 +67,24 @@ function FeatureRow({
 export function FeatureAccessForm() {
   const t = useTranslations('settings.featureAccess');
   const tNav = useTranslations();
-  const [disabled, setDisabled] = useState<Set<string> | null>(null);
+  const [data, setData] = useState<FullAccess | null>(null);
+  const [scope, setScope] = useState<string>(DEFAULT_SCOPE);
+  const [disabled, setDisabled] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/tenant/feature-access', { headers: await authHeader() });
+      const res = await fetch('/api/tenant/feature-access?full=true', {
+        headers: await authHeader()
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { disabled: string[] };
-      setDisabled(new Set(data.disabled));
+      const d = (await res.json()) as FullAccess;
+      setData(d);
+      setDisabled(new Set(d.disabled));
     } catch {
       toast.error(t('loadError'));
-      setDisabled(new Set());
+      setData({ disabled: [], groups: {}, groupList: [] });
     }
   }, [t]);
 
@@ -72,12 +92,24 @@ export function FeatureAccessForm() {
     void load();
   }, [load]);
 
+  // R491: scope switch — group override if present, else default as baseline.
+  const changeScope = (next: string) => {
+    if (!data) return;
+    setScope(next);
+    setDirty(false);
+    setDisabled(
+      new Set(next === DEFAULT_SCOPE ? data.disabled : (data.groups[next] ?? data.disabled))
+    );
+  };
+
+  const hasOverride = scope !== DEFAULT_SCOPE && data?.groups[scope] !== undefined;
+
   const labelOf = (title: string, titleKey?: string) =>
     titleKey && tNav.has(titleKey) ? tNav(titleKey) : title;
 
   const toggle = (key: string, on: boolean) => {
     setDisabled((prev) => {
-      const next = new Set(prev ?? []);
+      const next = new Set(prev);
       if (on) next.delete(key);
       else next.add(key);
       return next;
@@ -85,27 +117,36 @@ export function FeatureAccessForm() {
     setDirty(true);
   };
 
-  const save = async () => {
-    if (!disabled) return;
-    setSaving(true);
-    try {
-      const res = await fetch('/api/tenant/feature-access', {
-        method: 'PUT',
-        headers: { ...(await authHeader()), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ disabled: [...disabled] })
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      refreshFeatureAccess();
-      setDirty(false);
-      toast.success(t('saved'));
-    } catch {
-      toast.error(t('saveError'));
-    } finally {
-      setSaving(false);
-    }
-  };
+  const save = useCallback(
+    async (reset = false) => {
+      setSaving(true);
+      try {
+        const body: Record<string, unknown> = { disabled: [...disabled] };
+        if (scope !== DEFAULT_SCOPE) {
+          body.groupId = scope;
+          if (reset) body.reset = true;
+        }
+        const res = await fetch('/api/tenant/feature-access', {
+          method: 'PUT',
+          headers: { ...(await authHeader()), 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        refreshFeatureAccess();
+        setDirty(false);
+        toast.success(t('saved'));
+        await load();
+        if (reset) setDisabled(new Set(data?.disabled ?? []));
+      } catch {
+        toast.error(t('saveError'));
+      } finally {
+        setSaving(false);
+      }
+    },
+    [disabled, scope, t, load, data]
+  );
 
-  if (disabled === null) {
+  if (data === null) {
     return (
       <Card className='max-w-2xl'>
         <CardHeader>
@@ -134,6 +175,27 @@ export function FeatureAccessForm() {
         <CardDescription>{t('cardDesc')}</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className='mb-3 flex flex-wrap items-center gap-2'>
+          <Select value={scope} onValueChange={changeScope}>
+            <SelectTrigger className='w-64' aria-label={t('scopeLabel')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={DEFAULT_SCOPE}>{t('scopeDefault')}</SelectItem>
+              {data.groupList.map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {scope !== DEFAULT_SCOPE && (
+            <span className='text-muted-foreground text-xs'>
+              {hasOverride ? t('overrideActive') : t('followsDefault')}
+            </span>
+          )}
+        </div>
+
         <div className='divide-border divide-y'>
           {FEATURES.map((f) => (
             <div key={f.key}>
@@ -159,9 +221,16 @@ export function FeatureAccessForm() {
         </div>
         <div className='mt-4 flex items-center justify-between gap-3'>
           <p className='text-muted-foreground text-xs'>{t('adminNote')}</p>
-          <Button onClick={() => void save()} disabled={!dirty || saving}>
-            {saving ? t('saving') : t('save')}
-          </Button>
+          <div className='flex items-center gap-2'>
+            {hasOverride && (
+              <Button variant='outline' onClick={() => void save(true)} disabled={saving}>
+                {t('useDefault')}
+              </Button>
+            )}
+            <Button onClick={() => void save()} disabled={!dirty || saving}>
+              {saving ? t('saving') : t('save')}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

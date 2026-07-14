@@ -3,6 +3,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ import {
 import { navGroups } from '@/config/nav-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
+import { useRole } from '@/lib/auth/use-claims';
 import { Link } from '@/i18n/navigation';
 import { Icons } from '../icons';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -62,6 +64,7 @@ export default function AppSidebar() {
   const { isOpen: _isOpen } = useMediaQuery();
   void _isOpen;
   const filteredGroups = useFilteredNavGroups(navGroups);
+  const role = useRole();
   const t = useTranslations();
   const resolveLabel = (key: string | undefined, fallback: string): string =>
     key ? t(key) : fallback;
@@ -191,6 +194,11 @@ export default function AppSidebar() {
                   <div className='px-2 py-1.5 text-sm'>
                     <div className='font-medium'>{displayName}</div>
                     <div className='text-muted-foreground text-xs'>{email}</div>
+                    {role && (
+                      <Badge variant='secondary' className='mt-1.5 capitalize'>
+                        {t.has(`common.roles.${role}`) ? t(`common.roles.${role}`) : role}
+                      </Badge>
+                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

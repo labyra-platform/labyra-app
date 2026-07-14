@@ -27,6 +27,12 @@ const TABS: SettingsTab[] = [
   { key: 'group', href: '/dashboard/settings/group', icon: 'teams' },
   { key: 'notifications', href: '/dashboard/settings/notifications', icon: 'notification' },
   {
+    key: 'featureAccess',
+    href: '/dashboard/settings/feature-access',
+    icon: 'lock',
+    adminOnly: true
+  },
+  {
     key: 'labContext',
     href: '/dashboard/settings/lab-context',
     icon: 'adjustments',

@@ -11,7 +11,13 @@
     "edit": "Edit",
     "search": "Search",
     "actions": "Actions",
-    "notificationView": "View"
+    "notificationView": "View",
+    "roles": {
+      "superadmin": "Superadmin",
+      "admin": "Admin",
+      "member": "Member",
+      "viewer": "Viewer"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -1592,7 +1598,8 @@
       "ai": "AI Preferences",
       "group": "Group",
       "notifications": "Notifications",
-      "labContext": "Lab Context"
+      "labContext": "Lab Context",
+      "featureAccess": "Feature access"
     },
     "group": {
       "title": "Group",
@@ -1605,6 +1612,18 @@
       "lead": "Lead",
       "you": "You",
       "loadError": "Could not load your group. Please try again later."
+    },
+    "featureAccess": {
+      "title": "Feature access",
+      "subtitle": "Choose which features lab members can use.",
+      "cardTitle": "Features",
+      "cardDesc": "Switched-off features are hidden from members and viewers. Admins always keep full access. Dashboard cannot be disabled.",
+      "adminNote": "Applies to members and viewers only.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Feature access updated.",
+      "saveError": "Could not save. Try again.",
+      "loadError": "Could not load feature access."
     }
   },
   "manuscript": {

@@ -11,7 +11,13 @@
     "edit": "Sửa",
     "search": "Tìm kiếm",
     "actions": "Tác vụ",
-    "notificationView": "Xem"
+    "notificationView": "Xem",
+    "roles": {
+      "superadmin": "Siêu quản trị",
+      "admin": "Quản trị viên",
+      "member": "Thành viên",
+      "viewer": "Người xem"
+    }
   },
   "nav": {
     "dashboard": "Bảng điều khiển",
@@ -1593,7 +1599,8 @@
       "ai": "Tùy chỉnh AI",
       "group": "Nhóm",
       "notifications": "Thông báo",
-      "labContext": "Bối cảnh Lab"
+      "labContext": "Bối cảnh Lab",
+      "featureAccess": "Quyền tính năng"
     },
     "group": {
       "title": "Nhóm",
@@ -1606,6 +1613,18 @@
       "lead": "Trưởng nhóm",
       "you": "Bạn",
       "loadError": "Không tải được thông tin nhóm. Vui lòng thử lại sau."
+    },
+    "featureAccess": {
+      "title": "Quyền tính năng",
+      "subtitle": "Chọn những tính năng mà thành viên lab được sử dụng.",
+      "cardTitle": "Tính năng",
+      "cardDesc": "Tính năng bị tắt sẽ ẩn với thành viên và người xem. Admin luôn giữ toàn quyền. Dashboard không thể tắt.",
+      "adminNote": "Chỉ áp dụng cho thành viên và người xem.",
+      "save": "Lưu",
+      "saving": "Đang lưu…",
+      "saved": "Đã cập nhật quyền tính năng.",
+      "saveError": "Không lưu được. Thử lại.",
+      "loadError": "Không tải được quyền tính năng."
     }
   },
   "manuscript": {

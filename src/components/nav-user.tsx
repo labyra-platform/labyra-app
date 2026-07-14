@@ -1,8 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Icons } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +21,7 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 import { signOut } from '@/lib/auth/actions';
+import { useRole } from '@/lib/auth/use-claims';
 
 export function NavUser({
   user
@@ -29,6 +32,8 @@ export function NavUser({
     avatar: string;
   };
 }) {
+  const role = useRole();
+  const t = useTranslations();
   const { isMobile } = useSidebar();
   const router = useRouter();
 
@@ -86,6 +91,11 @@ export function NavUser({
                 <div className='grid flex-1 text-left text-sm leading-tight'>
                   <span className='truncate font-semibold'>{user.name}</span>
                   <span className='truncate text-xs'>{user.email}</span>
+                  {role && (
+                    <Badge variant='secondary' className='mt-1 w-fit capitalize'>
+                      {t.has(`common.roles.${role}`) ? t(`common.roles.${role}`) : role}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </DropdownMenuLabel>

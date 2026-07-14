@@ -1,4 +1,4 @@
-import type { NavGroup } from '@/types';
+import type { NavGroup, NavItem } from '@/types';
 
 /**
  * Navigation configuration with RBAC support.
@@ -78,6 +78,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Materials',
         titleKey: 'nav.materials',
+        featureKey: 'materials',
         url: '/dashboard/materials',
         icon: 'materials',
         shortcut: ['m', 'a'],
@@ -90,6 +91,7 @@ export const navGroups: NavGroup[] = [
         // old "All experiments" first child is no longer needed.
         title: 'Experiments',
         titleKey: 'nav.experiments',
+        featureKey: 'experiments',
         url: '/dashboard/experiments',
         icon: 'experiments',
         shortcut: ['e', 'x'],
@@ -98,6 +100,7 @@ export const navGroups: NavGroup[] = [
           {
             title: 'Protocol',
             titleKey: 'nav.protocol',
+            featureKey: 'protocol',
             url: '/dashboard/experiments/protocol',
             icon: 'protocol',
             items: []
@@ -105,6 +108,7 @@ export const navGroups: NavGroup[] = [
           {
             title: 'Samples',
             titleKey: 'nav.samples',
+            featureKey: 'samples',
             url: '/dashboard/samples',
             icon: 'samples',
             shortcut: ['s', 'a'],
@@ -114,6 +118,7 @@ export const navGroups: NavGroup[] = [
             // R164: renamed Spectra → Measurements. URL kept (/spectra) for back-compat.
             title: 'Measurements',
             titleKey: 'nav.measurements',
+            featureKey: 'measurements',
             url: '/dashboard/spectra',
             icon: 'spectra',
             shortcut: ['s', 'p'],
@@ -124,6 +129,7 @@ export const navGroups: NavGroup[] = [
             // DFT/MD/ML children once those get their own routes.
             title: 'Computation',
             titleKey: 'nav.computation',
+            featureKey: 'computation',
             url: '/dashboard/computation',
             icon: 'computation',
             items: []
@@ -143,6 +149,7 @@ export const navGroups: NavGroup[] = [
         // "view everything" entry point — no shortcut (avoids the s,p dup).
         title: 'Measurements',
         titleKey: 'nav.measurements',
+        featureKey: 'measurements',
         url: '/dashboard/spectra',
         icon: 'spectra',
         items: []
@@ -155,6 +162,7 @@ export const navGroups: NavGroup[] = [
         // future References/citations item; standards use the cards glyph).
         title: 'Spectral Standards',
         titleKey: 'nav.spectralStandards',
+        featureKey: 'spectralStandards',
         url: '/dashboard/reference-cards',
         icon: 'spectralStandards',
         shortcut: ['s', 's'],
@@ -169,6 +177,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Chemicals',
         titleKey: 'nav.chemicals',
+        featureKey: 'chemicals',
         url: '/dashboard/chemicals',
         icon: 'chemicals',
         shortcut: ['c', 'h'],
@@ -177,6 +186,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Equipment',
         titleKey: 'nav.equipment',
+        featureKey: 'equipment',
         url: '/dashboard/equipment',
         icon: 'equipment',
         shortcut: ['e', 'q'],
@@ -185,6 +195,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Bookings',
         titleKey: 'nav.bookings',
+        featureKey: 'bookings',
         url: '/dashboard/bookings',
         icon: 'bookings',
         shortcut: ['b', 'o'],
@@ -194,6 +205,7 @@ export const navGroups: NavGroup[] = [
         // R271: reusable protocol library (R270b) — Lab Resources per the mockup.
         title: 'Protocol Templates',
         titleKey: 'nav.protocolTemplates',
+        featureKey: 'protocolTemplates',
         url: '/dashboard/protocol-templates',
         icon: 'protocolTemplates',
         shortcut: ['p', 't'],
@@ -210,6 +222,7 @@ export const navGroups: NavGroup[] = [
         // R271: literature References (citations) — route now exists.
         title: 'References',
         titleKey: 'nav.references',
+        featureKey: 'references',
         url: '/dashboard/references',
         icon: 'references',
         shortcut: ['r', 'e'],
@@ -218,6 +231,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Documents',
         titleKey: 'nav.papers',
+        featureKey: 'papers',
         url: '/dashboard/papers',
         icon: 'papers',
         shortcut: ['p', 'a'],
@@ -226,6 +240,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'AI Assistant',
         titleKey: 'nav.aiAssistant',
+        featureKey: 'aiAssistant',
         url: '/dashboard/ai-assistant',
         icon: 'aiAssistant',
         shortcut: ['a', 'i'],
@@ -234,6 +249,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'AI Science',
         titleKey: 'nav.aiScience',
+        featureKey: 'aiScience',
         url: '/dashboard/manuscripts',
         icon: 'aiScience',
         isActive: true,
@@ -241,6 +257,7 @@ export const navGroups: NavGroup[] = [
           {
             title: 'Manuscripts',
             titleKey: 'nav.manuscripts',
+            featureKey: 'manuscripts',
             url: '/dashboard/manuscripts',
             icon: 'manuscripts',
             shortcut: ['m', 's'],
@@ -250,6 +267,7 @@ export const navGroups: NavGroup[] = [
             // R271: Figure Studio (R209–R219) now wired under AI Science ▾.
             title: 'Studio',
             titleKey: 'nav.studio',
+            featureKey: 'studio',
             url: '/dashboard/studio',
             icon: 'studio',
             shortcut: ['s', 't'],
@@ -267,6 +285,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Lineage',
         titleKey: 'nav.lineage',
+        featureKey: 'lineage',
         url: '/dashboard/lineage',
         icon: 'lineage',
         shortcut: ['l', 'i'],
@@ -318,3 +337,75 @@ export const navGroups: NavGroup[] = [
   },
   SUPERADMIN_GROUP
 ];
+
+// ─── R487: feature-access gating ─────────────────────────────────────────────
+// Admin/superadmin can disable features per tenant; the sidebar, kbar, and the
+// route guard all consult these helpers. Dashboard (overview) is never gateable
+// — it is the redirect target for blocked routes.
+
+export interface GateableFeature {
+  key: string;
+  title: string;
+  titleKey?: string;
+  icon?: NavItem['icon'];
+  children: GateableFeature[];
+}
+
+/** Feature tree in sidebar order (groups above Admin), for the admin toggle UI. */
+export function gateableFeatures(): GateableFeature[] {
+  const out: GateableFeature[] = [];
+  const seen = new Set<string>();
+  for (const group of navGroups) {
+    if (group.labelKey === 'nav.groups.admin' || group.labelKey === 'nav.groups.superadmin') {
+      continue;
+    }
+    for (const item of group.items) {
+      if (!item.featureKey || seen.has(item.featureKey)) continue;
+      seen.add(item.featureKey);
+      out.push({
+        key: item.featureKey,
+        title: item.title,
+        titleKey: item.titleKey,
+        icon: item.icon,
+        children: (item.items ?? [])
+          .filter((c) => c.featureKey && c.featureKey !== item.featureKey)
+          .map((c) => ({
+            key: c.featureKey as string,
+            title: c.title,
+            titleKey: c.titleKey,
+            icon: c.icon,
+            children: []
+          }))
+      });
+    }
+  }
+  return out;
+}
+
+/** Flat whitelist of valid feature keys (API input validation). */
+export function allFeatureKeys(): string[] {
+  const keys: string[] = [];
+  for (const f of gateableFeatures()) {
+    keys.push(f.key);
+    for (const c of f.children) keys.push(c.key);
+  }
+  return keys;
+}
+
+/** Longest-prefix match: pathname (locale-stripped) → featureKey, or null. */
+export function featureKeyForPath(pathname: string): string | null {
+  let best: { url: string; key: string } | null = null;
+  const visit = (item: NavItem) => {
+    if (item.featureKey && item.url && item.url !== '#') {
+      if (
+        (pathname === item.url || pathname.startsWith(`${item.url}/`)) &&
+        (!best || item.url.length > best.url.length)
+      ) {
+        best = { url: item.url, key: item.featureKey };
+      }
+    }
+    for (const c of item.items ?? []) visit(c);
+  };
+  for (const group of navGroups) for (const item of group.items) visit(item);
+  return best ? (best as { url: string; key: string }).key : null;
+}

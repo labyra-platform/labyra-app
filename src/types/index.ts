@@ -21,6 +21,8 @@ export interface NavItem {
   isActive?: boolean;
   items?: NavItem[];
   access?: PermissionCheck;
+  /** R487: feature-access gating key. Admin can disable per tenant. */
+  featureKey?: string;
 }
 
 export interface NavGroup {

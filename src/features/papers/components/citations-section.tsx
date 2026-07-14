@@ -187,7 +187,7 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
   return (
     <div className='space-y-3'>
       {/* This paper's own identity — clearly separated from its references. */}
-      {paper && <SelfDoiCard paper={paper} />}
+      {paper && <SelfIdentifiersCard paper={paper} />}
       {paper && <SupplementaryInfo paperId={paperId} paper={paper} />}
 
       {/* R237cp: publisher + Open-Access filter (only once enrichment populated) */}
@@ -301,60 +301,105 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
 
 /** The paper's OWN DOI — visually distinct (accent card) so it's never mistaken
  *  for one of its references. */
-function SelfDoiCard({ paper }: { paper: Paper }) {
+/** R492: identifiers card — DOI (articles), ISBN (books), publisher context.
+ *  One accent card so the paper's own identifiers are never mistaken for
+ *  reference-list entries. Only fields present in the schema are shown. */
+function IdRow({
+  chip,
+  value,
+  href,
+  openLabel
+}: {
+  chip: string;
+  value: string;
+  href: string;
+  openLabel: string;
+}) {
   const t = useTranslations('papers');
   const [copied, setCopied] = useState(false);
-  const doi = paper.doi?.trim();
   const handleCopy = useCallback(() => {
-    if (!doi) return;
-    void navigator.clipboard.writeText(doi);
+    void navigator.clipboard.writeText(value);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
-  }, [doi]);
+  }, [value]);
+
+  return (
+    <div className='flex items-center gap-2'>
+      <span className='shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary'>
+        {chip}
+      </span>
+      <a
+        href={href}
+        target='_blank'
+        rel='noopener noreferrer'
+        className='min-w-0 flex-1 truncate font-mono text-xs text-foreground hover:underline'
+      >
+        {value}
+      </a>
+      <button
+        type='button'
+        onClick={handleCopy}
+        title={t('copy')}
+        aria-label={t('copy')}
+        className='shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground'
+      >
+        {copied ? (
+          <IconCheck className='size-3.5 text-primary' />
+        ) : (
+          <IconCopy className='size-3.5' />
+        )}
+      </button>
+      <a
+        href={href}
+        target='_blank'
+        rel='noopener noreferrer'
+        title={openLabel}
+        aria-label={openLabel}
+        className='shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground'
+      >
+        <IconExternalLink className='size-3.5' />
+      </a>
+    </div>
+  );
+}
+
+function SelfIdentifiersCard({ paper }: { paper: Paper }) {
+  const t = useTranslations('papers');
+  const doi = paper.doi?.trim();
+  const isbn = paper.isbn?.trim();
+  const publisher = paper.publisher?.trim();
+  const isBook = paper.documentType === 'book';
 
   return (
     <div className='rounded-lg border border-primary/30 bg-primary/5 p-3'>
-      <div className='mb-1 flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-primary'>
+      <div className='mb-1.5 flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-primary'>
         <IconBookmark className='size-3.5' aria-hidden />
-        {t('thisPaperDoi')}
+        {t('documentIdentifiers')}
       </div>
-      {doi ? (
-        <div className='flex items-center gap-2'>
-          <a
+      <div className='space-y-1.5'>
+        {doi && (
+          <IdRow
+            chip='DOI'
+            value={doi}
             href={`https://doi.org/${doi}`}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='min-w-0 flex-1 truncate font-mono text-xs text-foreground hover:underline'
-          >
-            {doi}
-          </a>
-          <button
-            type='button'
-            onClick={handleCopy}
-            title={t('copy')}
-            aria-label={t('copy')}
-            className='shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground'
-          >
-            {copied ? (
-              <IconCheck className='size-3.5 text-primary' />
-            ) : (
-              <IconCopy className='size-3.5' />
-            )}
-          </button>
-          <a
-            href={`https://doi.org/${doi}`}
-            target='_blank'
-            rel='noopener noreferrer'
-            title={t('openDoiNewTab')}
-            aria-label={t('openDoiNewTab')}
-            className='shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground'
-          >
-            <IconExternalLink className='size-3.5' />
-          </a>
-        </div>
-      ) : (
-        <div className='text-xs text-muted-foreground'>{t('noDoiForPaper')}</div>
-      )}
+            openLabel={t('openDoiNewTab')}
+          />
+        )}
+        {isbn && (
+          <IdRow
+            chip='ISBN'
+            value={isbn}
+            href={`https://openlibrary.org/isbn/${encodeURIComponent(isbn)}`}
+            openLabel={t('openIsbnNewTab')}
+          />
+        )}
+        {isBook && publisher && (
+          <div className='text-xs text-muted-foreground'>
+            {t('publisherLabel')}: <span className='text-foreground'>{publisher}</span>
+          </div>
+        )}
+        {!doi && !isbn && <div className='text-xs text-muted-foreground'>{t('noIdentifiers')}</div>}
+      </div>
     </div>
   );
 }

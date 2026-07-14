@@ -31,11 +31,7 @@ import { toast } from 'sonner';
 import { useCallback, useMemo, useState } from 'react';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import type { Paper } from '@/types/papers';
-import {
-  useCitationsBySource,
-  useCitationsByTargetPaperId,
-  usePaperCitationStats
-} from '@/lib/firestore/queries/citations';
+import { useCitationsBySource, usePaperCitationStats } from '@/lib/firestore/queries/citations';
 import { CitationCard } from './citation-card';
 import { SiFiles } from './si-files';
 import {
@@ -78,10 +74,8 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
   const t = useTranslations('papers');
   const { stats } = usePaperCitationStats(paperId);
   const { citations: outCitations, loading: outLoading } = useCitationsBySource(paperId);
-  const { citations: inCitations, loading: inLoading } = useCitationsByTargetPaperId(paperId);
 
   const [outExpanded, setOutExpanded] = useState(false);
-  const [inExpanded, setInExpanded] = useState(false);
   const [jumpRef, setJumpRef] = useState('');
   // R237cp: filter by publisher + Open-Access (replaces the old confidence chips)
   const [filter, setFilter] = useState<CitationFilterValue>(() => createDefaultFilter());
@@ -139,36 +133,29 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
     }
     return deduped;
   }, [outCitations, selfDoi]);
-  const inSorted = useMemo(() => inCitations.slice().sort(byConfidence), [inCitations]);
 
   // R237cp: distinct publishers across both lists, by frequency, for the filter.
   const publishers = useMemo<PublisherOption[]>(() => {
     const counts = new Map<string, number>();
-    for (const c of [...outSorted, ...inSorted]) {
+    for (const c of outSorted) {
       const p = c.targetPublisher?.trim();
       if (p) counts.set(p, (counts.get(p) ?? 0) + 1);
     }
     return [...counts.entries()]
       .map(([name, count]) => ({ name, count }))
       .toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [outSorted, inSorted]);
+  }, [outSorted]);
 
   // Only show the filter once enrichment has produced something to filter on
   // (pre-reprocess, no citation has publisher/OA → an empty filter is useless).
   const hasFilterData = useMemo(
-    () =>
-      publishers.length > 0 ||
-      [...outSorted, ...inSorted].some((c) => c.targetIsOpenAccess != null),
-    [publishers, outSorted, inSorted]
+    () => publishers.length > 0 || outSorted.some((c) => c.targetIsOpenAccess != null),
+    [publishers, outSorted]
   );
 
   const outFiltered = useMemo(
     () => outSorted.filter((c) => citationPassesFilter(c, filter)),
     [outSorted, filter]
-  );
-  const inFiltered = useMemo(
-    () => inSorted.filter((c) => citationPassesFilter(c, filter)),
-    [inSorted, filter]
   );
 
   const jumpToRef = useCallback(() => {
@@ -188,16 +175,14 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
   }, [jumpRef, outFiltered]);
 
   // No stats doc + no citations → don't render section at all (paper not yet processed)
-  const hasAnyData = stats !== null || outCitations.length > 0 || inCitations.length > 0;
-  if (!hasAnyData && !outLoading && !inLoading) {
+  const hasAnyData = stats !== null || outCitations.length > 0;
+  if (!hasAnyData && !outLoading) {
     return null;
   }
 
   const filterOn = filter.openAccessOnly || filter.publishers.size > 0;
   const outCount = outFiltered.length;
-  const inCount = inFiltered.length;
   const outVisible = outExpanded ? outFiltered : outFiltered.slice(0, COLLAPSED_LIMIT);
-  const inVisible = inExpanded ? inFiltered : inFiltered.slice(0, COLLAPSED_LIMIT);
 
   return (
     <div className='space-y-3'>
@@ -310,60 +295,6 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
           </div>
         )}
       </div>
-
-      {/* Inbound — papers citing this paper */}
-      {inSorted.length > 0 && (
-        <div className='space-y-2 rounded-lg border p-4'>
-          <div className='flex items-center justify-between gap-2'>
-            <h3 className='text-sm font-medium'>
-              {t('citationsInTitle', { count: inSorted.length })}
-              {filterOn && inFiltered.length !== inSorted.length && (
-                <span className='ml-1 font-normal text-muted-foreground'>
-                  {t('filteredCount', { count: inFiltered.length })}
-                </span>
-              )}
-            </h3>
-            {inFiltered.length > COLLAPSED_LIMIT && (
-              <button
-                type='button'
-                onClick={() => setInExpanded((v) => !v)}
-                className='inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground'
-              >
-                {inExpanded ? (
-                  <IconChevronDown className='size-3' aria-hidden />
-                ) : (
-                  <IconChevronRight className='size-3' aria-hidden />
-                )}
-                {inExpanded ? t('showLess') : t('showAllCitations', { count: inFiltered.length })}
-              </button>
-            )}
-          </div>
-
-          {inLoading ? (
-            <div className='flex items-center gap-2 text-muted-foreground text-sm py-2'>
-              <IconLoader2 className='size-4 animate-spin' />
-              {t('loadingCitations')}
-            </div>
-          ) : inCount === 0 ? (
-            <div className='flex items-center gap-2 py-2 text-muted-foreground text-sm'>
-              <span>{t('filterNoMatches')}</span>
-              <button
-                type='button'
-                onClick={() => setFilter(createDefaultFilter())}
-                className='underline hover:text-foreground'
-              >
-                {t('filterClear')}
-              </button>
-            </div>
-          ) : (
-            <div className='space-y-1.5'>
-              {inVisible.map((c) => (
-                <CitationCard key={c.id} citation={c} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

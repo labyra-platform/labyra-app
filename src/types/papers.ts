@@ -70,6 +70,8 @@ export interface Paper extends ProvBase {
    * filter in TEAM-5.
    */
   groupId: string;
+  /** R488: the group a paper belonged to before being shared lab-wide; used to restore on unshare. */
+  previousGroupId?: string;
   // Versioning (immutable scientific records per ADR-016)
   currentVersion: number;
   // Original fields kept for backward compat:

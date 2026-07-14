@@ -770,6 +770,15 @@ function PaperRow({
                 {t(`status.${paper.status}`)}
               </span>
             )}
+            {paper.groupId === 'lab-shared' && (
+              <span
+                title={t('sharedLab')}
+                className='text-muted-foreground border-border inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium leading-none'
+              >
+                <Icons.world className='size-3' aria-hidden='true' />
+                {t('sharedLab')}
+              </span>
+            )}
             <button
               type='button'
               onClick={(e) => {
@@ -789,6 +798,7 @@ function PaperRow({
             <PaperRowMenu
               paperId={paper.id}
               status={paper.status}
+              groupId={paper.groupId}
               onEditMetadata={() => setEditOpen(true)}
             />
           </div>
@@ -819,10 +829,12 @@ async function paperAuthHeader(): Promise<{ Authorization: string }> {
 function PaperRowMenu({
   paperId,
   status,
+  groupId,
   onEditMetadata
 }: {
   paperId: string;
   status: PaperStatus;
+  groupId: string;
   onEditMetadata: () => void;
 }) {
   const t = useTranslations('papers');
@@ -870,7 +882,7 @@ function PaperRowMenu({
       setBusy(false);
     }
   };
-  const share = async (target: 'lab' | 'group') => {
+  const share = async (target: 'lab' | 'group' | 'unshare') => {
     setBusy(true);
     try {
       const res = await fetch(`/api/papers/${paperId}/share`, {
@@ -883,7 +895,13 @@ function PaperRowMenu({
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      toast.success(t(target === 'lab' ? 'shareLabSuccess' : 'shareSuccess'));
+      const key =
+        target === 'lab'
+          ? 'shareLabSuccess'
+          : target === 'unshare'
+            ? 'unshareSuccess'
+            : 'shareSuccess';
+      toast.success(t(key));
     } catch (e) {
       toast.error(t('shareFailed'), {
         description: e instanceof Error ? e.message : 'unknown'
@@ -977,16 +995,29 @@ function PaperRowMenu({
             {t('reprocess')}
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem
-          disabled={busy}
-          onClick={(e) => {
-            e.preventDefault();
-            void share('lab');
-          }}
-        >
-          <Icons.world className='size-4' />
-          {t('shareToLab')}
-        </DropdownMenuItem>
+        {groupId === 'lab-shared' ? (
+          <DropdownMenuItem
+            disabled={busy}
+            onClick={(e) => {
+              e.preventDefault();
+              void share('unshare');
+            }}
+          >
+            <Icons.worldOff className='size-4' />
+            {t('unshareLab')}
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            disabled={busy}
+            onClick={(e) => {
+              e.preventDefault();
+              void share('lab');
+            }}
+          >
+            <Icons.world className='size-4' />
+            {t('shareToLab')}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           disabled={busy}
           onClick={(e) => {

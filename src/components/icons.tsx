@@ -109,6 +109,7 @@ import {
   IconUserX,
   IconVideo,
   IconWorld,
+  IconWorldOff,
   IconWriting,
   IconX
 } from '@tabler/icons-react';
@@ -165,6 +166,7 @@ export const Icons = {
   alertCircle: IconAlertCircle,
   warning: IconAlertTriangle,
   world: IconWorld,
+  worldOff: IconWorldOff,
   arrowRight: IconArrowRight,
   check: IconCheck,
   checks: IconChecks,

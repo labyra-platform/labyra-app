@@ -38,7 +38,12 @@ export async function shareToGroup(
 
   if (paper.groupId === groupId) return paper; // already shared to this group
 
-  await ref.update({ groupId, updatedAt: Date.now(), updatedBy: actor.uid });
+  const patch: Record<string, unknown> = { groupId, updatedAt: Date.now(), updatedBy: actor.uid };
+  // R488: remember the origin group when going lab-wide, so unshare can restore it.
+  if (groupId === 'lab-shared' && paper.groupId !== 'lab-shared') {
+    patch.previousGroupId = paper.groupId;
+  }
+  await ref.update(patch);
 
   // Re-stamp vector metadata for each chunk (vector id === chunk doc id ===
   // `${paperId}-${chunkIdx}`). Sequential — papers have tens of chunks.
@@ -48,4 +53,27 @@ export async function shareToGroup(
   }
 
   return { ...paper, groupId };
+}
+
+/**
+ * R488: stop sharing a paper lab-wide. Restores previousGroupId (recorded when
+ * it was shared), else falls back to the actor's group. Idempotent when the
+ * paper is not lab-shared. Throws 'no_group' when nothing can be restored.
+ */
+export async function unshareFromLab(
+  tenantId: string,
+  paperId: string,
+  actor: ShareActor,
+  fallbackGroupId: string | null
+): Promise<Paper> {
+  const db = getAdminFirestoreService();
+  const ref = db.collection('tenants').doc(tenantId).collection(COLLECTION).doc(paperId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error('not_found');
+  const paper = snap.data() as Paper;
+  if (paper.groupId !== 'lab-shared') return paper;
+
+  const restoreGroupId = paper.previousGroupId ?? fallbackGroupId;
+  if (!restoreGroupId) throw new Error('no_group');
+  return shareToGroup(tenantId, paperId, restoreGroupId, actor);
 }

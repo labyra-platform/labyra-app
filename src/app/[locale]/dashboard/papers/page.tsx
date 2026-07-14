@@ -14,17 +14,19 @@ export default async function PapersListPage() {
   const t = await getTranslations('papers');
   return (
     <PageContainer>
-      <div className='mb-4 flex justify-end'>
-        <UploadSheet
-          trigger={
-            <Button>
-              <IconUpload className='size-4' />
-              {t('uploadNew')}
-            </Button>
-          }
-        />
-      </div>
-      <PapersLibraryView />
+      {/* R490: upload lives inline in the list toolbar row — no standalone row. */}
+      <PapersLibraryView
+        action={
+          <UploadSheet
+            trigger={
+              <Button size='sm'>
+                <IconUpload className='size-4' />
+                {t('uploadNew')}
+              </Button>
+            }
+          />
+        }
+      />
     </PageContainer>
   );
 }

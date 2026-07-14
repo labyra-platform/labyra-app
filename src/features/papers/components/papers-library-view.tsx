@@ -1,5 +1,7 @@
 'use client';
 
+import type React from 'react';
+
 /**
  * Papers library view — the list page shell. Owns the collection `selection`
  * state, renders the CollectionSidebar beside the PaperList, and derives the
@@ -18,7 +20,7 @@ import {
 import { useFavorites } from '@/features/papers/collections/use-favorites';
 import { PaperList } from '@/features/papers/components/paper-list';
 
-export function PapersLibraryView() {
+export function PapersLibraryView({ action }: { action?: React.ReactNode }) {
   const [selection, setSelection] = useState<CollectionSelection>({ kind: 'all' });
   const { collections } = useCollections();
   const { favoriteIds } = useFavorites();
@@ -47,7 +49,7 @@ export function PapersLibraryView() {
         </div>
       </aside>
       <div className='min-w-0 flex-1'>
-        <PaperList collectionFilter={collectionFilter} />
+        <PaperList collectionFilter={collectionFilter} headerAction={action} />
       </div>
     </div>
   );

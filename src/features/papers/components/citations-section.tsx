@@ -37,6 +37,7 @@ import {
   usePaperCitationStats
 } from '@/lib/firestore/queries/citations';
 import { CitationCard } from './citation-card';
+import { SiFiles } from './si-files';
 import {
   CitationFilter,
   type CitationFilterValue,
@@ -211,9 +212,9 @@ export function CitationsSection({ paperId, paper }: { paperId: string; paper?: 
 
       {/* Outbound — this paper's reference list */}
       <div className='space-y-2 rounded-lg border p-4'>
-        <div className='flex items-center justify-between gap-2'>
+        <div className='flex flex-wrap items-center justify-between gap-x-2 gap-y-1'>
           <div className='min-w-0'>
-            <h3 className='flex items-center gap-1.5 text-sm font-medium'>
+            <h3 className='flex items-center gap-1.5 whitespace-nowrap text-sm font-medium'>
               <IconBookmark className='size-3.5 text-muted-foreground' aria-hidden />
               {t('referencesTitle')}
             </h3>
@@ -532,6 +533,7 @@ function SupplementaryInfo({ paperId, paper }: { paperId: string; paper: Paper }
           </div>
         </div>
       )}
+      <SiFiles paperId={paperId} />
     </div>
   );
 }

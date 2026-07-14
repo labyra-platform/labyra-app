@@ -226,7 +226,7 @@ export function CollectionSidebar({ selection, onSelect }: CollectionSidebarProp
   }
 
   return (
-    <div className='flex h-full flex-col pt-1'>
+    <div className='flex h-full flex-col'>
       <ScrollArea className='min-h-0 flex-1 px-1'>
         <button
           type='button'

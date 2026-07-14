@@ -27,6 +27,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { useFavorites } from '@/features/papers/collections/use-favorites';
+import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createEmptyPaperFilter,
@@ -123,9 +124,11 @@ function formatAuthors(authors: string[] | undefined): string | null {
 }
 
 export function PaperList({
-  collectionFilter = null
+  collectionFilter = null,
+  headerAction
 }: {
   collectionFilter?: CollectionPaperFilter | null;
+  headerAction?: React.ReactNode;
 }) {
   const t = useTranslations('papers');
   const params = useParams();
@@ -276,10 +279,17 @@ export function PaperList({
     </div>
   );
 
+  const toggleRow = (
+    <div className='flex items-center justify-between gap-2'>
+      {viewToggle}
+      {headerAction}
+    </div>
+  );
+
   if (mainView === 'overview') {
     return (
       <div className='space-y-3'>
-        {viewToggle}
+        {toggleRow}
         <PapersLandscape papers={papers} />
       </div>
     );
@@ -430,7 +440,7 @@ export function PaperList({
 
   return (
     <div className='space-y-3'>
-      {viewToggle}
+      {toggleRow}
       <PaperFilterPanel
         value={filter}
         onChange={setFilter}

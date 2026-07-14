@@ -61,6 +61,15 @@ export interface PaperFigure {
 // Existing fields preserved; schemaVersion bumped 1 → 2.
 import type { ProvBase } from './prov-base';
 
+/** R490: a user-uploaded Supplementary Information file. */
+export interface SiFile {
+  name: string;
+  storagePath: string;
+  sizeBytes: number;
+  uploadedAt: number;
+  uploadedBy: string;
+}
+
 export interface Paper extends ProvBase {
   schemaVersion: 2;
   /**
@@ -112,6 +121,9 @@ export interface Paper extends ProvBase {
    * Crossref). May be auto-filled best-effort from Crossref relation later.
    */
   siUrl?: string;
+  /** R490: Supplementary Information files uploaded by users (stored in GCS
+   *  at tenants/{tid}/papers/{pid}/si/). */
+  siFiles?: SiFile[];
 
   // R177-1e: documentType + book/non-article fields.
   // documentType defaults 'unknown' for legacy papers (pre-R177-1d).

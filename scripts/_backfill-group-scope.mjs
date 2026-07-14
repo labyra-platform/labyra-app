@@ -10,10 +10,14 @@
  *
  * DRY-RUN BY DEFAULT. Nothing is written without --apply.
  *
- * Run:
- *   LABYRA_TOKEN="<firebase id token>" \
+ * Run (easiest — script signs in itself, reads NEXT_PUBLIC_FIREBASE_API_KEY
+ * from .env.local):
+ *   LABYRA_EMAIL="you@x.com" LABYRA_PASSWORD="..." \
  *   node scripts/_backfill-group-scope.mjs                 # dry-run: list targets
- *   node scripts/_backfill-group-scope.mjs --apply         # execute
+ *   ... --apply                                            # execute
+ *
+ * Or with a pre-minted token (e.g. Google-SSO accounts):
+ *   LABYRA_TOKEN="<firebase id token>" node scripts/_backfill-group-scope.mjs
  *
  * Options:
  *   --host <url>       Default https://labyra-app.vercel.app
@@ -27,6 +31,7 @@
  * no_group. The account must be admin (or the uploader of every paper).
  */
 
+import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
 function arg(name, def = null) {
@@ -41,10 +46,45 @@ const origin = arg('origin', host);
 const uploader = arg('uploader');
 const delay = parseInt(arg('delay', '2500'), 10);
 const apply = process.argv.includes('--apply');
-const token = process.env.LABYRA_TOKEN;
 
+/** Sign in via Identity Toolkit REST — mints a fresh ID token WITH current custom claims. */
+async function mintToken(email, password) {
+  let apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  if (!apiKey) {
+    try {
+      const env = readFileSync(new URL('../.env.local', import.meta.url), 'utf8');
+      apiKey = env.match(/^NEXT_PUBLIC_FIREBASE_API_KEY=(.+)$/m)?.[1]?.trim().replace(/^["']|["']$/g, '');
+    } catch {
+      /* no .env.local */
+    }
+  }
+  if (!apiKey) {
+    console.error('ERROR: NEXT_PUBLIC_FIREBASE_API_KEY not found (env or .env.local).');
+    process.exit(1);
+  }
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    }
+  );
+  const d = await res.json();
+  if (!res.ok || !d.idToken) {
+    console.error(`ERROR: sign-in failed — ${d.error?.message ?? res.status}. Google-SSO account? Use LABYRA_TOKEN instead.`);
+    process.exit(1);
+  }
+  return d.idToken;
+}
+
+let token = process.env.LABYRA_TOKEN;
+if (!token && process.env.LABYRA_EMAIL && process.env.LABYRA_PASSWORD) {
+  token = await mintToken(process.env.LABYRA_EMAIL, process.env.LABYRA_PASSWORD);
+  console.log('Signed in — fresh ID token minted (60 min).');
+}
 if (!token) {
-  console.error('ERROR: LABYRA_TOKEN env required (Firebase ID token of an admin account WITH a group).');
+  console.error('ERROR: set LABYRA_EMAIL+LABYRA_PASSWORD (script signs in itself) or LABYRA_TOKEN.');
   process.exit(1);
 }
 

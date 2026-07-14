@@ -157,7 +157,9 @@
       "equipmentInUse": "Equipment In Use",
       "equipmentInUseCaption": "Currently occupied",
       "experimentsThisWeek": "Experiments This Week",
-      "experimentsThisWeekCaption": "Started in last 7 days"
+      "experimentsThisWeekCaption": "Started in last 7 days",
+      "jobsDoneWeek": "DFT jobs done",
+      "jobsDoneWeekCaption": "completed in the last 7 days"
     },
     "recentExperiments": "Recent Experiments",
     "recentExperimentsSubtitle": "Last 5 experiments",
@@ -168,6 +170,39 @@
       "chemicalsByHazardDescription": "Inventory hazard breakdown",
       "equipmentByType": "Equipment by Type",
       "equipmentByTypeDescription": "Microscopy / spectroscopy / analysis"
+    },
+    "viewAll": "View all",
+    "timeAgoMin": "{n}m ago",
+    "timeAgoHour": "{n}h ago",
+    "timeAgoDay": "{n}d ago",
+    "dft": {
+      "title": "Computation",
+      "status": {
+        "running": "running",
+        "queued": "queued",
+        "pending": "queued",
+        "completed": "done",
+        "failed": "failed"
+      },
+      "gapEv": "{gap} eV",
+      "emptyTitle": "No DFT runs yet",
+      "emptyDesc": "Launch your first workflow from the Computation workspace.",
+      "newRun": "New DFT run"
+    },
+    "today": {
+      "title": "Today",
+      "noBookings": "No equipment booked today.",
+      "newRun": "New run",
+      "logExperiment": "Log experiment",
+      "bookEquipment": "Book equipment"
+    },
+    "trend": {
+      "title": "Experiments — last 30 days"
+    },
+    "mini": {
+      "equipment": "Equipment by type",
+      "chemicals": "Chemicals by hazard",
+      "empty": "No data yet."
     }
   },
   "locale": {

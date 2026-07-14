@@ -157,7 +157,9 @@
       "equipmentInUse": "Thiết bị đang dùng",
       "equipmentInUseCaption": "Đang được sử dụng",
       "experimentsThisWeek": "Thí nghiệm tuần này",
-      "experimentsThisWeekCaption": "7 ngày gần nhất"
+      "experimentsThisWeekCaption": "7 ngày gần nhất",
+      "jobsDoneWeek": "DFT jobs hoàn tất",
+      "jobsDoneWeekCaption": "hoàn tất trong 7 ngày qua"
     },
     "recentExperiments": "Thí nghiệm gần đây",
     "recentExperimentsSubtitle": "5 thí nghiệm mới nhất",
@@ -168,6 +170,39 @@
       "chemicalsByHazardDescription": "Phân loại tồn kho theo cảnh báo",
       "equipmentByType": "Thiết bị theo loại",
       "equipmentByTypeDescription": "Hiển vi / phổ / phân tích"
+    },
+    "viewAll": "Xem tất cả",
+    "timeAgoMin": "{n} phút trước",
+    "timeAgoHour": "{n} giờ trước",
+    "timeAgoDay": "{n} ngày trước",
+    "dft": {
+      "title": "Tính toán",
+      "status": {
+        "running": "đang chạy",
+        "queued": "trong hàng đợi",
+        "pending": "trong hàng đợi",
+        "completed": "xong",
+        "failed": "lỗi"
+      },
+      "gapEv": "{gap} eV",
+      "emptyTitle": "Chưa có DFT run nào",
+      "emptyDesc": "Khởi chạy workflow đầu tiên từ workspace Tính toán.",
+      "newRun": "DFT run mới"
+    },
+    "today": {
+      "title": "Hôm nay",
+      "noBookings": "Hôm nay chưa đặt thiết bị nào.",
+      "newRun": "Run mới",
+      "logExperiment": "Ghi thí nghiệm",
+      "bookEquipment": "Đặt thiết bị"
+    },
+    "trend": {
+      "title": "Thí nghiệm — 30 ngày qua"
+    },
+    "mini": {
+      "equipment": "Thiết bị theo loại",
+      "chemicals": "Hóa chất theo nhóm nguy hại",
+      "empty": "Chưa có dữ liệu."
     }
   },
   "locale": {

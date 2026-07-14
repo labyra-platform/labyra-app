@@ -94,6 +94,16 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
+/** Minutes until the ID token expires (JWT exp claim). */
+function tokenMinutesLeft(t) {
+  try {
+    const payload = JSON.parse(Buffer.from(t.split('.')[1], 'base64url').toString());
+    return Math.round((payload.exp * 1000 - Date.now()) / 60000);
+  } catch {
+    return null;
+  }
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
@@ -126,6 +136,16 @@ async function main() {
     return;
   }
 
+  const minLeft = tokenMinutesLeft(token);
+  const minNeeded = Math.ceil((targets.length * (delay + 500)) / 60000) + 1;
+  if (minLeft !== null) {
+    console.log(`Token: ~${minLeft} min left; run needs ~${minNeeded} min.`);
+    if (minLeft < minNeeded) {
+      console.error('ABORT: token will expire mid-run. Reload the app tab (SDK refreshes the token), re-run the snippet, confirm it prints 50+ min, then retry.');
+      process.exit(1);
+    }
+  }
+
   console.log('');
   let ok = 0;
   let failed = 0;
@@ -153,6 +173,9 @@ async function main() {
           body: JSON.stringify({ target: 'group' })
         });
         if (!retry.ok) throw new Error(`retry HTTP ${retry.status}`);
+      } else if (res.status === 401) {
+        console.error(`\nABORT at ${p.id}: token expired (${ok} done). Grab a fresh token and re-run — already-shared papers are skipped automatically.`);
+        process.exit(1);
       } else if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }

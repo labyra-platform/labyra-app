@@ -1,7 +1,8 @@
 /**
- * POST /api/papers/[id]/share — share a paper into the caller's research group.
- * Sets paper.groupId to the caller's group + re-stamps vector metadata. Owner
- * or admin/superadmin only. @phase R287
+ * POST /api/papers/[id]/share — change a paper's sharing scope.
+ * Body { target: 'group' } (default) claims it into the caller's group;
+ * { target: 'lab' } shares it lab-wide. Sets paper.groupId + re-stamps vector
+ * metadata. Owner or admin/superadmin only. @phase R287, R486
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticateWriter } from '@/lib/api/auth-helper';
@@ -17,7 +18,22 @@ interface RouteContext {
 export async function POST(req: NextRequest, ctx: RouteContext) {
   const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
-  if (!auth.groupId) {
+
+  // R486: optional body { target: 'lab' | 'group' }. 'group' (default, matches
+  // pre-R486 callers sending no body) claims the paper into the caller's group;
+  // 'lab' shares it lab-wide (groupId = 'lab-shared').
+  let target: 'lab' | 'group' = 'group';
+  try {
+    const body = (await req.json()) as { target?: string } | null;
+    if (body?.target === 'lab') target = 'lab';
+    else if (body?.target !== undefined && body?.target !== 'group') {
+      return NextResponse.json({ error: 'invalid_target' }, { status: 400 });
+    }
+  } catch {
+    // No/invalid JSON body — keep default 'group'.
+  }
+
+  if (target === 'group' && !auth.groupId) {
     return NextResponse.json({ error: 'no_group' }, { status: 400 });
   }
   const rl = await checkRateLimit(rateLimitKey('papers-write', auth.tenantId), 30, 60);
@@ -25,7 +41,8 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
   const { id } = await ctx.params;
   try {
-    const paper = await shareToGroup(auth.tenantId, id, auth.groupId, {
+    const targetGroupId = target === 'lab' ? 'lab-shared' : (auth.groupId as string);
+    const paper = await shareToGroup(auth.tenantId, id, targetGroupId, {
       uid: auth.uid,
       role: auth.role
     });

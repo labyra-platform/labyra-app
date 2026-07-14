@@ -524,6 +524,8 @@
     "metadataSaved": "Đã lưu thông tin",
     "metadataDoiDuplicate": "DOI đã thuộc về tài liệu khác",
     "shareToGroup": "Chia sẻ lên nhóm",
+    "shareToLab": "Chia sẻ cho cả lab",
+    "shareLabSuccess": "Đã chia sẻ cho cả lab",
     "shareSuccess": "Đã chia sẻ với nhóm của bạn",
     "shareFailed": "Chia sẻ thất bại",
     "shareForbidden": "Chỉ người tải lên hoặc admin mới chia sẻ được tài liệu này",

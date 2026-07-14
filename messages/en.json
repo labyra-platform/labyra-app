@@ -523,6 +523,8 @@
     "metadataSaved": "Info saved",
     "metadataDoiDuplicate": "DOI already belongs to another document",
     "shareToGroup": "Share to group",
+    "shareToLab": "Share with whole lab",
+    "shareLabSuccess": "Shared with the whole lab",
     "shareSuccess": "Shared with your group",
     "shareFailed": "Failed to share",
     "shareForbidden": "Only the uploader or an admin can share this document",

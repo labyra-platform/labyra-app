@@ -19,7 +19,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Timestamp } from 'firebase-admin/firestore';
 import { checkQuota, trackUsage } from '@/lib/ai/governance/quota';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
-import { getTenantIdFromToken, getRoleFromToken, getGroupIdFromToken } from '@/lib/auth/token';
+import { getTenantIdFromToken, getGroupIdFromToken } from '@/lib/auth/token';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { paperStoragePath, uploadBuffer } from '@/lib/firebase/storage';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -58,13 +58,10 @@ export async function POST(request: Request) {
     return jsonError(403, 'missing_tenant_claim');
   }
 
-  // ADR-034 TEAM-3a: KB group scope (mirrors upload-complete route).
-  const uploaderRole = getRoleFromToken(decoded);
+  // ADR-034 TEAM-3a as amended by R486 (mirrors upload-complete route):
+  // uploads inherit the uploader's group; group-less uploaders → lab-shared.
   const uploaderGroupId = getGroupIdFromToken(decoded);
-  const paperGroupId =
-    uploaderRole === 'admin' || uploaderRole === 'superadmin'
-      ? 'lab-shared'
-      : (uploaderGroupId ?? 'lab-shared');
+  const paperGroupId = uploaderGroupId ?? 'lab-shared';
 
   // R162-security — per-tenant rate limit
   const rl = await checkRateLimit(rateLimitKey('paper-upload', tenantId), 30, 60);

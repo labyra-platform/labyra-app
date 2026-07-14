@@ -190,6 +190,10 @@ export default function MembersPage() {
     );
   }
 
+  // R486: revoked invites are hidden — the row disappears on revoke instead of
+  // lingering with a struck-out status.
+  const visibleInvites = invites.filter((i) => i.status !== 'revoked');
+
   return (
     <PageContainer pageTitle='Members' pageDescription='Invite and manage lab members'>
       <div className='space-y-8'>
@@ -247,13 +251,13 @@ export default function MembersPage() {
           <h2 className='mb-3 text-sm font-medium'>Invitations</h2>
           {loading ? (
             <div className='text-muted-foreground py-8 text-center text-sm'>Loading…</div>
-          ) : invites.length === 0 ? (
+          ) : visibleInvites.length === 0 ? (
             <div className='text-muted-foreground py-8 text-center text-sm'>
               No invitations yet.
             </div>
           ) : (
             <ul className='divide-border divide-y rounded-lg border border-input'>
-              {invites.map((inv) => {
+              {visibleInvites.map((inv) => {
                 const Icon = STATUS_ICON[inv.status];
                 return (
                   <li key={inv.id} className='flex items-center justify-between px-4 py-3'>

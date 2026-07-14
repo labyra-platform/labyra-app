@@ -21,6 +21,7 @@ import { detectLang } from '@/features/papers/lib/translate-identity';
 import { glossaryBlock } from '@/features/papers/lib/translation-glossary';
 import { tmBlock, tmRetrieve, tmStore } from '@/lib/ai/rag/translation-memory';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { loadPaperForRead } from '@/lib/firebase/papers/access-guard';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { AiTier } from '@/types/ai';
@@ -126,6 +127,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   const tenantId = getTenantIdFromToken(decoded);
   if (!tenantId) return jsonError(403, 'missing_tenant_claim');
+
+  // R498: ADR-034 group read-scope — check before any paid translation work.
+  const access = await loadPaperForRead(decoded, tenantId, paperId);
+  if (!access.ok) return jsonError(access.status === 500 ? 500 : 404, 'paper_not_found');
 
   // ─── Rate limit ───────────────────────────────────────────────
   const rl = await checkRateLimit(rateLimitKey('paper-translate', tenantId), 60, 60);

@@ -4,6 +4,7 @@
  */
 import { Timestamp } from 'firebase-admin/firestore';
 import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
+import { paperReadAllowed } from '@/lib/firebase/papers/access-guard';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import { CANCELLABLE_STATUSES, type Paper } from '@/types/papers';
@@ -63,6 +64,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const paper = snap.data() as Paper;
+  // R498: ADR-034 group read-scope — foreign-group callers get 404.
+  if (!paperReadAllowed(decoded, paper)) {
+    return new Response(JSON.stringify({ error: 'paper_not_found' }), { status: 404 });
+  }
   if (!CANCELLABLE_STATUSES.has(paper.status)) {
     return new Response(
       JSON.stringify({

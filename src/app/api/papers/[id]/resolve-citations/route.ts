@@ -7,6 +7,7 @@
  */
 import { resolveCitationsForPaper } from '@/lib/ai/citations/resolve-citations';
 import { getRoleFromToken, getTenantIdFromToken } from '@/lib/auth/token';
+import { loadPaperForRead } from '@/lib/firebase/papers/access-guard';
 import { getAdminAuthService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
@@ -48,6 +49,14 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const { id: paperId } = await context.params;
+  // R498: ADR-034 group read-scope.
+  const access = await loadPaperForRead(decoded, tenantId, paperId);
+  if (!access.ok) {
+    return new Response(JSON.stringify({ error: 'paper_not_found' }), {
+      status: access.status === 500 ? 500 : 404,
+      headers: { 'content-type': 'application/json' }
+    });
+  }
   try {
     const result = await resolveCitationsForPaper(tenantId, paperId);
     return new Response(JSON.stringify(result), {

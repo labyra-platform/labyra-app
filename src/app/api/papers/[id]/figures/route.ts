@@ -1,4 +1,5 @@
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { paperReadAllowed } from '@/lib/firebase/papers/access-guard';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getSignedDownloadUrl } from '@/lib/firebase/storage';
 import type { Paper } from '@/types/papers';
@@ -29,6 +30,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!snap.exists) return Response.json({ error: 'not_found' }, { status: 404 });
 
   const paper = snap.data() as Paper;
+  // R498: ADR-034 group read-scope — foreign-group callers get 404.
+  if (!paperReadAllowed(decoded, paper)) {
+    return Response.json({ error: 'not_found' }, { status: 404 });
+  }
   let figures: { name: string; page: number; mimeType: string; storagePath: string }[] = (
     paper.figures ?? []
   ).map((f) => ({

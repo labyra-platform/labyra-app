@@ -13,6 +13,7 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { getTenantIdFromToken } from '@/lib/auth/token';
+import { paperReadAllowed } from '@/lib/firebase/papers/access-guard';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getSignedDownloadUrl } from '@/lib/firebase/storage';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -48,6 +49,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return new NextResponse('not_found', { status: 404 });
     }
     const data = snap.data() as Paper;
+
+    // R498: ADR-034 group read-scope — foreign-group callers get 404.
+    if (!paperReadAllowed(decoded, data)) {
+      return new NextResponse('not_found', { status: 404 });
+    }
 
     // Lifecycle check: retracted papers can't be downloaded
     // (defense in depth — UI should hide button but API enforces)

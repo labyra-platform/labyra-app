@@ -21,6 +21,7 @@ import { searchPapers } from '@/lib/ai/rag/search';
 import type { SearchHit } from '@/lib/ai/rag/search-types';
 import { verifyNumericClaims } from '@/lib/ai/verify/numeric-claims';
 import { getGroupIdFromToken, getRoleFromToken, getTenantIdFromToken } from '@/lib/auth/token';
+import { paperReadAllowed } from '@/lib/firebase/papers/access-guard';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import type { Paper } from '@/types/papers';
@@ -141,6 +142,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const snap = await db.doc(`tenants/${tenantId}/papers/${paperId}`).get();
     if (!snap.exists) return jsonError(404, 'paper_not_found');
+    // R498: ADR-034 group read-scope.
+    if (!paperReadAllowed(decoded, snap.data() as Paper)) {
+      return jsonError(404, 'paper_not_found');
+    }
     paperTitle = (snap.data() as Paper).title || paperTitle;
   } catch {
     return jsonError(500, 'paper_fetch_failed');

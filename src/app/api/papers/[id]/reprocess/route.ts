@@ -7,6 +7,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getJobQueue } from '@/lib/ai/rag/jobs';
 import { getVectorStore } from '@/lib/ai/rag/vector-store';
 import { getTenantIdFromToken, getRoleFromToken } from '@/lib/auth/token';
+import { paperReadAllowed } from '@/lib/firebase/papers/access-guard';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import { type Paper, type PaperStatus, TERMINAL_STATUSES } from '@/types/papers';
@@ -66,6 +67,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const paper = snap.data() as Paper;
+  // R498: ADR-034 group read-scope — foreign-group callers get 404.
+  if (!paperReadAllowed(decoded, paper)) {
+    return new Response(JSON.stringify({ error: 'paper_not_found' }), { status: 404 });
+  }
   // R281: 'queued' papers stuck in the waiting queue are reprocessable too —
   // the worker pipeline is idempotent + status-guarded (no version gating), so
   // re-enqueueing is safe. Actively-processing statuses still require cancel first.

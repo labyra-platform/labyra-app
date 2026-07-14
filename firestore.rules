@@ -125,6 +125,24 @@ service cloud.firestore {
         allow write: if isWriter(tenantId) || isSuperAdmin();
       }
 
+      // R498: DFT workflows/projects are read client-side (useTenantCollection
+      // on the dashboard + computation workspace); without an explicit rule the
+      // default-deny blocked them. Writes stay server-only (Admin SDK / worker).
+      match /dftWorkflows/{workflowId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if false;
+      }
+
+      match /dftProjects/{projectId} {
+        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow write: if isWriter(tenantId) || isSuperAdmin();
+
+        match /{document=**} {
+          allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+          allow write: if isWriter(tenantId) || isSuperAdmin();
+        }
+      }
+
       match /aiConversations/{conversationId} {
         allow read, write: if isWriter(tenantId) || isSuperAdmin();
 

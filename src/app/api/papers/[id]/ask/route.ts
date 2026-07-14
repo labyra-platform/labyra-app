@@ -372,7 +372,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const paperSnap = await db.doc(`tenants/${tenantId}/papers/${paperId}`).get();
     if (!paperSnap.exists) return jsonError(404, 'paper_not_found');
-    const paperData = paperSnap.data() as { title?: string; figures?: PaperFigure[] } | undefined;
+    const paperData = paperSnap.data() as
+      | { title?: string; figures?: PaperFigure[]; groupId?: string }
+      | undefined;
+    // R498: ADR-034 group read-scope — foreign-group callers get 404 (never
+    // answer AI questions about a paper outside the caller's group).
+    if (!isPrivileged && (paperData?.groupId ?? 'lab-shared') !== 'lab-shared') {
+      if ((paperData?.groupId ?? 'lab-shared') !== viewerGroupId) {
+        return jsonError(404, 'paper_not_found');
+      }
+    }
     paperTitle = paperData?.title ?? '';
     paperFigures = paperData?.figures ?? [];
   } catch {

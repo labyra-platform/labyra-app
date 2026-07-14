@@ -20,7 +20,7 @@
     }
   },
   "nav": {
-    "dashboard": "Bảng điều khiển",
+    "dashboard": "Tổng quan lab",
     "overview": "Tổng quan",
     "materials": "Vật liệu",
     "samples": "Mẫu",
@@ -666,7 +666,9 @@
     "filterFailed": "Lỗi",
     "filterLabShared": "Cả lab",
     "filterGroupShared": "Nhóm · người khác",
-    "groupOtherBadge": "Nhóm khác"
+    "groupOtherBadge": "Nhóm khác",
+    "quickFilters": "Lọc nhanh",
+    "clearFilters": "Xóa bộ lọc"
   },
   "collections": {
     "title": "Bộ sưu tập",

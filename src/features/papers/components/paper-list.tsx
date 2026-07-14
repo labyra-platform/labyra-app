@@ -9,6 +9,8 @@
 
 import {
   IconArrowsSort,
+  IconChevronDown,
+  IconFilter,
   IconStar,
   IconStarFilled,
   IconChartHistogram,
@@ -55,8 +57,10 @@ import { formatSciNode } from '@/features/spectra/utils/format-units';
 import { usePaperTabsStore } from '@/features/papers/stores/paper-tabs-store';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -491,53 +495,68 @@ export function PaperList({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* R496: quick scope filters. */}
-          <button
-            type='button'
-            onClick={() => setShareFilter((v) => (v === 'lab' ? null : 'lab'))}
-            aria-pressed={shareFilter === 'lab'}
-            title={t('filterLabShared')}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
-              shareFilter === 'lab'
-                ? 'border-primary/50 bg-primary/10 text-primary'
-                : 'hover:bg-muted/50'
-            )}
-          >
-            <Icons.world className='size-3.5' />
-            {t('filterLabShared')}
-          </button>
-          <button
-            type='button'
-            onClick={() => setShareFilter((v) => (v === 'group' ? null : 'group'))}
-            aria-pressed={shareFilter === 'group'}
-            title={t('filterGroupShared')}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
-              shareFilter === 'group'
-                ? 'border-primary/50 bg-primary/10 text-primary'
-                : 'hover:bg-muted/50'
-            )}
-          >
-            <IconUsersGroup className='size-3.5' />
-            {t('filterGroupShared')}
-          </button>
-          {/* Quick filter: show only documents whose processing failed. */}
-          <button
-            type='button'
-            onClick={() => setShowFailedOnly((v) => !v)}
-            aria-label={t('filterFailed')}
-            title={t('filterFailed')}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
-              showFailedOnly
-                ? 'border-destructive/50 bg-destructive/10 text-destructive'
-                : 'hover:bg-muted/50'
-            )}
-          >
-            <IconAlertTriangle className='size-3.5' />
-            {t('filterFailed')}
-          </button>
+          {/* R500: scope + failed filters consolidated into one dropdown. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type='button'
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
+                  shareFilter || showFailedOnly
+                    ? 'border-primary/50 bg-primary/10 text-primary'
+                    : 'hover:bg-muted/50'
+                )}
+              >
+                <IconFilter className='size-3.5' />
+                {t('quickFilters')}
+                {(shareFilter || showFailedOnly) && (
+                  <span className='bg-primary text-primary-foreground ml-0.5 flex size-4 items-center justify-center rounded-full text-[10px] tabular-nums'>
+                    {(shareFilter ? 1 : 0) + (showFailedOnly ? 1 : 0)}
+                  </span>
+                )}
+                <IconChevronDown className='size-3 opacity-60' />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end' className='w-52'>
+              <DropdownMenuCheckboxItem
+                checked={shareFilter === 'lab'}
+                onCheckedChange={(c) => setShareFilter(c ? 'lab' : null)}
+              >
+                <Icons.world className='mr-2 size-4' />
+                {t('filterLabShared')}
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={shareFilter === 'group'}
+                onCheckedChange={(c) => setShareFilter(c ? 'group' : null)}
+              >
+                <IconUsersGroup className='mr-2 size-4' />
+                {t('filterGroupShared')}
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={showFailedOnly}
+                onCheckedChange={(c) => setShowFailedOnly(Boolean(c))}
+                className='text-destructive focus:text-destructive'
+              >
+                <IconAlertTriangle className='mr-2 size-4' />
+                {t('filterFailed')}
+              </DropdownMenuCheckboxItem>
+              {(shareFilter || showFailedOnly) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setShareFilter(null);
+                      setShowFailedOnly(false);
+                    }}
+                    className='text-muted-foreground justify-center text-xs'
+                  >
+                    {t('clearFilters')}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

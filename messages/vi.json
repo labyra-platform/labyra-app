@@ -663,7 +663,10 @@
     "figurePageLabel": "Trang {page}",
     "favorite": "Thêm vào yêu thích",
     "unfavorite": "Bỏ yêu thích",
-    "filterFailed": "Lỗi"
+    "filterFailed": "Lỗi",
+    "filterLabShared": "Cả lab",
+    "filterGroupShared": "Nhóm · người khác",
+    "groupOtherBadge": "Nhóm khác"
   },
   "collections": {
     "title": "Bộ sưu tập",

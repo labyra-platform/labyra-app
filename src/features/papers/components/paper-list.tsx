@@ -40,6 +40,8 @@ import { UploadSheet } from '@/features/papers/components/upload-sheet';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Icons } from '@/components/icons';
+import { useAuth } from '@/lib/auth/use-auth';
+import { useGroupId } from '@/lib/auth/use-claims';
 import { PaperMetadataEditor } from '@/features/papers/components/paper-metadata-editor';
 import { getFirebaseAuth } from '@/lib/firebase/client';
 import { createNotification } from '@/lib/firestore/queries/notifications';
@@ -168,6 +170,10 @@ export function PaperList({
   const [view] = useState<ViewMode>('compact'); // R222 #1: compact default → 15-20/screen
   const [mainView, setMainView] = useState<MainView>('list'); // R237cl: list vs overview dashboard
   const [showFailedOnly, setShowFailedOnly] = useState(false);
+  // R496: quick scope filters — lab-shared docs / group docs contributed by others.
+  const [shareFilter, setShareFilter] = useState<'lab' | 'group' | null>(null);
+  const { user } = useAuth();
+  const myGroupId = useGroupId();
   // R324: bulk selection (checkbox multi-select + bulk archive).
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -201,6 +207,13 @@ export function PaperList({
     if (showFailedOnly) {
       passed = passed.filter((p) => p.status === 'failed');
     }
+    if (shareFilter === 'lab') {
+      passed = passed.filter((p) => p.groupId === 'lab-shared');
+    } else if (shareFilter === 'group') {
+      passed = passed.filter(
+        (p) => p.groupId !== 'lab-shared' && p.groupId === myGroupId && p.uploadedBy !== user?.uid
+      );
+    }
     // R222: client-side sort (data already in memory; no extra query).
     const sorted = [...passed];
     switch (sort) {
@@ -218,7 +231,7 @@ export function PaperList({
         break;
     }
     return sorted;
-  }, [papers, filter, sort, collectionFilter, showFailedOnly]);
+  }, [papers, filter, sort, collectionFilter, showFailedOnly, shareFilter, myGroupId, user?.uid]);
 
   if (loading) {
     return (
@@ -478,6 +491,37 @@ export function PaperList({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          {/* R496: quick scope filters. */}
+          <button
+            type='button'
+            onClick={() => setShareFilter((v) => (v === 'lab' ? null : 'lab'))}
+            aria-pressed={shareFilter === 'lab'}
+            title={t('filterLabShared')}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
+              shareFilter === 'lab'
+                ? 'border-primary/50 bg-primary/10 text-primary'
+                : 'hover:bg-muted/50'
+            )}
+          >
+            <Icons.world className='size-3.5' />
+            {t('filterLabShared')}
+          </button>
+          <button
+            type='button'
+            onClick={() => setShareFilter((v) => (v === 'group' ? null : 'group'))}
+            aria-pressed={shareFilter === 'group'}
+            title={t('filterGroupShared')}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
+              shareFilter === 'group'
+                ? 'border-primary/50 bg-primary/10 text-primary'
+                : 'hover:bg-muted/50'
+            )}
+          >
+            <IconUsersGroup className='size-3.5' />
+            {t('filterGroupShared')}
+          </button>
           {/* Quick filter: show only documents whose processing failed. */}
           <button
             type='button'
@@ -613,6 +657,7 @@ function PaperRow({
 }) {
   const t = useTranslations('papers');
   const router = useRouter();
+  const rowGroupId = useGroupId();
   const openTab = usePaperTabsStore((s) => s.openTab);
   const isOpenInTab = usePaperTabsStore((s) => s.tabs.some((tab) => tab.paperId === paper.id));
   const [editOpen, setEditOpen] = useState(false);
@@ -780,6 +825,15 @@ function PaperRow({
                 {t(`status.${paper.status}`)}
               </span>
             )}
+            {paper.groupId !== 'lab-shared' && paper.groupId !== rowGroupId && (
+              <span
+                title={t('groupOtherBadge')}
+                className='text-muted-foreground border-border inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium leading-none'
+              >
+                <IconUsersGroup className='size-3' aria-hidden='true' />
+                {t('groupOtherBadge')}
+              </span>
+            )}
             {paper.groupId === 'lab-shared' && (
               <span
                 title={t('sharedLab')}
@@ -847,6 +901,7 @@ function PaperRowMenu({
   groupId: string;
   onEditMetadata: () => void;
 }) {
+  const menuGroupId = useGroupId();
   const t = useTranslations('papers');
   const [busy, setBusy] = useState(false);
   const canReprocess = TERMINAL_STATUSES.has(status) || status === 'queued'; // R281
@@ -1028,16 +1083,18 @@ function PaperRowMenu({
             {t('shareToLab')}
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem
-          disabled={busy}
-          onClick={(e) => {
-            e.preventDefault();
-            void share('group');
-          }}
-        >
-          <Icons.share className='size-4' />
-          {t('shareToGroup')}
-        </DropdownMenuItem>
+        {groupId !== menuGroupId && (
+          <DropdownMenuItem
+            disabled={busy}
+            onClick={(e) => {
+              e.preventDefault();
+              void share('group');
+            }}
+          >
+            <Icons.share className='size-4' />
+            {t('shareToGroup')}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           disabled={busy}
           onClick={(e) => {

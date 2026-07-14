@@ -662,7 +662,10 @@
     "figurePageLabel": "Page {page}",
     "favorite": "Add to favorites",
     "unfavorite": "Remove from favorites",
-    "filterFailed": "Failed"
+    "filterFailed": "Failed",
+    "filterLabShared": "Lab-wide",
+    "filterGroupShared": "Group · others",
+    "groupOtherBadge": "Other group"
   },
   "collections": {
     "title": "Collections",

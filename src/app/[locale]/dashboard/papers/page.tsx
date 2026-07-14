@@ -19,7 +19,7 @@ export default async function PapersListPage() {
         action={
           <UploadSheet
             trigger={
-              <Button size='sm'>
+              <Button className='text-base'>
                 <IconUpload className='size-4' />
                 {t('uploadNew')}
               </Button>

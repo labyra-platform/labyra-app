@@ -1678,7 +1678,11 @@
       "scopeDefault": "Mặc định — mọi nhóm",
       "overrideActive": "Nhóm này đang có thiết lập riêng.",
       "followsDefault": "Đang theo mặc định. Lưu để tạo thiết lập riêng cho nhóm.",
-      "useDefault": "Dùng mặc định"
+      "useDefault": "Dùng mặc định",
+      "stateAllowed": "Được dùng",
+      "stateBlocked": "Đã chặn",
+      "blockedCount": "Đang chặn {count} tính năng ở phạm vi này",
+      "allowAllWarning": "Thiết lập riêng của nhóm này đang CHO PHÉP TẤT CẢ và che thiết lập mặc định. Bấm \"Dùng mặc định\" để xóa, hoặc gạt tắt tính năng muốn chặn."
     }
   },
   "manuscript": {

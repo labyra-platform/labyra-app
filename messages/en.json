@@ -1677,7 +1677,11 @@
       "scopeDefault": "Default — all groups",
       "overrideActive": "This group has its own settings.",
       "followsDefault": "Currently following the default. Save to create a group-specific override.",
-      "useDefault": "Use default"
+      "useDefault": "Use default",
+      "stateAllowed": "Allowed",
+      "stateBlocked": "Blocked",
+      "blockedCount": "{count, plural, =0 {Nothing is blocked in this scope} one {Blocking # feature in this scope} other {Blocking # features in this scope}}",
+      "allowAllWarning": "This group override allows EVERYTHING and shadows the default settings. Use \"Use default\" to remove it, or switch features off to block them."
     }
   },
   "manuscript": {

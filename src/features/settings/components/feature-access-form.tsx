@@ -44,12 +44,16 @@ function FeatureRow({
   icon,
   checked,
   indent,
+  stateOn,
+  stateOff,
   onChange
 }: {
   label: string;
   icon?: keyof typeof Icons;
   checked: boolean;
   indent?: boolean;
+  stateOn: string;
+  stateOff: string;
   onChange: (on: boolean) => void;
 }) {
   const Icon = icon ? Icons[icon] : null;
@@ -59,7 +63,14 @@ function FeatureRow({
         {Icon && <Icon className='text-muted-foreground size-4 shrink-0' aria-hidden='true' />}
         <span className='truncate font-medium'>{label}</span>
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+      <div className='flex shrink-0 items-center gap-2'>
+        <span
+          className={`text-xs ${checked ? 'text-muted-foreground' : 'text-destructive font-medium'}`}
+        >
+          {checked ? stateOn : stateOff}
+        </span>
+        <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+      </div>
     </div>
   );
 }
@@ -196,6 +207,16 @@ export function FeatureAccessForm() {
           )}
         </div>
 
+        <p className='text-muted-foreground mb-3 text-xs'>
+          {t('blockedCount', { count: disabled.size })}
+        </p>
+        {hasOverride && disabled.size === 0 && (
+          <div className='border-destructive/40 bg-destructive/5 text-destructive mb-3 flex items-start gap-2 rounded-md border px-3 py-2 text-xs'>
+            <Icons.warning className='mt-0.5 size-3.5 shrink-0' aria-hidden='true' />
+            {t('allowAllWarning')}
+          </div>
+        )}
+
         <div className='divide-border divide-y'>
           {FEATURES.map((f) => (
             <div key={f.key}>
@@ -203,6 +224,8 @@ export function FeatureAccessForm() {
                 label={labelOf(f.title, f.titleKey)}
                 icon={f.icon}
                 checked={!disabled.has(f.key)}
+                stateOn={t('stateAllowed')}
+                stateOff={t('stateBlocked')}
                 onChange={(on) => toggle(f.key, on)}
               />
               {!disabled.has(f.key) &&
@@ -213,6 +236,8 @@ export function FeatureAccessForm() {
                     icon={c.icon}
                     checked={!disabled.has(c.key)}
                     indent
+                    stateOn={t('stateAllowed')}
+                    stateOff={t('stateBlocked')}
                     onChange={(on) => toggle(c.key, on)}
                   />
                 ))}

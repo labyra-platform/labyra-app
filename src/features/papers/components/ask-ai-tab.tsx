@@ -23,7 +23,7 @@ import {
   IconPlayerStopFilled,
   IconPlus,
   IconSparkles,
-  IconTelescope,
+  IconZoomScan,
   IconTrash
 } from '@tabler/icons-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -326,6 +326,24 @@ export function AskAiTab({
             prev.map((m) => (m.id === assistantId ? { ...m, content: answerSoFar.trim() } : m))
           );
         }
+        // R501: flush held-back bytes for an incomplete multi-byte char. The
+        // meta frame (citations/trustScore JSON) is at the very tail, so a
+        // dropped final byte broke JSON.parse → citations lost → chips missing
+        // or misnumbered. Re-parse once the buffer is complete.
+        buffer += decoder.decode();
+        {
+          const sentinelAt = buffer.indexOf(ASK_META_SENTINEL);
+          if (sentinelAt !== -1) {
+            answerSoFar = buffer.slice(0, sentinelAt);
+            try {
+              meta = JSON.parse(
+                buffer.slice(sentinelAt + ASK_META_SENTINEL.length)
+              ) as AskStreamMeta;
+            } catch {
+              meta = null;
+            }
+          }
+        }
         if (meta) {
           const { answer, questions } = splitFollowups(answerSoFar);
           setMessages((prev) =>
@@ -472,7 +490,7 @@ export function AskAiTab({
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
-              <IconTelescope className='size-4' />
+              <IconZoomScan className='size-4' />
             </button>
             <textarea
               ref={inputRef}

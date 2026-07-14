@@ -622,6 +622,12 @@ export function PdfViewer({
         full += decoder.decode(value, { stream: true });
         onChunk?.(full);
       }
+      // R501: flush any bytes the streaming decoder held back for an incomplete
+      // multi-byte character (UTF-8 Vietnamese diacritics span 2–3 bytes); a
+      // final decode() with no options emits them. Without this the last few
+      // characters — the tail of the passage — silently vanish.
+      full += decoder.decode();
+      onChunk?.(full);
       full = full.trim();
       translateCacheRef.current.set(cacheKey, full);
       return full;

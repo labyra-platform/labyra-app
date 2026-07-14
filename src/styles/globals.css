@@ -376,16 +376,25 @@
    Coverage). Amber + ring distinguishes it from the Ctrl+F search marks
    (`.psm`, default yellow); it auto-clears after ~4.5s (see pdf-viewer). */
 mark.pcm {
-  background-color: hsl(45 93% 55% / 0.38);
+  /* R501: the react-pdf text layer is transparent glyphs over the canvas.
+     Painting an opaque/semi-opaque background on the <mark> makes those hidden
+     glyphs read as a block sitting on top of the rendered text (the "overlay"
+     bug). mix-blend-mode:multiply tints the canvas underneath exactly like the
+     saved-highlight layer (pdf-highlight-layer) does — clean yellow highlight,
+     the underlying page text stays crisp. Color matched to the yellow the user
+     asked for (parity with a real highlight). */
+  background-color: hsl(48 96% 53% / 0.45);
+  color: inherit;
+  mix-blend-mode: multiply;
   border-radius: 2px;
   animation: pcm-flash 0.5s ease-out;
 }
 @keyframes pcm-flash {
   from {
-    background-color: hsl(45 96% 58% / 0.6);
+    background-color: hsl(48 96% 53% / 0.7);
   }
   to {
-    background-color: hsl(45 93% 55% / 0.38);
+    background-color: hsl(48 96% 53% / 0.45);
   }
 }
 
@@ -455,4 +464,20 @@ input[type='number']::-webkit-outer-spin-button {
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* R501: center block/display equations in AI answers (parity with NotebookLM).
+   KaTeX centers .katex-display by default, but the surrounding markdown flow +
+   overflow wrapper can pull it left; force centered with breathing room. Scoped
+   to .lb-md so inline math ($…$) and prose stay left-aligned. */
+.lb-md .katex-display {
+  display: flex;
+  justify-content: center;
+  margin: 0.9rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.lb-md .katex-display > .katex {
+  text-align: center;
+  white-space: nowrap;
 }

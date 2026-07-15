@@ -145,7 +145,7 @@ export function DftRunsCard() {
                   <span className='text-meta w-24 shrink-0 text-right tabular-nums'>
                     {job.gapEv != null ? (
                       <span className='text-foreground font-medium'>
-                        {formatQuantity(dftBandGap(job.gapEv), locale)}
+                        {formatQuantity(dftBandGap(job.gapEv))}
                       </span>
                     ) : (
                       ''

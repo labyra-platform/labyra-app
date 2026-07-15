@@ -54,6 +54,23 @@ export function dftBandGap(gapEv: number): Quantity {
 }
 
 /**
+ * A measured quantity is not UI text, so it does not follow the UI language.
+ *
+ * §8 reaches for Intl to stop hand-formatting, and the reason it gives —
+ * "1.240 (vi) vs 1,240 (en) invert in meaning" — is exactly why SI (ISO 80000)
+ * fixes this for physical quantities instead of leaving it to locale: the
+ * decimal marker is a point in scientific writing, and a comma is never a
+ * thousands separator, precisely because it is a decimal marker elsewhere.
+ * A band gap printed "2,7183 eV" is correct Vietnamese and wrong physics; it
+ * would not survive a manuscript, and this app exists to feed manuscripts.
+ *
+ * So: still Intl, never hand-rolled — but pinned to the measurement
+ * convention rather than the reader's language. Dates and counts keep
+ * following the locale; they are prose, not measurements.
+ */
+const SI_NUMBER_LOCALE = 'en-US';
+
+/**
  * Render at exactly the precision the source resolves — no more, no less.
  *
  * min = max = decimals is deliberate. Trailing zeros here are measured, not
@@ -61,11 +78,15 @@ export function dftBandGap(gapEv: number): Quantity {
  * every one of those digits was resolved. Printing "2.72" would hide that we
  * know the next two are zero, which is the same loss as printing 0.05 for a
  * balance reading of 0.0501.
+ *
+ * Grouping is off: SI groups with a thin space, never a comma, and no grouping
+ * at all is unambiguous in every language.
  */
-export function formatQuantity(q: Quantity, locale: string): string {
-  const n = new Intl.NumberFormat(locale, {
+export function formatQuantity(q: Quantity): string {
+  const n = new Intl.NumberFormat(SI_NUMBER_LOCALE, {
     minimumFractionDigits: q.decimals,
-    maximumFractionDigits: q.decimals
+    maximumFractionDigits: q.decimals,
+    useGrouping: false
   }).format(q.value);
   return `${n} ${q.unit}`;
 }

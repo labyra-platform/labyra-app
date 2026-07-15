@@ -25,12 +25,12 @@ export function DashboardHeader({ locale }: { locale: string }) {
   return (
     <div className='flex flex-wrap items-start justify-between gap-3'>
       <div className='min-w-0'>
-        <h1 className='truncate text-xl font-bold tracking-tight'>
+        <h1 className='text-title truncate font-medium'>
           {firstName
             ? t(`greeting.${greetingKey(now.getHours())}Named`, { name: firstName })
             : t(`greeting.${greetingKey(now.getHours())}`)}
         </h1>
-        <p className='text-muted-foreground mt-0.5 text-xs capitalize'>
+        <p className='text-muted-foreground text-caption mt-1 capitalize tabular-nums'>
           {now.toLocaleDateString(locale, {
             weekday: 'long',
             day: '2-digit',

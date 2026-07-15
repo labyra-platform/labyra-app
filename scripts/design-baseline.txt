@@ -1,0 +1,19 @@
+# Design rules §12 — ratchet baseline. See scripts/check-design-tokens.sh.
+#
+# These are debts, not budgets. Each number is how many violations existed when
+# the guard went in; the guard only lets them fall. Lower the number in the same
+# commit that fixes them — that is the whole mechanism.
+#
+# Not yet checked, and why:
+#   spacing        — 3235 classes in src/, and the seven §1 values don't cover
+#                    gap-1 / gap-1.5 / px-2 / py-1. Needs migrating before it
+#                    can be locked, or the lock just unstyles the app.
+#   shadcn Card    — 23 files still import ui/card (gap-6 inside py-6 = 24:24,
+#                    plus border AND shadow, §1+§4). Migrating to Panel is a
+#                    per-feature job, not a grep.
+#   aria-labelledby — 6 files have it; Panel makes it automatic, so this falls
+#                    out of the Card→Panel migration rather than needing a rule.
+
+arbitrary_text_size=101
+off_scale_weight=127
+hardcoded_color=4

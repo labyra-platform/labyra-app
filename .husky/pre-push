@@ -5,3 +5,4 @@ rm -rf .next/dev/types
 pnpm exec tsc --noEmit
 pnpm lint:strict
 bash scripts/check-firestore-guards.sh
+bash scripts/check-design-tokens.sh

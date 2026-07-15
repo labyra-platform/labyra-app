@@ -5,7 +5,14 @@
 **Encoded so far** — §0 says a rule living only in this file has already failed, so:
 - §2 type scale → named tokens in `src/styles/globals.css` (`text-meta` … `text-title`). 11px and 13px are reachable by name, so nobody needs an arbitrary value.
 - §1 + §4 + §10 → `src/components/ui-extra/panel.tsx`. Callers pick a component, not a spacing value.
-- Still open: locking the Tailwind spacing scale, and the oxlint rule against arbitrary values.
+- §2 + §5 → `scripts/check-design-tokens.sh`, in the pre-push hook. A **ratchet**: the violation counts in `scripts/design-baseline.txt` may fall, never rise. New code cannot add debt; existing debt is paid down by lowering the number in the commit that fixes it.
+
+**Two rules in §12 don't survive contact with the codebase, and are amended here rather than left as fiction:**
+
+- *"Delete the default spacing scale; expose only the seven values"* — `src/` carries 3235 spacing classes, and `gap-1`, `gap-1.5`, `px-2`, `py-1`, `space-y-1` are not among the seven. Deleting the scale does not fail a wrong class; it unstyles the application. Spacing has to be migrated before it can be locked. Not currently checked.
+- *"Blocked via oxlint"* — oxlint lints the JS/TS AST; Tailwind classes are opaque strings to it and it ships no Tailwind rule. The guard script above follows the precedent this repo already set with `check-firestore-guards.sh` in the same hook.
+
+**Current debt** (see `scripts/design-baseline.txt`): 101 arbitrary type sizes, 127 off-scale weights, 4 hardcoded colors, 23 files still on shadcn `Card`, and `aria-labelledby` on 6 files. The Card→Panel migration retires the last two together.
 **Scope:** every surface in `labyra-app`. Dashboard is the first consumer, not the only one.
 **Suggested path:** `docs/design/design-rules.md`
 

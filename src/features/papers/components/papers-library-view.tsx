@@ -44,12 +44,15 @@ export function PapersLibraryView({ action }: { action?: React.ReactNode }) {
   return (
     <div className='flex gap-4'>
       <aside className='hidden w-56 shrink-0 md:block'>
-        {/* R526: sticks below the header, not 16px inside it. The header is
-            sticky top-0 z-20 and 56px tall; top-4 pinned this at 16px with no
-            z-index of its own, so it slid underneath — which is what the tab
-            bar screenshot shows. Both numbers now come from --app-header-h, so
-            they cannot drift apart. */}
-        <div className='sticky top-[var(--app-header-h)] h-[calc(100vh-var(--app-header-h)-2rem)]'>
+        {/* R527: top-0, and the top edges line up.
+            R526 stuck this at --app-header-h and made it worse, because the
+            header is `sticky top-0` *in flow* — it already occupies its 56px
+            above this row, so adding that height again counted the header
+            twice and pushed the sidebar half a header below the toolbar it is
+            supposed to line up with. There is no scroll container between here
+            and the document, so top-0 means "the top of this column", which is
+            exactly where the view toggle starts. */}
+        <div className='sticky top-0 h-[calc(100vh-var(--app-header-h)-2rem)]'>
           <CollectionSidebar selection={selection} onSelect={setSelection} />
         </div>
       </aside>

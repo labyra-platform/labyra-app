@@ -262,38 +262,42 @@ export function PaperList({
   }
 
   const viewToggle = (
-    <div className='inline-flex rounded-md border p-0.5'>
+    <div className='inline-flex h-9 rounded-md border p-0.5'>
       <button
         type='button'
         onClick={() => setMainView('list')}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs',
+          'text-body inline-flex items-center gap-1.5 rounded px-2.5',
           mainView === 'list'
             ? 'bg-muted font-medium'
             : 'text-muted-foreground hover:text-foreground'
         )}
       >
-        <IconLayoutList className='size-3.5' />
+        <IconLayoutList className='size-4' />
         {t('viewListMode')}
       </button>
       <button
         type='button'
         onClick={() => setMainView('overview')}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs',
+          'text-body inline-flex items-center gap-1.5 rounded px-2.5',
           mainView === 'overview'
             ? 'bg-muted font-medium'
             : 'text-muted-foreground hover:text-foreground'
         )}
       >
-        <IconChartHistogram className='size-3.5' />
+        <IconChartHistogram className='size-4' />
         {t('viewOverviewMode')}
       </button>
     </div>
   );
 
   const toggleRow = (
-    <div className='flex items-center justify-between gap-2'>
+    // items-stretch: the row is one height, so the toggle's top edge, the
+    // upload button's top edge and the sidebar's first item all start on the
+    // same line. items-center centred a 36px control inside a 40px row and put
+    // its top edge 2px below everything else's.
+    <div className='flex items-stretch justify-between gap-2'>
       {viewToggle}
       {headerAction}
     </div>

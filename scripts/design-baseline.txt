@@ -15,9 +15,11 @@
 #                    lab-context-form and ai-preferences-form deliberately stay
 #                    — their page already renders the heading, so a Panel title
 #                    would duplicate it. That is a design call, not a migration.
-#   aria-labelledby — 6 files have it, up from 6 before the migration. Panel
-#                    generates the id itself, so §10 fell out of the Card→Panel
-#                    work rather than needing a rule of its own.
+#   aria-labelledby — NOT a countable metric, and the number that used to sit
+#   here was wrong. Grepping the string counts only files that hand-roll the
+#   attribute; the 25 files that render <Panel> get the landmark from the
+#   primitive and never contain the string. Landmark coverage is ~25 Panel
+#   surfaces + 5 hand-rolled, and is enforced by using Panel, not by a grep.
 
 arbitrary_text_size=100
 off_scale_size=32

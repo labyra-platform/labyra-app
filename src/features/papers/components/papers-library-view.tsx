@@ -44,7 +44,12 @@ export function PapersLibraryView({ action }: { action?: React.ReactNode }) {
   return (
     <div className='flex gap-4'>
       <aside className='hidden w-56 shrink-0 md:block'>
-        <div className='sticky top-4 h-[calc(100vh-9rem)]'>
+        {/* R526: sticks below the header, not 16px inside it. The header is
+            sticky top-0 z-20 and 56px tall; top-4 pinned this at 16px with no
+            z-index of its own, so it slid underneath — which is what the tab
+            bar screenshot shows. Both numbers now come from --app-header-h, so
+            they cannot drift apart. */}
+        <div className='sticky top-[var(--app-header-h)] h-[calc(100vh-var(--app-header-h)-2rem)]'>
           <CollectionSidebar selection={selection} onSelect={setSelection} />
         </div>
       </aside>

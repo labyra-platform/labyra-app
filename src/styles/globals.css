@@ -2,6 +2,22 @@
 
 @import 'tw-animate-css';
 
+/* The app header's height, as one number.
+   It is `sticky top-0 z-20`, so it is the only thing anything else has to
+   stick below — and the collection sidebar was using `top-4`, a guess, which
+   pinned it 16px into a 56px header and left it underneath (z-auto vs z-20).
+   Two hand-written constants for one measurement drift apart the first time
+   either changes; this way the header sets its own height from the same
+   variable the sidebar sticks to. */
+:root {
+  --app-header-h: 4rem; /* 64px */
+}
+@media (width >= 48rem) {
+  :root {
+    --app-header-h: 3.5rem; /* 56px */
+  }
+}
+
 /* Reserve the scrollbar's lane whether or not there is a scrollbar.
    Without this the page is one width with content and another without it, so
    filtering down to no results shifts the whole layout sideways by ~15px and

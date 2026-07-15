@@ -25,7 +25,7 @@ export default function Header() {
     <header
       className={cn(
         'bg-background/60 sticky top-0 z-20 flex shrink-0 items-center justify-between gap-2 overflow-hidden backdrop-blur-md transition-all duration-200',
-        hidden ? 'h-0 opacity-0' : 'h-16 opacity-100 md:h-14'
+        hidden ? 'h-0 opacity-0' : 'h-[var(--app-header-h)] opacity-100'
       )}
     >
       <div className='flex items-center gap-2 px-4'>

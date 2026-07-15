@@ -298,7 +298,7 @@
   },
   "papers": {
     "uploadPageTitle": "Upload document",
-    "uploadPageSubtitle": "Upload a research document PDF to add it to your lab's searchable library.",
+    "uploadPageSubtitle": "Upload research papers (PDF) to archive and sync them into the library.",
     "dragOrClick": "Drag a PDF here, or <cta>click to browse</cta>",
     "dropToUpload": "Drop PDF to upload",
     "uploading": "Uploading...",
@@ -663,8 +663,8 @@
     "favorite": "Add to favorites",
     "unfavorite": "Remove from favorites",
     "filterFailed": "Failed",
-    "filterLabShared": "Lab-wide",
-    "filterGroupShared": "Group · others",
+    "filterLabShared": "Whole lab",
+    "filterGroupShared": "Group",
     "groupOtherBadge": "Other group",
     "quickFilters": "Filters",
     "clearFilters": "Clear filters"

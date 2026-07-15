@@ -298,7 +298,7 @@
   },
   "papers": {
     "uploadPageTitle": "Tải lên tài liệu",
-    "uploadPageSubtitle": "Tải lên PDF tài liệu nghiên cứu để thêm vào thư viện có thể tìm kiếm của lab.",
+    "uploadPageSubtitle": "Tải lên các bài báo nghiên cứu (PDF) để lưu trữ và đồng bộ vào thư viện.",
     "dragOrClick": "Kéo PDF vào đây, hoặc <cta>click để chọn file</cta>",
     "dropToUpload": "Thả PDF để tải lên",
     "uploading": "Đang tải lên...",
@@ -664,8 +664,8 @@
     "favorite": "Thêm vào yêu thích",
     "unfavorite": "Bỏ yêu thích",
     "filterFailed": "Lỗi",
-    "filterLabShared": "Cả lab",
-    "filterGroupShared": "Nhóm · người khác",
+    "filterLabShared": "Toàn lab",
+    "filterGroupShared": "Nhóm",
     "groupOtherBadge": "Nhóm khác",
     "quickFilters": "Lọc nhanh",
     "clearFilters": "Xóa bộ lọc"

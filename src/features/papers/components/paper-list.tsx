@@ -42,7 +42,6 @@ import { UploadSheet } from '@/features/papers/components/upload-sheet';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Icons } from '@/components/icons';
-import { useAuth } from '@/lib/auth/use-auth';
 import { useGroupId } from '@/lib/auth/use-claims';
 import { PaperMetadataEditor } from '@/features/papers/components/paper-metadata-editor';
 import { getFirebaseAuth } from '@/lib/firebase/client';
@@ -176,7 +175,6 @@ export function PaperList({
   const [showFailedOnly, setShowFailedOnly] = useState(false);
   // R496: quick scope filters — lab-shared docs / group docs contributed by others.
   const [shareFilter, setShareFilter] = useState<'lab' | 'group' | null>(null);
-  const { user } = useAuth();
   const myGroupId = useGroupId();
   // R324: bulk selection (checkbox multi-select + bulk archive).
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -214,9 +212,7 @@ export function PaperList({
     if (shareFilter === 'lab') {
       passed = passed.filter((p) => p.groupId === 'lab-shared');
     } else if (shareFilter === 'group') {
-      passed = passed.filter(
-        (p) => p.groupId !== 'lab-shared' && p.groupId === myGroupId && p.uploadedBy !== user?.uid
-      );
+      passed = passed.filter((p) => p.groupId !== 'lab-shared' && p.groupId === myGroupId);
     }
     // R222: client-side sort (data already in memory; no extra query).
     const sorted = [...passed];
@@ -235,7 +231,7 @@ export function PaperList({
         break;
     }
     return sorted;
-  }, [papers, filter, sort, collectionFilter, showFailedOnly, shareFilter, myGroupId, user?.uid]);
+  }, [papers, filter, sort, collectionFilter, showFailedOnly, shareFilter, myGroupId]);
 
   if (loading) {
     return (
@@ -489,7 +485,7 @@ export function PaperList({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align='end'
-              className='min-w-[var(--radix-dropdown-menu-trigger-width)]'
+              className='w-[var(--radix-dropdown-menu-trigger-width)]'
             >
               {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
                 <DropdownMenuItem key={k} className='text-xs' onClick={() => setSort(k)}>
@@ -522,7 +518,7 @@ export function PaperList({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align='end'
-              className='min-w-[var(--radix-dropdown-menu-trigger-width)]'
+              className='w-[var(--radix-dropdown-menu-trigger-width)]'
             >
               <DropdownMenuCheckboxItem
                 className='text-xs'

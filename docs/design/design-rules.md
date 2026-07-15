@@ -60,7 +60,7 @@ Result on the members card: 24px padding + 24px gap + 24px gap = 72px of chrome 
 ```tsx
 <section
   aria-labelledby="members-h"
-  className="flex h-full flex-col gap-3 rounded-xl border border-border bg-card p-5"
+  className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5"
 >
   <div className="flex items-baseline justify-between">
     <h2 id="members-h" className="text-sm font-medium">Team members</h2>
@@ -76,6 +76,8 @@ Result on the members card: 24px padding + 24px gap + 24px gap = 72px of chrome 
 ```
 
 **Separate rows with `divide-y`, not gap.** A hairline separates better than whitespace and costs 0px.
+
+> **Amended R518** — this example carried `h-full`, and it was copied into the `Panel` primitive from here. It is redundant: `align-items: stretch` is the grid default, so cards in a dashboard row already end on the same line without it. As a primitive default it is worse than redundant — a `Panel` rendered as a block child of a plain stack resolved `height: 100%` against the `flex-1` chain above it and took the full frame height, which is what broke every settings page. A card that must fill asks for it at the call site.
 
 ---
 

@@ -59,7 +59,14 @@ export function Panel({
     <section
       aria-labelledby={id}
       className={cn(
-        'border-border bg-card flex h-full flex-col gap-3 rounded-xl border p-5',
+        // R518: no h-full. It was here to make cards in a dashboard row end on
+        // the same line — but grid already does that: align-items:stretch is
+        // the grid default, so every grid item fills its row regardless. The
+        // class was doing nothing there and something awful everywhere else:
+        // as a block child of a plain stack, height:100% resolved against the
+        // flex-1 chain above and gave every panel the full frame height.
+        // A panel that needs to fill can ask, with className='h-full'.
+        'border-border bg-card flex flex-col gap-3 rounded-xl border p-5',
         className
       )}
     >

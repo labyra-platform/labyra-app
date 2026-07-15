@@ -15,6 +15,7 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconDownload,
+  IconSearch,
   IconSortAscending,
   IconSortDescending
 } from '@tabler/icons-react';
@@ -22,6 +23,8 @@ import { type ReactNode, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 export interface DataTableColumn<T> {
   key: string;
@@ -34,6 +37,9 @@ export interface DataTableColumn<T> {
   title?: string;
   /** Cell className */
   cellClassName?: string;
+  /** R505: header className. Needed so an aligned column (e.g. right-aligned
+   *  numerics) keeps its header over its cells instead of drifting left. */
+  headerClassName?: string;
 }
 
 interface DataTableProps<T> {
@@ -48,6 +54,11 @@ interface DataTableProps<T> {
   emptyMessage?: string;
   /** If set, shows export button. Filename without extension. */
   exportFilename?: string;
+  /** R505: opt-in search. The toolbar reserved a flex-1 spacer next to Export
+   *  and left it empty; a table long enough to need Export is long enough to
+   *  need finding a row. Owner decides what a row's searchable text is. */
+  searchValue?: (row: T) => string;
+  searchPlaceholder?: string;
   /** Custom value extractor for export (default: use column.cell as string) */
   exportValue?: (row: T, columnKey: string) => string | number | null;
   /** #7: show a leading checkbox column for multi-row selection (opt-in). */
@@ -74,6 +85,8 @@ export function DataTable<T>({
   emptyMessage = 'No data.',
   exportFilename,
   exportValue,
+  searchValue,
+  searchPlaceholder,
   selectable = false,
   onSelectionChange,
   renderBulkActions,
@@ -81,10 +94,18 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
   const [sortDir, setSortDir] = useState<SortDirection>(defaultSort?.direction ?? null);
 
+  const searchedRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!searchValue || !q) return rows;
+    return rows.filter((r) => searchValue(r).toLowerCase().includes(q));
+  }, [rows, query, searchValue]);
+
   const sortedRows = useMemo(() => {
+    const rows = searchedRows;
     if (!sortKey || !sortDir) return rows;
     const col = columns.find((c) => c.key === sortKey);
     if (!col?.sortValue) return rows;
@@ -101,7 +122,7 @@ export function DataTable<T>({
       const bs = String(bv).toLowerCase();
       return sortDir === 'asc' ? as.localeCompare(bs) : bs.localeCompare(as);
     });
-  }, [rows, sortKey, sortDir, columns]);
+  }, [searchedRows, sortKey, sortDir, columns]);
 
   const handleSort = (key: string) => {
     if (sortKey !== key) {
@@ -162,7 +183,7 @@ export function DataTable<T>({
 
   return (
     <div className='rounded-lg border bg-card'>
-      {(title || description || exportFilename) && (
+      {(title || description || exportFilename || searchValue) && (
         <div className='flex w-full items-center justify-between border-b p-3'>
           {title || description ? (
             <button
@@ -177,6 +198,17 @@ export function DataTable<T>({
             <div className='flex-1' />
           )}
           <div className='flex items-center gap-2'>
+            {searchValue && !collapsed && (
+              <div className='relative'>
+                <IconSearch className='text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2' />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className='h-8 w-40 pl-7 text-xs sm:w-56'
+                />
+              </div>
+            )}
             {exportFilename && !collapsed && sortedRows.length > 0 && (
               <Button
                 variant='outline'
@@ -242,7 +274,7 @@ export function DataTable<T>({
                     {columns.map((col) => (
                       <th
                         key={col.key}
-                        className='px-2 py-2 text-left font-medium'
+                        className={cn('px-2 py-2 text-left font-medium', col.headerClassName)}
                         title={col.title}
                       >
                         {col.sortValue ? (

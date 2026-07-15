@@ -21,10 +21,14 @@ function safe(fn: (k: string) => string, key: string): string {
   }
 }
 
+// R505: 'empty' was styled bg-muted — the same neutral grey the UI uses for
+// "nothing to report". Running out of a chemical is the one status that needs
+// someone to act (reorder), so it now carries warning weight. Grey is reserved
+// for genuinely neutral states.
 const statusColor: Record<string, string> = {
   available: 'bg-green-500/10 text-green-700 dark:text-green-400',
   low: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-  empty: 'bg-muted text-muted-foreground',
+  empty: 'bg-orange-500/15 text-orange-700 dark:text-orange-400',
   expired: 'bg-red-500/10 text-red-700 dark:text-red-400'
 };
 
@@ -48,11 +52,15 @@ export function ChemicalsTable() {
       key: 'code',
       header: t('table.code'),
       cell: (c) => (
-        <Link href={href(c.id)} className='font-mono text-xs hover:underline'>
+        <Link href={href(c.id)} className='font-mono text-xs whitespace-nowrap hover:underline'>
           {c.chemicalCode || '—'}
         </Link>
       ),
-      sortValue: (c) => c.chemicalCode
+      sortValue: (c) => c.chemicalCode,
+      // R505: internal lab codes are short and fixed-shape — don't let them
+      // steal width from the name column.
+      cellClassName: 'w-28 px-2 py-1.5',
+      headerClassName: 'w-28'
     },
     {
       key: 'name',
@@ -67,7 +75,10 @@ export function ChemicalsTable() {
           )}
         </span>
       ),
-      sortValue: (c) => c.name
+      sortValue: (c) => c.name,
+      // IUPAC names of organics/nanomaterials run long — this is the column
+      // that should absorb the free space.
+      cellClassName: 'min-w-56 px-2 py-1.5'
     },
     {
       key: 'cas',
@@ -80,17 +91,25 @@ export function ChemicalsTable() {
     {
       key: 'hazards',
       header: t('table.hazards'),
-      cell: (c) => <GhsPictogramRow codes={c.ghsHazards} />
+      cell: (c) => <GhsPictogramRow codes={c.ghsHazards} />,
+      cellClassName: 'w-px px-2 py-1.5 whitespace-nowrap',
+      headerClassName: 'w-px whitespace-nowrap'
     },
     {
       key: 'quantity',
       header: t('table.quantity'),
+      // R505: right-aligned so units/tens/hundreds line up down the column and
+      // the eye can compare stock levels without reading every row. The unit is
+      // dimmed — it repeats on every row, the number is what varies.
       cell: (c) => (
         <span className='tabular-nums'>
-          {c.quantity} {c.unit}
+          {c.quantity}
+          <span className='text-muted-foreground ml-1 text-xs'>{c.unit}</span>
         </span>
       ),
-      sortValue: (c) => c.quantity ?? 0
+      sortValue: (c) => c.quantity ?? 0,
+      cellClassName: 'w-32 px-2 py-1.5 text-right',
+      headerClassName: 'w-32 text-right'
     },
     {
       key: 'status',
@@ -100,7 +119,9 @@ export function ChemicalsTable() {
           {safe((k) => tStatus(k), c.status)}
         </Badge>
       ),
-      sortValue: (c) => c.status
+      sortValue: (c) => c.status,
+      cellClassName: 'w-px px-2 py-1.5 whitespace-nowrap',
+      headerClassName: 'w-px whitespace-nowrap'
     }
   ];
 
@@ -141,6 +162,12 @@ export function ChemicalsTable() {
       rowKey={(c) => c.id}
       defaultSort={{ key: 'code', direction: 'asc' }}
       exportFilename='chemicals'
+      // R505: the toolbar kept an empty spacer beside Export. Search covers the
+      // fields someone actually hunts by — name, code, CAS, formula.
+      searchPlaceholder={t('table.searchPlaceholder')}
+      searchValue={(c) =>
+        [c.name, c.chemicalCode, c.casNumber, c.formula].filter(Boolean).join(' ')
+      }
       exportValue={(c, key) => {
         if (key === 'code') return c.chemicalCode;
         if (key === 'name') return c.name;

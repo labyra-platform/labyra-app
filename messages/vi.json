@@ -1520,7 +1520,8 @@
       "cas": "CAS",
       "hazards": "Nguy hại",
       "quantity": "Số lượng",
-      "status": "Trạng thái"
+      "status": "Trạng thái",
+      "searchPlaceholder": "Tìm tên, mã, CAS…"
     },
     "status": {
       "available": "Còn hàng",

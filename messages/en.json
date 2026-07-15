@@ -1519,7 +1519,8 @@
       "cas": "CAS",
       "hazards": "Hazards",
       "quantity": "Quantity",
-      "status": "Status"
+      "status": "Status",
+      "searchPlaceholder": "Search name, code, CAS…"
     },
     "status": {
       "available": "Available",

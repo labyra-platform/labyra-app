@@ -2,6 +2,22 @@
 
 @import 'tw-animate-css';
 
+/* Reserve the scrollbar's lane whether or not there is a scrollbar.
+   Without this the page is one width with content and another without it, so
+   filtering down to no results shifts the whole layout sideways by ~15px and
+   filtering back shifts it home — a jump that reads as a bug because it is one.
+   `stable` keeps the gutter always; the layout stops depending on how many
+   rows survived the filter. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Same reasoning inside a panel's fixed viewport: a members list of three
+   and a list of nine must not be different widths (R520). */
+.lb-viewport {
+  scrollbar-gutter: stable;
+}
+
 /* Design rules §2 amended R520 — the greeting is 24px, not 18.
    §2 called text-title 18 "page greeting"; the owner wants it larger. Adding a
    named token keeps that a scale decision rather than a text-2xl smuggled into

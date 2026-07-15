@@ -105,7 +105,7 @@ export function GroupMembersCard() {
       {/* Five rows, always — see --panel-viewport. Fixed, not max: the point
           is that the card stops resizing when you switch groups. Fewer than
           five leaves space; more scrolls. */}
-      <div className='flex h-[var(--panel-viewport)] flex-col overflow-y-auto'>
+      <div className='lb-viewport flex h-[var(--panel-viewport)] flex-col overflow-y-auto'>
         {isLoading ? (
           <div className='space-y-2'>
             {[0, 1, 2, 3, 4].map((i) => (

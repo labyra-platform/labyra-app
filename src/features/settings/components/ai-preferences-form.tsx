@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getFirebaseAuth } from '@/lib/firebase/client';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -30,20 +29,7 @@ import {
   type AiPreferencesInput,
   aiPreferencesSchema
 } from '@/lib/schemas/ai-preferences-schema';
-
-async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
-  const user = getFirebaseAuth().currentUser;
-  if (!user) throw new Error('not_authenticated');
-  const token = await user.getIdToken();
-  return fetch(path, {
-    ...init,
-    headers: {
-      authorization: `Bearer ${token}`,
-      ...(init?.body ? { 'content-type': 'application/json' } : {}),
-      ...init?.headers
-    }
-  });
-}
+import { authedFetch } from '@/lib/api/authed-fetch';
 
 export function AiPreferencesForm() {
   const t = useTranslations('settings.aiPreferences');

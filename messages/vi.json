@@ -1763,6 +1763,22 @@
       "stateBlocked": "Đã chặn",
       "blockedCount": "Đang chặn {count} tính năng ở phạm vi này",
       "allowAllWarning": "Thiết lập riêng của nhóm này đang CHO PHÉP TẤT CẢ và che thiết lập mặc định. Bấm \"Dùng mặc định\" để xóa, hoặc gạt tắt tính năng muốn chặn."
+    },
+    "units": {
+      "title": "Đơn vị đo",
+      "subtitle": "Bản ghi luôn giữ đơn vị mà nguồn đã báo. Đây chỉ đổi cách hiển thị.",
+      "sourceNote": "Quantum ESPRESSO trả Ry, VASP trả eV; Labyra quy đổi khi hiển thị và không bao giờ sửa file gốc.",
+      "dimension": {
+        "mass": "Khối lượng",
+        "volume": "Thể tích",
+        "temperature": "Nhiệt độ",
+        "energy": "Năng lượng",
+        "length": "Độ dài"
+      },
+      "unsaved": "Có thay đổi chưa lưu",
+      "revert": "Hủy",
+      "save": "Lưu thay đổi",
+      "saving": "Đang lưu…"
     }
   },
   "manuscript": {

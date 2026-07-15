@@ -1762,6 +1762,22 @@
       "stateBlocked": "Blocked",
       "blockedCount": "{count, plural, =0 {Nothing is blocked in this scope} one {Blocking # feature in this scope} other {Blocking # features in this scope}}",
       "allowAllWarning": "This group override allows EVERYTHING and shadows the default settings. Use \"Use default\" to remove it, or switch features off to block them."
+    },
+    "units": {
+      "title": "Units of measure",
+      "subtitle": "Records keep the unit their source reported. This changes the display only.",
+      "sourceNote": "Quantum ESPRESSO reports Ry and VASP reports eV; Labyra converts on the way to the screen and never edits the source file.",
+      "dimension": {
+        "mass": "Mass",
+        "volume": "Volume",
+        "temperature": "Temperature",
+        "energy": "Energy",
+        "length": "Length"
+      },
+      "unsaved": "Unsaved changes",
+      "revert": "Cancel",
+      "save": "Save changes",
+      "saving": "Saving…"
     }
   },
   "manuscript": {

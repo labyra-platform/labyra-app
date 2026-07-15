@@ -490,6 +490,14 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
+    // R523: display units. Same shape and same reason as aiPreferences — the
+    // doc is the caller's own, so uid-match is the whole rule. Not feature
+    // gated: choosing whether a band gap reads in eV or Ry is rendering, not
+    // a billing boundary (ADR-042).
+    match /users/{uid}/displayUnits/{settingsId} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
+
     // =====================================================
     // Default deny — MUST be last, at root scope. Anything not
     // explicitly matched above is denied.

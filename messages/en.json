@@ -1725,7 +1725,10 @@
       "group": "Group",
       "notifications": "Notifications",
       "labContext": "Lab Context",
-      "featureAccess": "Feature access"
+      "featureAccess": "Feature access",
+      "sections": {
+        "setup": "Setup"
+      }
     },
     "group": {
       "title": "Group",

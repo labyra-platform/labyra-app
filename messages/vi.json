@@ -1726,7 +1726,10 @@
       "group": "Nhóm",
       "notifications": "Thông báo",
       "labContext": "Bối cảnh Lab",
-      "featureAccess": "Quyền tính năng"
+      "featureAccess": "Quyền tính năng",
+      "sections": {
+        "setup": "Thiết lập"
+      }
     },
     "group": {
       "title": "Nhóm",

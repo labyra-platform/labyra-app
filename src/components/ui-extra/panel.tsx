@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 
 export function Panel({
   title,
+  description,
   icon: Icon,
   action,
   count,
@@ -35,6 +36,8 @@ export function Panel({
 }: {
   /** Renders the §10 heading and names the landmark. */
   title: string;
+  /** Subtitle under the heading. Settings panels lead with one. */
+  description?: string;
   /** Optional tabler glyph beside the title. Decorative — the <h2> already
    *  names the landmark, so it is hidden from assistive tech (§6). */
   icon?: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
@@ -54,11 +57,21 @@ export function Panel({
         className
       )}
     >
-      <div className='flex items-baseline justify-between gap-2'>
-        <h2 id={id} className='text-heading flex min-w-0 items-center gap-2 font-medium'>
-          {Icon && <Icon className='size-4 shrink-0 self-center' aria-hidden='true' />}
-          <span className='truncate'>{title}</span>
-        </h2>
+      <div
+        className={cn(
+          'flex justify-between gap-2',
+          // Baseline aligns a title against its trailing count; once there's a
+          // description the header is a block, so it aligns from the top.
+          description ? 'items-start' : 'items-baseline'
+        )}
+      >
+        <div className='min-w-0'>
+          <h2 id={id} className='text-heading flex min-w-0 items-center gap-2 font-medium'>
+            {Icon && <Icon className='size-4 shrink-0 self-center' aria-hidden='true' />}
+            <span className='truncate'>{title}</span>
+          </h2>
+          {description && <p className='text-muted-foreground text-caption mt-1'>{description}</p>}
+        </div>
         {action ??
           (count != null && (
             <span className='text-muted-foreground text-caption shrink-0 tabular-nums'>

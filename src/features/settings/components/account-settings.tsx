@@ -17,7 +17,7 @@ import { ThemeModeToggle } from '@/components/themes/theme-mode-toggle';
 import { ThemeSelector } from '@/components/themes/theme-selector';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -59,12 +59,8 @@ export function AccountSettings() {
 
   return (
     <div className='max-w-2xl space-y-6'>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('profileTitle')}</CardTitle>
-          <CardDescription>{t('profileDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
+      <Panel title={t('profileTitle')} description={t('profileDesc')}>
+        <div className='space-y-4'>
           <div className='flex items-center gap-4'>
             <Avatar className='size-16'>
               <AvatarImage src={user?.photoURL ?? undefined} alt={name || email} />
@@ -94,15 +90,11 @@ export function AccountSettings() {
             <Label htmlFor='email'>{t('email')}</Label>
             <Input id='email' value={email} disabled className='max-w-sm' />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('appearanceTitle')}</CardTitle>
-          <CardDescription>{t('appearanceDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
+      <Panel title={t('appearanceTitle')} description={t('appearanceDesc')}>
+        <div className='space-y-4'>
           <div className='flex items-center justify-between gap-4'>
             <div>
               <div className='text-sm font-medium'>{t('themeMode')}</div>
@@ -117,24 +109,18 @@ export function AccountSettings() {
             </div>
             <ThemeSelector />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('languageTitle')}</CardTitle>
-          <CardDescription>{t('languageDesc')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className='flex items-center justify-between gap-4'>
-            <div>
-              <div className='text-sm font-medium'>{t('language')}</div>
-              <div className='text-muted-foreground text-xs'>{t('languageHint')}</div>
-            </div>
-            <LocaleSwitcher />
+      <Panel title={t('languageTitle')} description={t('languageDesc')}>
+        <div className='flex items-center justify-between gap-4'>
+          <div>
+            <div className='text-sm font-medium'>{t('language')}</div>
+            <div className='text-muted-foreground text-xs'>{t('languageHint')}</div>
           </div>
-        </CardContent>
-      </Card>
+          <LocaleSwitcher />
+        </div>
+      </Panel>
     </div>
   );
 }

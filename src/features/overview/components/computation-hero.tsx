@@ -70,7 +70,9 @@ function JobRow({ job, t }: { job: DftJobSummaryItem; t: ReturnType<typeof useTr
       <span className='text-muted-foreground shrink-0 text-xs tabular-nums'>
         {job.status === 'completed' && job.gapEv != null
           ? t('dft.gapEv', { gap: job.gapEv.toFixed(2) })
-          : timeAgo(job.updatedAt, t)}
+          : job.updatedAt != null
+            ? timeAgo(job.updatedAt, t)
+            : '—'}
       </span>
     </Link>
   );

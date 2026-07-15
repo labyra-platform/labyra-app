@@ -159,7 +159,9 @@
       "experimentsThisWeek": "Thí nghiệm tuần này",
       "experimentsThisWeekCaption": "7 ngày gần nhất",
       "jobsDoneWeek": "DFT jobs hoàn tất",
-      "jobsDoneWeekCaption": "hoàn tất trong 7 ngày qua"
+      "jobsDoneWeekCaption": "hoàn tất trong 7 ngày qua",
+      "running": "Đang chạy",
+      "chemicals": "Hóa chất"
     },
     "recentExperiments": "Thí nghiệm gần đây",
     "recentExperimentsSubtitle": "5 thí nghiệm mới nhất",
@@ -203,6 +205,35 @@
       "equipment": "Thiết bị theo loại",
       "chemicals": "Hóa chất theo nhóm nguy hại",
       "empty": "Chưa có dữ liệu."
+    },
+    "greeting": {
+      "morning": "Chào buổi sáng",
+      "morningNamed": "Chào buổi sáng, {name}",
+      "afternoon": "Chào buổi chiều",
+      "afternoonNamed": "Chào buổi chiều, {name}",
+      "evening": "Chào buổi tối",
+      "eveningNamed": "Chào buổi tối, {name}"
+    },
+    "attention": {
+      "title": "Cần chú ý",
+      "count": "{count} mục",
+      "clearTitle": "Không có gì cần chú ý",
+      "clearDesc": "Không có run lỗi, không hóa chất dưới ngưỡng, không lô nào sắp hết hạn.",
+      "viewLog": "Xem log",
+      "order": "Đặt hàng",
+      "view": "Xem",
+      "reason": {
+        "dft_failed": "Run lỗi",
+        "chemical_low": "Dưới ngưỡng đặt hàng lại",
+        "chemical_expiring": "Sắp hết hạn"
+      }
+    },
+    "members": {
+      "title": "Thành viên nhóm",
+      "empty": "Nhóm này chưa có thành viên.",
+      "lead": "Trưởng nhóm",
+      "invite": "Mời thành viên",
+      "allGroups": "Chọn nhóm"
     }
   },
   "locale": {

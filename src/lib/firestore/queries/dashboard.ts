@@ -11,6 +11,39 @@ import { limit as fsLimit, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { useTenantCollection } from '../use-tenant-collection';
 
+/**
+ * R506: normalise every timestamp shape this app stores into epoch ms.
+ *
+ * Collections disagree, and the disagreement is load-bearing: the Python
+ * worker writes dftWorkflows.createdAt as a Firestore SERVER_TIMESTAMP (or an
+ * ISO string from the driver path), while the TS app writes plain epoch-ms
+ * numbers elsewhere. The worker's own `createdAtEpoch` is derived in memory
+ * when IT reads a doc — it is never persisted, so a client reading Firestore
+ * directly never sees it. R493 assumed epoch-ms everywhere and subtracted a
+ * Timestamp object from Date.now(), which is what produced "19909 ngày trước".
+ *
+ * Accepts: Timestamp | {seconds,nanoseconds} | ISO string | epoch s | epoch ms.
+ */
+export function toMillis(v: unknown): number | null {
+  if (v == null) return null;
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v) || v <= 0) return null;
+    // Seconds vs milliseconds: 1e12 ms is 2001, so anything smaller is seconds.
+    return v < 1e12 ? v * 1000 : v;
+  }
+  if (typeof v === 'string') {
+    const parsed = Date.parse(v);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  if (typeof v === 'object') {
+    const o = v as { toMillis?: () => number; seconds?: number; _seconds?: number };
+    if (typeof o.toMillis === 'function') return o.toMillis();
+    const secs = o.seconds ?? o._seconds;
+    if (typeof secs === 'number') return secs * 1000;
+  }
+  return null;
+}
+
 // ─── KPI types ──────────────────────────────────────────────────────
 export interface KpiSummary {
   totalExperiments: number;
@@ -245,25 +278,35 @@ export function useRecentExperiments(count = 5): {
 
 // ─── R493: computation-first dashboard ───────────────────────────────
 
+/** Mirrors what the Python worker actually writes (src/dft/io.py). */
 interface DftWorkflowDoc {
-  data: {
-    name?: string;
-    overallStatus?: 'pending' | 'queued' | 'running' | 'completed' | 'failed';
-    createdAt?: number;
-    updatedAt?: number;
-    units?: { status?: string; calculation?: string; scfGap?: { gapEv?: number } }[];
-  };
+  name?: string;
+  overallStatus?: 'pending' | 'queued' | 'running' | 'completed' | 'failed';
+  createdAt?: unknown; // SERVER_TIMESTAMP | ISO string — never plain epoch ms
+  updatedAt?: unknown;
+  createdByUid?: string;
+  machinePreset?: string;
+  structure?: { spaceGroup?: string };
+  /** Scientific summary written on completion; scfGap lives HERE, not per-unit. */
+  results?: { scfGap?: { gapEv?: number } };
+  units?: { status?: string; calcType?: string }[];
 }
 
 export interface DftJobSummaryItem {
   id: string;
   name: string;
   status: 'pending' | 'queued' | 'running' | 'completed' | 'failed';
-  /** First unit's calculation label (scf / vc-relax / …). */
+  /** Calculation type of the first unit (scf / vc-relax / …). */
   calc: string | null;
-  /** Band gap (eV) from the last unit exposing scfGap, when completed. */
+  /** Band gap (eV) from the workflow's results summary, when completed. */
   gapEv: number | null;
-  updatedAt: number;
+  /** Space group of the input structure (e.g. P6_3/mmc), when known. */
+  spaceGroup: string | null;
+  ownerUid: string | null;
+  /** Compute preset the worker recorded (no invented "Lucia HPC" label). */
+  machine: string | null;
+  /** Epoch ms, normalised — null when the doc carries no usable timestamp. */
+  updatedAt: number | null;
 }
 
 export interface DftSummary {
@@ -276,12 +319,15 @@ export interface DftSummary {
 
 /** dftWorkflows roll-up (TanStack, 30s stale + refetch-on-focus): status counts + recent jobs. */
 export function useDftSummary(latestCount = 3): DftSummary {
-  const { data, isLoading } = useTenantCollection<DftWorkflowDoc['data']>({
+  const { data, isLoading } = useTenantCollection<DftWorkflowDoc>({
     collection: 'dftWorkflows'
   });
 
   return useMemo(() => {
-    const rows = (data ?? []).map((d) => ({ id: d.id, ...d.data }));
+    const rows = (data ?? []).map((d) => {
+      const ts = toMillis(d.data.updatedAt) ?? toMillis(d.data.createdAt);
+      return { id: d.id, ts, ...d.data };
+    });
     const counts = { running: 0, queued: 0, completed: 0, failed: 0 };
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     let completedThisWeek = 0;
@@ -289,25 +335,23 @@ export function useDftSummary(latestCount = 3): DftSummary {
       const s = r.overallStatus ?? 'pending';
       if (s === 'pending' || s === 'queued') counts.queued += 1;
       else if (s in counts) counts[s as keyof typeof counts] += 1;
-      if (s === 'completed' && (r.updatedAt ?? r.createdAt ?? 0) >= weekAgo) {
-        completedThisWeek += 1;
-      }
+      if (s === 'completed' && r.ts !== null && r.ts >= weekAgo) completedThisWeek += 1;
     }
     const latest: DftJobSummaryItem[] = rows
-      .toSorted((a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0))
+      .toSorted((a, b) => (b.ts ?? 0) - (a.ts ?? 0))
       .slice(0, latestCount)
-      .map((r) => {
-        const units = r.units ?? [];
-        const gapUnit = units.findLast((u) => u.scfGap?.gapEv != null);
-        return {
-          id: r.id,
-          name: r.name ?? r.id,
-          status: (r.overallStatus ?? 'pending') as DftJobSummaryItem['status'],
-          calc: units[0]?.calculation ?? null,
-          gapEv: gapUnit?.scfGap?.gapEv ?? null,
-          updatedAt: r.updatedAt ?? r.createdAt ?? 0
-        };
-      });
+      .map((r) => ({
+        id: r.id,
+        name: r.name ?? r.id,
+        status: (r.overallStatus ?? 'pending') as DftJobSummaryItem['status'],
+        // calcType is the worker's source of truth for the unit's calculation.
+        calc: r.units?.[0]?.calcType ?? null,
+        gapEv: r.results?.scfGap?.gapEv ?? null,
+        spaceGroup: r.structure?.spaceGroup ?? null,
+        ownerUid: r.createdByUid ?? null,
+        machine: r.machinePreset ?? null,
+        updatedAt: r.ts
+      }));
     return { counts, completedThisWeek, latest, total: rows.length, isLoading };
   }, [data, isLoading, latestCount]);
 }
@@ -392,4 +436,103 @@ export function useExperimentsDaily(days = 30): { data: DailyCount[]; isLoading:
       isLoading
     };
   }, [data, isLoading, days]);
+}
+
+// ─── R506: attention feed ───────────────────────────────────────────
+
+interface AttentionChemicalDoc {
+  name: string;
+  quantity?: number;
+  unit?: string;
+  reorderThreshold?: number;
+  expiryAt?: number;
+  lotNumber?: string;
+}
+
+export type AttentionKind = 'dft_failed' | 'chemical_low' | 'chemical_expiring';
+
+export interface AttentionItem {
+  id: string;
+  kind: AttentionKind;
+  /** Headline — already carries the subject, no prefix needed. */
+  title: string;
+  /** Supporting facts (timestamp, lot, remaining amount). */
+  detail: string;
+  href: string;
+  at: number | null;
+  severity: 'danger' | 'warning';
+}
+
+const EXPIRY_WINDOW_DAYS = 30;
+
+/**
+ * The one card that earns its place at the top: things that are already wrong
+ * or about to be. Everything here is derived from data the lab already stores —
+ * a failed run, stock under its own reorder threshold, a lot approaching its
+ * expiry date. Sorted by severity, then recency.
+ */
+export function useAttentionItems(locale: string): { items: AttentionItem[]; isLoading: boolean } {
+  const dft = useDftSummary(50);
+  const { data: chemicals, isLoading: chemLoading } = useTenantCollection<AttentionChemicalDoc>({
+    collection: 'chemicals'
+  });
+
+  return useMemo(() => {
+    const items: AttentionItem[] = [];
+    const now = Date.now();
+
+    for (const job of dft.latest) {
+      if (job.status !== 'failed') continue;
+      items.push({
+        id: `dft:${job.id}`,
+        kind: 'dft_failed',
+        title: job.name,
+        detail: [job.calc, job.machine].filter(Boolean).join(' · '),
+        href: `/${locale}/dashboard/computation?id=${job.id}`,
+        at: job.updatedAt,
+        severity: 'danger'
+      });
+    }
+
+    for (const c of chemicals ?? []) {
+      const d = c.data;
+      const threshold = d.reorderThreshold;
+      if (threshold != null && (d.quantity ?? 0) <= threshold) {
+        items.push({
+          id: `low:${c.id}`,
+          kind: 'chemical_low',
+          title: d.name,
+          detail: `${d.quantity ?? 0} ${d.unit ?? ''} / ${threshold} ${d.unit ?? ''}`.trim(),
+          href: `/${locale}/dashboard/chemicals/${c.id}`,
+          at: null,
+          severity: 'warning'
+        });
+      }
+      const expiry = toMillis(d.expiryAt);
+      if (expiry != null && expiry - now <= EXPIRY_WINDOW_DAYS * 86_400_000) {
+        items.push({
+          id: `exp:${c.id}`,
+          kind: 'chemical_expiring',
+          title: d.name,
+          detail: [
+            new Date(expiry).toLocaleDateString(locale),
+            d.lotNumber ? `#${d.lotNumber}` : null
+          ]
+            .filter(Boolean)
+            .join(' · '),
+          href: `/${locale}/dashboard/chemicals/${c.id}`,
+          at: expiry,
+          severity: expiry <= now ? 'danger' : 'warning'
+        });
+      }
+    }
+
+    const rank = { danger: 0, warning: 1 };
+    items.sort((a, b) =>
+      rank[a.severity] !== rank[b.severity]
+        ? rank[a.severity] - rank[b.severity]
+        : (b.at ?? 0) - (a.at ?? 0)
+    );
+    return { items, isLoading: dft.isLoading || chemLoading };
+  }, [dft.latest, dft.isLoading, chemicals, chemLoading, locale]);
 }

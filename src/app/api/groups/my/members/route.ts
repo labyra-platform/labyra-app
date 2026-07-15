@@ -11,6 +11,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate } from '@/lib/api/auth-helper';
 import { getGroup } from '@/lib/firebase/groups/service';
+import { listGroups } from '@/lib/firebase/groups/service';
 import { listTenantMembers } from '@/lib/firebase/members/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
@@ -25,17 +26,27 @@ export async function GET(req: NextRequest) {
     return new NextResponse('rate_limited', { status: 429 });
   }
 
-  if (!auth.groupId) {
-    return NextResponse.json({ group: null, items: [] });
+  // R506: a lab head oversees every group, so admins may aim this at any group
+  // via ?groupId=. For everyone else the parameter is ignored outright — scope
+  // still comes from the claim, never from the request.
+  const isAdmin = auth.role === 'admin' || auth.role === 'superadmin';
+  const requested = req.nextUrl.searchParams.get('groupId')?.trim() || null;
+  const scopeGroupId = isAdmin && requested ? requested : auth.groupId;
+
+  if (!scopeGroupId && !isAdmin) {
+    return NextResponse.json({ group: null, items: [], groups: [] });
   }
 
   try {
-    const [group, members] = await Promise.all([
-      getGroup(auth.tenantId, auth.groupId),
-      listTenantMembers(auth.tenantId)
+    const [group, members, allGroups] = await Promise.all([
+      scopeGroupId ? getGroup(auth.tenantId, scopeGroupId) : Promise.resolve(null),
+      listTenantMembers(auth.tenantId),
+      // Only a lab head gets the group list — it's what populates their picker.
+      isAdmin ? listGroups(auth.tenantId) : Promise.resolve([])
     ]);
+    const effectiveGroupId = scopeGroupId ?? allGroups[0]?.id ?? null;
     const items = members
-      .filter((m) => m.groupId === auth.groupId && !m.disabled)
+      .filter((m) => m.groupId === effectiveGroupId && !m.disabled)
       .map((m) => ({
         uid: m.uid,
         displayName: m.displayName,
@@ -49,8 +60,14 @@ export async function GET(req: NextRequest) {
           : (a.displayName || a.email).localeCompare(b.displayName || b.email)
       );
     return NextResponse.json({
-      group: group ? { id: group.id, name: group.name } : { id: auth.groupId, name: '' },
-      items
+      group: group
+        ? { id: group.id, name: group.name }
+        : effectiveGroupId
+          ? { id: effectiveGroupId, name: '' }
+          : null,
+      items,
+      groups: allGroups.map((g) => ({ id: g.id, name: g.name })),
+      canSwitchGroup: isAdmin
     });
   } catch (err) {
     console.error('GET /api/groups/my/members', err);

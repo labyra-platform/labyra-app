@@ -159,7 +159,9 @@
       "experimentsThisWeek": "Experiments This Week",
       "experimentsThisWeekCaption": "Started in last 7 days",
       "jobsDoneWeek": "DFT jobs done",
-      "jobsDoneWeekCaption": "completed in the last 7 days"
+      "jobsDoneWeekCaption": "completed in the last 7 days",
+      "running": "Running",
+      "chemicals": "Chemicals"
     },
     "recentExperiments": "Recent Experiments",
     "recentExperimentsSubtitle": "Last 5 experiments",
@@ -203,6 +205,35 @@
       "equipment": "Equipment by type",
       "chemicals": "Chemicals by hazard",
       "empty": "No data yet."
+    },
+    "greeting": {
+      "morning": "Good morning",
+      "morningNamed": "Good morning, {name}",
+      "afternoon": "Good afternoon",
+      "afternoonNamed": "Good afternoon, {name}",
+      "evening": "Good evening",
+      "eveningNamed": "Good evening, {name}"
+    },
+    "attention": {
+      "title": "Needs attention",
+      "count": "{count} items",
+      "clearTitle": "Nothing needs attention",
+      "clearDesc": "No failed runs, no stock below threshold, no lot expiring soon.",
+      "viewLog": "View log",
+      "order": "Order",
+      "view": "View",
+      "reason": {
+        "dft_failed": "Run failed",
+        "chemical_low": "Below reorder threshold",
+        "chemical_expiring": "Expiring"
+      }
+    },
+    "members": {
+      "title": "Group members",
+      "empty": "No members in this group yet.",
+      "lead": "Group lead",
+      "invite": "Invite member",
+      "allGroups": "Select group"
     }
   },
   "locale": {

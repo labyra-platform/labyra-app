@@ -27,7 +27,7 @@ import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Link } from '@/i18n/navigation';
 import { type DftJobSummaryItem, useDftSummary } from '@/lib/firestore/queries/dashboard';
 import { cn } from '@/lib/utils';
-import { dftBandGap, formatQuantity } from '@/types/quantity';
+import { dftBandGap, formatQuantity } from '@/types/units';
 import { useGroupRoster } from '../use-group-roster';
 
 /** §5: the status palette. Fixed meaning, never reused for identity. */

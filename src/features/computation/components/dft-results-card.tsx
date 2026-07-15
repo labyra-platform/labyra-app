@@ -11,7 +11,7 @@ import { IconActivity, IconAtom2, IconChartHistogram } from '@tabler/icons-react
 import { getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
 import { Panel } from '@/components/ui-extra/panel';
-import { dftBandGap, formatQuantity } from '@/types/quantity';
+import { dftBandGap, formatQuantity } from '@/types/units';
 import { Separator } from '@/components/ui/separator';
 import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
 import type { DftOverallStatus, DftWorkflow } from '@/types/dft';

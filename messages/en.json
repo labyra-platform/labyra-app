@@ -186,7 +186,6 @@
         "completed": "done",
         "failed": "failed"
       },
-      "gapEv": "{gap} eV",
       "emptyTitle": "No DFT runs yet",
       "emptyDesc": "Launch a calculation and its progress lands here.",
       "newRun": "New DFT run",

@@ -186,7 +186,6 @@
         "completed": "xong",
         "failed": "lỗi"
       },
-      "gapEv": "{gap} eV",
       "emptyTitle": "Chưa có DFT run nào",
       "emptyDesc": "Chạy một tính toán, tiến trình sẽ hiện ở đây.",
       "newRun": "DFT run mới",

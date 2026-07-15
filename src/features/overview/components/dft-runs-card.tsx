@@ -27,6 +27,7 @@ import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Link } from '@/i18n/navigation';
 import { type DftJobSummaryItem, useDftSummary } from '@/lib/firestore/queries/dashboard';
 import { cn } from '@/lib/utils';
+import { dftBandGap, formatQuantity } from '@/types/quantity';
 import { useGroupRoster } from '../use-group-roster';
 
 /** §5: the status palette. Fixed meaning, never reused for identity. */
@@ -66,11 +67,6 @@ export function DftRunsCard() {
   const age = useAge(locale);
 
   if (allowed === false) return null;
-
-  // §8: no toFixed — padding 2.6 to "2.60" invents a digit the calculation
-  // never produced. Until Quantity carries sigFigs from the convergence
-  // threshold, the honest move is to show what's there and add nothing.
-  const gapFmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
 
   const statusLine = (['running', 'queued', 'completed', 'failed'] as const)
     .filter((s) => counts[s] > 0)
@@ -146,10 +142,10 @@ export function DftRunsCard() {
                   )}
                   {/* Two facts, two columns — the gap slot stays a gap slot
                       even on rows that have none. */}
-                  <span className='text-meta w-16 shrink-0 text-right tabular-nums'>
+                  <span className='text-meta w-24 shrink-0 text-right tabular-nums'>
                     {job.gapEv != null ? (
                       <span className='text-foreground font-medium'>
-                        {t('dft.gapEv', { gap: gapFmt.format(job.gapEv) })}
+                        {formatQuantity(dftBandGap(job.gapEv), locale)}
                       </span>
                     ) : (
                       ''

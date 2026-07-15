@@ -8,9 +8,10 @@
  * @phase R259-link-card-to-workspace
  */
 import { IconActivity, IconAtom2, IconChartHistogram } from '@tabler/icons-react';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
 import { Panel } from '@/components/ui-extra/panel';
+import { dftBandGap, formatQuantity } from '@/types/quantity';
 import { Separator } from '@/components/ui/separator';
 import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
 import type { DftOverallStatus, DftWorkflow } from '@/types/dft';
@@ -34,6 +35,7 @@ interface Props {
 
 export async function DftResultsCard({ workflow }: Props) {
   const t = await getTranslations('computation');
+  const locale = await getLocale();
   const r = workflow.results;
   const g = workflow.global;
   const overall = workflow.overallStatus;
@@ -71,7 +73,9 @@ export async function DftResultsCard({ workflow }: Props) {
             </h3>
             <div className='flex items-center gap-2'>
               <span className='text-2xl font-semibold tabular-nums'>
-                {fmt(r.bandGap.band_gap_ev, 2)} eV
+                {r.bandGap.band_gap_ev != null
+                  ? formatQuantity(dftBandGap(r.bandGap.band_gap_ev), locale)
+                  : '—'}
               </span>
               <Badge variant='outline'>
                 {r.bandGap.direct === true

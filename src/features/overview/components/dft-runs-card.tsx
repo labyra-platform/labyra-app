@@ -85,6 +85,7 @@ export function DftRunsCard() {
   return (
     <Panel
       title={t('dft.runsTitle')}
+      icon={Icons.computation}
       action={
         <Link
           href='/dashboard/computation'

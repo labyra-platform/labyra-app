@@ -45,6 +45,7 @@ export function GroupMembersCard() {
   return (
     <Panel
       title={t('members.title')}
+      icon={Icons.teams}
       action={
         showPicker ? (
           <Select value={currentId} onValueChange={(v) => setGroupId(v)}>

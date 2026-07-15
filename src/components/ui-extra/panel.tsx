@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 
 export function Panel({
   title,
+  icon: Icon,
   action,
   count,
   children,
@@ -34,6 +35,9 @@ export function Panel({
 }: {
   /** Renders the §10 heading and names the landmark. */
   title: string;
+  /** Optional tabler glyph beside the title. Decorative — the <h2> already
+   *  names the landmark, so it is hidden from assistive tech (§6). */
+  icon?: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
   /** Trailing header slot — a link, a picker, a legend. */
   action?: React.ReactNode;
   /** Convenience for the common "N items" trailing count. */
@@ -51,8 +55,9 @@ export function Panel({
       )}
     >
       <div className='flex items-baseline justify-between gap-2'>
-        <h2 id={id} className='text-heading truncate font-medium'>
-          {title}
+        <h2 id={id} className='text-heading flex min-w-0 items-center gap-2 font-medium'>
+          {Icon && <Icon className='size-4 shrink-0 self-center' aria-hidden='true' />}
+          <span className='truncate'>{title}</span>
         </h2>
         {action ??
           (count != null && (

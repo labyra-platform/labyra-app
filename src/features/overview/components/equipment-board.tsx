@@ -108,6 +108,7 @@ export function EquipmentBoard() {
   return (
     <Panel
       title={t('board.title')}
+      icon={Icons.calendar}
       action={
         <div className='flex shrink-0 items-center gap-3'>
           <Legend owner='self' label={t('board.self')} />

@@ -11,6 +11,7 @@
  * saying so plainly is the most useful thing this panel ever does.
  */
 import { useLocale, useTranslations } from 'next-intl';
+import { Icons } from '@/components/icons';
 import { Panel, PanelEmpty, PanelList, PanelRow } from '@/components/ui-extra/panel';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,6 +60,7 @@ export function AttentionCard() {
   return (
     <Panel
       title={t('attention.title')}
+      icon={Icons.warning}
       count={isLoading || !items.length ? undefined : items.length}
     >
       {isLoading ? (

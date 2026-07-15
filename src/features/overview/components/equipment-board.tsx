@@ -16,7 +16,7 @@
 import { useTranslations } from 'next-intl';
 import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Icons } from '@/components/icons';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel, PanelEmpty } from '@/components/ui-extra/panel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from '@/i18n/navigation';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -33,14 +33,17 @@ const DAY_START_H = 8;
 const DAY_END_H = 18;
 const HOURS = DAY_END_H - DAY_START_H;
 
+// Ownership is identity, not state, so these are three weights of one hue
+// rather than three status colours — a green bar here would collide with
+// "done" from the status palette (§5).
 const OWNER_BAR: Record<BookingOwner, string> = {
-  self: 'bg-chart-2 text-white',
-  group: 'bg-chart-2/35 text-foreground',
+  self: 'bg-blue-600 text-white',
+  group: 'bg-blue-600/35 text-foreground',
   other: 'bg-muted-foreground/25 text-foreground'
 };
 const OWNER_DOT: Record<BookingOwner, string> = {
-  self: 'bg-chart-2',
-  group: 'bg-chart-2/35',
+  self: 'bg-blue-600',
+  group: 'bg-blue-600/35',
   other: 'bg-muted-foreground/25'
 };
 
@@ -63,7 +66,7 @@ function Bar({ booking, dayStart }: { booking: ScheduledBooking; dayStart: numbe
   return (
     <div
       className={cn(
-        'absolute top-1 bottom-1 flex items-center overflow-hidden rounded px-1.5 text-[10px] font-medium',
+        'absolute top-1 bottom-1 flex items-center overflow-hidden rounded px-1.5 text-meta font-medium',
         OWNER_BAR[booking.owner]
       )}
       style={{ left: `${Math.max(0, left)}%`, width: `${width}%` }}
@@ -81,7 +84,7 @@ function Bar({ booking, dayStart }: { booking: ScheduledBooking; dayStart: numbe
 
 function Legend({ owner, label }: { owner: BookingOwner; label: string }) {
   return (
-    <span className='text-muted-foreground flex items-center gap-1 text-[10px]'>
+    <span className='text-muted-foreground text-meta flex items-center gap-2'>
       <span className={cn('size-2 rounded-[2px]', OWNER_DOT[owner])} aria-hidden />
       {label}
     </span>
@@ -103,68 +106,62 @@ export function EquipmentBoard() {
   const ticks = Array.from({ length: HOURS / 2 + 1 }, (_, i) => DAY_START_H + i * 2);
 
   return (
-    <Card>
-      <CardHeader className='pb-3'>
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <CardTitle className='flex items-center gap-2 text-base'>
-            <Icons.calendar className='size-4' aria-hidden />
-            {t('board.title')}
-          </CardTitle>
-          <div className='flex items-center gap-3'>
-            <Legend owner='self' label={t('board.self')} />
-            <Legend owner='group' label={t('board.group')} />
-            <Legend owner='other' label={t('board.other')} />
-          </div>
+    <Panel
+      title={t('board.title')}
+      action={
+        <div className='flex shrink-0 items-center gap-3'>
+          <Legend owner='self' label={t('board.self')} />
+          <Legend owner='group' label={t('board.group')} />
+          <Legend owner='other' label={t('board.other')} />
         </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading || rosterLoading ? (
-          <div className='space-y-2'>
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className='h-6 w-full' />
-            ))}
+      }
+    >
+      {isLoading || rosterLoading ? (
+        <div className='space-y-2'>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className='h-6 w-full' />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <PanelEmpty title={t('board.emptyTitle')} description={t('board.empty')} />
+      ) : (
+        <div className='space-y-1.5'>
+          <div className='flex pl-24'>
+            <div className='relative h-4 flex-1'>
+              {ticks.map((h) => (
+                <span
+                  key={h}
+                  className='text-muted-foreground text-meta absolute -translate-x-1/2 tabular-nums'
+                  style={{ left: `${((h - DAY_START_H) / HOURS) * 100}%` }}
+                >
+                  {h}
+                </span>
+              ))}
+            </div>
           </div>
-        ) : rows.length === 0 ? (
-          <p className='text-muted-foreground py-6 text-center text-sm'>{t('board.empty')}</p>
-        ) : (
-          <div className='space-y-1.5'>
-            <div className='flex pl-24'>
-              <div className='relative h-4 flex-1'>
-                {ticks.map((h) => (
-                  <span
-                    key={h}
-                    className='text-muted-foreground absolute -translate-x-1/2 text-[10px] tabular-nums'
-                    style={{ left: `${((h - DAY_START_H) / HOURS) * 100}%` }}
-                  >
-                    {h}
-                  </span>
+          {rows.map((row) => (
+            <div key={row.equipmentName} className='flex items-center gap-2'>
+              <span
+                className='text-muted-foreground text-caption w-24 shrink-0 truncate'
+                title={row.equipmentName}
+              >
+                {row.equipmentName}
+              </span>
+              <div className='bg-muted/40 relative h-7 flex-1 rounded'>
+                {row.bookings.map((b) => (
+                  <Bar key={b.id} booking={b} dayStart={dayStart.getTime()} />
                 ))}
               </div>
             </div>
-            {rows.map((row) => (
-              <div key={row.equipmentName} className='flex items-center gap-2'>
-                <span
-                  className='text-muted-foreground w-24 shrink-0 truncate text-xs'
-                  title={row.equipmentName}
-                >
-                  {row.equipmentName}
-                </span>
-                <div className='bg-muted/40 relative h-7 flex-1 rounded'>
-                  {row.bookings.map((b) => (
-                    <Bar key={b.id} booking={b} dayStart={dayStart.getTime()} />
-                  ))}
-                </div>
-              </div>
-            ))}
-            <p className='text-muted-foreground pt-1 text-[11px]'>
-              {t('board.footnote', { booked: rows.length, total: totalEquipment })}{' '}
-              <Link href='/dashboard/bookings' className='underline underline-offset-2'>
-                {t('board.viewAll')}
-              </Link>
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ))}
+          <p className='text-muted-foreground text-meta pt-1 tabular-nums'>
+            {t('board.footnote', { booked: rows.length, total: totalEquipment })}{' '}
+            <Link href='/dashboard/bookings' className='underline underline-offset-2'>
+              {t('board.viewAll')}
+            </Link>
+          </p>
+        </div>
+      )}
+    </Panel>
   );
 }

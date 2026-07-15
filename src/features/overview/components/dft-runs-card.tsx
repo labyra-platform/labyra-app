@@ -1,134 +1,168 @@
 'use client';
 
 /**
- * R507: DFT runs.
+ * DFT runs (R507, rebuilt on Panel R510).
  *
- * Replaces the computation hero. Run names and space groups are machine
- * identifiers, not prose — monospace so `WS2/WO3-flake-on-slab-SCF` reads as
- * the token it is, and so names line up down the column where they share a
- * prefix (they usually do: one study, many variants).
+ * Run names are machine identifiers, so they're monospaced and line up where
+ * they share a prefix — one study, many variants, which is how these are
+ * actually read.
  *
- * The right-hand slot carries the one number that matters for the row's state:
- * a completed run's band gap, otherwise how long ago it moved. Nothing is
- * invented — a run whose timestamp the worker never wrote shows a dash.
+ * R510 fixes two things the layout got wrong:
+ *
+ *  - A fixed-width owner column was reserved on every row and left empty
+ *    whenever the owner wasn't in the caller's own group roster, which is most
+ *    of the time. Dead space on every row to sometimes hold a name. The name
+ *    now renders only when it's known, and takes no width when it isn't.
+ *  - One right-hand slot showed a band gap on some rows and a relative time on
+ *    others, so the column meant two different things depending on the row.
+ *    They are separate facts and now occupy separate columns: age always, gap
+ *    when there is one.
  */
-import { useTranslations } from 'next-intl';
-import { useFeatureAllowed } from '@/hooks/use-feature-access';
+import { useLocale, useTranslations } from 'next-intl';
 import { Icons } from '@/components/icons';
+import { Panel, PanelEmpty, PanelList, PanelRow } from '@/components/ui-extra/panel';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Link } from '@/i18n/navigation';
 import { type DftJobSummaryItem, useDftSummary } from '@/lib/firestore/queries/dashboard';
 import { cn } from '@/lib/utils';
 import { useGroupRoster } from '../use-group-roster';
 
+/** §5: the status palette. Fixed meaning, never reused for identity. */
 const STATUS_DOT: Record<DftJobSummaryItem['status'], string> = {
-  running: 'bg-chart-2 animate-pulse',
-  queued: 'bg-muted-foreground/40',
-  pending: 'bg-muted-foreground/40',
-  completed: 'bg-primary',
+  running: 'bg-blue-500',
+  queued: 'bg-amber-500',
+  pending: 'bg-amber-500',
+  completed: 'bg-emerald-500',
   failed: 'bg-destructive'
 };
 
-function timeAgo(ms: number, t: ReturnType<typeof useTranslations>): string {
-  const mins = Math.max(1, Math.round((Date.now() - ms) / 60000));
-  if (mins < 60) return t('timeAgoMin', { n: mins });
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return t('timeAgoHour', { n: hours });
-  return t('timeAgoDay', { n: Math.round(hours / 24) });
+const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['minute', 60_000],
+  ['hour', 3_600_000],
+  ['day', 86_400_000]
+];
+
+/** §8: Intl, never hand-formatted — '1.240' and '1,240' invert in meaning. */
+function useAge(locale: string) {
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'narrow' });
+  return (ms: number) => {
+    const delta = Date.now() - ms;
+    let [unit, size] = UNITS[0];
+    for (const [u, s] of UNITS) {
+      if (delta >= s) [unit, size] = [u, s];
+    }
+    return rtf.format(-Math.max(1, Math.round(delta / size)), unit);
+  };
 }
 
 export function DftRunsCard() {
-  // R509: this whole card is about one feature — if it's off, it isn't here.
   const allowed = useFeatureAllowed('computation');
   const t = useTranslations('dashboard');
+  const locale = useLocale();
   const { counts, latest, total, isLoading } = useDftSummary(5);
   const { nameByUid } = useGroupRoster();
+  const age = useAge(locale);
 
   if (allowed === false) return null;
 
+  // §8: no toFixed — padding 2.6 to "2.60" invents a digit the calculation
+  // never produced. Until Quantity carries sigFigs from the convergence
+  // threshold, the honest move is to show what's there and add nothing.
+  const gapFmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+
+  const statusLine = (['running', 'queued', 'completed', 'failed'] as const)
+    .filter((s) => counts[s] > 0)
+    .map((s) => (
+      <span key={s} className='text-muted-foreground text-caption flex items-center gap-2'>
+        <span className={cn('size-1.5 rounded-full', STATUS_DOT[s])} aria-hidden='true' />
+        <span className='text-foreground tabular-nums'>{counts[s]}</span>
+        {t(`dft.status.${s}`)}
+      </span>
+    ));
+
   return (
-    <Card className='flex h-full flex-col'>
-      <CardHeader className='pb-2'>
-        <div className='flex items-center justify-between gap-2'>
-          <CardTitle className='flex items-center gap-2 text-base'>
-            <Icons.computation className='size-4' aria-hidden />
-            {t('dft.runsTitle')}
-          </CardTitle>
-          <Button asChild size='sm' variant='ghost' className='text-muted-foreground -mr-2 text-xs'>
-            <Link href='/dashboard/computation'>{t('viewAll')}</Link>
-          </Button>
+    <Panel
+      title={t('dft.runsTitle')}
+      action={
+        <Link
+          href='/dashboard/computation'
+          className='text-muted-foreground hover:text-foreground text-caption shrink-0'
+        >
+          {t('viewAll')}
+        </Link>
+      }
+    >
+      {isLoading ? (
+        <div className='space-y-2'>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className='h-9 w-full' />
+          ))}
         </div>
-        {!isLoading && total > 0 && (
-          <div className='flex flex-wrap gap-x-3 gap-y-1 pt-0.5'>
-            {(['running', 'queued', 'completed', 'failed'] as const).map((s) =>
-              counts[s] > 0 ? (
-                <span key={s} className='text-muted-foreground flex items-center gap-1 text-xs'>
-                  <span className={cn('size-1.5 rounded-full', STATUS_DOT[s])} aria-hidden />
-                  <span className='text-foreground font-medium tabular-nums'>{counts[s]}</span>
-                  {t(`dft.status.${s}`)}
-                </span>
-              ) : null
-            )}
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className='flex-1'>
-        {isLoading ? (
-          <div className='space-y-3'>
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className='h-8 w-full' />
-            ))}
-          </div>
-        ) : total === 0 ? (
-          <div className='flex h-full flex-col items-center justify-center gap-2 py-8 text-center'>
-            <p className='text-sm font-medium'>{t('dft.emptyTitle')}</p>
-            <Button asChild size='sm'>
+      ) : total === 0 ? (
+        <PanelEmpty
+          title={t('dft.emptyTitle')}
+          description={t('dft.emptyDesc')}
+          action={
+            <Button asChild size='sm' className='mt-1'>
               <Link href='/dashboard/computation'>
-                <Icons.add className='size-4' aria-hidden />
+                <Icons.add className='size-4' aria-hidden='true' />
                 {t('dft.newRun')}
               </Link>
             </Button>
-          </div>
-        ) : (
-          <ul className='divide-border -my-1 divide-y'>
-            {latest.map((job) => (
-              <li key={job.id}>
-                <Link
-                  href={`/dashboard/computation?id=${job.id}`}
-                  className='hover:bg-accent -mx-2 flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors'
-                >
+          }
+        />
+      ) : (
+        <>
+          {statusLine.length > 0 && <div className='flex flex-wrap gap-3'>{statusLine}</div>}
+          <PanelList>
+            {latest.map((job) => {
+              const owner = job.ownerUid ? nameByUid.get(job.ownerUid) : undefined;
+              return (
+                <PanelRow key={job.id} className='gap-2'>
                   <span
                     className={cn('size-1.5 shrink-0 rounded-full', STATUS_DOT[job.status])}
-                    aria-hidden
+                    aria-hidden='true'
                   />
-                  <span className='min-w-0 flex-1 truncate font-mono text-xs'>{job.name}</span>
+                  <Link
+                    href={`/dashboard/computation?id=${job.id}`}
+                    className='text-body min-w-0 flex-1 truncate font-mono hover:underline'
+                  >
+                    {job.name}
+                  </Link>
                   {job.spaceGroup && (
-                    <span className='bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px]'>
+                    <span className='bg-muted text-muted-foreground text-meta shrink-0 rounded-full px-2 py-0.5 font-mono'>
                       {job.spaceGroup}
                     </span>
                   )}
-                  <span className='shrink-0 text-xs tabular-nums'>
-                    {job.status === 'completed' && job.gapEv != null ? (
-                      <span className='font-medium'>
-                        {t('dft.gapEv', { gap: job.gapEv.toFixed(2) })}
+                  {/* Owner only when we can name them — no column reserved for
+                      a value we usually don't have. */}
+                  {owner && (
+                    <span className='text-muted-foreground text-meta max-w-20 shrink-0 truncate'>
+                      {owner}
+                    </span>
+                  )}
+                  {/* Two facts, two columns — the gap slot stays a gap slot
+                      even on rows that have none. */}
+                  <span className='text-meta w-16 shrink-0 text-right tabular-nums'>
+                    {job.gapEv != null ? (
+                      <span className='text-foreground font-medium'>
+                        {t('dft.gapEv', { gap: gapFmt.format(job.gapEv) })}
                       </span>
-                    ) : job.updatedAt != null ? (
-                      <span className='text-muted-foreground'>{timeAgo(job.updatedAt, t)}</span>
                     ) : (
-                      <span className='text-muted-foreground'>—</span>
+                      ''
                     )}
                   </span>
-                  <span className='text-muted-foreground w-14 shrink-0 truncate text-right text-xs'>
-                    {job.ownerUid ? (nameByUid.get(job.ownerUid) ?? '') : ''}
+                  <span className='text-muted-foreground text-meta w-14 shrink-0 text-right tabular-nums'>
+                    {job.updatedAt != null ? age(job.updatedAt) : '—'}
                   </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+                </PanelRow>
+              );
+            })}
+          </PanelList>
+        </>
+      )}
+    </Panel>
   );
 }

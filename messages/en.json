@@ -188,7 +188,7 @@
       },
       "gapEv": "{gap} eV",
       "emptyTitle": "No DFT runs yet",
-      "emptyDesc": "Launch your first workflow from the Computation workspace.",
+      "emptyDesc": "Launch a calculation and its progress lands here.",
       "newRun": "New DFT run",
       "runsTitle": "DFT runs"
     },
@@ -231,26 +231,29 @@
     },
     "members": {
       "title": "Group members",
-      "empty": "No members in this group yet.",
+      "empty": "Invite the people you work with to share this lab.",
       "lead": "Group lead",
       "invite": "Invite member",
-      "allGroups": "Select group"
+      "allGroups": "Select group",
+      "emptyTitle": "No one here yet"
     },
     "board": {
       "title": "Equipment · today",
       "self": "You",
       "group": "Your group",
       "other": "Other group",
-      "empty": "No equipment booked today.",
+      "empty": "Reserve a slot and it appears on this timeline.",
       "footnote": "{booked} of {total} instruments booked today ·",
-      "viewAll": "open calendar"
+      "viewAll": "open calendar",
+      "emptyTitle": "No instrument booked today"
     },
     "activity": {
       "title": "Activity · last 30 days",
       "experiments": "Experiments",
       "dft": "DFT",
       "samples": "Samples",
-      "empty": "No activity in the last 30 days."
+      "empty": "Experiments, DFT runs and samples will chart here as you record them.",
+      "emptyTitle": "Nothing logged yet"
     },
     "ghs": {
       "title": "GHS hazards",

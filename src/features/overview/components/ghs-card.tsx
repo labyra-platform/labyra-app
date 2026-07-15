@@ -1,19 +1,19 @@
 'use client';
 
 /**
- * R507: GHS exposure.
+ * GHS exposure (R507, rebuilt on Panel R510).
  *
- * Which hazard classes the lab actually holds, and how many chemicals carry
- * each. The pictograms are the whole point — they're the symbols already on
- * every bottle, so recognition is instant and no legend is needed. Classes the
- * lab doesn't hold stay visible but greyed: knowing you have no explosives is
- * as informative as knowing you have three corrosives.
+ * The pictograms are the point: they're the symbols already printed on every
+ * bottle, so recognition needs no legend. Classes the lab doesn't hold stay
+ * visible but greyed — knowing you have no explosives is as informative as
+ * knowing you have three corrosives, and a grid that changes shape with the
+ * data is harder to read at a glance than one that never moves.
  */
 import { useTranslations } from 'next-intl';
-import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { GhsPictogram } from '@/components/chemicals/ghs-pictogram';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Link } from '@/i18n/navigation';
 import { useGhsSummary } from '@/lib/firestore/queries/dashboard';
 import { GHS_LABELS, type GHSPictogram } from '@/types/chemical';
@@ -32,55 +32,42 @@ const ALL_GHS: GHSPictogram[] = [
 ];
 
 export function GhsCard() {
-  // R509: this whole card is about one feature — if it's off, it isn't here.
   const allowed = useFeatureAllowed('chemicals');
   const t = useTranslations('dashboard');
   const { buckets, totalHazardous, isLoading } = useGhsSummary();
-  const countOf = new Map(buckets.map((b) => [b.code, b.count]));
 
   if (allowed === false) return null;
 
+  const countOf = new Map(buckets.map((b) => [b.code, b.count]));
+
   return (
-    <Card className='flex h-full flex-col'>
-      <CardHeader className='pb-3'>
-        <div className='flex items-center justify-between gap-2'>
-          <CardTitle className='text-base'>{t('ghs.title')}</CardTitle>
-          {!isLoading && (
-            <span className='text-muted-foreground text-xs tabular-nums'>
-              {t('ghs.count', { count: totalHazardous })}
-            </span>
-          )}
+    <Panel
+      title={t('ghs.title')}
+      count={isLoading ? undefined : t('ghs.count', { count: totalHazardous })}
+    >
+      {isLoading ? (
+        <Skeleton className='h-[168px] w-full' />
+      ) : (
+        <div className='grid grid-cols-3 gap-2'>
+          {ALL_GHS.map((code) => {
+            const n = countOf.get(code) ?? 0;
+            return (
+              <Link
+                key={code}
+                href='/dashboard/chemicals'
+                title={`${GHS_LABELS[code]} — ${n}`}
+                className={cn(
+                  'hover:bg-muted/50 flex flex-col items-center gap-2 rounded-lg py-2.5 transition',
+                  n === 0 && 'opacity-25 grayscale'
+                )}
+              >
+                <GhsPictogram code={code} />
+                <span className='text-meta font-medium tabular-nums'>{n || ''}</span>
+              </Link>
+            );
+          })}
         </div>
-      </CardHeader>
-      <CardContent className='flex-1'>
-        {isLoading ? (
-          <div className='grid grid-cols-3 gap-3'>
-            {ALL_GHS.map((c) => (
-              <Skeleton key={c} className='h-12 w-full' />
-            ))}
-          </div>
-        ) : (
-          <div className='grid grid-cols-3 gap-2'>
-            {ALL_GHS.map((code) => {
-              const n = countOf.get(code) ?? 0;
-              return (
-                <Link
-                  key={code}
-                  href='/dashboard/chemicals'
-                  title={`${GHS_LABELS[code]} — ${n}`}
-                  className={cn(
-                    'hover:bg-muted/50 flex flex-col items-center gap-0.5 rounded-md py-1.5 transition',
-                    n === 0 && 'opacity-25 grayscale'
-                  )}
-                >
-                  <GhsPictogram code={code} />
-                  <span className='text-[10px] font-medium tabular-nums'>{n || ''}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </Panel>
   );
 }

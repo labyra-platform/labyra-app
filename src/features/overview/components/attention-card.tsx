@@ -1,17 +1,18 @@
 'use client';
 
 /**
- * R506: "Needs attention".
+ * Needs attention (R506, rebuilt on Panel R510).
  *
- * The only card that reports problems, so it leads. Each row names the subject
- * first (the chemical, the run — that's what someone scans for), states the
- * facts underneath, and offers the one action that resolves it. An empty list
- * is a real answer here, not a placeholder: nothing is wrong.
+ * The only panel that reports problems, so it leads the page. Each row names
+ * the subject first — that's what someone scans for — states the facts under
+ * it, and offers the one action that resolves it.
+ *
+ * The empty state is a real answer here, not an apology: nothing is wrong, and
+ * saying so plainly is the most useful thing this panel ever does.
  */
-import { useTranslations } from 'next-intl';
-import { Icons } from '@/components/icons';
+import { useLocale, useTranslations } from 'next-intl';
+import { Panel, PanelEmpty, PanelList, PanelRow } from '@/components/ui-extra/panel';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from '@/i18n/navigation';
 import { type AttentionItem, useAttentionItems } from '@/lib/firestore/queries/dashboard';
@@ -26,68 +27,55 @@ const ACTION_KEY: Record<AttentionItem['kind'], string> = {
 function Row({ item }: { item: AttentionItem }) {
   const t = useTranslations('dashboard');
   return (
-    <li className='flex items-start gap-2.5 py-2.5'>
+    <PanelRow className='items-start'>
+      {/* §5: status palette — red is "the calculation says wrong", amber is
+          "wrong soon". Never a category hue. */}
       <span
         className={cn(
           'mt-1.5 size-1.5 shrink-0 rounded-full',
           item.severity === 'danger' ? 'bg-destructive' : 'bg-amber-500'
         )}
-        aria-hidden
+        aria-hidden='true'
       />
       <div className='min-w-0 flex-1'>
-        <p className='truncate text-sm font-medium'>{item.title}</p>
-        <p className='text-muted-foreground truncate text-xs'>
+        <p className='text-body truncate font-medium'>{item.title}</p>
+        <p className='text-muted-foreground text-meta truncate tabular-nums'>
           {[t(`attention.reason.${item.kind}`), item.detail].filter(Boolean).join(' · ')}
         </p>
       </div>
-      <Button asChild size='sm' variant='outline' className='h-7 shrink-0 text-xs'>
+      <Button asChild size='sm' variant='outline' className='text-caption h-7 shrink-0'>
         <Link href={item.href}>{t(ACTION_KEY[item.kind])}</Link>
       </Button>
-    </li>
+    </PanelRow>
   );
 }
 
-export function AttentionCard({ locale }: { locale: string }) {
+export function AttentionCard() {
   const t = useTranslations('dashboard');
+  const locale = useLocale();
   const { items, isLoading } = useAttentionItems(locale);
   const shown = items.slice(0, 5);
 
   return (
-    <Card className='flex h-full flex-col'>
-      <CardHeader className='pb-1'>
-        <div className='flex items-center justify-between gap-2'>
-          <CardTitle className='flex items-center gap-2 text-base'>
-            <Icons.warning className='size-4' aria-hidden />
-            {t('attention.title')}
-          </CardTitle>
-          {!isLoading && items.length > 0 && (
-            <span className='text-muted-foreground text-xs tabular-nums'>
-              {t('attention.count', { count: items.length })}
-            </span>
-          )}
+    <Panel
+      title={t('attention.title')}
+      count={isLoading || !items.length ? undefined : items.length}
+    >
+      {isLoading ? (
+        <div className='space-y-2'>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className='h-10 w-full' />
+          ))}
         </div>
-      </CardHeader>
-      <CardContent className='flex-1'>
-        {isLoading ? (
-          <div className='space-y-3 py-2'>
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className='h-9 w-full' />
-            ))}
-          </div>
-        ) : shown.length === 0 ? (
-          <div className='flex h-full flex-col items-center justify-center gap-1.5 py-8 text-center'>
-            <Icons.check className='text-primary size-6' aria-hidden />
-            <p className='text-sm font-medium'>{t('attention.clearTitle')}</p>
-            <p className='text-muted-foreground text-xs'>{t('attention.clearDesc')}</p>
-          </div>
-        ) : (
-          <ul className='divide-border -my-1 divide-y'>
-            {shown.map((item) => (
-              <Row key={item.id} item={item} />
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+      ) : shown.length === 0 ? (
+        <PanelEmpty title={t('attention.clearTitle')} description={t('attention.clearDesc')} />
+      ) : (
+        <PanelList>
+          {shown.map((item) => (
+            <Row key={item.id} item={item} />
+          ))}
+        </PanelList>
+      )}
+    </Panel>
   );
 }

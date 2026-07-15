@@ -1,20 +1,21 @@
 'use client';
 
 /**
- * R506: KPI strip.
+ * Stat strip (R506, revised R510).
  *
- * Four numbers that only ever answer "how much of this exists right now".
- * They were three gradient cards with a caption each, taking a full row and
- * a third of the fold to say very little. A strip gives them the weight they
- * actually carry and hands the space back to the cards that need it.
+ * §11 sets the bar for a number appearing here: it must change day to day AND
+ * click through to work. R510 drops the chemicals count, which does neither —
+ * stock totals move on delivery day, not daily, and the hazard panel already
+ * reads the same collection to say something you can act on. A number that
+ * fails both tests belongs in the header of its own list page.
  *
- * Running jobs lead because that is the number with a clock on it.
+ * What's left is the three numbers a researcher is actually tracking. Running
+ * jobs lead: it's the only one with a clock on it.
  */
 import { useTranslations } from 'next-intl';
 import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Link } from '@/i18n/navigation';
 import { useDftSummary, useKpiSummary } from '@/lib/firestore/queries/dashboard';
-import { useTenantCollection } from '@/lib/firestore/use-tenant-collection';
 import { cn } from '@/lib/utils';
 
 function Metric({
@@ -33,23 +34,22 @@ function Metric({
   return (
     <Link
       href={href}
-      className='hover:bg-muted/50 flex flex-1 items-center justify-between gap-3 px-4 py-2.5 transition-colors'
+      className='hover:bg-muted/50 flex flex-1 items-center justify-between gap-3 px-5 py-2.5 transition-colors'
     >
-      <span className='text-muted-foreground flex min-w-0 items-center gap-1.5 truncate text-xs'>
+      <span className='text-muted-foreground text-caption flex min-w-0 items-center gap-2 truncate'>
         {live && (
           <span
             className={cn(
               'size-1.5 shrink-0 rounded-full',
-              value > 0 ? 'bg-chart-2' : 'bg-muted-foreground/40'
+              value > 0 ? 'bg-blue-500' : 'bg-muted-foreground/40'
             )}
-            aria-hidden
+            aria-hidden='true'
           />
         )}
         {label}
       </span>
-      <span className='shrink-0 text-lg leading-none font-semibold tabular-nums'>
-        {loading ? '—' : value}
-      </span>
+      {/* §2: tabular-nums on every number that reaches the screen. */}
+      <span className='text-stat shrink-0 font-medium tabular-nums'>{loading ? '—' : value}</span>
     </Link>
   );
 }
@@ -58,18 +58,14 @@ export function KpiStrip() {
   const t = useTranslations('dashboard');
   const kpi = useKpiSummary();
   const dft = useDftSummary(1);
-  const { data: chemicals, isLoading: chemLoading } = useTenantCollection<{ name: string }>({
-    collection: 'chemicals'
-  });
-  // R509: a metric for a feature this member can't use is dropped, not zeroed.
-  // "0 chemicals" is still an answer about chemicals, and a false one.
+  // A metric for a feature this member can't use is dropped, not zeroed —
+  // "0 samples" is still an answer about samples, and a false one.
   const canComputation = useFeatureAllowed('computation');
   const canExperiments = useFeatureAllowed('experiments');
   const canSamples = useFeatureAllowed('samples');
-  const canChemicals = useFeatureAllowed('chemicals');
 
   return (
-    <div className='bg-card divide-border flex flex-wrap divide-x rounded-lg border'>
+    <div className='bg-card divide-border border-border flex flex-wrap divide-x rounded-xl border'>
       {canComputation !== false && (
         <Metric
           live
@@ -93,14 +89,6 @@ export function KpiStrip() {
           value={kpi.activeSamples}
           href='/dashboard/samples'
           loading={kpi.isLoading}
-        />
-      )}
-      {canChemicals !== false && (
-        <Metric
-          label={t('kpi.chemicals')}
-          value={(chemicals ?? []).length}
-          href='/dashboard/chemicals'
-          loading={chemLoading}
         />
       )}
     </div>

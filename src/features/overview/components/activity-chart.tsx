@@ -1,21 +1,23 @@
 'use client';
 
 /**
- * R507: 30-day activity.
+ * Activity — 30 days (R507, rebuilt on Panel R510).
  *
  * Three series, because "the lab was busy" is a different claim from "the lab
- * ran experiments" — a month of DFT and a month of bench work look identical
- * on a single line. Replaces the single-series area chart, whose axis also
- * clipped its first label ("i-15") by letting recharts drop the tick's
- * overflow at the plot edge.
+ * ran experiments": a month of DFT and a month of bench work look identical on
+ * one line. Counts-per-day is a bar chart (§9) — a line through zeros is a
+ * design failure, not a dataset.
+ *
+ * R510: the legend sits in the panel header, not under the plot. Recharts'
+ * default drops it below the axis, where it reads as a caption for the page
+ * rather than a key for this chart — and it pushed the plot up against the
+ * card edge. In the header it is where the eye already is when it arrives.
  */
 import { useTranslations } from 'next-intl';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel, PanelEmpty } from '@/components/ui-extra/panel';
 import {
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig
@@ -23,54 +25,71 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useActivityDaily } from '@/lib/firestore/queries/dashboard';
 
+/** §9: chart palette, never the status palette — the blue that means "running"
+ *  on this page must not also mean "experiments" in a plot. */
+const SERIES = [
+  { key: 'experiments', color: 'var(--chart-1)' },
+  { key: 'dft', color: 'var(--chart-3)' },
+  { key: 'samples', color: 'var(--chart-4)' }
+] as const;
+
+function Legend({ config }: { config: ChartConfig }) {
+  return (
+    <div className='flex shrink-0 items-center gap-3'>
+      {SERIES.map((s) => (
+        <span key={s.key} className='text-muted-foreground text-meta flex items-center gap-2'>
+          <span
+            className='size-2 rounded-full'
+            style={{ background: s.color }}
+            aria-hidden='true'
+          />
+          {String(config[s.key]?.label ?? s.key)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function ActivityChart() {
   const t = useTranslations('dashboard');
   const { data, isLoading } = useActivityDaily(30);
 
   const chartConfig = {
-    experiments: { label: t('activity.experiments'), color: 'var(--chart-2)' },
-    dft: { label: t('activity.dft'), color: 'var(--chart-1)' },
+    experiments: { label: t('activity.experiments'), color: 'var(--chart-1)' },
+    dft: { label: t('activity.dft'), color: 'var(--chart-3)' },
     samples: { label: t('activity.samples'), color: 'var(--chart-4)' }
   } satisfies ChartConfig;
 
   const empty = !isLoading && data.every((d) => d.experiments + d.dft + d.samples === 0);
 
   return (
-    <Card>
-      <CardHeader className='pb-2'>
-        <CardTitle className='text-base'>{t('activity.title')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Skeleton className='h-[160px] w-full' />
-        ) : empty ? (
-          <p className='text-muted-foreground flex h-[160px] items-center justify-center text-sm'>
-            {t('activity.empty')}
-          </p>
-        ) : (
-          <ChartContainer config={chartConfig} className='h-[160px] w-full'>
-            {/* Left/right margin so the first and last tick have room to sit
-                under their bars instead of being clipped by the plot edge. */}
-            <BarChart accessibilityLayer data={data} margin={{ left: 12, right: 12, top: 4 }}>
-              <CartesianGrid vertical={false} strokeDasharray='3 3' />
-              <XAxis
-                dataKey='day'
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                interval='preserveStartEnd'
-                minTickGap={24}
-                fontSize={10}
-              />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-              <ChartLegend content={<ChartLegendContent />} />
-              <Bar dataKey='experiments' fill='var(--color-experiments)' radius={[2, 2, 0, 0]} />
-              <Bar dataKey='dft' fill='var(--color-dft)' radius={[2, 2, 0, 0]} />
-              <Bar dataKey='samples' fill='var(--color-samples)' radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ChartContainer>
-        )}
-      </CardContent>
-    </Card>
+    <Panel title={t('activity.title')} action={<Legend config={chartConfig} />}>
+      {isLoading ? (
+        // §7: skeleton at the exact height of the loaded chart — a wrong height
+        // is the layout shift skeletons exist to prevent.
+        <Skeleton className='h-[168px] w-full' />
+      ) : empty ? (
+        <PanelEmpty title={t('activity.emptyTitle')} description={t('activity.empty')} />
+      ) : (
+        <ChartContainer config={chartConfig} className='h-[168px] w-full'>
+          <BarChart accessibilityLayer data={data} margin={{ left: 12, right: 12, top: 4 }}>
+            <CartesianGrid vertical={false} strokeDasharray='3 3' />
+            <XAxis
+              dataKey='day'
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              interval='preserveStartEnd'
+              minTickGap={24}
+              fontSize={11}
+            />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            {SERIES.map((s) => (
+              <Bar key={s.key} dataKey={s.key} fill={s.color} radius={[2, 2, 0, 0]} />
+            ))}
+          </BarChart>
+        </ChartContainer>
+      )}
+    </Panel>
   );
 }

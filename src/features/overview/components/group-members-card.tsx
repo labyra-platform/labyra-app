@@ -1,21 +1,20 @@
 'use client';
 
 /**
- * R506: group members.
+ * Group members (R506, rebuilt on Panel R510).
  *
- * A lab runs several groups, so a lab head needs to look across all of them —
- * the picker appears only for admins, and only when there is more than one
- * group to choose between. Everyone else sees their own group with no control
- * at all, because there is nothing for them to choose. The server decides who
- * may switch (`canSwitchGroup`); this component only renders that verdict.
+ * A lab runs several groups, so a lab head needs to look across all of them.
+ * The picker appears only for admins, and only when there's more than one
+ * group to choose between — everyone else sees their own group with no control
+ * at all, because there's nothing for them to choose. The server decides who
+ * may switch (`canSwitchGroup`); this only renders that verdict.
  */
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Icons } from '@/components/icons';
+import { Panel, PanelEmpty, PanelFooter, PanelList, PanelRow } from '@/components/ui-extra/panel';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -38,79 +37,71 @@ export function GroupMembersCard() {
   const t = useTranslations('dashboard');
   const tRoles = useTranslations('common.roles');
   const [groupId, setGroupId] = useState<string | null>(null);
-  const { group, members, groups, canSwitchGroup, isLoading: loading } = useGroupRoster(groupId);
+  const { group, members, groups, canSwitchGroup, isLoading } = useGroupRoster(groupId);
+
   const showPicker = canSwitchGroup && groups.length > 1;
   const currentId = groupId ?? group?.id ?? '';
 
   return (
-    <Card className='flex h-full flex-col'>
-      <CardHeader className='pb-2'>
-        <div className='flex items-center justify-between gap-2'>
-          <CardTitle className='flex min-w-0 items-center gap-2 text-base'>
-            <Icons.teams className='size-4 shrink-0' aria-hidden />
-            <span className='truncate'>{t('members.title')}</span>
-          </CardTitle>
-          {showPicker ? (
-            <Select value={currentId} onValueChange={(v) => setGroupId(v)}>
-              <SelectTrigger size='sm' className='h-7 w-36 text-xs'>
-                <SelectValue placeholder={t('members.allGroups')} />
-              </SelectTrigger>
-              <SelectContent align='end' className='min-w-36'>
-                {groups.map((g) => (
-                  <SelectItem key={g.id} value={g.id} className='text-xs'>
-                    {g.name || g.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            group?.name && (
-              <span className='text-muted-foreground truncate text-xs'>{group.name}</span>
-            )
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className='flex flex-1 flex-col'>
-        {loading ? (
-          <div className='space-y-3'>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className='flex items-center gap-2.5'>
-                <Skeleton className='size-8 rounded-full' />
-                <Skeleton className='h-4 flex-1' />
-              </div>
-            ))}
-          </div>
-        ) : members.length === 0 ? (
-          <p className='text-muted-foreground py-6 text-center text-sm'>{t('members.empty')}</p>
+    <Panel
+      title={t('members.title')}
+      action={
+        showPicker ? (
+          <Select value={currentId} onValueChange={(v) => setGroupId(v)}>
+            <SelectTrigger size='sm' className='text-caption h-7 w-36 rounded-lg'>
+              <SelectValue placeholder={t('members.allGroups')} />
+            </SelectTrigger>
+            <SelectContent align='end' className='min-w-36'>
+              {groups.map((g) => (
+                <SelectItem key={g.id} value={g.id} className='text-caption'>
+                  {g.name || g.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
-          <ul className='flex-1 space-y-2.5'>
-            {members.slice(0, 6).map((m) => (
-              <li key={m.uid} className='flex items-center gap-2.5'>
-                <Avatar className='size-8'>
-                  <AvatarFallback className='text-[10px]'>{initials(m)}</AvatarFallback>
-                </Avatar>
-                <div className='min-w-0 flex-1'>
-                  <p className='truncate text-sm font-medium'>{m.displayName || m.email}</p>
-                  {m.isGroupLead && (
-                    <p className='text-muted-foreground text-xs'>{t('members.lead')}</p>
-                  )}
-                </div>
-                <Badge variant='secondary' className='shrink-0 text-[10px] font-normal'>
-                  {tRoles(m.role)}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className='mt-3'>
-          <Button asChild size='sm' variant='outline' className='w-full'>
-            <Link href='/dashboard/members'>
-              <Icons.add className='size-4' aria-hidden />
-              {t('members.invite')}
-            </Link>
-          </Button>
+          group?.name && (
+            <span className='text-muted-foreground text-caption shrink-0 truncate'>
+              {group.name}
+            </span>
+          )
+        )
+      }
+    >
+      {isLoading ? (
+        <div className='space-y-2'>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className='h-9 w-full' />
+          ))}
         </div>
-      </CardContent>
-    </Card>
+      ) : members.length === 0 ? (
+        <PanelEmpty title={t('members.emptyTitle')} description={t('members.empty')} />
+      ) : (
+        <PanelList>
+          {members.slice(0, 6).map((m) => (
+            <PanelRow key={m.uid}>
+              <Avatar className='size-8'>
+                <AvatarFallback className='text-meta'>{initials(m)}</AvatarFallback>
+              </Avatar>
+              <div className='min-w-0 flex-1'>
+                <p className='text-body truncate'>{m.displayName || m.email}</p>
+                {m.isGroupLead && (
+                  <p className='text-muted-foreground text-meta'>{t('members.lead')}</p>
+                )}
+              </div>
+              <span className='text-muted-foreground text-meta shrink-0'>{tRoles(m.role)}</span>
+            </PanelRow>
+          ))}
+        </PanelList>
+      )}
+      <PanelFooter>
+        <Button asChild size='sm' variant='outline' className='w-full rounded-lg'>
+          <Link href='/dashboard/members'>
+            <Icons.add className='size-4' aria-hidden='true' />
+            {t('members.invite')}
+          </Link>
+        </Button>
+      </PanelFooter>
+    </Panel>
   );
 }

@@ -24,17 +24,15 @@ export default async function OverviewPage({ params }: { params: Promise<{ local
       <div className='flex flex-1 flex-col gap-4'>
         <DashboardHeader locale={locale} />
         <KpiStrip />
-        <div className='grid gap-4 lg:grid-cols-3'>
-          <div className='lg:col-span-2'>
-            <AttentionCard locale={locale} />
-          </div>
+        {/* §11: one ratio, repeated — 1.75fr/1fr, with minmax(0,1fr) so a long
+            run name can't blow out the column (grid defaults to min-width:auto). */}
+        <div className='grid gap-4 lg:grid-cols-[1.75fr_minmax(0,1fr)]'>
+          <AttentionCard />
           <GroupMembersCard />
         </div>
         <EquipmentBoard />
-        <div className='grid gap-4 lg:grid-cols-3'>
-          <div className='lg:col-span-2'>
-            <ActivityChart />
-          </div>
+        <div className='grid gap-4 lg:grid-cols-[1.75fr_minmax(0,1fr)]'>
+          <ActivityChart />
           <GhsCard />
         </div>
         <DftRunsCard />

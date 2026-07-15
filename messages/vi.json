@@ -188,7 +188,7 @@
       },
       "gapEv": "{gap} eV",
       "emptyTitle": "Chưa có DFT run nào",
-      "emptyDesc": "Khởi chạy workflow đầu tiên từ workspace Tính toán.",
+      "emptyDesc": "Chạy một tính toán, tiến trình sẽ hiện ở đây.",
       "newRun": "DFT run mới",
       "runsTitle": "DFT runs"
     },
@@ -231,26 +231,29 @@
     },
     "members": {
       "title": "Thành viên nhóm",
-      "empty": "Nhóm này chưa có thành viên.",
+      "empty": "Mời những người cùng làm để chia sẻ lab này.",
       "lead": "Trưởng nhóm",
       "invite": "Mời thành viên",
-      "allGroups": "Chọn nhóm"
+      "allGroups": "Chọn nhóm",
+      "emptyTitle": "Chưa có ai ở đây"
     },
     "board": {
       "title": "Lịch thiết bị · hôm nay",
       "self": "Của bạn",
       "group": "Cùng nhóm",
       "other": "Nhóm khác",
-      "empty": "Hôm nay chưa có thiết bị nào được đặt.",
+      "empty": "Đặt một khung giờ, nó sẽ hiện trên timeline này.",
       "footnote": "{booked}/{total} thiết bị có lịch hôm nay ·",
-      "viewAll": "mở lịch"
+      "viewAll": "mở lịch",
+      "emptyTitle": "Hôm nay chưa đặt thiết bị"
     },
     "activity": {
       "title": "Hoạt động · 30 ngày qua",
       "experiments": "Thí nghiệm",
       "dft": "DFT",
       "samples": "Mẫu",
-      "empty": "Không có hoạt động nào trong 30 ngày qua."
+      "empty": "Thí nghiệm, DFT run và mẫu sẽ lên biểu đồ này khi bạn ghi lại.",
+      "emptyTitle": "Chưa ghi nhận gì"
     },
     "ghs": {
       "title": "Nguy hại GHS",

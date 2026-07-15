@@ -5,6 +5,7 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
+import { featureBlockedResponse } from '@/lib/api/feature-access';
 import { bookingFormSchema } from '@/features/bookings/schema';
 import { BookingConflictError, createBooking, listBookings } from '@/lib/firebase/bookings/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -14,6 +15,8 @@ export const runtime = 'nodejs';
 export async function GET(req: NextRequest) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'bookings');
+  if (gated) return gated;
   const sp = req.nextUrl.searchParams;
   const equipmentId = sp.get('equipmentId') ?? undefined;
   const from = sp.get('from') ? Number(sp.get('from')) : undefined;
@@ -30,6 +33,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'bookings');
+  if (gated) return gated;
   const rl = await checkRateLimit(
     rateLimitKey('bookings-write', `${auth.tenantId}:${auth.uid}`),
     30,

@@ -6,6 +6,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticateWriter } from '@/lib/api/auth-helper';
+import { featureBlockedResponse } from '@/lib/api/feature-access';
 import { retractSample } from '@/lib/firebase/samples/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
@@ -22,6 +23,8 @@ interface RouteContext {
 export async function POST(req: NextRequest, ctx: RouteContext) {
   const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'samples');
+  if (gated) return gated;
 
   const rl = await checkRateLimit(rateLimitKey('samples-retract', auth.tenantId), 10, 60);
   if (!rl.allowed) {

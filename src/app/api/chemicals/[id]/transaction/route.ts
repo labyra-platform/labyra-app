@@ -8,6 +8,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
+import { featureBlockedResponse } from '@/lib/api/feature-access';
 import { applyTransaction, listTransactions } from '@/lib/firebase/chemicals/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
@@ -23,6 +24,8 @@ const TxSchema = z.object({
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'chemicals');
+  if (gated) return gated;
   const { id } = await ctx.params;
   const rl = await checkRateLimit(rateLimitKey('chem-tx', `${auth.tenantId}:${auth.uid}`), 60, 60);
   if (!rl.allowed) {
@@ -50,6 +53,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'chemicals');
+  if (gated) return gated;
   const { id } = await ctx.params;
   try {
     const items = await listTransactions(auth.tenantId, id);

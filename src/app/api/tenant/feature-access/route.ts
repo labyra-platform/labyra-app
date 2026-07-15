@@ -19,6 +19,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { allFeatureKeys } from '@/config/nav-config';
 import { authenticate, authenticateAdmin } from '@/lib/api/auth-helper';
+import { readFeatureAccess, resolveDisabledFeatures } from '@/lib/api/feature-access';
 import { getAdminFirestoreService } from '@/lib/firebase/admin';
 import { getGroup, listGroups } from '@/lib/firebase/groups/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -35,19 +36,16 @@ export async function GET(req: NextRequest) {
   const full = req.nextUrl.searchParams.get('full') === 'true';
   const isAdmin = auth.role === 'admin' || auth.role === 'superadmin';
   try {
-    const snap = await featureAccessRef(auth.tenantId).get();
-    const data = snap.exists ? snap.data() : undefined;
-    const disabled = (data?.disabled as string[] | undefined) ?? [];
-    const groups = (data?.groups as Record<string, string[]> | undefined) ?? {};
-
     if (full && isAdmin) {
+      const { disabled, groups } = await readFeatureAccess(auth.tenantId);
       const groupList = (await listGroups(auth.tenantId)).map((g) => ({ id: g.id, name: g.name }));
       return NextResponse.json({ disabled, groups, groupList });
     }
 
-    // R491: resolve for the caller — group override wins, else tenant default.
-    const resolved = auth.groupId && groups[auth.groupId] ? groups[auth.groupId] : disabled;
-    return NextResponse.json({ disabled: resolved });
+    // R508: same resolver the gated routes use — one source of truth, so the
+    // UI can never disagree with what the server actually enforces.
+    const resolved = await resolveDisabledFeatures(auth.tenantId, auth.groupId, auth.role);
+    return NextResponse.json({ disabled: [...resolved] });
   } catch (err) {
     console.error('GET /api/tenant/feature-access', err);
     return new NextResponse('lookup_failed', { status: 500 });

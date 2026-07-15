@@ -5,6 +5,7 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate } from '@/lib/api/auth-helper';
+import { featureBlockedResponse } from '@/lib/api/feature-access';
 import { listReferenceVersions } from '@/lib/firebase/references/service';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 
@@ -17,6 +18,8 @@ interface RouteContext {
 export async function GET(req: NextRequest, ctx: RouteContext) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'references');
+  if (gated) return gated;
 
   const rl = await checkRateLimit(rateLimitKey('references-read', auth.tenantId), 100, 60);
   if (!rl.allowed) {

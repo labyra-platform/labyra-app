@@ -12,6 +12,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { authenticate } from '@/lib/api/auth-helper';
+import { featureBlockedResponse } from '@/lib/api/feature-access';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
 import { callWorker } from '@/lib/worker/client';
 
@@ -40,6 +41,8 @@ interface RenderBody {
 export async function POST(req: NextRequest, _ctx: RouteContext) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'measurements');
+  if (gated) return gated;
 
   const rl = await checkRateLimit(rateLimitKey('render-figure', auth.tenantId), 20, 60);
   if (!rl.allowed) return new NextResponse('rate_limited', { status: 429 });

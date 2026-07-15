@@ -7,6 +7,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
+import { featureBlockedResponse } from '@/lib/api/feature-access';
 import {
   BookingConflictError,
   cancelBooking,
@@ -27,6 +28,8 @@ const PatchSchema = z.object({
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'bookings');
+  if (gated) return gated;
   const { id } = await ctx.params;
   const b = await getBooking(auth.tenantId, id);
   if (!b) return new NextResponse('not_found', { status: 404 });
@@ -36,6 +39,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'bookings');
+  if (gated) return gated;
   const { id } = await ctx.params;
   let patch;
   try {
@@ -72,6 +77,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'bookings');
+  if (gated) return gated;
   const { id } = await ctx.params;
   try {
     const isAdmin = auth.role === 'admin' || auth.role === 'superadmin';

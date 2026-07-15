@@ -5,6 +5,7 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { authenticate, authenticateWriter } from '@/lib/api/auth-helper';
+import { featureBlockedResponse } from '@/lib/api/feature-access';
 import { createReference, listReferences } from '@/lib/firebase/references/service';
 import { CreateAnyReferenceSchema } from '@/lib/schemas/reference-schema';
 import { checkRateLimit, rateLimitKey } from '@/lib/security/rate-limit';
@@ -14,6 +15,8 @@ export const runtime = 'nodejs';
 export async function GET(req: NextRequest) {
   const auth = await authenticate(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'references');
+  if (gated) return gated;
 
   const rl = await checkRateLimit(rateLimitKey('references-read', auth.tenantId), 100, 60);
   if (!rl.allowed) {
@@ -44,6 +47,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await authenticateWriter(req);
   if (auth.error) return auth.error;
+  const gated = await featureBlockedResponse(auth, 'references');
+  if (gated) return gated;
 
   const rl = await checkRateLimit(rateLimitKey('references-write', auth.tenantId), 30, 60);
   if (!rl.allowed) {

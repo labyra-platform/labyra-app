@@ -94,7 +94,9 @@ export function AiPreferencesForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-2xl space-y-6'>
         <Card>
-          <CardContent className='space-y-6 pt-6'>
+          {/* Same doubled padding as lab-context-form: pt-6 on top of Card's
+              own py-6. Nam only saw one of them; they were always both. */}
+          <CardContent className='space-y-6'>
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
               <FormField
                 control={form.control}

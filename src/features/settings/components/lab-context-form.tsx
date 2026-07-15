@@ -190,7 +190,11 @@ export function LabContextForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-2xl space-y-6'>
         <Card>
-          <CardContent className='space-y-4 pt-6'>
+          {/* R524: was `pt-6` on top of Card's own py-6 — 48px of blank above
+              the first label. §1 names Card's py-6 as the anti-pattern; adding
+              a second helping of it is how 48px happens without anyone
+              choosing 48. */}
+          <CardContent className='space-y-4'>
             <FormField
               control={form.control}
               name='labName'

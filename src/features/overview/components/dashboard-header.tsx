@@ -23,7 +23,10 @@ export function DashboardHeader({ locale }: { locale: string }) {
   const firstName = (user?.displayName ?? '').trim().split(/\s+/).at(-1) ?? '';
 
   return (
-    <div className='flex flex-wrap items-start justify-between gap-3'>
+    // R524: items-end. The actions belong to the page, not to the greeting —
+    // pinning them to the top of a two-line block left them floating against
+    // the larger text. On the baseline of the date they read as one row.
+    <div className='flex flex-wrap items-end justify-between gap-3'>
       <div className='min-w-0'>
         <h1 className='text-display truncate font-medium'>
           {firstName

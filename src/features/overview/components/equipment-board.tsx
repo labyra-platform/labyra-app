@@ -120,7 +120,9 @@ export function EquipmentBoard() {
       {/* Same viewport as the activity chart and the hazard grid, so the page
           has one card height instead of one per dataset. Instruments beyond
           the fold scroll rather than growing the card. */}
-      <div className='h-[var(--panel-viewport)] overflow-y-auto'>
+      {/* flex flex-col, or PanelEmpty's flex-1 has nothing to grow inside and
+          the empty state sticks to the top of a 264px box (R524). */}
+      <div className='flex h-[var(--panel-viewport)] flex-col overflow-y-auto'>
         {isLoading || rosterLoading ? (
           <div className='space-y-2'>
             {[0, 1, 2].map((i) => (

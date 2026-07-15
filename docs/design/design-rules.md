@@ -89,11 +89,15 @@ Result on the members card: 24px padding + 24px gap + 24px gap = 72px of chrome 
 |---|---|---|
 | meta | 11 | timestamps, secondary metadata, legends |
 | caption | 12 | chips, counts, helper text |
-| body | 13 | list rows, table cells, default UI text |
-| heading | 14 | card titles |
+| body | 14 | list rows, names, table cells, default UI text |
+| heading | 16 | card titles |
 | stat | 16 | numbers in the stat strip |
 | title | 18 | section headings |
 | display | 24 | page greeting |
+
+> **Amended R524** — body 13 → 14 and heading 14 → 16, at the owner's call. 13px is gone, so the scale still holds six distinct sizes (11 / 12 / 14 / 16 / 18 / 24); `stat` and `heading` now name the same 16 for different jobs, which is a synonym rather than a seventh size.
+>
+> **Also R524** — the tokens only work if `cn` knows they are sizes. tailwind-merge never sees `@theme`, so it read `text-meta` as a text *colour* and dropped it whenever a colour followed: `cn('text-meta', 'text-foreground')` returned `text-foreground` alone. Every such call site rendered at the inherited size. Registered in `src/lib/utils.ts`; a rule that a build cannot check is a rule that quietly is not one.
 
 > **Amended R520** — §2 said six sizes and gave 18 to the page greeting. The owner wants the greeting at 24, so the scale gets a seventh named token (`text-display`) rather than a `text-2xl` smuggled into one file. That is the difference between changing a rule and breaking it: the scale is still closed, and `check-design-tokens.sh` still fails anything outside it.
 

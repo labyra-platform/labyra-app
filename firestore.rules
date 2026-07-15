@@ -50,6 +50,40 @@ service cloud.firestore {
       return belongsToTenant(tenantId) && userRole() in ['admin', 'superadmin', 'member'];
     }
 
+    // ── Feature access (R509) ────────────────────────────────────────
+    // Ten collections are read straight from the client SDK via
+    // useTenantCollection, so they never pass an API route and never saw the
+    // R508 server checks. For those reads, THIS is the boundary.
+    //
+    // Costs one get() per query evaluation (not per document). That read is
+    // the price of the gate being real; ADR-042 prices tiers by feature, so a
+    // gate the client could skip was a billing bypass.
+    function featureDisabledList(tenantId) {
+      let path = /databases/$(database)/documents/tenants/$(tenantId)/featureAccess/main;
+      let doc = exists(path) ? get(path).data : {};
+      let groups = doc.get('groups', {});
+      let gid = request.auth.token.get('groupId', '');
+      // A group override REPLACES the tenant default (R491) — it is meant to
+      // be read on its own, not as a diff against something else.
+      return (gid != '' && groups.keys().hasAny([gid]))
+        ? groups[gid]
+        : doc.get('disabled', []);
+    }
+
+    function featureAllowed(tenantId, key) {
+      // Admins set the gate; locking them out of it would be unrecoverable.
+      return isAdmin(tenantId) || isSuperAdmin()
+        || !featureDisabledList(tenantId).hasAny([key]);
+    }
+
+    function canRead(tenantId, feature) {
+      return (belongsToTenant(tenantId) && featureAllowed(tenantId, feature)) || isSuperAdmin();
+    }
+
+    function canWrite(tenantId, feature) {
+      return (isWriter(tenantId) && featureAllowed(tenantId, feature)) || isSuperAdmin();
+    }
+
     // =====================================================
     // Tenant subtree — every subcollection listed explicitly
     // =====================================================
@@ -61,18 +95,18 @@ service cloud.firestore {
 
       // ---------- Writable from client (role member+) ----------
       match /materials/{materialId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
-        allow write: if isWriter(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'materials');
+        allow write: if canWrite(tenantId, 'materials');
       }
 
       match /samples/{sampleId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
-        allow write: if isWriter(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'samples');
+        allow write: if canWrite(tenantId, 'samples');
       }
 
       match /experiments/{experimentId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
-        allow write: if isWriter(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'experiments');
+        allow write: if canWrite(tenantId, 'experiments');
 
         // Protocol instance (R271): an experiment's run, cloned from a template.
         // Firestore rules don't cascade to subcollections, so it needs its own
@@ -105,15 +139,15 @@ service cloud.firestore {
       }
 
       match /equipment/{equipmentId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
-        allow write: if isWriter(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'equipment');
+        allow write: if canWrite(tenantId, 'equipment');
       }
       // Chemicals — inventory. Writes go through API (Admin SDK) for
       // transaction integrity, but allow writer client writes too for parity
       // with other domains. Transactions sub-collection is append-only via API.
       match /chemicals/{chemicalId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
-        allow write: if isWriter(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'chemicals');
+        allow write: if canWrite(tenantId, 'chemicals');
         match /transactions/{txId} {
           allow read: if belongsToTenant(tenantId) || isSuperAdmin();
           allow write: if false; // Admin SDK only — preserves audit integrity
@@ -121,21 +155,21 @@ service cloud.firestore {
       }
 
       match /bookings/{bookingId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
-        allow write: if isWriter(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'bookings');
+        allow write: if canWrite(tenantId, 'bookings');
       }
 
       // R498: DFT workflows/projects are read client-side (useTenantCollection
       // on the dashboard + computation workspace); without an explicit rule the
       // default-deny blocked them. Writes stay server-only (Admin SDK / worker).
       match /dftWorkflows/{workflowId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'computation');
         allow write: if false;
       }
 
       match /dftProjects/{projectId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
-        allow write: if isWriter(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'computation');
+        allow write: if canWrite(tenantId, 'computation');
 
         match /{document=**} {
           allow read: if belongsToTenant(tenantId) || isSuperAdmin();
@@ -190,15 +224,21 @@ service cloud.firestore {
       // Manuscripts (AI Science). Per-user, owner-only (createdBy == auth.uid)
       // within the tenant — same scope model as collections.
       match /manuscripts/{manuscriptId} {
+        // R509: ownership is unchanged — the feature gate is ANDed on top, so
+        // this can only restrict further, never widen.
         allow read: if belongsToTenant(tenantId)
+          && featureAllowed(tenantId, 'manuscripts')
           && resource.data.createdBy == request.auth.uid;
         allow create: if belongsToTenant(tenantId)
+          && featureAllowed(tenantId, 'manuscripts')
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.tenantId == tenantId;
         allow update: if belongsToTenant(tenantId)
+          && featureAllowed(tenantId, 'manuscripts')
           && resource.data.createdBy == request.auth.uid
           && request.resource.data.createdBy == request.auth.uid;
         allow delete: if belongsToTenant(tenantId)
+          && featureAllowed(tenantId, 'manuscripts')
           && resource.data.createdBy == request.auth.uid;
       }
 
@@ -217,7 +257,7 @@ service cloud.firestore {
       // Protocol templates (reusable node-graph procedures, R270) — same access
       // model as projects: tenant-readable, writer-writable, admin-deletable.
       match /protocolTemplates/{protocolTemplateId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'protocolTemplates');
         allow create: if isWriter(tenantId)
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.tenantId == tenantId;
@@ -241,7 +281,7 @@ service cloud.firestore {
       }
 
       match /references/{referenceId} {
-        allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+        allow read: if canRead(tenantId, 'references');
         allow write: if false;
       }
 

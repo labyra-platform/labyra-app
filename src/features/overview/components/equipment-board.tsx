@@ -14,6 +14,7 @@
  * the lab owns tells you nothing.
  */
 import { useTranslations } from 'next-intl';
+import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Icons } from '@/components/icons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -88,10 +89,14 @@ function Legend({ owner, label }: { owner: BookingOwner; label: string }) {
 }
 
 export function EquipmentBoard() {
+  // R509: this whole card is about one feature — if it's off, it isn't here.
+  const allowed = useFeatureAllowed('bookings');
   const t = useTranslations('dashboard');
   const { user } = useAuth();
   const { uids, isLoading: rosterLoading } = useGroupRoster();
   const { rows, totalEquipment, isLoading } = useTodaySchedule(user?.uid, uids);
+
+  if (allowed === false) return null;
 
   const dayStart = new Date();
   dayStart.setHours(0, 0, 0, 0);

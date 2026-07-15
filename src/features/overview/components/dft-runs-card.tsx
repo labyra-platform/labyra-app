@@ -13,6 +13,7 @@
  * invented — a run whose timestamp the worker never wrote shows a dash.
  */
 import { useTranslations } from 'next-intl';
+import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,9 +40,13 @@ function timeAgo(ms: number, t: ReturnType<typeof useTranslations>): string {
 }
 
 export function DftRunsCard() {
+  // R509: this whole card is about one feature — if it's off, it isn't here.
+  const allowed = useFeatureAllowed('computation');
   const t = useTranslations('dashboard');
   const { counts, latest, total, isLoading } = useDftSummary(5);
   const { nameByUid } = useGroupRoster();
+
+  if (allowed === false) return null;
 
   return (
     <Card className='flex h-full flex-col'>

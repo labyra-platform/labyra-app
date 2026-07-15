@@ -8,6 +8,7 @@
  * refreshFeatureAccess() after an admin save to invalidate.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useRole } from '@/lib/auth/use-claims';
 
 let cache: Promise<string[]> | null = null;
 const subscribers = new Set<(disabled: string[]) => void>();
@@ -67,4 +68,20 @@ export function useFeatureAccess(): { disabled: Set<string>; loaded: boolean } {
 
   const disabledSet = useMemo(() => new Set(disabled ?? []), [disabled]);
   return { disabled: disabledSet, loaded: disabled !== null };
+}
+
+/**
+ * R509: is this one feature available to the caller?
+ *
+ * For cards that aggregate across features. A blocked member must not be told
+ * "0 chemicals" — that is still an answer about chemicals, and a wrong one.
+ * Undefined while the verdict is in flight, so callers can withhold rather
+ * than guess.
+ */
+export function useFeatureAllowed(key: string): boolean | undefined {
+  const role = useRole();
+  const { disabled, loaded } = useFeatureAccess();
+  if (role === 'admin' || role === 'superadmin') return true;
+  if (!loaded) return undefined;
+  return !disabled.has(key);
 }

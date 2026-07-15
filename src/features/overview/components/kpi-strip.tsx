@@ -11,6 +11,7 @@
  * Running jobs lead because that is the number with a clock on it.
  */
 import { useTranslations } from 'next-intl';
+import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Link } from '@/i18n/navigation';
 import { useDftSummary, useKpiSummary } from '@/lib/firestore/queries/dashboard';
 import { useTenantCollection } from '@/lib/firestore/use-tenant-collection';
@@ -60,34 +61,48 @@ export function KpiStrip() {
   const { data: chemicals, isLoading: chemLoading } = useTenantCollection<{ name: string }>({
     collection: 'chemicals'
   });
+  // R509: a metric for a feature this member can't use is dropped, not zeroed.
+  // "0 chemicals" is still an answer about chemicals, and a false one.
+  const canComputation = useFeatureAllowed('computation');
+  const canExperiments = useFeatureAllowed('experiments');
+  const canSamples = useFeatureAllowed('samples');
+  const canChemicals = useFeatureAllowed('chemicals');
 
   return (
     <div className='bg-card divide-border flex flex-wrap divide-x rounded-lg border'>
-      <Metric
-        live
-        label={t('kpi.running')}
-        value={dft.counts.running}
-        href='/dashboard/computation'
-        loading={dft.isLoading}
-      />
-      <Metric
-        label={t('kpi.experimentsThisWeek')}
-        value={kpi.experimentsThisWeek}
-        href='/dashboard/experiments'
-        loading={kpi.isLoading}
-      />
-      <Metric
-        label={t('kpi.activeSamples')}
-        value={kpi.activeSamples}
-        href='/dashboard/samples'
-        loading={kpi.isLoading}
-      />
-      <Metric
-        label={t('kpi.chemicals')}
-        value={(chemicals ?? []).length}
-        href='/dashboard/chemicals'
-        loading={chemLoading}
-      />
+      {canComputation !== false && (
+        <Metric
+          live
+          label={t('kpi.running')}
+          value={dft.counts.running}
+          href='/dashboard/computation'
+          loading={dft.isLoading}
+        />
+      )}
+      {canExperiments !== false && (
+        <Metric
+          label={t('kpi.experimentsThisWeek')}
+          value={kpi.experimentsThisWeek}
+          href='/dashboard/experiments'
+          loading={kpi.isLoading}
+        />
+      )}
+      {canSamples !== false && (
+        <Metric
+          label={t('kpi.activeSamples')}
+          value={kpi.activeSamples}
+          href='/dashboard/samples'
+          loading={kpi.isLoading}
+        />
+      )}
+      {canChemicals !== false && (
+        <Metric
+          label={t('kpi.chemicals')}
+          value={(chemicals ?? []).length}
+          href='/dashboard/chemicals'
+          loading={chemLoading}
+        />
+      )}
     </div>
   );
 }

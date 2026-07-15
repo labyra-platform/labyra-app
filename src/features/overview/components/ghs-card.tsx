@@ -10,6 +10,7 @@
  * as informative as knowing you have three corrosives.
  */
 import { useTranslations } from 'next-intl';
+import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { GhsPictogram } from '@/components/chemicals/ghs-pictogram';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,9 +32,13 @@ const ALL_GHS: GHSPictogram[] = [
 ];
 
 export function GhsCard() {
+  // R509: this whole card is about one feature — if it's off, it isn't here.
+  const allowed = useFeatureAllowed('chemicals');
   const t = useTranslations('dashboard');
   const { buckets, totalHazardous, isLoading } = useGhsSummary();
   const countOf = new Map(buckets.map((b) => [b.code, b.count]));
+
+  if (allowed === false) return null;
 
   return (
     <Card className='flex h-full flex-col'>

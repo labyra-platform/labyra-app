@@ -43,13 +43,24 @@ export function useTenantCollection<T = DocumentData>(opts: UseTenantCollectionO
     queryKey: ['tenant-collection', tenantId, opts.collection, ...cacheKey],
     enabled: tenantId !== null,
     staleTime: opts.staleTime ?? 30_000,
+    // R509: rules now gate reads by feature, so 'permission-denied' is an
+    // answer, not an outage. Retrying it three times just delays the same
+    // verdict and floods the console; callers get an empty list and render
+    // their own empty state.
+    retry: (count, err) =>
+      (err as { code?: string } | null)?.code === 'permission-denied' ? false : count < 2,
     queryFn: async () => {
       if (!tenantId) return [];
       const db = getFirebaseFirestore();
       const colRef = fsCollection(db, `tenants/${tenantId}/${opts.collection}`);
       const q = opts.constraints ? fsQuery(colRef, ...opts.constraints) : colRef;
-      const snap = await getDocs(q);
-      return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() as T }));
+      try {
+        const snap = await getDocs(q);
+        return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() as T }));
+      } catch (err) {
+        if ((err as { code?: string }).code === 'permission-denied') return [];
+        throw err;
+      }
     }
   });
 }

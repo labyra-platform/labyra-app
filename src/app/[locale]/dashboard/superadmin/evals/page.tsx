@@ -5,7 +5,7 @@
  */
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth/use-auth';
 
@@ -121,11 +121,8 @@ function RetrievalEvalCard() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Retrieval eval — Contextual Retrieval A/B</CardTitle>
-      </CardHeader>
-      <CardContent className='space-y-4'>
+    <Panel title='Retrieval eval — Contextual Retrieval A/B'>
+      <div className='space-y-4'>
         <div className='flex flex-wrap items-end gap-3'>
           <div className='text-xs'>
             <span className='mb-1 block text-muted-foreground'>Tenant</span>
@@ -221,8 +218,8 @@ function RetrievalEvalCard() {
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }
 
@@ -252,69 +249,59 @@ export default function EvalsPage() {
 
       <RetrievalEvalCard />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Weekly summaries ({data.summaries.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.summaries.length === 0 ? (
-            <p className='text-muted-foreground text-sm'>
-              No eval data yet. First run: next Sunday 03:00 UTC.
-            </p>
-          ) : (
-            <div className='overflow-auto'>
-              <table className='text-xs w-full'>
-                <thead>
-                  <tr className='text-left'>
-                    <th className='p-2'>Week</th>
-                    <th className='p-2'>Tenant</th>
-                    <th className='p-2 text-right'>Samples</th>
-                    <th className='p-2 text-right'>Flagged</th>
-                    <th className='p-2 text-right'>Cost USD</th>
+      <Panel title={`Weekly summaries (${data.summaries.length})`}>
+        {data.summaries.length === 0 ? (
+          <p className='text-muted-foreground text-sm'>
+            No eval data yet. First run: next Sunday 03:00 UTC.
+          </p>
+        ) : (
+          <div className='overflow-auto'>
+            <table className='text-xs w-full'>
+              <thead>
+                <tr className='text-left'>
+                  <th className='p-2'>Week</th>
+                  <th className='p-2'>Tenant</th>
+                  <th className='p-2 text-right'>Samples</th>
+                  <th className='p-2 text-right'>Flagged</th>
+                  <th className='p-2 text-right'>Cost USD</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.summaries.map((s, i) => (
+                  <tr key={i} className='border-t'>
+                    <td className='p-2 font-mono'>{s.week}</td>
+                    <td className='p-2'>{s.tenantId}</td>
+                    <td className='p-2 text-right'>{s.sampleSize ?? 0}</td>
+                    <td className='p-2 text-right'>{s.flaggedCount ?? 0}</td>
+                    <td className='p-2 text-right font-mono'>
+                      ${(s.evaluatorCostUsd ?? 0).toFixed(4)}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {data.summaries.map((s, i) => (
-                    <tr key={i} className='border-t'>
-                      <td className='p-2 font-mono'>{s.week}</td>
-                      <td className='p-2'>{s.tenantId}</td>
-                      <td className='p-2 text-right'>{s.sampleSize ?? 0}</td>
-                      <td className='p-2 text-right'>{s.flaggedCount ?? 0}</td>
-                      <td className='p-2 text-right font-mono'>
-                        ${(s.evaluatorCostUsd ?? 0).toFixed(4)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Flagged conversations ({data.flaggedConversations.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.flaggedConversations.length === 0 ? (
-            <p className='text-muted-foreground text-sm'>None flagged.</p>
-          ) : (
-            <ul className='space-y-2 text-xs'>
-              {data.flaggedConversations.map((c, i) => (
-                <li key={i} className='border-l-2 border-destructive pl-3'>
-                  <div className='font-mono'>
-                    {c.tenantId} · {c.week} · {c.conversationId}
-                  </div>
-                  <div className='text-muted-foreground'>
-                    Score: {c.overallScore.toFixed(3)} · Flags: {c.flagReasons.join(', ')}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <Panel title={`Flagged conversations (${data.flaggedConversations.length})`}>
+        {data.flaggedConversations.length === 0 ? (
+          <p className='text-muted-foreground text-sm'>None flagged.</p>
+        ) : (
+          <ul className='space-y-2 text-xs'>
+            {data.flaggedConversations.map((c, i) => (
+              <li key={i} className='border-l-2 border-destructive pl-3'>
+                <div className='font-mono'>
+                  {c.tenantId} · {c.week} · {c.conversationId}
+                </div>
+                <div className='text-muted-foreground'>
+                  Score: {c.overallScore.toFixed(3)} · Flags: {c.flagReasons.join(', ')}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

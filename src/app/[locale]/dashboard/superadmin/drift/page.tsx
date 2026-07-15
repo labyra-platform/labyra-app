@@ -4,7 +4,7 @@
  * @phase R172-6
  */
 import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import { useAuth } from '@/lib/auth/use-auth';
 
 interface DriftReport {
@@ -56,72 +56,60 @@ export default function DriftPage() {
       </div>
 
       {data.totalAlerts > 0 && (
-        <Card className='border-destructive'>
-          <CardHeader>
-            <CardTitle className='text-destructive'>Active alerts ({data.totalAlerts})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className='space-y-2 text-xs'>
-              {data.alerts.map((a, i) => (
-                <li key={i} className='border-l-2 border-destructive pl-3'>
-                  <div className='font-mono'>
-                    {a.tenantId} · {a.date}
-                  </div>
-                  <div className='text-muted-foreground'>Reasons: {a.alertReasons.join(', ')}</div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <Panel title={`Active alerts (${data.totalAlerts})`} className='border-destructive'>
+          <ul className='space-y-2 text-caption'>
+            {data.alerts.map((a, i) => (
+              <li key={i} className='border-l-2 border-destructive pl-3'>
+                <div className='font-mono'>
+                  {a.tenantId} · {a.date}
+                </div>
+                <div className='text-muted-foreground'>Reasons: {a.alertReasons.join(', ')}</div>
+              </li>
+            ))}
+          </ul>
+        </Panel>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily reconciliation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.reports.length === 0 ? (
-            <p className='text-muted-foreground text-sm'>
-              No drift reports yet. First run: tomorrow 02:30 UTC.
-            </p>
-          ) : (
-            <div className='overflow-auto'>
-              <table className='text-xs w-full'>
-                <thead>
-                  <tr className='text-left'>
-                    <th className='p-2'>Date</th>
-                    <th className='p-2'>Tenant</th>
-                    <th className='p-2 text-right'>Est Anthropic</th>
-                    <th className='p-2 text-right'>Actual</th>
-                    <th className='p-2 text-right'>Drift %</th>
-                    <th className='p-2'>Alert</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.reports
-                    .toSorted((a, b) => b.date.localeCompare(a.date))
-                    .map((r, i) => (
-                      <tr key={i} className='border-t'>
-                        <td className='p-2 font-mono'>{r.date}</td>
-                        <td className='p-2'>{r.tenantId}</td>
-                        <td className='p-2 text-right font-mono'>
-                          ${r.estimated.anthropic.toFixed(4)}
-                        </td>
-                        <td className='p-2 text-right font-mono'>
-                          ${r.actual.anthropic.toFixed(4)}
-                        </td>
-                        <td className='p-2 text-right font-mono'>
-                          {(r.drift.anthropic * 100).toFixed(1)}%
-                        </td>
-                        <td className='p-2'>{r.alertTriggered ? '⚠' : '✓'}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <Panel title='Daily reconciliation'>
+        {data.reports.length === 0 ? (
+          <p className='text-muted-foreground text-sm'>
+            No drift reports yet. First run: tomorrow 02:30 UTC.
+          </p>
+        ) : (
+          <div className='overflow-auto'>
+            <table className='text-xs w-full'>
+              <thead>
+                <tr className='text-left'>
+                  <th className='p-2'>Date</th>
+                  <th className='p-2'>Tenant</th>
+                  <th className='p-2 text-right'>Est Anthropic</th>
+                  <th className='p-2 text-right'>Actual</th>
+                  <th className='p-2 text-right'>Drift %</th>
+                  <th className='p-2'>Alert</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.reports
+                  .toSorted((a, b) => b.date.localeCompare(a.date))
+                  .map((r, i) => (
+                    <tr key={i} className='border-t'>
+                      <td className='p-2 font-mono'>{r.date}</td>
+                      <td className='p-2'>{r.tenantId}</td>
+                      <td className='p-2 text-right font-mono'>
+                        ${r.estimated.anthropic.toFixed(4)}
+                      </td>
+                      <td className='p-2 text-right font-mono'>${r.actual.anthropic.toFixed(4)}</td>
+                      <td className='p-2 text-right font-mono'>
+                        {(r.drift.anthropic * 100).toFixed(1)}%
+                      </td>
+                      <td className='p-2'>{r.alertTriggered ? '⚠' : '✓'}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
     </div>
   );
 }

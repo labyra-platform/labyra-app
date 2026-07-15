@@ -8,15 +8,18 @@
 #   spacing        — 3235 classes in src/, and the seven §1 values don't cover
 #                    gap-1 / gap-1.5 / px-2 / py-1. Needs migrating before it
 #                    can be locked, or the lock just unstyles the app.
-#   shadcn Card    — 9 files still import ui/card (gap-6 inside py-6 = 24:24,
-#                    plus border AND shadow, §1+§4). Migrating to Panel is a
-#                    per-feature job, not a grep. R512 settings (4), R513 deviation (6), R514 spectra+computation (4);
+#   shadcn Card    — 2 files still import ui/card (gap-6 inside py-6 = 24:24,
+#                    plus border AND shadow, §1+§4). Migrating to Panel was a
+#                    per-feature job, not a grep: R512 settings, R513 deviation,
+#                    R514 spectra+computation, R515 superadmin+papers+materials.
 #                    lab-context-form and ai-preferences-form deliberately stay
 #                    — their page already renders the heading, so a Panel title
-#                    would duplicate it. That is a design call, not a migration. R512 did settings.
-#   aria-labelledby — 6 files have it; Panel makes it automatic, so this falls
-#                    out of the Card→Panel migration rather than needing a rule.
+#                    would duplicate it. That is a design call, not a migration.
+#   aria-labelledby — 6 files have it, up from 6 before the migration. Panel
+#                    generates the id itself, so §10 fell out of the Card→Panel
+#                    work rather than needing a rule of its own.
 
 arbitrary_text_size=101
-off_scale_weight=127
+off_scale_size=32
+off_scale_weight=124
 hardcoded_color=4

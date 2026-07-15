@@ -28,8 +28,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { LifecycleActions } from '@/components/lifecycle/lifecycle-actions';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MaterialKnowledgePanel } from '@/features/samples/components/material-knowledge-panel';
@@ -147,39 +147,38 @@ function MaterialCard({
   onSelect: () => void;
 }) {
   return (
-    <Card
-      role='button'
-      tabIndex={0}
+    // R515: this is a tile you press, not a region — role='button' on a div
+    // was standing in for a button. A real <button> handles Enter and Space
+    // itself, so the hand-rolled key handler goes with it. Panel would be the
+    // wrong primitive here: it renders a <section> landmark.
+    <button
+      type='button'
       aria-label={material.name}
       aria-pressed={active}
       onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      className={[
-        'cursor-pointer p-3 transition-colors',
-        'focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2',
+      className={cn(
+        'bg-card border-border rounded-xl border p-3 text-left transition-colors',
+        'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',
         active ? 'border-primary bg-accent' : 'hover:bg-muted/50'
-      ].join(' ')}
+      )}
     >
       <div className='flex items-start justify-between gap-2'>
-        <span className='font-medium leading-tight'>{material.name}</span>
-        <Badge variant='secondary' className='shrink-0 text-xs'>
+        <span className='text-body font-medium'>{material.name}</span>
+        <Badge variant='secondary' className='text-caption shrink-0'>
           {categoryLabel}
         </Badge>
       </div>
       {material.formula && (
-        <div className='text-muted-foreground mt-1 text-lg font-semibold'>
+        <div className='text-muted-foreground text-title mt-1 font-medium'>
           {formatFormula(material.formula)}
         </div>
       )}
       {material.description && (
-        <p className='text-muted-foreground mt-1 line-clamp-2 text-xs'>{material.description}</p>
+        <p className='text-muted-foreground text-caption mt-1 line-clamp-2'>
+          {material.description}
+        </p>
       )}
-    </Card>
+    </button>
   );
 }
 

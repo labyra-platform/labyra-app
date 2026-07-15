@@ -67,6 +67,14 @@ check arbitrary_text_size 'text-\[[0-9]+px\]' \
   '§2: six sizes, no exceptions' \
   'use the named tokens: text-meta 11 / text-caption 12 / text-body 13 / text-heading 14 / text-stat 16 / text-title 18'
 
+# R515: the check above only ever saw arbitrary values, so text-2xl walked
+# straight past it. §2's six sizes stop at 18px (text-title, the page
+# greeting) — xl/2xl/3xl are the seventh, eighth and ninth. xs/sm/base/lg are
+# left alone: they land on 12/14/16/18, which the scale already contains.
+check off_scale_size '\btext-([2-9]xl|xl)\b' \
+  '§2: the scale stops at 18px' \
+  'text-xl is 20px, text-2xl is 24px — use text-title (18) or text-stat (16)'
+
 check off_scale_weight '\bfont-(semibold|bold)\b' \
   '§2: weight is 400 or 500' \
   '600/700 read heavy against the surrounding UI — use font-medium'

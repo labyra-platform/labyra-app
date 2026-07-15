@@ -5,7 +5,7 @@
  * @phase R172-5
  */
 import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import { CostKpiCards } from '@/features/superadmin/components/cost-kpi-cards';
 import { CostTimeseries } from '@/features/superadmin/components/cost-timeseries';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -76,50 +76,40 @@ export default function CostsPage() {
 
       <CostKpiCards summary={data.summary} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily cost trend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CostTimeseries rows={data.rows} />
-        </CardContent>
-      </Card>
+      <Panel title='Daily cost trend'>
+        <CostTimeseries rows={data.rows} />
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent days (raw)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className='overflow-auto max-h-96'>
-            <table className='text-xs w-full'>
-              <thead className='sticky top-0 bg-background'>
-                <tr className='text-left'>
-                  <th className='p-2'>Date</th>
-                  <th className='p-2'>Tenant</th>
-                  <th className='p-2 text-right'>Total USD</th>
-                  <th className='p-2 text-right'>Queries</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.rows
-                  .toSorted((a, b) => b.date.localeCompare(a.date))
-                  .slice(0, 50)
-                  .map((r, i) => {
-                    const queries = Object.values(r.byTier).reduce((s, v) => s + v.queries, 0);
-                    return (
-                      <tr key={i} className='border-t'>
-                        <td className='p-2 font-mono'>{r.date}</td>
-                        <td className='p-2'>{r.tenantId}</td>
-                        <td className='p-2 text-right font-mono'>${r.totalCost.toFixed(4)}</td>
-                        <td className='p-2 text-right font-mono'>{queries}</td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <Panel title='Recent days (raw)'>
+        <div className='overflow-auto max-h-96'>
+          <table className='text-xs w-full'>
+            <thead className='sticky top-0 bg-background'>
+              <tr className='text-left'>
+                <th className='p-2'>Date</th>
+                <th className='p-2'>Tenant</th>
+                <th className='p-2 text-right'>Total USD</th>
+                <th className='p-2 text-right'>Queries</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows
+                .toSorted((a, b) => b.date.localeCompare(a.date))
+                .slice(0, 50)
+                .map((r, i) => {
+                  const queries = Object.values(r.byTier).reduce((s, v) => s + v.queries, 0);
+                  return (
+                    <tr key={i} className='border-t'>
+                      <td className='p-2 font-mono'>{r.date}</td>
+                      <td className='p-2'>{r.tenantId}</td>
+                      <td className='p-2 text-right font-mono'>${r.totalCost.toFixed(4)}</td>
+                      <td className='p-2 text-right font-mono'>{queries}</td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
     </div>
   );
 }

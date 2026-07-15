@@ -3,7 +3,7 @@
  * KPI cards for cost dashboard.
  * @phase R172-7
  */
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 
 interface CostSummary {
   totalCost: number;
@@ -42,15 +42,10 @@ export function CostKpiCards({ summary }: { summary: CostSummary }) {
   return (
     <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
       {cards.map((c, i) => (
-        <Card key={i}>
-          <CardHeader className='pb-2'>
-            <CardTitle className='text-xs text-muted-foreground font-medium'>{c.title}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>{c.value}</div>
-            <p className='text-xs text-muted-foreground mt-1'>{c.hint}</p>
-          </CardContent>
-        </Card>
+        <Panel key={i} title={c.title}>
+          <p className='text-stat font-medium tabular-nums'>{c.value}</p>
+          <p className='text-muted-foreground text-caption'>{c.hint}</p>
+        </Panel>
       ))}
     </div>
   );

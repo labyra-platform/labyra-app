@@ -10,7 +10,8 @@
  * may switch (`canSwitchGroup`); this component only renders that verdict.
  */
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Icons } from '@/components/icons';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,28 +24,10 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Icons } from '@/components/icons';
 import { Link } from '@/i18n/navigation';
+import { type GroupMember, useGroupRoster } from '../use-group-roster';
 
-interface Member {
-  uid: string;
-  displayName?: string;
-  email: string;
-  role: string;
-  isGroupLead?: boolean;
-}
-interface GroupRef {
-  id: string;
-  name: string;
-}
-interface MembersResponse {
-  group: GroupRef | null;
-  items: Member[];
-  groups: GroupRef[];
-  canSwitchGroup: boolean;
-}
-
-function initials(m: Member): string {
+function initials(m: GroupMember): string {
   const src = (m.displayName || m.email).trim();
   const parts = src.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts.at(-1)![0]).toUpperCase();
@@ -54,35 +37,10 @@ function initials(m: Member): string {
 export function GroupMembersCard() {
   const t = useTranslations('dashboard');
   const tRoles = useTranslations('common.roles');
-  const [data, setData] = useState<MembersResponse | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async (gid: string | null) => {
-    setLoading(true);
-    try {
-      const { getFirebaseAuth } = await import('@/lib/firebase/client');
-      const token = await getFirebaseAuth().currentUser?.getIdToken();
-      if (!token) return;
-      const qs = gid ? `?groupId=${encodeURIComponent(gid)}` : '';
-      const res = await fetch(`/api/groups/my/members${qs}`, {
-        headers: { authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) return;
-      setData((await res.json()) as MembersResponse);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load(groupId);
-  }, [load, groupId]);
-
-  const members = data?.items ?? [];
-  const groups = data?.groups ?? [];
-  const showPicker = Boolean(data?.canSwitchGroup) && groups.length > 1;
-  const currentId = groupId ?? data?.group?.id ?? '';
+  const { group, members, groups, canSwitchGroup, isLoading: loading } = useGroupRoster(groupId);
+  const showPicker = canSwitchGroup && groups.length > 1;
+  const currentId = groupId ?? group?.id ?? '';
 
   return (
     <Card className='flex h-full flex-col'>
@@ -106,8 +64,8 @@ export function GroupMembersCard() {
               </SelectContent>
             </Select>
           ) : (
-            data?.group?.name && (
-              <span className='text-muted-foreground truncate text-xs'>{data.group.name}</span>
+            group?.name && (
+              <span className='text-muted-foreground truncate text-xs'>{group.name}</span>
             )
           )}
         </div>

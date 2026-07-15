@@ -189,7 +189,8 @@
       "gapEv": "{gap} eV",
       "emptyTitle": "No DFT runs yet",
       "emptyDesc": "Launch your first workflow from the Computation workspace.",
-      "newRun": "New DFT run"
+      "newRun": "New DFT run",
+      "runsTitle": "DFT runs"
     },
     "today": {
       "title": "Today",
@@ -234,6 +235,26 @@
       "lead": "Group lead",
       "invite": "Invite member",
       "allGroups": "Select group"
+    },
+    "board": {
+      "title": "Equipment · today",
+      "self": "You",
+      "group": "Your group",
+      "other": "Other group",
+      "empty": "No equipment booked today.",
+      "footnote": "{booked} of {total} instruments booked today ·",
+      "viewAll": "open calendar"
+    },
+    "activity": {
+      "title": "Activity · last 30 days",
+      "experiments": "Experiments",
+      "dft": "DFT",
+      "samples": "Samples",
+      "empty": "No activity in the last 30 days."
+    },
+    "ghs": {
+      "title": "GHS hazards",
+      "count": "{count} chemicals"
     }
   },
   "locale": {

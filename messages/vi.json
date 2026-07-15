@@ -189,7 +189,8 @@
       "gapEv": "{gap} eV",
       "emptyTitle": "Chưa có DFT run nào",
       "emptyDesc": "Khởi chạy workflow đầu tiên từ workspace Tính toán.",
-      "newRun": "DFT run mới"
+      "newRun": "DFT run mới",
+      "runsTitle": "DFT runs"
     },
     "today": {
       "title": "Hôm nay",
@@ -234,6 +235,26 @@
       "lead": "Trưởng nhóm",
       "invite": "Mời thành viên",
       "allGroups": "Chọn nhóm"
+    },
+    "board": {
+      "title": "Lịch thiết bị · hôm nay",
+      "self": "Của bạn",
+      "group": "Cùng nhóm",
+      "other": "Nhóm khác",
+      "empty": "Hôm nay chưa có thiết bị nào được đặt.",
+      "footnote": "{booked}/{total} thiết bị có lịch hôm nay ·",
+      "viewAll": "mở lịch"
+    },
+    "activity": {
+      "title": "Hoạt động · 30 ngày qua",
+      "experiments": "Thí nghiệm",
+      "dft": "DFT",
+      "samples": "Mẫu",
+      "empty": "Không có hoạt động nào trong 30 ngày qua."
+    },
+    "ghs": {
+      "title": "Nguy hại GHS",
+      "count": "{count} chất"
     }
   },
   "locale": {

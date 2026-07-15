@@ -1241,7 +1241,10 @@
       "download": "Tải xuống",
       "preparing": "Đang chuẩn bị...",
       "error": "Lỗi",
-      "analysisPending": "Phổ đã được tải lên. Phân tích AI sẽ được kích hoạt khi worker sẵn sàng (Phase 2)."
+      "analysisPending": "Phổ đã được tải lên. Phân tích AI sẽ được kích hoạt khi worker sẵn sàng (Phase 2).",
+      "reanalyze": "Phân tích lại",
+      "reanalyzing": "Đang phân tích lại…",
+      "reanalyzeTip": "Chạy lại phân tích với worker mới nhất"
     },
     "analysis": {
       "title": "Phân tích AI",

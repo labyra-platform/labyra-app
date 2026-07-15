@@ -1240,7 +1240,10 @@
       "download": "Download",
       "preparing": "Preparing...",
       "error": "Error",
-      "analysisPending": "Spectrum uploaded. AI analysis will trigger when worker is available (Phase 2)."
+      "analysisPending": "Spectrum uploaded. AI analysis will trigger when worker is available (Phase 2).",
+      "reanalyze": "Re-analyze",
+      "reanalyzing": "Re-analyzing…",
+      "reanalyzeTip": "Re-run the analysis with the latest worker"
     },
     "analysis": {
       "title": "AI Analysis",

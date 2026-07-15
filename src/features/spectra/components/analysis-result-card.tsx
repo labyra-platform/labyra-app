@@ -8,7 +8,7 @@
 import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import { Separator } from '@/components/ui/separator';
 import { DSCBody, OCPBody, TGABody } from '@/features/spectra/components/analysis-bodies-ext';
 import { CitationChip } from '@/features/spectra/components/citation-chip';
@@ -39,20 +39,22 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
   const { ai, analysisVersion, spectrumType } = result;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className='flex items-start justify-between gap-4'>
-          <CardTitle className='flex items-center gap-2'>
-            {t('title')}
-            <Badge variant={confidenceVariant(ai.overall_confidence)}>
-              {t(`confidence.${ai.overall_confidence}`)}
-            </Badge>
-          </CardTitle>
-          <span className='text-xs text-muted-foreground'>v{analysisVersion}</span>
+    // R514: confidence and version report on the analysis; they are not its
+    // name, so they leave the heading for the trailing slot.
+    <Panel
+      title={t('title')}
+      action={
+        <div className='flex shrink-0 items-center gap-2'>
+          <Badge variant={confidenceVariant(ai.overall_confidence)}>
+            {t(`confidence.${ai.overall_confidence}`)}
+          </Badge>
+          <span className='text-muted-foreground text-caption tabular-nums'>
+            v{analysisVersion}
+          </span>
         </div>
-      </CardHeader>
-
-      <CardContent className='space-y-4'>
+      }
+    >
+      <div className='space-y-4'>
         <div>
           <h4 className='text-sm font-medium text-muted-foreground'>{t('summary')}</h4>
           <p className='mt-1 text-sm leading-relaxed'>
@@ -107,8 +109,8 @@ export function AnalysisResultCard({ result }: AnalysisResultCardProps) {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }
 

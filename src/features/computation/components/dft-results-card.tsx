@@ -10,10 +10,9 @@
 import { IconActivity, IconAtom2, IconChartHistogram } from '@tabler/icons-react';
 import { getTranslations } from 'next-intl/server';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import { Separator } from '@/components/ui/separator';
 import { DftWorkflowGraph } from '@/features/workflow/components/dft-workflow-graph';
-import { Link } from '@/i18n/navigation';
 import type { DftOverallStatus, DftWorkflow } from '@/types/dft';
 
 function fmt(n: number | null | undefined, digits = 4): string {
@@ -39,28 +38,31 @@ export async function DftResultsCard({ workflow }: Props) {
   const g = workflow.global;
   const overall = workflow.overallStatus;
   return (
-    <Card>
-      <CardHeader className='flex flex-row items-center justify-between gap-2 space-y-0'>
-        <CardTitle className='flex items-center gap-2 text-base'>
-          <IconAtom2 className='size-4 shrink-0' aria-hidden />
-          <Link href={`/dashboard/computation/${workflow.id}`} className='truncate hover:underline'>
-            {g?.prefix ?? workflow.id}
-          </Link>
+    // R514: the functional and the run status are facts about the run, not
+    // part of its name — they sit in the trailing slot so the heading stays
+    // the identifier and nothing else.
+    <Panel
+      title={g?.prefix ?? workflow.id}
+      titleHref={`/dashboard/computation/${workflow.id}`}
+      icon={IconAtom2}
+      action={
+        <div className='flex shrink-0 items-center gap-2'>
           {g?.functional ? (
-            <span className='text-muted-foreground text-xs uppercase'>{g.functional}</span>
+            <span className='text-muted-foreground text-caption uppercase'>{g.functional}</span>
           ) : null}
-        </CardTitle>
-        {overall ? (
-          <Badge variant={OVERALL_VARIANT[overall]}>
-            {overall === 'completed'
-              ? t('status.completed')
-              : overall === 'running'
-                ? t('status.running')
-                : t('status.failed')}
-          </Badge>
-        ) : null}
-      </CardHeader>
-      <CardContent className='space-y-4'>
+          {overall ? (
+            <Badge variant={OVERALL_VARIANT[overall]}>
+              {overall === 'completed'
+                ? t('status.completed')
+                : overall === 'running'
+                  ? t('status.running')
+                  : t('status.failed')}
+            </Badge>
+          ) : null}
+        </div>
+      }
+    >
+      <div className='space-y-4'>
         {r?.bandGap ? (
           <section className='space-y-1'>
             <h3 className='flex items-center gap-1.5 text-sm font-medium'>
@@ -125,7 +127,7 @@ export async function DftResultsCard({ workflow }: Props) {
           </h3>
           <DftWorkflowGraph workflow={workflow} className='h-[240px]' />
         </section>
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }

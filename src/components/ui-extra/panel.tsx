@@ -22,12 +22,14 @@
  * conversation about the rules, not a className.
  */
 import { useId } from 'react';
+import { Link } from '@/i18n/navigation';
 import type React from 'react';
 import { cn } from '@/lib/utils';
 
 export function Panel({
   title,
   description,
+  titleHref,
   icon: Icon,
   action,
   count,
@@ -38,6 +40,10 @@ export function Panel({
   title: string;
   /** Subtitle under the heading. Settings panels lead with one. */
   description?: string;
+  /** Makes the heading a link. Kept as href + string rather than a ReactNode
+   *  title, so the <h2> the landmark points at always has plain text as its
+   *  accessible name. */
+  titleHref?: string;
   /** Optional tabler glyph beside the title. Decorative — the <h2> already
    *  names the landmark, so it is hidden from assistive tech (§6). */
   icon?: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
@@ -68,7 +74,13 @@ export function Panel({
         <div className='min-w-0'>
           <h2 id={id} className='text-heading flex min-w-0 items-center gap-2 font-medium'>
             {Icon && <Icon className='size-4 shrink-0 self-center' aria-hidden='true' />}
-            <span className='truncate'>{title}</span>
+            {titleHref ? (
+              <Link href={titleHref} className='truncate hover:underline'>
+                {title}
+              </Link>
+            ) : (
+              <span className='truncate'>{title}</span>
+            )}
           </h2>
           {description && <p className='text-muted-foreground text-caption mt-1'>{description}</p>}
         </div>

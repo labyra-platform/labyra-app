@@ -7,7 +7,7 @@
  * @phase R212 (electrochemistry app support)
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import type {
   CVParsedData,
   EISParsedData,
@@ -38,14 +38,9 @@ function fmt(n: number | null | undefined, digits = 3): string {
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card>
-      <CardHeader className='pb-3'>
-        <CardTitle className='text-sm font-medium'>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className='grid grid-cols-2 gap-4 sm:grid-cols-3'>{children}</div>
-      </CardContent>
-    </Card>
+    <Panel title={title}>
+      <div className='grid grid-cols-2 gap-4 sm:grid-cols-3'>{children}</div>
+    </Panel>
   );
 }
 

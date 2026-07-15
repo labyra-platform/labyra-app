@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import type { SpectrumMetadata, SpectrumStatus } from '@/types/spectra';
 import { SciText } from '@/features/spectra/utils/format-units';
 
@@ -81,35 +81,34 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
 
   return (
     <div className='space-y-4'>
-      <Card>
-        <CardHeader>
-          <div className='flex items-start justify-between gap-4'>
-            <div>
-              <CardTitle>{tField('metadata')}</CardTitle>
-              <CardDescription>
-                {tType(spectrum.spectrumType)} · {tGroup(spectrum.group)}
-              </CardDescription>
-            </div>
-            <div className='flex gap-2'>
-              <Button onClick={handleDownload} disabled={downloading}>
-                <IconDownload className='size-4' />
-                {downloading ? tField('preparing') : tField('download')}
-              </Button>
-              <Button
-                variant='outline'
-                onClick={handleReanalyze}
-                disabled={
-                  reanalyzing || spectrum.status === 'queued' || spectrum.status === 'processing'
-                }
-                title='Re-run analysis with latest worker'
-              >
-                <IconRefresh className={`size-4 ${reanalyzing ? 'animate-spin' : ''}`} />
-                {reanalyzing ? 'Re-analyzing…' : 'Re-analyze'}
-              </Button>
-            </div>
+      {/* R514: the two buttons are actions on this panel, so they belong in the
+          trailing slot rather than wedged into the heading block. 'Re-analyze'
+          and its tooltip were hardcoded English — unlike the deviation panel,
+          no translation existed to wire up, so the keys are new. */}
+      <Panel
+        title={tField('metadata')}
+        description={`${tType(spectrum.spectrumType)} · ${tGroup(spectrum.group)}`}
+        action={
+          <div className='flex shrink-0 gap-2'>
+            <Button onClick={handleDownload} disabled={downloading}>
+              <IconDownload className='size-4' />
+              {downloading ? tField('preparing') : tField('download')}
+            </Button>
+            <Button
+              variant='outline'
+              onClick={handleReanalyze}
+              disabled={
+                reanalyzing || spectrum.status === 'queued' || spectrum.status === 'processing'
+              }
+              title={tField('reanalyzeTip')}
+            >
+              <IconRefresh className={`size-4 ${reanalyzing ? 'animate-spin' : ''}`} />
+              {reanalyzing ? tField('reanalyzing') : tField('reanalyze')}
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent className='space-y-3'>
+        }
+      >
+        <div className='space-y-3'>
           <Row label={tField('status')}>
             <Badge className={statusColor[spectrum.status]} variant='secondary'>
               {tStatus(spectrum.status)}
@@ -132,29 +131,20 @@ export function SpectrumDetailCard({ spectrum }: SpectrumDetailCardProps) {
               <SciText>{spectrum.sampleLabel}</SciText>
             </Row>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
       {spectrum.status === 'failed' && spectrum.errorMessage && (
-        <Card>
-          <CardContent className='pt-6'>
-            <div className='flex items-start gap-2 text-destructive'>
-              <IconAlertCircle className='size-5 shrink-0 mt-0.5' />
-              <div>
-                <div className='font-medium'>{tField('error')}</div>
-                <div className='text-sm mt-1'>{spectrum.errorMessage}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        // R514: this card's own heading was buried in its body as a bold div.
+        // It IS the panel's name — promoting it to the <h2> is what gives the
+        // landmark something to be called (§10).
+        <Panel title={tField('error')} icon={IconAlertCircle} className='text-destructive'>
+          <p className='text-body'>{spectrum.errorMessage}</p>
+        </Panel>
       )}
 
       {spectrum.status === 'uploaded' && (
-        <Card>
-          <CardContent className='pt-6 text-sm text-muted-foreground'>
-            {tField('analysisPending')}
-          </CardContent>
-        </Card>
+        <p className='text-muted-foreground text-body'>{tField('analysisPending')}</p>
       )}
     </div>
   );

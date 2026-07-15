@@ -299,7 +299,7 @@
   "papers": {
     "uploadPageTitle": "Tải lên tài liệu",
     "uploadPageSubtitle": "Tải lên PDF tài liệu nghiên cứu để thêm vào thư viện có thể tìm kiếm của lab.",
-    "dragOrClick": "Kéo PDF vào đây, hoặc click để chọn file",
+    "dragOrClick": "Kéo PDF vào đây, hoặc <cta>click để chọn file</cta>",
     "dropToUpload": "Thả PDF để tải lên",
     "uploading": "Đang tải lên...",
     "pdfOnlyMax": "Chỉ PDF, tối đa {mb} MB",

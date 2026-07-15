@@ -251,7 +251,7 @@ export function UploadDropzone({
         <div
           {...getRootProps()}
           className={cn(
-            'cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors',
+            'group cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors',
             isDragActive
               ? 'border-primary bg-primary/5'
               : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -260,10 +260,18 @@ export function UploadDropzone({
           <input {...getInputProps()} />
           <div className='flex flex-col items-center gap-2'>
             <IconUpload className='size-8 text-muted-foreground' aria-hidden />
-            <div className='text-sm font-medium'>
-              {isDragActive ? t('dropHere') : t('dragOrClick')}
+            <div className='text-foreground text-sm font-normal'>
+              {isDragActive
+                ? t('dropHere')
+                : t.rich('dragOrClick', {
+                    cta: (chunks) => (
+                      <span className='text-chart-2 font-medium underline-offset-2 group-hover:underline'>
+                        {chunks}
+                      </span>
+                    )
+                  })}
             </div>
-            <div className='text-xs text-muted-foreground'>
+            <div className='text-muted-foreground text-xs'>
               {t('maxSize', { mb: 100 })} · {t('uploadUpTo', { n: MAX_FILES })}
             </div>
           </div>

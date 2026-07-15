@@ -481,15 +481,18 @@ export function PaperList({
             <DropdownMenuTrigger asChild>
               <button
                 type='button'
-                className='inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted/50'
+                className='inline-flex w-32 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted/50'
               >
                 <IconArrowsSort className='size-3.5' />
                 {SORT_LABELS[sort]}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
+            <DropdownMenuContent
+              align='end'
+              className='min-w-[var(--radix-dropdown-menu-trigger-width)]'
+            >
               {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
-                <DropdownMenuItem key={k} onClick={() => setSort(k)}>
+                <DropdownMenuItem key={k} className='text-xs' onClick={() => setSort(k)}>
                   {SORT_LABELS[k]}
                 </DropdownMenuItem>
               ))}
@@ -501,7 +504,7 @@ export function PaperList({
               <button
                 type='button'
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
+                  'inline-flex w-32 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
                   shareFilter || showFailedOnly
                     ? 'border-primary/50 bg-primary/10 text-primary'
                     : 'hover:bg-muted/50'
@@ -517,28 +520,30 @@ export function PaperList({
                 <IconChevronDown className='size-3 opacity-60' />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align='end' className='w-52'>
+            <DropdownMenuContent
+              align='end'
+              className='min-w-[var(--radix-dropdown-menu-trigger-width)]'
+            >
               <DropdownMenuCheckboxItem
+                className='text-xs'
                 checked={shareFilter === 'lab'}
                 onCheckedChange={(c) => setShareFilter(c ? 'lab' : null)}
               >
-                <Icons.world className='mr-2 size-4' />
                 {t('filterLabShared')}
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
+                className='text-xs'
                 checked={shareFilter === 'group'}
                 onCheckedChange={(c) => setShareFilter(c ? 'group' : null)}
               >
-                <IconUsersGroup className='mr-2 size-4' />
                 {t('filterGroupShared')}
               </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
+                className='text-destructive focus:text-destructive text-xs'
                 checked={showFailedOnly}
                 onCheckedChange={(c) => setShowFailedOnly(Boolean(c))}
-                className='text-destructive focus:text-destructive'
               >
-                <IconAlertTriangle className='mr-2 size-4' />
                 {t('filterFailed')}
               </DropdownMenuCheckboxItem>
               {(shareFilter || showFailedOnly) && (

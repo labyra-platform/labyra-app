@@ -258,7 +258,7 @@ export function PaperFilterPanel({ value, onChange, papers, visibleDomainSlugs }
 
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant='outline' className='w-32 justify-start gap-2'>
+            <Button variant='outline' className='w-32 gap-2'>
               <IconFilter className='size-4' aria-hidden />
               {t('filtersButton')}
               {activeCount > 0 && (

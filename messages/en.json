@@ -299,7 +299,7 @@
   "papers": {
     "uploadPageTitle": "Upload document",
     "uploadPageSubtitle": "Upload a research document PDF to add it to your lab's searchable library.",
-    "dragOrClick": "Drag a PDF here, or click to browse",
+    "dragOrClick": "Drag a PDF here, or <cta>click to browse</cta>",
     "dropToUpload": "Drop PDF to upload",
     "uploading": "Uploading...",
     "pdfOnlyMax": "PDF only, max {mb} MB",

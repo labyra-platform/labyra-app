@@ -25,7 +25,7 @@ export function DashboardHeader({ locale }: { locale: string }) {
   return (
     <div className='flex flex-wrap items-start justify-between gap-3'>
       <div className='min-w-0'>
-        <h1 className='text-title truncate font-medium'>
+        <h1 className='text-display truncate font-medium'>
           {firstName
             ? t(`greeting.${greetingKey(now.getHours())}Named`, { name: firstName })
             : t(`greeting.${greetingKey(now.getHours())}`)}

@@ -67,11 +67,11 @@ export function ActivityChart() {
       {isLoading ? (
         // §7: skeleton at the exact height of the loaded chart — a wrong height
         // is the layout shift skeletons exist to prevent.
-        <Skeleton className='h-[168px] w-full' />
+        <Skeleton className='h-[var(--panel-viewport)] w-full' />
       ) : empty ? (
         <PanelEmpty title={t('activity.emptyTitle')} description={t('activity.empty')} />
       ) : (
-        <ChartContainer config={chartConfig} className='h-[168px] w-full'>
+        <ChartContainer config={chartConfig} className='h-[var(--panel-viewport)] w-full'>
           <BarChart accessibilityLayer data={data} margin={{ left: 12, right: 12, top: 4 }}>
             <CartesianGrid vertical={false} strokeDasharray='3 3' />
             <XAxis

@@ -92,7 +92,10 @@ Result on the members card: 24px padding + 24px gap + 24px gap = 72px of chrome 
 | body | 13 | list rows, table cells, default UI text |
 | heading | 14 | card titles |
 | stat | 16 | numbers in the stat strip |
-| title | 18 | page greeting |
+| title | 18 | section headings |
+| display | 24 | page greeting |
+
+> **Amended R520** — §2 said six sizes and gave 18 to the page greeting. The owner wants the greeting at 24, so the scale gets a seventh named token (`text-display`) rather than a `text-2xl` smuggled into one file. That is the difference between changing a rule and breaking it: the scale is still closed, and `check-design-tokens.sh` still fails anything outside it.
 
 Weight is **400 or 500**. Never 600/700 — they read heavy against the surrounding UI and are the fastest way to make a page look like a template.
 

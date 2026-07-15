@@ -721,8 +721,7 @@
     "filterLabShared": "Toàn lab",
     "filterGroupShared": "Nhóm",
     "groupOtherBadge": "Nhóm khác",
-    "quickFilters": "Lọc nhanh",
-    "clearFilters": "Xóa bộ lọc"
+    "quickFilters": "Lọc nhanh"
   },
   "collections": {
     "title": "Bộ sưu tập",

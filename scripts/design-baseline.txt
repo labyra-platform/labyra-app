@@ -19,7 +19,7 @@
 #                    generates the id itself, so §10 fell out of the Card→Panel
 #                    work rather than needing a rule of its own.
 
-arbitrary_text_size=101
+arbitrary_text_size=100
 off_scale_size=32
 off_scale_weight=124
 hardcoded_color=4

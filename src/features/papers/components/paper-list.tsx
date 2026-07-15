@@ -506,14 +506,14 @@ export function PaperList({
                     : 'hover:bg-muted/50'
                 )}
               >
-                <IconFilter className='size-3.5' />
+                <IconFilter className='size-3.5 shrink-0' />
+                {/* R519: no count badge. The button is a fixed w-32 and the
+                    badge pushed the label past it, wrapping 'Lọc nhanh' onto
+                    two lines — a number nobody asked for, breaking the control
+                    that carries it. There are two filters; the tinted active
+                    state already says one is on, and the menu below says which. */}
                 {t('quickFilters')}
-                {(shareFilter || showFailedOnly) && (
-                  <span className='bg-primary text-primary-foreground ml-0.5 flex size-4 items-center justify-center rounded-full text-[10px] tabular-nums'>
-                    {(shareFilter ? 1 : 0) + (showFailedOnly ? 1 : 0)}
-                  </span>
-                )}
-                <IconChevronDown className='size-3 opacity-60' />
+                <IconChevronDown className='size-3 shrink-0 opacity-60' />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -542,20 +542,6 @@ export function PaperList({
               >
                 {t('filterFailed')}
               </DropdownMenuCheckboxItem>
-              {(shareFilter || showFailedOnly) && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setShareFilter(null);
-                      setShowFailedOnly(false);
-                    }}
-                    className='text-muted-foreground justify-center text-xs'
-                  >
-                    {t('clearFilters')}
-                  </DropdownMenuItem>
-                </>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

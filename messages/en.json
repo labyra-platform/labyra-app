@@ -720,8 +720,7 @@
     "filterLabShared": "Whole lab",
     "filterGroupShared": "Group",
     "groupOtherBadge": "Other group",
-    "quickFilters": "Filters",
-    "clearFilters": "Clear filters"
+    "quickFilters": "Filters"
   },
   "collections": {
     "title": "Collections",

@@ -46,9 +46,9 @@ export function GhsCard() {
       count={isLoading ? undefined : t('ghs.count', { count: totalHazardous })}
     >
       {isLoading ? (
-        <Skeleton className='h-[168px] w-full' />
+        <Skeleton className='h-[var(--panel-viewport)] w-full' />
       ) : (
-        <div className='grid grid-cols-3 gap-2'>
+        <div className='grid h-[var(--panel-viewport)] grid-cols-3 place-content-center gap-2'>
           {ALL_GHS.map((code) => {
             const n = countOf.get(code) ?? 0;
             return (

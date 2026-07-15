@@ -321,7 +321,9 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot='sidebar-header'
       data-sidebar='header'
-      className={cn('flex flex-col gap-2 p-2', className)}
+      // R520: no top padding. The rail already ends at the window edge, so the
+      // 8px above the first item was a gap against nothing. Sides keep theirs.
+      className={cn('flex flex-col gap-2 px-2 pb-2', className)}
       {...props}
     />
   );

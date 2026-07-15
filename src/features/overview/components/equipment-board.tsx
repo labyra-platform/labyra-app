@@ -117,52 +117,57 @@ export function EquipmentBoard() {
         </div>
       }
     >
-      {isLoading || rosterLoading ? (
-        <div className='space-y-2'>
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className='h-6 w-full' />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <PanelEmpty title={t('board.emptyTitle')} description={t('board.empty')} />
-      ) : (
-        <div className='space-y-1.5'>
-          <div className='flex pl-24'>
-            <div className='relative h-4 flex-1'>
-              {ticks.map((h) => (
-                <span
-                  key={h}
-                  className='text-muted-foreground text-meta absolute -translate-x-1/2 tabular-nums'
-                  style={{ left: `${((h - DAY_START_H) / HOURS) * 100}%` }}
-                >
-                  {h}
-                </span>
-              ))}
-            </div>
+      {/* Same viewport as the activity chart and the hazard grid, so the page
+          has one card height instead of one per dataset. Instruments beyond
+          the fold scroll rather than growing the card. */}
+      <div className='h-[var(--panel-viewport)] overflow-y-auto'>
+        {isLoading || rosterLoading ? (
+          <div className='space-y-2'>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className='h-6 w-full' />
+            ))}
           </div>
-          {rows.map((row) => (
-            <div key={row.equipmentName} className='flex items-center gap-2'>
-              <span
-                className='text-muted-foreground text-caption w-24 shrink-0 truncate'
-                title={row.equipmentName}
-              >
-                {row.equipmentName}
-              </span>
-              <div className='bg-muted/40 relative h-7 flex-1 rounded'>
-                {row.bookings.map((b) => (
-                  <Bar key={b.id} booking={b} dayStart={dayStart.getTime()} />
+        ) : rows.length === 0 ? (
+          <PanelEmpty title={t('board.emptyTitle')} description={t('board.empty')} />
+        ) : (
+          <div className='space-y-1.5'>
+            <div className='flex pl-24'>
+              <div className='relative h-4 flex-1'>
+                {ticks.map((h) => (
+                  <span
+                    key={h}
+                    className='text-muted-foreground text-meta absolute -translate-x-1/2 tabular-nums'
+                    style={{ left: `${((h - DAY_START_H) / HOURS) * 100}%` }}
+                  >
+                    {h}
+                  </span>
                 ))}
               </div>
             </div>
-          ))}
-          <p className='text-muted-foreground text-meta pt-1 tabular-nums'>
-            {t('board.footnote', { booked: rows.length, total: totalEquipment })}{' '}
-            <Link href='/dashboard/bookings' className='underline underline-offset-2'>
-              {t('board.viewAll')}
-            </Link>
-          </p>
-        </div>
-      )}
+            {rows.map((row) => (
+              <div key={row.equipmentName} className='flex items-center gap-2'>
+                <span
+                  className='text-muted-foreground text-caption w-24 shrink-0 truncate'
+                  title={row.equipmentName}
+                >
+                  {row.equipmentName}
+                </span>
+                <div className='bg-muted/40 relative h-7 flex-1 rounded'>
+                  {row.bookings.map((b) => (
+                    <Bar key={b.id} booking={b} dayStart={dayStart.getTime()} />
+                  ))}
+                </div>
+              </div>
+            ))}
+            <p className='text-muted-foreground text-meta pt-1 tabular-nums'>
+              {t('board.footnote', { booked: rows.length, total: totalEquipment })}{' '}
+              <Link href='/dashboard/bookings' className='underline underline-offset-2'>
+                {t('board.viewAll')}
+              </Link>
+            </p>
+          </div>
+        )}
+      </div>
     </Panel>
   );
 }

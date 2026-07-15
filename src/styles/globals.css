@@ -2,6 +2,26 @@
 
 @import 'tw-animate-css';
 
+/* Design rules §2 amended R520 — the greeting is 24px, not 18.
+   §2 called text-title 18 "page greeting"; the owner wants it larger. Adding a
+   named token keeps that a scale decision rather than a text-2xl smuggled into
+   one file, which is the whole point of §2 being enforceable. */
+@theme {
+  --text-display: 1.5rem; /* 24px — page greeting */
+  --text-display--line-height: 2rem;
+}
+
+:root {
+  /* One viewport for every panel that holds a list, a chart or a board.
+     Derived, not picked: a PanelRow is py-2.5 around a size-8 avatar = 52px,
+     divide-y adds 1px between them, so five rows is 5*52 + 4 = 264.
+     Card height is a property of the card. When it follows the data instead,
+     switching a filter reflows the page and a stretched sibling leaves dead
+     space where its content ran out — which is exactly what happened to the
+     activity chart sitting next to a taller hazard grid. */
+  --panel-viewport: 264px;
+}
+
 /* Design rules §2 — the type scale, as named tokens.
    Six sizes, and no way to reach for a seventh: 11px and 13px are not in
    Tailwind's default scale, and the alternative (text-[11px] scattered through

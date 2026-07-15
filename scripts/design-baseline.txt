@@ -8,9 +8,9 @@
 #   spacing        — 3235 classes in src/, and the seven §1 values don't cover
 #                    gap-1 / gap-1.5 / px-2 / py-1. Needs migrating before it
 #                    can be locked, or the lock just unstyles the app.
-#   shadcn Card    — 19 files still import ui/card (gap-6 inside py-6 = 24:24,
+#   shadcn Card    — 13 files still import ui/card (gap-6 inside py-6 = 24:24,
 #                    plus border AND shadow, §1+§4). Migrating to Panel is a
-#                    per-feature job, not a grep. R512 migrated settings (4);
+#                    per-feature job, not a grep. R512 settings (4), R513 deviation (6);
 #                    lab-context-form and ai-preferences-form deliberately stay
 #                    — their page already renders the heading, so a Panel title
 #                    would duplicate it. That is a design call, not a migration. R512 did settings.

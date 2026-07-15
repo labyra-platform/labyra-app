@@ -8,7 +8,6 @@
 'use client';
 
 import { IconAlertTriangle, IconFlask } from '@tabler/icons-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ComponentMatchCard } from '@/components/deviation/component-match-card';
 import { HypothesisCard } from '@/components/deviation/hypothesis-card';
@@ -49,30 +48,28 @@ export function MultiPhaseTabs({ deviation, unitLabel }: MultiPhaseTabsProps) {
 
       {/* Summary tab */}
       <TabsContent value='_summary' className='space-y-4 mt-4'>
-        <Card>
-          <CardContent className='pt-4 pb-4 space-y-3'>
-            <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm'>
-              <div>
-                <p className='text-xs text-muted-foreground'>Components</p>
-                <p className='font-semibold tabular-nums'>{multi.components.length}</p>
-              </div>
-              <div>
-                <p className='text-xs text-muted-foreground'>Overall match</p>
-                <p className='font-semibold tabular-nums'>
-                  {(multi.overall_match_rate * 100).toFixed(0)}%
-                </p>
-              </div>
-              <div>
-                <p className='text-xs text-muted-foreground'>Grade</p>
-                <p className='font-semibold capitalize'>{multi.overall_grade}</p>
-              </div>
-              <div>
-                <p className='text-xs text-muted-foreground'>Unassigned peaks</p>
-                <p className='font-semibold tabular-nums'>{multi.unassigned_peaks.length}</p>
-              </div>
+        <div className='space-y-3'>
+          <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm'>
+            <div>
+              <p className='text-xs text-muted-foreground'>Components</p>
+              <p className='font-semibold tabular-nums'>{multi.components.length}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className='text-xs text-muted-foreground'>Overall match</p>
+              <p className='font-semibold tabular-nums'>
+                {(multi.overall_match_rate * 100).toFixed(0)}%
+              </p>
+            </div>
+            <div>
+              <p className='text-xs text-muted-foreground'>Grade</p>
+              <p className='font-semibold capitalize'>{multi.overall_grade}</p>
+            </div>
+            <div>
+              <p className='text-xs text-muted-foreground'>Unassigned peaks</p>
+              <p className='font-semibold tabular-nums'>{multi.unassigned_peaks.length}</p>
+            </div>
+          </div>
+        </div>
 
         {multi.intended_but_not_observed.length > 0 && (
           <div

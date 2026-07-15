@@ -6,7 +6,8 @@
 'use client';
 
 import { IconChartBar, IconChartPie, IconFlask, IconReportAnalytics } from '@tabler/icons-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslations } from 'next-intl';
+import { Panel, PanelEmpty } from '@/components/ui-extra/panel';
 import { CrystallinityCard } from '@/components/deviation/crystallinity-card';
 import { FractionEstimateCard } from '@/components/deviation/fraction-estimate-card';
 import { HypothesisCard } from '@/components/deviation/hypothesis-card';
@@ -21,22 +22,12 @@ interface DeviationPanelProps {
 }
 
 export function DeviationPanel({ deviation, unitLabel }: DeviationPanelProps) {
+  const t = useTranslations('deviation');
   if (!deviation) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2 text-base'>
-            <IconReportAnalytics className='h-4 w-4' aria-hidden='true' />
-            Deviation analysis
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className='text-sm text-muted-foreground'>
-            No deviation analysis available. The sample may not have a declared formula or
-            composition, or the analysis has not run yet.
-          </p>
-        </CardContent>
-      </Card>
+      <Panel title={t('panel.title')} icon={IconReportAnalytics}>
+        <PanelEmpty description={t('panel.emptyState')} title={t('panel.title')} />
+      </Panel>
     );
   }
 
@@ -44,32 +35,18 @@ export function DeviationPanel({ deviation, unitLabel }: DeviationPanelProps) {
   if (deviation.mode === 'multi-phase') {
     return (
       <div className='space-y-4'>
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2 text-base'>
-              <IconFlask className='h-4 w-4' aria-hidden='true' />
-              Multi-phase analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MultiPhaseTabs deviation={deviation} unitLabel={unitLabel} />
-          </CardContent>
-        </Card>
+        <Panel title={t('multiPhase.title')} icon={IconFlask}>
+          <MultiPhaseTabs deviation={deviation} unitLabel={unitLabel} />
+        </Panel>
 
         {deviation.fractionEstimates && deviation.fractionEstimates.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center gap-2 text-base'>
-                <IconChartPie className='h-4 w-4' aria-hidden='true' />
-                Phase fractions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
+          <Panel title={t('fraction.phaseFractions')} icon={IconChartPie}>
+            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'>
               {deviation.fractionEstimates.map((fe) => (
                 <FractionEstimateCard key={fe.formula} estimate={fe} />
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
         )}
 
         {deviation.rietveld && <RietveldResultCard rietveld={deviation.rietveld} />}
@@ -83,36 +60,27 @@ export function DeviationPanel({ deviation, unitLabel }: DeviationPanelProps) {
 
   return (
     <div className='space-y-4'>
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2 text-base'>
-            <IconReportAnalytics className='h-4 w-4' aria-hidden='true' />
-            Deviation analysis
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-4'>
+      <Panel title={t('panel.title')} icon={IconReportAnalytics}>
+        <div className='space-y-4'>
           {deviation.matchResult && (
             <MatchSummaryStats match={deviation.matchResult} unitLabel={unitLabel} />
           )}
 
           {deviation.crystallinity && <CrystallinityCard crystallinity={deviation.crystallinity} />}
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
       {sortedHypotheses.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2 text-base'>
-              <IconChartBar className='h-4 w-4' aria-hidden='true' />
-              Hypotheses ({sortedHypotheses.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-2'>
+        <Panel
+          title={t('hypothesis.hypothesesTitle', { count: sortedHypotheses.length })}
+          icon={IconChartBar}
+        >
+          <div className='space-y-2'>
             {sortedHypotheses.map((h) => (
               <HypothesisCard key={h.rule_id} hypothesis={h} />
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       )}
     </div>
   );

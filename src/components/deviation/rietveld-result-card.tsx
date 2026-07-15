@@ -13,9 +13,10 @@
 
 import { IconChartHistogram } from '@tabler/icons-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import { DifferencePlot } from '@/components/deviation/difference-plot';
 import { formatFormula } from '@/lib/utils/format-formula';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { RietveldResult } from '@/types/deviation-analysis';
 
@@ -45,28 +46,33 @@ function qualityFromRwp(rwp: number | null | undefined): {
 }
 
 export function RietveldResultCard({ rietveld }: RietveldResultCardProps) {
+  const t = useTranslations('deviation.rietveld');
   const quality = qualityFromRwp(rietveld.r_wp);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className='flex items-center gap-2 text-base'>
-          <IconChartHistogram className='h-4 w-4' aria-hidden='true' />
-          Rietveld refinement
-          <Badge variant='outline' className={cn('ml-2 text-xs', quality.className)}>
+    // R513: the badges report state, so they belong in the trailing slot, not
+    // inside the heading — a screen reader announcing "Rietveld refinement good
+    // not converged" as one name is the cost of packing them into an <h2>.
+    <Panel
+      title={t('title')}
+      icon={IconChartHistogram}
+      action={
+        <div className='flex shrink-0 items-center gap-2'>
+          <Badge variant='outline' className={cn('text-caption', quality.className)}>
             {quality.label}
           </Badge>
           {!rietveld.converged && (
             <Badge
               variant='outline'
-              className='text-xs bg-destructive/10 text-destructive border-destructive/30'
+              className='bg-destructive/10 text-destructive border-destructive/30 text-caption'
             >
-              not converged
+              {t('notConverged')}
             </Badge>
           )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className='space-y-4'>
+        </div>
+      }
+    >
+      <div className='space-y-4'>
         {/* Convergence + R-factors row */}
         <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm'>
           <div>
@@ -201,7 +207,7 @@ export function RietveldResultCard({ rietveld }: RietveldResultCardProps) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }

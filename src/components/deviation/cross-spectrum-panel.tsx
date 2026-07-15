@@ -21,7 +21,7 @@ import { ConfidenceMeter } from '@/components/deviation/confidence-meter';
 import { PhaseEvidenceCard } from '@/components/deviation/phase-evidence-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel, PanelEmpty } from '@/components/ui-extra/panel';
 import { useTranslations } from 'next-intl';
 import { DeviationSkeleton } from '@/components/deviation/deviation-skeleton';
 import { useCSIEResult } from '@/lib/firestore/queries/csie';
@@ -69,23 +69,20 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
 
   if (!result || result.status !== 'ok' || !result.consistency) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2 text-base'>
-            <IconNetwork className='h-4 w-4' aria-hidden='true' />
-            Cross-spectrum analysis
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-3'>
-          <p className='text-sm text-muted-foreground'>
-            {result?.status === 'insufficient_data' ? t('insufficientData') : t('noResult')}
-          </p>
-          <Button onClick={handleRefresh} variant='outline' size='sm' disabled={refreshing}>
-            <IconRefresh className='h-4 w-4 mr-1' aria-hidden='true' />
-            {refreshing ? t('computing') : t('runNow')}
-          </Button>
-        </CardContent>
-      </Card>
+      <Panel title={t('title')} icon={IconNetwork}>
+        <PanelEmpty
+          title={t('title')}
+          description={
+            result?.status === 'insufficient_data' ? t('insufficientData') : t('noResult')
+          }
+          action={
+            <Button onClick={handleRefresh} variant='outline' size='sm' disabled={refreshing}>
+              <IconRefresh className='mr-1 h-4 w-4' aria-hidden='true' />
+              {refreshing ? t('computing') : t('runNow')}
+            </Button>
+          }
+        />
+      </Panel>
     );
   }
 
@@ -94,24 +91,23 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
 
   return (
     <div className='space-y-4'>
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2 text-base'>
-            <IconNetwork className='h-4 w-4' aria-hidden='true' />
-            Cross-spectrum analysis
-            <Button
-              onClick={handleRefresh}
-              variant='ghost'
-              size='sm'
-              disabled={refreshing}
-              className='ml-auto h-8 px-2'
-              aria-label={t('refreshAria')}
-            >
-              <IconRefresh className='h-3.5 w-3.5' aria-hidden='true' />
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-4'>
+      <Panel
+        title={t('title')}
+        icon={IconNetwork}
+        action={
+          <Button
+            onClick={handleRefresh}
+            variant='ghost'
+            size='sm'
+            disabled={refreshing}
+            className='h-8 shrink-0 px-2'
+            aria-label={t('refreshAria')}
+          >
+            <IconRefresh className='h-3.5 w-3.5' aria-hidden='true' />
+          </Button>
+        }
+      >
+        <div className='space-y-4'>
           <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm'>
             <div>
               <p className='text-xs text-muted-foreground'>Spectra analyzed</p>
@@ -159,38 +155,27 @@ export function CrossSpectrumPanel({ sampleId }: CrossSpectrumPanelProps) {
               </ul>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
       {c.declared_phases.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className='text-base'>
-              {t('phaseConsistency', { count: c.declared_phases.length })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-3'>
+        <Panel title={t('phaseConsistency', { count: c.declared_phases.length })}>
+          <div className='space-y-3'>
             {c.declared_phases.map((p) => (
               <PhaseEvidenceCard key={p.formula} evidence={p} />
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       )}
 
       {ambiguous.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className='text-base flex items-center gap-2'>
-              <IconAlertTriangle className='h-4 w-4 text-amber-500' aria-hidden='true' />
-              {tAmb('title', { count: ambiguous.length })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-3'>
+        <Panel title={tAmb('title', { count: ambiguous.length })} icon={IconAlertTriangle}>
+          <div className='space-y-3'>
             {ambiguous.map((amb) => (
               <AmbiguousObservationCard key={amb.observation_id} observation={amb} />
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       )}
     </div>
   );

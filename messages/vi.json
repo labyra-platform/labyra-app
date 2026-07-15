@@ -1543,7 +1543,7 @@
       "lotNumber": "Số lô",
       "quantity": "Số lượng",
       "unit": "Đơn vị",
-      "state": "Trạng thái vật lý",
+      "state": "Trạng thái",
       "reorderThreshold": "Ngưỡng đặt lại",
       "location": "Vị trí",
       "storageConditions": "Điều kiện bảo quản",
@@ -1552,7 +1552,22 @@
       "update": "Đã cập nhật hóa chất",
       "casNotFound": "Không tìm thấy CAS trong PubChem — nhập thủ công.",
       "cancel": "Hủy",
-      "saving": "Đang lưu…"
+      "saving": "Đang lưu…",
+      "sectionIdentity": "Thông tin định danh",
+      "sectionSafety": "Đặc tính & an toàn",
+      "sectionInventory": "Quản lý kho",
+      "createAction": "Thêm hóa chất",
+      "updateAction": "Lưu thay đổi",
+      "codePlaceholder": "HC-001",
+      "quantityPlaceholder": "Nhập số lượng…",
+      "storagePlaceholder": "VD: 2–8 °C, giữ khô, tránh ánh sáng",
+      "lookupSuccess": "Đã tự động điền từ PubChem",
+      "lookupFailed": "Tra cứu thất bại",
+      "states": {
+        "solid": "Rắn",
+        "liquid": "Lỏng",
+        "gas": "Khí"
+      }
     },
     "detail": {
       "consume": "Tiêu hao",

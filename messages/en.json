@@ -1551,7 +1551,22 @@
       "update": "Chemical updated",
       "casNotFound": "CAS not found in PubChem — enter details manually.",
       "cancel": "Cancel",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "sectionIdentity": "Identification",
+      "sectionSafety": "Properties & safety",
+      "sectionInventory": "Inventory",
+      "createAction": "Add chemical",
+      "updateAction": "Save changes",
+      "codePlaceholder": "HC-001",
+      "quantityPlaceholder": "Enter quantity…",
+      "storagePlaceholder": "e.g. 2–8 °C, keep dry, away from light",
+      "lookupSuccess": "Auto-filled from PubChem",
+      "lookupFailed": "Lookup failed",
+      "states": {
+        "solid": "Solid",
+        "liquid": "Liquid",
+        "gas": "Gas"
+      }
     },
     "detail": {
       "consume": "Consume",

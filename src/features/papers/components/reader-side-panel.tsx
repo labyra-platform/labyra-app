@@ -44,6 +44,7 @@ import {
 import { formatSciNode, formatSciText } from '@/features/spectra/utils/format-units';
 import { cn } from '@/lib/utils';
 import { PanelSplitter } from '@/features/papers/components/panel-splitter';
+import { authedFetch } from '@/lib/api/authed-fetch';
 import { useSelectionActionStore } from '@/features/papers/stores/selection-action-store';
 import {
   clampPanel,
@@ -438,7 +439,52 @@ function InfoTab({
   pretranslation: Pretranslation | null;
 }) {
   const t = useTranslations('papers');
+  const locale = useLocale();
   const [showOriginalAbstract, setShowOriginalAbstract] = useState(false);
+
+  /**
+   * R550: translate the abstract on demand when nothing pre-translated it.
+   *
+   * The machinery was already here — /api/papers/[id]/translate has served the
+   * selection tool all along — and the reader simply never asked. When the
+   * ingest step skipped a paper (R549: it refused anything over 50 pages) the
+   * abstract fell back to English in silence, which reads exactly like a
+   * feature that does not exist.
+   *
+   * On demand, not on open: an abstract nobody scrolls to is a model call
+   * nobody wanted, and the button says what it will do before it does it.
+   */
+  const [onDemandAbstract, setOnDemandAbstract] = useState<string | null>(null);
+  const [translatingAbstract, setTranslatingAbstract] = useState(false);
+  const [abstractTranslateFailed, setAbstractTranslateFailed] = useState(false);
+
+  const abstractSource = paper.abstract ?? '';
+  const abstractTranslated = pretranslation?.abstract ?? onDemandAbstract;
+
+  const translateAbstract = useCallback(async () => {
+    if (!abstractSource || translatingAbstract) return;
+    setTranslatingAbstract(true);
+    setAbstractTranslateFailed(false);
+    try {
+      const res = await authedFetch(`/api/papers/${paper.id}/translate`, {
+        method: 'POST',
+        body: JSON.stringify({ text: abstractSource, targetLang: locale })
+      });
+      if (!res.ok) throw new Error('translate_failed');
+      // The route streams a live translation and returns JSON on a cache hit.
+      setOnDemandAbstract(
+        res.headers.get('X-Translate-Stream') === '1'
+          ? await res.text()
+          : ((await res.json()) as { translation: string }).translation
+      );
+      setShowOriginalAbstract(false);
+    } catch {
+      // Surfaced, not swallowed — a silent failure here is the bug being fixed.
+      setAbstractTranslateFailed(true);
+    } finally {
+      setTranslatingAbstract(false);
+    }
+  }, [paper.id, abstractSource, locale, translatingAbstract]);
   const authorLine = formatAuthors(paper.authors);
   const journal = paper.journalShort || paper.journal || null;
   const metaParts: string[] = [];
@@ -522,13 +568,13 @@ function InfoTab({
         </div>
       )}
 
-      {(paper.abstract || pretranslation?.abstract) && (
+      {(abstractSource || abstractTranslated) && (
         <div className='space-y-1'>
           <div className='flex items-center justify-between gap-2'>
             <h2 className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
               {t('abstract')}
             </h2>
-            {paper.abstract && pretranslation?.abstract && (
+            {abstractSource && abstractTranslated ? (
               <button
                 type='button'
                 onClick={() => setShowOriginalAbstract((v) => !v)}
@@ -536,6 +582,17 @@ function InfoTab({
               >
                 {showOriginalAbstract ? t('showTranslation') : t('showOriginal')}
               </button>
+            ) : (
+              abstractSource && (
+                <button
+                  type='button'
+                  disabled={translatingAbstract}
+                  onClick={() => void translateAbstract()}
+                  className='text-meta text-primary transition-colors hover:underline disabled:opacity-60'
+                >
+                  {translatingAbstract ? t('translating') : t('translateAbstract')}
+                </button>
+              )
             )}
           </div>
           {/* R548: through formatSciNode, like the title above it. The title
@@ -549,11 +606,13 @@ function InfoTab({
               stay literal so identifiers do not get bent into formulas. */}
           <p className='text-sm leading-relaxed text-foreground/90'>
             {formatSciNode(
-              (showOriginalAbstract || !pretranslation?.abstract
-                ? paper.abstract
-                : pretranslation.abstract) ?? ''
+              (showOriginalAbstract || !abstractTranslated ? abstractSource : abstractTranslated) ??
+                ''
             )}
           </p>
+          {abstractTranslateFailed && (
+            <p className='text-meta text-destructive'>{t('translateFailed')}</p>
+          )}
         </div>
       )}
 

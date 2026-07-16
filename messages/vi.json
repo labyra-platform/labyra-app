@@ -765,7 +765,10 @@
     "selectionTranslate": "Dịch",
     "selectionSearch": "Tìm trên web",
     "selectionHighlight": "Tô màu",
-    "selectionHighlightColor": "Tô màu {color}"
+    "selectionHighlightColor": "Tô màu {color}",
+    "translateAbstract": "Dịch",
+    "translating": "Đang dịch…",
+    "translateFailed": "Không dịch được — thử lại"
   },
   "collections": {
     "title": "Bộ sưu tập",

@@ -764,7 +764,10 @@
     "selectionTranslate": "Translate",
     "selectionSearch": "Search the web",
     "selectionHighlight": "Highlight",
-    "selectionHighlightColor": "Highlight {color}"
+    "selectionHighlightColor": "Highlight {color}",
+    "translateAbstract": "Translate",
+    "translating": "Translating…",
+    "translateFailed": "Couldn't translate — try again"
   },
   "collections": {
     "title": "Collections",

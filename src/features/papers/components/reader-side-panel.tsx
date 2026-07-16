@@ -253,7 +253,10 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
             onClick={togglePanel}
             aria-label={t('panelExpand')}
             title={t('panelExpand')}
-            className='text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 items-center justify-center rounded-md transition-colors'
+            // Matches the collapse control it replaces — same corner, same
+            // weight, opposite arrow. A way back in that looks different from
+            // the way out reads as a different thing.
+            className='border-border bg-background text-muted-foreground hover:border-primary hover:text-primary flex size-7 items-center justify-center rounded-md border shadow-sm transition-colors'
           >
             <IconChevronRight className='size-4 rotate-180' />
           </button>
@@ -285,7 +288,11 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
               onClick={togglePanel}
               aria-label={t('panelCollapse')}
               title={t('panelCollapse')}
-              className='text-muted-foreground hover:bg-muted hover:text-foreground flex w-7 shrink-0 items-center justify-center rounded-md transition-colors'
+              // R538: a border and a surface. It was a bare grey glyph beside a
+              // tinted tab strip, so the only control that changes the shape of
+              // the reader looked like decoration — and after R530 it is the
+              // only way to close the panel at all.
+              className='border-border bg-background text-muted-foreground hover:border-primary hover:text-primary flex w-7 shrink-0 items-center justify-center rounded-md border transition-colors'
             >
               <IconChevronRight className='size-4' />
             </button>

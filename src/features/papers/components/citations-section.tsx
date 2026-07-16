@@ -464,6 +464,8 @@ function SupplementaryInfo({ paperId, paper }: { paperId: string; paper: Paper }
         )}
       </div>
 
+      <SiFiles paperId={paperId} />
+
       {current && !editing ? (
         <a
           href={current}
@@ -509,7 +511,6 @@ function SupplementaryInfo({ paperId, paper }: { paperId: string; paper: Paper }
           </div>
         </div>
       )}
-      <SiFiles paperId={paperId} />
     </div>
   );
 }

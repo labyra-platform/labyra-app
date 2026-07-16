@@ -681,7 +681,11 @@ function AssistantBubble({
             '[&_b]:font-semibold',
             '[&_i]:italic',
             '[&_.katex]:mx-0.5',
-            '[&_.ask-cite-btn]:mx-[1.5px] [&_.ask-cite-btn]:-translate-y-1 [&_.ask-cite-btn]:align-top',
+            // R538: -translate-y-0.5, was -1. A 14px chip lifted a full 4px off
+            // a 14px line box clears the ascenders and starts reading as part of
+            // the line above. Half that still marks it as a superscript and
+            // keeps it inside its own line.
+            '[&_.ask-cite-btn]:mx-[1.5px] [&_.ask-cite-btn]:-translate-y-0.5 [&_.ask-cite-btn]:align-top',
             '[&_.ask-cite-btn]:inline-flex [&_.ask-cite-btn]:items-center [&_.ask-cite-btn]:justify-center',
             '[&_.ask-cite-btn]:h-[14px] [&_.ask-cite-btn]:min-w-[14px] [&_.ask-cite-btn]:rounded-full [&_.ask-cite-btn]:px-[3px]',
             '[&_.ask-cite-btn]:bg-primary [&_.ask-cite-btn]:text-primary-foreground',

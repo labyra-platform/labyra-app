@@ -140,10 +140,26 @@ export function citeMarkItem(str: string, phrase: string): string {
   const np = normForMatch(phrase);
   if (ns.length < 4 || np.length < 4) return escapeHtml(str);
 
-  const wrap = (from: number, to: number) =>
-    escapeHtml(str.slice(0, from)) +
-    `<mark class="pcm">${escapeHtml(str.slice(from, to))}</mark>` +
-    escapeHtml(str.slice(to));
+  /**
+   * Snap to word edges, then wrap.
+   *
+   * R544: chunk boundaries do not respect words. A chunk beginning "culations
+   * involving supercells…" is a real chunk — the chunker cut "calculations" in
+   * half — and marking exactly that leaves the reader looking at `ca⟦lculations⟧`
+   * and wondering what the highlighter is trying to say. The phrase decides
+   * *which* passage; the page decides where its words begin and end.
+   */
+  const wrap = (rawFrom: number, rawTo: number) => {
+    let from = rawFrom;
+    let to = rawTo;
+    while (from > 0 && /[\p{L}\p{N}]/u.test(str[from - 1])) from -= 1;
+    while (to < str.length && /[\p{L}\p{N}]/u.test(str[to])) to += 1;
+    return (
+      escapeHtml(str.slice(0, from)) +
+      `<mark class="pcm">${escapeHtml(str.slice(from, to))}</mark>` +
+      escapeHtml(str.slice(to))
+    );
+  };
 
   // Whole item lies inside the quote.
   if (np.includes(ns)) return `<mark class="pcm">${escapeHtml(str)}</mark>`;

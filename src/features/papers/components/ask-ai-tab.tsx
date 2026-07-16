@@ -50,11 +50,20 @@ import {
  * within one line/item and are enough to draw the eye to the cited passage.
  */
 function citationPhrase(snippet: string): string {
-  // A contiguous run of plain-prose words from the cited chunk, used to flash the
-  // cited text in the PDF. cleanSnippet strips LaTeX/HTML; we then skip formula
-  // residue (digits, subscripts) so the phrase is prose that matches the PDF text
-  // layer verbatim — highlightItemClass needs an exact substring within one item,
-  // and a phrase carrying "WO_3"/"E_g" never matches "WO₃"/"E_g" as rendered.
+  // A contiguous run of plain prose from the cited chunk, used to flash the
+  // cited text in the PDF. cleanSnippet strips LaTeX/HTML; formula residue
+  // (digits, subscripts) is skipped because a phrase carrying "WO_3"/"E_g"
+  // never matches "WO₃"/"E_g" as the text layer renders it.
+  //
+  // R544: no 6-word cap and no 48-character slice.
+  //
+  // Those two lines were the clipped highlight, and R540 fixed the wrong end of
+  // it. `.slice(0, 48)` cut "culations involving supercells with different
+  // volumes" (53 chars) down to "...with different vol" — mid-word, at a
+  // character count — and citeMarkItem then marked exactly that, faithfully.
+  // The caps existed because the old marker needed the phrase to sit inside one
+  // text item; R540 made it span items, so the reason is gone and the limit
+  // outlived it.
   const words = cleanSnippet(snippet).split(' ');
   const prose: string[] = [];
   for (const w of words) {
@@ -64,9 +73,8 @@ function citationPhrase(snippet: string): string {
       continue;
     }
     prose.push(w);
-    if (prose.length >= 6) break;
   }
-  return prose.join(' ').slice(0, 48).trim();
+  return prose.join(' ').trim();
 }
 
 /**

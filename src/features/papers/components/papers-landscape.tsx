@@ -87,45 +87,64 @@ export function PapersLandscape({ papers }: { papers: Paper[] }) {
               {t('landscapeNoData')}
             </p>
           ) : (
-            /* R534: h, not max-h. This pie vanished when its parent became a
-               Panel. `mx-auto` sets auto inline margins, which on a flex item
-               cancel align-items:stretch — the container collapsed to
-               fit-content, its ResponsiveContainer asked for 100% of nothing,
-               and aspect-square squared zero. Under CardContent (a block) the
-               same classes filled the parent and worked, so nothing in the
-               migration looked wrong and nothing could catch it: the class is
-               valid and the build compiles. A definite height makes the size
-               come from the element rather than from what its parent happens to
-               be this month. */
-            <ChartContainer config={chartConfig} className='mx-auto aspect-square h-[260px]'>
-              <PieChart>
-                <ChartTooltip content={<ChartTooltipContent nameKey='name' />} />
-                <Pie data={fields} dataKey='count' nameKey='name' innerRadius={45} paddingAngle={3}>
-                  {fields.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                  <LabelList
+            /* R551: chart and legend are one row. The legend used to sit under
+               the ring as a wrapped, centred row — six fields wrapped onto two
+               lines, and the height those lines added pushed the year chart in
+               the card below far enough down that its axis fell off the bottom.
+               Beside the ring the same six cost nothing: it is 240px tall and
+               the space to its right was empty. */
+            <div className='flex items-center gap-4'>
+              {/* R534: h, not max-h. This pie vanished when its parent became a
+                  Panel — `mx-auto` sets auto inline margins, which on a flex
+                  item cancel align-items:stretch, so the container collapsed to
+                  fit-content and aspect-square squared zero. A definite height
+                  makes the size come from the element rather than from whatever
+                  its parent happens to be this month. */}
+              <ChartContainer config={chartConfig} className='aspect-square h-[240px] shrink-0'>
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent nameKey='name' />} />
+                  {/* cornerRadius was never in this file — I checked the history
+                    rather than claim to restore it — but shadcn's pie example
+                    carries it and it does real work: with paddingAngle already
+                    parting the slices, rounded ends stop the 1-count slivers
+                    reading as tick marks on the ring. */}
+                  <Pie
+                    data={fields}
                     dataKey='count'
-                    stroke='none'
-                    fontSize={11}
-                    fill='currentColor'
-                    formatter={(v: number) => v.toString()}
-                  />
-                </Pie>
-              </PieChart>
-            </ChartContainer>
+                    nameKey='name'
+                    innerRadius={45}
+                    paddingAngle={3}
+                    cornerRadius={4}
+                  >
+                    {fields.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                    <LabelList
+                      dataKey='count'
+                      stroke='none'
+                      fontSize={11}
+                      fill='currentColor'
+                      formatter={(v: number) => v.toString()}
+                    />
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+
+              <ul className='min-w-0 flex-1 space-y-1'>
+                {fields.map((f, i) => (
+                  <li key={f.name} className='flex items-center gap-2'>
+                    <span
+                      className='size-2.5 shrink-0 rounded-full'
+                      style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                      aria-hidden='true'
+                    />
+                    <span className='text-body min-w-0 flex-1 truncate'>{f.name}</span>
+                    <span className='text-muted-foreground text-meta tabular-nums'>{f.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-          <div className='mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1'>
-            {fields.map((f, i) => (
-              <span key={f.name} className='inline-flex items-center gap-1.5 text-xs'>
-                <span
-                  className='size-2.5 rounded-full'
-                  style={{ backgroundColor: COLORS[i % COLORS.length] }}
-                />
-                {f.name} ({f.count})
-              </span>
-            ))}
-          </div>
         </Panel>
 
         {/* Publisher — horizontal bar */}

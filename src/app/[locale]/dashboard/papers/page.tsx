@@ -13,7 +13,7 @@ export async function generateMetadata() {
 export default async function PapersListPage() {
   const t = await getTranslations('papers');
   return (
-    <PageContainer>
+    <PageContainer fill>
       {/* R490: upload lives inline in the list toolbar row — no standalone row. */}
       <PapersLibraryView
         action={

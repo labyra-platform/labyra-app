@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import type React from 'react';
 import type { InfobarContent } from '@/components/ui/infobar';
 import { Heading } from '../ui/heading';
@@ -25,9 +26,17 @@ export default function PageContainer({
   pageTitle,
   pageDescription,
   infoContent,
-  pageHeaderAction
+  pageHeaderAction,
+  fill = false
 }: {
   children: React.ReactNode;
+  /**
+   * R536: opt-in. Adds `min-h-0` so this container can shrink below its
+   * content, which is what lets a child own the scroll instead of the page.
+   * Off by default and deliberately so — every page renders through here, and
+   * min-h-0 on a page that expects to grow would clip it. A page asks.
+   */
+  fill?: boolean;
   isLoading?: boolean;
   access?: boolean;
   accessFallback?: React.ReactNode;
@@ -56,7 +65,7 @@ export default function PageContainer({
     // R510: no top padding. The app header already sits directly above with
     // its own border; pt-2/pt-3 added a second, arbitrary gap on every page —
     // spacing that encodes no relationship, which is the one thing §1 forbids.
-    <div className='flex flex-1 flex-col px-4 pb-4 md:px-6'>
+    <div className={cn('flex flex-1 flex-col px-4 pb-4 md:px-6', fill && 'min-h-0')}>
       {hasHeader && (
         <div className='mb-4 flex items-start justify-between gap-4'>
           <Heading

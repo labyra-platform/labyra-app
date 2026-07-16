@@ -31,6 +31,8 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
 
   const routePaperId = paperIdFromPath(pathname);
   const onReader = routePaperId !== null;
+  /** The library list, and only it — /papers, not /papers/upload. */
+  const onList = /\/papers\/?$/.test(pathname);
   const hasTabs = tabs.length > 0;
   const chromeCollapsed = useReaderChromeStore((s) => s.collapsed);
   const setChromeCollapsed = useReaderChromeStore((s) => s.setCollapsed);
@@ -95,7 +97,19 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
             nothing, but this encodes something — the strip and the toolbar are
             different objects, and butted together they read as one control
             group that happens to be two rows. The gap is the boundary. */}
-        <div className={cn('h-full min-h-0 overflow-auto pt-3', onReader && 'hidden')}>
+        {/* R536: the list route owns its own scroll; everything else keeps the
+            page scroll it has always had. /papers/upload is a tall form that
+            must be able to grow — flipping overflow for every route under this
+            shell would have trapped it in a viewport-height box with no way
+            down. So the shell asks which route it is, exactly as it already
+            does for the reader. */}
+        <div
+          className={cn(
+            'h-full min-h-0 pt-3',
+            onReader && 'hidden',
+            onList ? 'flex flex-col overflow-hidden' : 'overflow-auto'
+          )}
+        >
           {children}
         </div>
 

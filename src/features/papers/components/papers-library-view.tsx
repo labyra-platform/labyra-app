@@ -42,21 +42,18 @@ export function PapersLibraryView({ action }: { action?: React.ReactNode }) {
   }, [selection, collections, favoriteIds]);
 
   return (
-    <div className='flex gap-4'>
+    <div className='flex min-h-0 flex-1 gap-4'>
       <aside className='hidden w-56 shrink-0 md:block'>
-        {/* R527: top-0, and the top edges line up.
-            R526 stuck this at --app-header-h and made it worse, because the
-            header is `sticky top-0` *in flow* — it already occupies its 56px
-            above this row, so adding that height again counted the header
-            twice and pushed the sidebar half a header below the toolbar it is
-            supposed to line up with. There is no scroll container between here
-            and the document, so top-0 means "the top of this column", which is
-            exactly where the view toggle starts. */}
-        <div className='sticky top-0 h-[calc(100vh-var(--app-header-h)-2rem)]'>
+        {/* R536: no sticky, no 100vh arithmetic. The column is now inside a
+            fixed-height row, so h-full *is* the viewport height minus whatever
+            is above — measured by the layout instead of guessed by me. R526 and
+            R527 were both attempts to guess that number; neither needed to
+            exist. */}
+        <div className='h-full'>
           <CollectionSidebar selection={selection} onSelect={setSelection} />
         </div>
       </aside>
-      <div className='min-w-0 flex-1'>
+      <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
         <PaperList collectionFilter={collectionFilter} headerAction={action} />
       </div>
     </div>

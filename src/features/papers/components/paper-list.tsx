@@ -456,192 +456,211 @@ export function PaperList({
     });
 
   return (
-    <div className='space-y-3'>
-      {toggleRow}
-      <PaperFilterPanel
-        value={filter}
-        onChange={setFilter}
-        papers={papers}
-        visibleDomainSlugs={visibleSlugs}
-      />
+    // R536: the toolbar holds still and the list scrolls under it.
+    //
+    // The page owned the scroll, so the controls you use to change what you
+    // are looking at slid away as soon as you looked at it — 118 papers deep,
+    // changing a filter meant scrolling back up to find the filter. It also
+    // put the scrollbar on the page, where it costs the reader its width.
+    <div className='flex min-h-0 flex-1 flex-col'>
+      <div className='shrink-0 space-y-3'>
+        {toggleRow}
+        <PaperFilterPanel
+          value={filter}
+          onChange={setFilter}
+          papers={papers}
+          visibleDomainSlugs={visibleSlugs}
+        />
 
-      {/* R222: toolbar — sort + density toggle */}
-      <div className='flex items-center justify-between gap-2'>
-        <div className='flex items-center gap-2'>
-          <Checkbox checked={headerState} onCheckedChange={toggleAll} aria-label={t('selectAll')} />
-          <p className='text-xs text-muted-foreground'>
-            {hasFilter || collectionFilter !== null
-              ? t('filterShowing', { shown: filteredPapers.length, total: papers.length })
-              : t('paperCount', { count: papers.length })}
-          </p>
-          <CreateCollectionFromFilter paperIds={filteredPapers.map((p) => p.id)} filter={filter} />
-        </div>
-        <div className='flex items-center gap-1.5'>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type='button'
-                className='inline-flex w-32 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted/50'
+        {/* R222: toolbar — sort + density toggle */}
+        <div className='flex items-center justify-between gap-2'>
+          <div className='flex items-center gap-2'>
+            <Checkbox
+              checked={headerState}
+              onCheckedChange={toggleAll}
+              aria-label={t('selectAll')}
+            />
+            <p className='text-xs text-muted-foreground'>
+              {hasFilter || collectionFilter !== null
+                ? t('filterShowing', { shown: filteredPapers.length, total: papers.length })
+                : t('paperCount', { count: papers.length })}
+            </p>
+            <CreateCollectionFromFilter
+              paperIds={filteredPapers.map((p) => p.id)}
+              filter={filter}
+            />
+          </div>
+          <div className='flex items-center gap-1.5'>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type='button'
+                  className='inline-flex w-32 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs hover:bg-muted/50'
+                >
+                  <IconArrowsSort className='size-3.5' />
+                  {SORT_LABELS[sort]}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align='end'
+                className='w-[var(--radix-dropdown-menu-trigger-width)]'
               >
-                <IconArrowsSort className='size-3.5' />
-                {SORT_LABELS[sort]}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align='end'
-              className='w-[var(--radix-dropdown-menu-trigger-width)]'
-            >
-              {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
-                <DropdownMenuItem key={k} className='text-xs' onClick={() => setSort(k)}>
-                  {SORT_LABELS[k]}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {/* R500: scope + failed filters consolidated into one dropdown. */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type='button'
-                className={cn(
-                  'inline-flex w-32 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
-                  shareFilter || showFailedOnly
-                    ? 'border-primary/50 bg-primary/10 text-primary'
-                    : 'hover:bg-muted/50'
-                )}
-              >
-                <IconFilter className='size-3.5 shrink-0' />
-                {/* R519: no count badge. The button is a fixed w-32 and the
+                {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                  <DropdownMenuItem key={k} className='text-xs' onClick={() => setSort(k)}>
+                    {SORT_LABELS[k]}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {/* R500: scope + failed filters consolidated into one dropdown. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type='button'
+                  className={cn(
+                    'inline-flex w-32 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
+                    shareFilter || showFailedOnly
+                      ? 'border-primary/50 bg-primary/10 text-primary'
+                      : 'hover:bg-muted/50'
+                  )}
+                >
+                  <IconFilter className='size-3.5 shrink-0' />
+                  {/* R519: no count badge. The button is a fixed w-32 and the
                     badge pushed the label past it, wrapping 'Lọc nhanh' onto
                     two lines — a number nobody asked for, breaking the control
                     that carries it. There are two filters; the tinted active
                     state already says one is on, and the menu below says which. */}
-                {t('quickFilters')}
-                <IconChevronDown className='size-3 shrink-0 opacity-60' />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align='end'
-              className='w-[var(--radix-dropdown-menu-trigger-width)]'
-            >
-              <DropdownMenuCheckboxItem
-                className='text-xs'
-                checked={shareFilter === 'lab'}
-                onCheckedChange={(c) => setShareFilter(c ? 'lab' : null)}
+                  {t('quickFilters')}
+                  <IconChevronDown className='size-3 shrink-0 opacity-60' />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align='end'
+                className='w-[var(--radix-dropdown-menu-trigger-width)]'
               >
-                {t('filterLabShared')}
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                className='text-xs'
-                checked={shareFilter === 'group'}
-                onCheckedChange={(c) => setShareFilter(c ? 'group' : null)}
-              >
-                {t('filterGroupShared')}
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem
-                className='text-destructive focus:text-destructive text-xs'
-                checked={showFailedOnly}
-                onCheckedChange={(c) => setShowFailedOnly(Boolean(c))}
-              >
-                {t('filterFailed')}
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuCheckboxItem
+                  className='text-xs'
+                  checked={shareFilter === 'lab'}
+                  onCheckedChange={(c) => setShareFilter(c ? 'lab' : null)}
+                >
+                  {t('filterLabShared')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  className='text-xs'
+                  checked={shareFilter === 'group'}
+                  onCheckedChange={(c) => setShareFilter(c ? 'group' : null)}
+                >
+                  {t('filterGroupShared')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  className='text-destructive focus:text-destructive text-xs'
+                  checked={showFailedOnly}
+                  onCheckedChange={(c) => setShowFailedOnly(Boolean(c))}
+                >
+                  {t('filterFailed')}
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
-      {/* R324: bulk-action bar — appears when any visible paper is selected. */}
-      {someSelected && (
-        <div className='flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2'>
-          <span className='text-sm font-medium'>
-            {t('selectedCount', {
-              count: filteredPapers.filter((p) => selectedIds.has(p.id)).length
-            })}
-          </span>
-          <div className='flex items-center gap-2'>
-            <Button variant='ghost' size='sm' onClick={clearSelection}>
-              {t('clearSelection')}
-            </Button>
-            {collections.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant='outline' size='sm' disabled={bulkBusy}>
-                    <IconFolderPlus className='mr-1 size-4' />
-                    {t('addToCollection')}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align='end' className='max-h-72 overflow-y-auto'>
-                  {collections.map((c) => (
-                    <DropdownMenuItem key={c.id} onClick={() => void bulkAddToCollection(c.id)}>
-                      {c.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => void bulkReprocess()}
-              disabled={bulkBusy}
-            >
-              <IconRefresh className='mr-1 size-4' />
-              {t('reprocessSelected')}
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => void bulkShare()}
-              disabled={bulkBusy}
-            >
-              <IconUsersGroup className='mr-1 size-4' />
-              {t('shareSelected')}
-            </Button>
-            <Button
-              variant='destructive'
-              size='sm'
-              onClick={() => void bulkArchive()}
-              disabled={bulkBusy}
-            >
-              {bulkBusy ? (
-                <IconLoader2 className='mr-1 size-4 animate-spin' />
-              ) : (
-                <Icons.trash className='mr-1 size-4' />
+      {/* Everything below scrolls. lb-viewport reserves the gutter so filtering
+          to no results cannot change the column width (R525). */}
+      <div className='lb-viewport min-h-0 flex-1 space-y-3 overflow-y-auto pt-3'>
+        {/* R324: bulk-action bar — appears when any visible paper is selected. */}
+        {someSelected && (
+          <div className='flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2'>
+            <span className='text-sm font-medium'>
+              {t('selectedCount', {
+                count: filteredPapers.filter((p) => selectedIds.has(p.id)).length
+              })}
+            </span>
+            <div className='flex items-center gap-2'>
+              <Button variant='ghost' size='sm' onClick={clearSelection}>
+                {t('clearSelection')}
+              </Button>
+              {collections.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant='outline' size='sm' disabled={bulkBusy}>
+                      <IconFolderPlus className='mr-1 size-4' />
+                      {t('addToCollection')}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end' className='max-h-72 overflow-y-auto'>
+                    {collections.map((c) => (
+                      <DropdownMenuItem key={c.id} onClick={() => void bulkAddToCollection(c.id)}>
+                        {c.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
-              {t('archiveSelected')}
-            </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => void bulkReprocess()}
+                disabled={bulkBusy}
+              >
+                <IconRefresh className='mr-1 size-4' />
+                {t('reprocessSelected')}
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => void bulkShare()}
+                disabled={bulkBusy}
+              >
+                <IconUsersGroup className='mr-1 size-4' />
+                {t('shareSelected')}
+              </Button>
+              <Button
+                variant='destructive'
+                size='sm'
+                onClick={() => void bulkArchive()}
+                disabled={bulkBusy}
+              >
+                {bulkBusy ? (
+                  <IconLoader2 className='mr-1 size-4 animate-spin' />
+                ) : (
+                  <Icons.trash className='mr-1 size-4' />
+                )}
+                {t('archiveSelected')}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* @r179-2-hotfix1-applied: show info card when filter narrowed to 1 journal */}
-      {filter.journals.size === 1 &&
-        (() => {
-          const journalName = Array.from(filter.journals)[0];
-          const stats = aggregateJournalStats(papers).find((s) => s.name === journalName);
-          return stats ? <PaperJournalInfoCard stats={stats} /> : null;
-        })()}
+        {/* @r179-2-hotfix1-applied: show info card when filter narrowed to 1 journal */}
+        {filter.journals.size === 1 &&
+          (() => {
+            const journalName = Array.from(filter.journals)[0];
+            const stats = aggregateJournalStats(papers).find((s) => s.name === journalName);
+            return stats ? <PaperJournalInfoCard stats={stats} /> : null;
+          })()}
 
-      {filteredPapers.length === 0 ? (
-        <p className='text-center py-8 text-sm text-muted-foreground'>{t('filterNoMatches')}</p>
-      ) : (
-        <div className={cn(view === 'comfortable' ? 'space-y-2' : 'divide-y rounded-lg border')}>
-          {filteredPapers.map((paper) => (
-            <PaperRow
-              key={paper.id}
-              paper={paper}
-              locale={locale}
-              view={view}
-              selected={selectedIds.has(paper.id)}
-              onToggleSelect={toggleOne}
-              onDomainClick={toggleDomainFilter}
-              favorite={isFavorite(paper.id)}
-              onToggleFavorite={toggleFavorite}
-            />
-          ))}
-        </div>
-      )}
+        {filteredPapers.length === 0 ? (
+          <p className='text-center py-8 text-sm text-muted-foreground'>{t('filterNoMatches')}</p>
+        ) : (
+          <div className={cn(view === 'comfortable' ? 'space-y-2' : 'divide-y rounded-lg border')}>
+            {filteredPapers.map((paper) => (
+              <PaperRow
+                key={paper.id}
+                paper={paper}
+                locale={locale}
+                view={view}
+                selected={selectedIds.has(paper.id)}
+                onToggleSelect={toggleOne}
+                onDomainClick={toggleDomainFilter}
+                favorite={isFavorite(paper.id)}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

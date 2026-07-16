@@ -265,13 +265,17 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
               and a separator that also closed things would be two controls
               wearing one hit area — drag it slightly and you would lose the
               panel instead of resizing it. */}
-          <div className='flex shrink-0 items-center gap-1 px-2 pt-2 pb-1'>
+          {/* R532: items-stretch, not items-center. A size-7 button centred
+              beside a 40px tab strip sits 6px low — §13's "alignment is a
+              coincidence", written four rounds ago and repeated here. The row
+              is one height and both children fill it. */}
+          <div className='flex shrink-0 items-stretch gap-1 px-2 pt-2 pb-1'>
             <button
               type='button'
               onClick={togglePanel}
               aria-label={t('panelCollapse')}
               title={t('panelCollapse')}
-              className='text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 shrink-0 items-center justify-center rounded-md transition-colors'
+              className='text-muted-foreground hover:bg-muted hover:text-foreground flex w-7 shrink-0 items-center justify-center rounded-md transition-colors'
             >
               <IconChevronRight className='size-4' />
             </button>

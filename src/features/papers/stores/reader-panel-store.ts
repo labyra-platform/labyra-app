@@ -16,26 +16,35 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-/** Below this the panel cannot hold an answer with citations — see paper-ai-panel.md §2. */
-export const PANEL_MIN = 280;
-export const PANEL_DEFAULT = 320;
+/**
+ * The width the panel has always been. It is the floor, not the default.
+ *
+ * paper-ai-panel.md §2 proposed 280, and R530 took it. That was wrong for this
+ * app: 384px is what an answer with citations has been laid out for since the
+ * panel existed, and letting it go narrower does not give anyone a better
+ * panel — it gives them a broken one. The width people want to change is
+ * upward.
+ */
+export const PANEL_MIN = 384;
+export const PANEL_DEFAULT = 384;
 
 /**
- * The reader gets a floor rather than the panel getting a ceiling.
+ * The reader's own floor, read out of the viewer rather than invented.
  *
- * paper-ai-panel.md §2 caps the panel at 60% of the split, and §5 immediately
- * doubts it: on a 1280 laptop that leaves the reader 512px, which will not hold
- * a two-column paper — and this library is full of them (Angew, Adv Funct
- * Mater). The constraint is really about the reader, so it is stated from the
- * reader's side. Both still apply: the floor binds on a laptop, the 60% binds
- * on a large monitor, and neither lets the other be violated.
+ * `pdf-viewer.tsx` computes `pageWidth = max(320, containerWidth - 32) * zoom`.
+ * The page fills the reader, so there is no empty margin for the panel to eat —
+ * but the 320 is a hard stop: past it the page cannot shrink any further. That
+ * is what "drag until the panel reaches the page's right edge" resolves to, and
+ * it is a real constraint with a real source, unlike the 640 I picked in R530
+ * and the 60% the mockup notes proposed. Both are gone.
+ *
+ * If the viewer's padding or floor changes, this must change with it — the two
+ * numbers describe the same edge.
  */
-export const READER_FLOOR = 640;
+const READER_MIN = 320 + 32;
 
 export function panelMax(containerWidth: number): number {
-  const byRatio = containerWidth * 0.6;
-  const byFloor = containerWidth - READER_FLOOR;
-  return Math.max(PANEL_MIN, Math.min(byRatio, byFloor));
+  return Math.max(PANEL_MIN, containerWidth - READER_MIN);
 }
 
 export function clampPanel(width: number, containerWidth: number): number {

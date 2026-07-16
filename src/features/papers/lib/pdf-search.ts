@@ -161,8 +161,34 @@ export function citeMarkItem(str: string, phrase: string): string {
     );
   };
 
-  // Whole item lies inside the quote.
-  if (np.includes(ns)) return `<mark class="pcm">${escapeHtml(str)}</mark>`;
+  /**
+   * Whole item lies inside the quote.
+   *
+   * R553: only when the item is long enough for that to mean anything.
+   *
+   * `np.includes(ns)` reads as a claim about position, and for a line of text it
+   * is one. For a *word* it collapses into "does this word appear anywhere in
+   * the passage" — and PDF.js hands out justified text one word per item all the
+   * time. So "active" and "conductivity" lit up in the middle of sentences that
+   * were never cited, because those words happen to occur somewhere inside a
+   * long quote. The old `ns.length < 4` guard let every one of them through:
+   * there is no scientific vocabulary under four characters.
+   *
+   * R544 made it worse. Dropping the 48-character cap on the phrase was right —
+   * it was clipping real highlights — but it also made `np` tens of times
+   * longer, and a longer haystack contains any given short word far more often.
+   * I fixed one end of this feature and inflated a fault on the line above it.
+   *
+   * 24 characters is the shortest run where a match is about *where* rather than
+   * *whether*: longer than any single word in this corpus, shorter than a line
+   * of a two-column paper. Below it, the edge-overlap branches below still catch
+   * the item if it genuinely borders the passage — those anchor on the phrase's
+   * start or end, so they cannot fire on a word from the middle.
+   */
+  const MIN_CONTAINED = 24;
+  if (ns.length >= MIN_CONTAINED && np.includes(ns)) {
+    return `<mark class="pcm">${escapeHtml(str)}</mark>`;
+  }
 
   // Quote lies inside this item.
   const inner = ns.indexOf(np);

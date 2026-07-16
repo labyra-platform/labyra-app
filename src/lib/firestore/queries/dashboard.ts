@@ -49,6 +49,8 @@ export interface KpiSummary {
   activeSamples: number;
   equipmentInUse: number;
   experimentsThisWeek: number;
+  /** Papers between upload and indexed — see PAPER_IN_FLIGHT. */
+  papersProcessing: number;
   isLoading: boolean;
 }
 
@@ -73,6 +75,27 @@ interface EquipmentDoc {
   status: 'available' | 'in-use' | 'maintenance';
 }
 
+/**
+ * R533: the states a paper passes through between upload and usable.
+ * `indexed` / `failed` / `cancelled` / `duplicate` are終 states — a paper there
+ * is not being worked on. Everything else is in flight, which is what the strip
+ * reports: "how many are still becoming answerable".
+ */
+const PAPER_IN_FLIGHT = new Set([
+  'queued',
+  'ocr',
+  'chunking',
+  'enriching',
+  'embedding',
+  'indexing',
+  'extracting_citations',
+  'cancelling'
+]);
+
+interface PaperStatusDoc {
+  status?: string;
+}
+
 interface ChemicalDoc {
   name: string;
   ghsHazards?: string[]; // GHS pictogram codes
@@ -87,11 +110,13 @@ export function useKpiSummary(): KpiSummary {
   const equipment = useTenantCollection<EquipmentDoc>({
     collection: 'equipment'
   });
+  const papers = useTenantCollection<PaperStatusDoc>({ collection: 'papers' });
 
   return useMemo(() => {
     const expData = experiments.data ?? [];
     const sampleData = samples.data ?? [];
     const eqData = equipment.data ?? [];
+    const paperData = papers.data ?? [];
 
     // "This week" = startedAt within last 7 days
     const weekAgoSec = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
@@ -103,7 +128,9 @@ export function useKpiSummary(): KpiSummary {
       experimentsThisWeek: expData.filter(
         (d) => d.data.startedAt && d.data.startedAt.seconds >= weekAgoSec
       ).length,
-      isLoading: experiments.isLoading || samples.isLoading || equipment.isLoading
+      papersProcessing: paperData.filter((d) => PAPER_IN_FLIGHT.has(d.data.status ?? '')).length,
+      isLoading:
+        experiments.isLoading || samples.isLoading || equipment.isLoading || papers.isLoading
     };
   }, [
     experiments.data,
@@ -111,7 +138,9 @@ export function useKpiSummary(): KpiSummary {
     samples.data,
     samples.isLoading,
     equipment.data,
-    equipment.isLoading
+    equipment.isLoading,
+    papers.data,
+    papers.isLoading
   ]);
 }
 

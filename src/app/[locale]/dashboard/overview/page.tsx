@@ -16,6 +16,7 @@ import { EquipmentBoard } from '@/features/overview/components/equipment-board';
 import { GhsCard } from '@/features/overview/components/ghs-card';
 import { GroupMembersCard } from '@/features/overview/components/group-members-card';
 import { KpiStrip } from '@/features/overview/components/kpi-strip';
+import { ProjectsCard } from '@/features/overview/components/projects-card';
 
 export default async function OverviewPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -24,18 +25,44 @@ export default async function OverviewPage({ params }: { params: Promise<{ local
       <div className='flex flex-1 flex-col gap-4'>
         <DashboardHeader locale={locale} />
         <KpiStrip />
-        {/* §11: one ratio, repeated — 1.75fr/1fr, with minmax(0,1fr) so a long
-            run name can't blow out the column (grid defaults to min-width:auto). */}
-        <div className='grid gap-4 lg:grid-cols-[1.75fr_minmax(0,1fr)]'>
-          <AttentionCard />
-          <GroupMembersCard />
+        {/* R533: one 6-column grid, not four stacked ones.
+            Six because the last row is 1:1 and the rows above are thirds —
+            3 cannot express a half, 6 expresses both. Each card's span is
+            argued from its content, not from what fits:
+
+              attention · members     2 · 2 · 2   thirds
+              board 4 | GHS 2         a timeline needs the run; a 3x3 grid of
+                                      pictograms wants to stay square
+              activity 3 | DFT 3      1:1 — a heatmap of 30 days and a list of
+                                      long run names both need the width
+
+            Below lg it stacks in DOM order, so the reading order (problems
+            first, then people, then instruments) survives on a phone. */}
+        <div className='grid gap-4 lg:grid-cols-6'>
+          <div className='lg:col-span-2'>
+            <AttentionCard />
+          </div>
+          <div className='lg:col-span-2'>
+            <ProjectsCard />
+          </div>
+          <div className='lg:col-span-2'>
+            <GroupMembersCard />
+          </div>
+
+          <div className='lg:col-span-4'>
+            <EquipmentBoard />
+          </div>
+          <div className='lg:col-span-2'>
+            <GhsCard />
+          </div>
+
+          <div className='lg:col-span-3'>
+            <ActivityChart />
+          </div>
+          <div className='lg:col-span-3'>
+            <DftRunsCard />
+          </div>
         </div>
-        <EquipmentBoard />
-        <div className='grid gap-4 lg:grid-cols-[1.75fr_minmax(0,1fr)]'>
-          <ActivityChart />
-          <GhsCard />
-        </div>
-        <DftRunsCard />
       </div>
     </PageContainer>
   );

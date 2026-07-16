@@ -154,14 +154,15 @@
       "totalExperimentsCaption": "Toàn bộ thí nghiệm",
       "activeSamples": "Mẫu đang hoạt động",
       "activeSamplesCaption": "Mẫu hiện có trong lab",
-      "equipmentInUse": "Thiết bị đang dùng",
+      "equipmentInUse": "Thiết bị đang bận",
       "equipmentInUseCaption": "Đang được sử dụng",
       "experimentsThisWeek": "Thí nghiệm tuần này",
       "experimentsThisWeekCaption": "7 ngày gần nhất",
       "jobsDoneWeek": "DFT jobs hoàn tất",
       "jobsDoneWeekCaption": "hoàn tất trong 7 ngày qua",
       "running": "Đang chạy",
-      "chemicals": "Hóa chất"
+      "chemicals": "Hóa chất",
+      "papersProcessing": "Tài liệu đang xử lý"
     },
     "recentExperiments": "Thí nghiệm gần đây",
     "recentExperimentsSubtitle": "5 thí nghiệm mới nhất",
@@ -257,6 +258,11 @@
     "ghs": {
       "title": "Nguy hại GHS",
       "count": "{count} chất"
+    },
+    "projects": {
+      "title": "Đề tài",
+      "emptyTitle": "Chưa có đề tài đang chạy",
+      "empty": "Đề tài đang lên kế hoạch, thực hiện hoặc đang viết sẽ hiện ở đây."
     }
   },
   "locale": {

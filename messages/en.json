@@ -154,14 +154,15 @@
       "totalExperimentsCaption": "All-time experiments",
       "activeSamples": "Active Samples",
       "activeSamplesCaption": "Samples in the lab",
-      "equipmentInUse": "Equipment In Use",
+      "equipmentInUse": "Instruments in use",
       "equipmentInUseCaption": "Currently occupied",
       "experimentsThisWeek": "Experiments This Week",
       "experimentsThisWeekCaption": "Started in last 7 days",
       "jobsDoneWeek": "DFT jobs done",
       "jobsDoneWeekCaption": "completed in the last 7 days",
       "running": "Running",
-      "chemicals": "Chemicals"
+      "chemicals": "Chemicals",
+      "papersProcessing": "Papers processing"
     },
     "recentExperiments": "Recent Experiments",
     "recentExperimentsSubtitle": "Last 5 experiments",
@@ -257,6 +258,11 @@
     "ghs": {
       "title": "GHS hazards",
       "count": "{count} chemicals"
+    },
+    "projects": {
+      "title": "Projects",
+      "emptyTitle": "No live projects",
+      "empty": "Projects you plan, run or write appear here."
     }
   },
   "locale": {

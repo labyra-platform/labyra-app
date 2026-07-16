@@ -63,6 +63,8 @@ export function KpiStrip() {
   const canComputation = useFeatureAllowed('computation');
   const canExperiments = useFeatureAllowed('experiments');
   const canSamples = useFeatureAllowed('samples');
+  const canPapers = useFeatureAllowed('papers');
+  const canBookings = useFeatureAllowed('bookings');
 
   return (
     <div className='bg-card divide-border border-border flex flex-wrap divide-x rounded-xl border'>
@@ -88,6 +90,30 @@ export function KpiStrip() {
           label={t('kpi.activeSamples')}
           value={kpi.activeSamples}
           href='/dashboard/samples'
+          loading={kpi.isLoading}
+        />
+      )}
+      {/* R533: both of these were already being computed — equipmentInUse has
+          been in KpiSummary and never rendered, and papers carry a status the
+          strip never asked about. `live` marks the two that move on their own:
+          a paper finishes indexing and an instrument frees up without anyone
+          doing anything, and a number that changes while you watch should say
+          it is that kind of number. */}
+      {canPapers !== false && (
+        <Metric
+          live
+          label={t('kpi.papersProcessing')}
+          value={kpi.papersProcessing}
+          href='/dashboard/papers'
+          loading={kpi.isLoading}
+        />
+      )}
+      {canBookings !== false && (
+        <Metric
+          live
+          label={t('kpi.equipmentInUse')}
+          value={kpi.equipmentInUse}
+          href='/dashboard/equipment'
           loading={kpi.isLoading}
         />
       )}

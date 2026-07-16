@@ -38,7 +38,20 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { type ActivityDay, useActivityDaily } from '@/lib/firestore/queries/dashboard';
 import { cn } from '@/lib/utils';
 
-const WEEKS = 12;
+/**
+ * A year, because that is what "like GitHub" means and because twelve weeks did
+ * not fill the card.
+ *
+ * R535 picked 12 for pattern legibility and never checked the width: 12 columns
+ * at 18px is 216px inside a 700px half-page card, so the graph read as a
+ * fragment someone forgot to finish. 52 columns at 12px is 624px — it fills the
+ * slot, and a year is the window where a heatmap actually earns its shape: you
+ * can see a semester, a submission crunch, a month away from the bench.
+ *
+ * The query cost is unchanged; the hook reads the collection and buckets in
+ * memory either way.
+ */
+const WEEKS = 52;
 const DAYS = WEEKS * 7;
 
 /**
@@ -123,58 +136,95 @@ export function ActivityHeatmap() {
           <PanelEmpty title={t('activity.emptyTitle')} description={t('activity.empty')} />
         </div>
       ) : (
-        <div className='flex h-[var(--panel-viewport)] flex-col justify-center gap-3'>
+        <div className='flex h-full min-h-[var(--panel-viewport)] flex-col justify-center gap-2'>
           <div className='flex gap-1 overflow-x-auto pb-1'>
-            {columns.map((col, ci) => (
-              // Columns are positional — a week has no id, and the window
-              // shifts by one every midnight, so an index key is honest here.
-              <div key={ci} className='flex shrink-0 flex-col gap-1'>
-                {col.map((cell, ri) =>
-                  cell === null ? (
-                    <div key={ri} className='size-3.5' aria-hidden='true' />
-                  ) : (
-                    <Tooltip key={cell.day.iso}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            'size-3.5 rounded-[3px] transition-transform hover:scale-125',
-                            LEVELS[scale(cell.total)]
-                          )}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent side='top'>
-                        <p className='font-medium'>
-                          {format.dateTime(new Date(`${cell.day.iso}T00:00:00`), {
-                            weekday: 'short',
-                            day: '2-digit',
-                            month: '2-digit'
-                          })}
-                        </p>
-                        {cell.total === 0 ? (
-                          <p className='text-muted-foreground'>{t('activity.nothing')}</p>
-                        ) : (
-                          // The three series the grid had to merge. They are not
-                          // gone, they are one hover away.
-                          <p className='tabular-nums'>
-                            {t('activity.breakdown', {
-                              experiments: cell.day.experiments,
-                              dft: cell.day.dft,
-                              samples: cell.day.samples
-                            })}
-                          </p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  )
-                )}
+            {/* Weekday rail. Mon/Wed/Fri only — labelling all seven turns the
+                axis into a wall of text next to 10px squares, and three is
+                enough to count from. aria-hidden because the cells carry the
+                full date in their tooltip; a screen reader reading "T2" 52
+                times has been told nothing. */}
+            <div className='text-muted-foreground text-meta flex shrink-0 flex-col gap-0.5 pr-1'>
+              {[0, 1, 2, 3, 4, 5, 6].map((r) => (
+                <span key={r} aria-hidden='true' className='flex h-2.5 items-center leading-none'>
+                  {r % 2 === 0 && r < 6 ? t(`activity.weekday.${r}`) : ''}
+                </span>
+              ))}
+            </div>
+
+            <div className='flex flex-col gap-1'>
+              {/* Month labels, placed at the first column of each month. */}
+              <div className='text-muted-foreground text-meta flex gap-0.5'>
+                {columns.map((col, ci) => {
+                  const first = col.find((c) => c !== null);
+                  const isNewMonth =
+                    first !== undefined &&
+                    first !== null &&
+                    (ci === 0 ||
+                      first.day.iso.slice(5, 7) !==
+                        (columns[ci - 1].find((c) => c !== null)?.day.iso.slice(5, 7) ?? ''));
+                  return (
+                    <span key={ci} aria-hidden='true' className='w-2.5 shrink-0 leading-none'>
+                      {isNewMonth
+                        ? format.dateTime(new Date(`${first.day.iso}T00:00:00`), { month: 'short' })
+                        : ''}
+                    </span>
+                  );
+                })}
               </div>
-            ))}
+
+              <div className='flex gap-0.5'>
+                {columns.map((col, ci) => (
+                  // Columns are positional — a week has no id, and the window
+                  // shifts by one every midnight, so an index key is honest.
+                  <div key={ci} className='flex shrink-0 flex-col gap-0.5'>
+                    {col.map((cell, ri) =>
+                      cell === null ? (
+                        <div key={ri} className='size-2.5' aria-hidden='true' />
+                      ) : (
+                        <Tooltip key={cell.day.iso}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={cn(
+                                'size-2.5 rounded-[2px] transition-transform hover:scale-150',
+                                LEVELS[scale(cell.total)]
+                              )}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side='top'>
+                            <p className='font-medium'>
+                              {format.dateTime(new Date(`${cell.day.iso}T00:00:00`), {
+                                weekday: 'short',
+                                day: '2-digit',
+                                month: '2-digit'
+                              })}
+                            </p>
+                            {cell.total === 0 ? (
+                              <p className='text-muted-foreground'>{t('activity.nothing')}</p>
+                            ) : (
+                              // The three series the grid had to merge. Not gone
+                              // — one hover away.
+                              <p className='tabular-nums'>
+                                {t('activity.breakdown', {
+                                  experiments: cell.day.experiments,
+                                  dft: cell.day.dft,
+                                  samples: cell.day.samples
+                                })}
+                              </p>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      )
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className='text-muted-foreground text-meta flex items-center gap-1.5'>
+          <div className='text-muted-foreground text-meta flex items-center justify-end gap-1'>
             <span>{t('activity.less')}</span>
             {LEVELS.map((cls) => (
-              <span key={cls} className={cn('size-3 rounded-[3px]', cls)} aria-hidden='true' />
+              <span key={cls} className={cn('size-2.5 rounded-[2px]', cls)} aria-hidden='true' />
             ))}
             <span>{t('activity.more')}</span>
           </div>

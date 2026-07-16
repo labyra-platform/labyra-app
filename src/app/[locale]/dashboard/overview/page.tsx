@@ -38,7 +38,15 @@ export default async function OverviewPage({ params }: { params: Promise<{ local
 
             Below lg it stacks in DOM order, so the reading order (problems
             first, then people, then instruments) survives on a phone. */}
-        <div className='grid gap-4 lg:grid-cols-6'>
+        {/* R537: `[&>div>section]:h-full` — cards fill their cell.
+            R518 took h-full out of the Panel primitive (right: it was
+            catastrophic in a block stack) and said a card that must fill asks
+            at the call site. R533 then wrapped every card in a col-span div and
+            never asked, so the grid stretched the wrapper and the Panel sat
+            short inside it — two cards in one row, two heights. Stated once
+            here, because it is one rule about this grid rather than six
+            decisions about six cards. */}
+        <div className='grid gap-4 lg:grid-cols-6 [&>div>section]:h-full'>
           <div className='lg:col-span-2'>
             <AttentionCard />
           </div>

@@ -259,7 +259,12 @@
       "breakdown": "{experiments} thí nghiệm · {dft} DFT · {samples} mẫu",
       "nothing": "Không có gì được ghi",
       "less": "Ít",
-      "more": "Nhiều"
+      "more": "Nhiều",
+      "weekday": {
+        "0": "T2",
+        "2": "T4",
+        "4": "T6"
+      }
     },
     "ghs": {
       "title": "Nguy hại GHS",

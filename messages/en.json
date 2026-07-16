@@ -259,7 +259,12 @@
       "breakdown": "{experiments} experiments · {dft} DFT · {samples} samples",
       "nothing": "Nothing logged",
       "less": "Less",
-      "more": "More"
+      "more": "More",
+      "weekday": {
+        "0": "Mon",
+        "2": "Wed",
+        "4": "Fri"
+      }
     },
     "ghs": {
       "title": "GHS hazards",

@@ -72,10 +72,19 @@ export function formatSciText(text: string): string {
   // Chemical formula subscript: H2O → H₂O, W18O49 → W₁₈O₄₉, CO2 → CO₂
   // Match: Capital letter (+ optional lowercase) followed by digits
   // Skip if surrounded by space-digit patterns that look like coordinates/measurements
-  out = out.replace(/([A-Z][a-z]?)(\d+)/g, (match, element, count) => {
+  // R552: `(\d+(?:\.\d+)?)`, was `(\d+)`.
+  //
+  // Non-stoichiometric formulas are the whole point of this project — WO₂.₉,
+  // WO₃₋ₓ, W₁₈O₄₉ — and this pattern stopped at the decimal point. "WO2.9" came
+  // out "WO₂.9": the 2 lowered, the .9 left standing. formatSciNode, three
+  // functions up the same file, has always had the decimal; the notes use this
+  // one, so one compound rendered two ways depending on which panel you read it
+  // in. Same fault as R548 between title and abstract.
+  out = out.replace(/([A-Z][a-z]?)(\d+(?:\.\d+)?)/g, (match, element, count: string) => {
     // Skip long digit runs — identifiers/codes (e.g. "S40820-..."), not formula
     // counts. Real chemical subscripts are ≤3 digits (W18O49). @R259
-    if (count.length > 3) return match;
+    // The dot does not count toward the length: 2.9 is two digits, not three.
+    if (count.replace(/\./g, '').length > 3) return match;
     // Skip known unit prefixes that shouldn't be subscripted
     if (
       ['CO', 'NM', 'KM', 'MM', 'KG', 'MG', 'HZ', 'EV', 'PH'].includes(element.toUpperCase()) &&

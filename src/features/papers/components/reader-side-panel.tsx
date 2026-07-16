@@ -538,10 +538,21 @@ function InfoTab({
               </button>
             )}
           </div>
+          {/* R548: through formatSciNode, like the title above it. The title
+              has rendered BaTaO₂N correctly since it was written; the abstract
+              printed the same compound as "BaTaO2N" two lines below, because it
+              went out as a raw string. One paper, two spellings of its own
+              subject.
+
+              Safe on prose: the pattern needs a digit touching a letter, so
+              "Ta 4+" and "Figure 1" are untouched, and runs over three digits
+              stay literal so identifiers do not get bent into formulas. */}
           <p className='text-sm leading-relaxed text-foreground/90'>
-            {showOriginalAbstract || !pretranslation?.abstract
-              ? paper.abstract
-              : pretranslation.abstract}
+            {formatSciNode(
+              (showOriginalAbstract || !pretranslation?.abstract
+                ? paper.abstract
+                : pretranslation.abstract) ?? ''
+            )}
           </p>
         </div>
       )}

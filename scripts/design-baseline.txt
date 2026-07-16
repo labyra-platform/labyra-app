@@ -21,7 +21,7 @@
 #   primitive and never contain the string. Landmark coverage is ~25 Panel
 #   surfaces + 5 hand-rolled, and is enforced by using Panel, not by a grep.
 
-arbitrary_text_size=100
+arbitrary_text_size=99
 off_scale_size=32
 off_scale_weight=124
 hardcoded_color=4

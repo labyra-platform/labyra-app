@@ -182,12 +182,27 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
     },
     [setWidth]
   );
+  /**
+   * R531: pressing the tab you are already on collapses the panel.
+   *
+   * paper-ai-panel.md §4 asks whether the Ask AI control is a toggle or dead
+   * weight while the AI panel is open. It was dead weight — and so were the
+   * other five, because they are the same button. A control that looks pressable
+   * and does nothing gets pressed twice, and then the app is "frozen".
+   *
+   * Making the pressed tab un-press is what `aria-pressed` already promises,
+   * and it gives the panel a second way out — until now there was exactly one.
+   */
   const switchPanelTab = useCallback(
     (next: 'info' | 'citations' | 'highlights' | 'translations' | 'figures' | 'ai') => {
+      if (next === panelTab && !collapsed) {
+        setCollapsed(true);
+        return;
+      }
       setPanelTab(next);
       setCollapsed(false);
     },
-    [setCollapsed]
+    [panelTab, collapsed, setCollapsed]
   );
 
   // Tell PdfViewer to re-measure after a collapse/expand finishes (PdfViewer
@@ -357,7 +372,7 @@ function PanelTabButton({
       aria-label={label}
       aria-pressed={active}
       className={cn(
-        'inline-flex h-8 cursor-pointer items-center justify-center rounded-md text-[13px] transition-all',
+        'text-body inline-flex h-8 cursor-pointer items-center justify-center rounded-md transition-all',
         active
           ? 'flex-1 gap-1.5 bg-background px-2.5 font-medium text-foreground shadow-sm ring-1 ring-black/[0.04]'
           : 'w-9 shrink-0 text-muted-foreground hover:bg-background hover:text-foreground hover:shadow-sm'

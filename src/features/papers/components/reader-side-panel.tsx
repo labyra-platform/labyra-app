@@ -160,11 +160,16 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
   // The splitter's bounds depend on how much room the split has, so the shell
   // is measured rather than assumed. Re-measured on window resize because a
   // laptop that gets plugged into a monitor changes the answer.
-  const shellRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const [shellWidth, setShellWidth] = useState(0);
+  // R534: measured off the panel's own parent — the flex row that holds the
+  // reader, the splitter and this. R532 measured a ref that was declared, read,
+  // and never attached to anything, so shellWidth was 0 forever, the
+  // `shellWidth > 0` branch never ran, and every bound I wrote was dead code
+  // that type-checked. The panel is always mounted, so its parent is always
+  // there to ask.
   useEffect(() => {
-    const measure = () => setShellWidth(shellRef.current?.parentElement?.clientWidth ?? 0);
+    const measure = () => setShellWidth(panelRef.current?.parentElement?.clientWidth ?? 0);
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
@@ -237,17 +242,22 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
           panelRef={panelRef}
         />
       ) : (
-        <button
-          type='button'
-          onClick={togglePanel}
-          aria-label={t('panelExpand')}
-          title={t('panelExpand')}
-          className='group relative flex w-6 shrink-0 items-center justify-center bg-transparent transition-colors'
-        >
-          <span className='bg-background text-muted-foreground group-hover:border-primary group-hover:text-primary flex size-6 items-center justify-center rounded-full border opacity-0 shadow-sm transition-all duration-200 group-hover:scale-110 group-hover:opacity-100'>
+        /* R534: expand sits at the top, where collapse left from. A control
+           that leaves from one corner and comes back at the middle of an edge
+           makes you hunt for it — and the old vertically-centred strip was
+           still here, so the panel had a modern way out and a legacy way back
+           in. Same corner, both directions. */
+        <div className='flex w-7 shrink-0 flex-col items-center pt-2'>
+          <button
+            type='button'
+            onClick={togglePanel}
+            aria-label={t('panelExpand')}
+            title={t('panelExpand')}
+            className='text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 items-center justify-center rounded-md transition-colors'
+          >
             <IconChevronRight className='size-4 rotate-180' />
-          </span>
-        </button>
+          </button>
+        </div>
       )}
 
       {/* Panel column */}

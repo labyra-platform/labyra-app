@@ -87,7 +87,17 @@ export function PapersLandscape({ papers }: { papers: Paper[] }) {
               {t('landscapeNoData')}
             </p>
           ) : (
-            <ChartContainer config={chartConfig} className='mx-auto aspect-square max-h-[260px]'>
+            /* R534: h, not max-h. This pie vanished when its parent became a
+               Panel. `mx-auto` sets auto inline margins, which on a flex item
+               cancel align-items:stretch — the container collapsed to
+               fit-content, its ResponsiveContainer asked for 100% of nothing,
+               and aspect-square squared zero. Under CardContent (a block) the
+               same classes filled the parent and worked, so nothing in the
+               migration looked wrong and nothing could catch it: the class is
+               valid and the build compiles. A definite height makes the size
+               come from the element rather than from what its parent happens to
+               be this month. */
+            <ChartContainer config={chartConfig} className='mx-auto aspect-square h-[260px]'>
               <PieChart>
                 <ChartTooltip content={<ChartTooltipContent nameKey='name' />} />
                 <Pie data={fields} dataKey='count' nameKey='name' innerRadius={45} paddingAngle={3}>

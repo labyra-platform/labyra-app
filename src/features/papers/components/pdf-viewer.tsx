@@ -1137,13 +1137,13 @@ export function PdfViewer({
       {/* R402: thin hover strip — reveal the chrome without scrolling up. */}
       {/* R544: the reveal strip lives at the top of the *screen*, not the top of
           the viewer.
-          
+
           It was `absolute top-0` inside the viewer, which since R541 puts it
           directly under the toolbar — so reaching up from the page to click zoom
           or search crossed it, the tab strip came back, and the toolbar moved
           down out from under the cursor before the click landed. The control you
           were aiming at was the trigger for moving it.
-          
+
           `fixed` at y=0 with `h-1` is only reachable by pushing the pointer into
           the edge of the display, which is a deliberate act and not on the way
           to anything. */}

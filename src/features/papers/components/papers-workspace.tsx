@@ -91,7 +91,13 @@ export function PapersWorkspace({ children }: { children: React.ReactNode }) {
       )}
 
       <div className='relative min-h-0 flex-1'>
-        <div className={cn('h-full min-h-0 overflow-auto', onReader && 'hidden')}>{children}</div>
+        {/* R529: pt-3 under the tab strip. §1 forbids spacing that encodes
+            nothing, but this encodes something — the strip and the toolbar are
+            different objects, and butted together they read as one control
+            group that happens to be two rows. The gap is the boundary. */}
+        <div className={cn('h-full min-h-0 overflow-auto pt-3', onReader && 'hidden')}>
+          {children}
+        </div>
 
         {/* Keep every visited tab's reader mounted; show only the active one.
             Switching tabs toggles CSS visibility — the PDF is never re-fetched or

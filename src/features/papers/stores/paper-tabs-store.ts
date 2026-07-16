@@ -378,6 +378,13 @@ export const usePaperTabsStore = create<PaperTabsState>()(
       // Don't persist transient/reserved fields that may hold large data later
       // (ai conversation, selection); persist only the durable navigation state.
       partialize: (state) => ({
+        // R529: ownerUid MUST be persisted. It was not, so it rehydrated as
+        // null on every reload, ensureOwner() saw null !== uid, and wiped the
+        // tab set — every refresh, for everyone. R495's guard was never wrong
+        // about anything; it just had nothing to compare against, so it always
+        // took the "different account" branch. A guard that can only fail one
+        // way passes review by never being observed to leak.
+        ownerUid: state.ownerUid,
         tabs: state.tabs.map((t) => ({
           paperId: t.paperId,
           title: t.title,

@@ -422,6 +422,10 @@ export function useTodaySchedule(
 
 export interface ActivityDay {
   day: string; // 'DD/MM'
+  /** R535: the real day, as yyyy-mm-dd. A heatmap has to know which weekday a
+   *  cell is and which week it belongs to, and 'DD/MM' cannot answer either
+   *  without being parsed back into the thing it was formatted from. */
+  iso: string;
   experiments: number;
   dft: number;
   samples: number;
@@ -442,6 +446,12 @@ export function useActivityDaily(days = 30): { data: ActivityDay[]; isLoading: b
       d.setDate(d.getDate() - i);
       buckets.set(d.toDateString(), {
         day: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+        // Local calendar date, not toISOString(): that converts to UTC first,
+        // and GMT+7 is ahead of UTC, so anything logged before 07:00 local
+        // resolves to the previous UTC day and would be painted on yesterday's
+        // cell. Verified in TZ=Asia/Ho_Chi_Minh — 06:00 on the 16th comes back
+        // as the 15th; 08:00 does not.
+        iso: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
         experiments: 0,
         dft: 0,
         samples: 0
@@ -449,7 +459,9 @@ export function useActivityDaily(days = 30): { data: ActivityDay[]; isLoading: b
     }
     const cutoff = dayStart.getTime() - (days - 1) * 86_400_000;
 
-    const tally = (ms: number | null, field: keyof Omit<ActivityDay, 'day'>) => {
+    // 'day' and 'iso' are labels, not tallies — Omit both, or `field` admits a
+    // string into `+= 1`. tsc caught this the moment `iso` was added.
+    const tally = (ms: number | null, field: keyof Omit<ActivityDay, 'day' | 'iso'>) => {
       if (ms === null || ms < cutoff) return;
       const bucket = buckets.get(new Date(ms).toDateString());
       if (bucket) bucket[field] += 1;

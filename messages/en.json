@@ -248,12 +248,18 @@
       "emptyTitle": "No instrument booked today"
     },
     "activity": {
-      "title": "Activity · last 30 days",
+      "title": "Activity",
       "experiments": "Experiments",
       "dft": "DFT",
       "samples": "Samples",
       "empty": "Experiments, DFT runs and samples will chart here as you record them.",
-      "emptyTitle": "Nothing logged yet"
+      "emptyTitle": "Nothing logged yet",
+      "subtitle": "Last {weeks} weeks",
+      "total": "{count} in total",
+      "breakdown": "{experiments} experiments · {dft} DFT · {samples} samples",
+      "nothing": "Nothing logged",
+      "less": "Less",
+      "more": "More"
     },
     "ghs": {
       "title": "GHS hazards",

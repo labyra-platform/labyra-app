@@ -248,12 +248,18 @@
       "emptyTitle": "Hôm nay chưa đặt thiết bị"
     },
     "activity": {
-      "title": "Hoạt động · 30 ngày qua",
+      "title": "Hoạt động",
       "experiments": "Thí nghiệm",
       "dft": "DFT",
       "samples": "Mẫu",
       "empty": "Thí nghiệm, DFT run và mẫu sẽ lên biểu đồ này khi bạn ghi lại.",
-      "emptyTitle": "Chưa ghi nhận gì"
+      "emptyTitle": "Chưa ghi nhận gì",
+      "subtitle": "{weeks} tuần gần nhất",
+      "total": "tổng {count}",
+      "breakdown": "{experiments} thí nghiệm · {dft} DFT · {samples} mẫu",
+      "nothing": "Không có gì được ghi",
+      "less": "Ít",
+      "more": "Nhiều"
     },
     "ghs": {
       "title": "Nguy hại GHS",

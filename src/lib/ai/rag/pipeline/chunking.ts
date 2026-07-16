@@ -91,13 +91,46 @@ export function chunkPaper(ocrResult: OcrResult): Chunk[] {
     }
   }
 
+  /**
+   * R547: nudge an index to the nearest word boundary.
+   *
+   * The window is measured in characters, so both edges land wherever the count
+   * runs out — usually inside a word. That is how a chunk comes to begin "l
+   * bandgap energy…" when the paper says "optical bandgap energy", and how the
+   * hover card ends up showing a citation that starts with a letter. The `cal`
+   * is not trimmed at the reader; it is *not in the chunk*, and no amount of
+   * cleverness downstream can put it back.
+   *
+   * Search is bounded: past ~40 characters we are no longer near a boundary and
+   * a run that long without whitespace is a formula or a URL, where the exact
+   * cut matters less than not walking half a chunk looking for a space.
+   */
+  const SNAP_LIMIT = 40;
+  const isWordChar = (i: number) => i >= 0 && i < chars.length && /[\p{L}\p{N}]/u.test(chars[i].ch);
+  /** Move forward to the start of the next whole word. */
+  const snapForward = (i: number) => {
+    if (!isWordChar(i) || !isWordChar(i - 1)) return i;
+    let j = i;
+    while (j < chars.length && j - i < SNAP_LIMIT && isWordChar(j)) j += 1;
+    while (j < chars.length && j - i < SNAP_LIMIT && !isWordChar(j)) j += 1;
+    return j - i >= SNAP_LIMIT ? i : j;
+  };
+  /** Move back to the end of the last whole word. */
+  const snapBack = (i: number) => {
+    if (!isWordChar(i - 1) || !isWordChar(i)) return i;
+    let j = i;
+    while (j > 0 && i - j < SNAP_LIMIT && isWordChar(j - 1)) j -= 1;
+    return i - j >= SNAP_LIMIT ? i : j;
+  };
+
   // Sliding window
   const chunks: Chunk[] = [];
   let start = 0;
   let chunkIdx = 0;
 
   while (start < chars.length) {
-    const end = Math.min(start + TARGET_CHARS, chars.length);
+    const rawEnd = Math.min(start + TARGET_CHARS, chars.length);
+    const end = rawEnd >= chars.length ? rawEnd : snapBack(rawEnd);
     const slice = chars.slice(start, end);
     const text = slice
       .map((c) => c.ch)
@@ -125,7 +158,12 @@ export function chunkPaper(ocrResult: OcrResult): Chunk[] {
     chunkIdx++;
 
     if (end >= chars.length) break;
-    start = end - OVERLAP_CHARS;
+    // Snap the next start too, or the overlap re-introduces the split it just
+    // avoided — the overlap is also plain arithmetic on a character count.
+    const nextStart = snapForward(Math.max(0, end - OVERLAP_CHARS));
+    // Never stand still: if snapping cannot advance past this window's start,
+    // take the unsnapped index rather than loop forever on a 40-char formula.
+    start = nextStart > start ? nextStart : end;
   }
 
   return chunks;

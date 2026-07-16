@@ -271,7 +271,10 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
             // Matches the collapse control it replaces — same corner, same
             // weight, opposite arrow. A way back in that looks different from
             // the way out reads as a different thing.
-            className='border-border bg-background text-muted-foreground hover:border-primary hover:text-primary flex size-7 items-center justify-center rounded-md border shadow-sm transition-colors'
+            // R547: h-10, not size-7. Collapse sits in an items-stretch row
+            // beside a 40px tab strip, so it is 28×40; expand was 28×28 and the
+            // same control changed size depending on which way it pointed.
+            className='border-border bg-background text-muted-foreground hover:border-primary hover:text-primary flex h-10 w-7 items-center justify-center rounded-md border shadow-sm transition-colors'
           >
             <IconChevronRight className='size-4 rotate-180' />
           </button>

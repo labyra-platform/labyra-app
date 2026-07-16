@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useFeatureAllowed } from '@/hooks/use-feature-access';
 import { Link } from '@/i18n/navigation';
 import { useGhsSummary } from '@/lib/firestore/queries/dashboard';
-import { GHS_LABELS, type GHSPictogram } from '@/types/chemical';
+import { type GHSPictogram } from '@/types/chemical';
 import { cn } from '@/lib/utils';
 
 const ALL_GHS: GHSPictogram[] = [
@@ -34,6 +34,7 @@ const ALL_GHS: GHSPictogram[] = [
 export function GhsCard() {
   const allowed = useFeatureAllowed('chemicals');
   const t = useTranslations('dashboard');
+  const tGhs = useTranslations('common.ghs');
   const { buckets, totalHazardous, isLoading } = useGhsSummary();
 
   if (allowed === false) return null;
@@ -55,13 +56,13 @@ export function GhsCard() {
               <Link
                 key={code}
                 href='/dashboard/chemicals'
-                title={`${GHS_LABELS[code]} — ${n}`}
+                title={`${tGhs(code)} — ${n}`}
                 className={cn(
                   'hover:bg-muted/50 flex flex-col items-center gap-2 rounded-lg py-2.5 transition',
                   n === 0 && 'opacity-25 grayscale'
                 )}
               >
-                <GhsPictogram code={code} />
+                <GhsPictogram code={code} size='lg' />
                 <span className='text-meta font-medium tabular-nums'>{n || ''}</span>
               </Link>
             );

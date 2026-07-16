@@ -27,7 +27,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { GHS_LABELS, type Chemical, type GHSPictogram } from '@/types/chemical';
+import { type Chemical, type GHSPictogram } from '@/types/chemical';
 import { type ChemicalFormValues, chemicalFormSchema } from '../schema';
 
 const ALL_GHS: GHSPictogram[] = [
@@ -94,6 +94,7 @@ export function ChemicalForm({
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('chemicals.form');
+  const tGhs = useTranslations('common.ghs');
   const [submitting, setSubmitting] = useState(false);
   const [looking, setLooking] = useState(false);
 
@@ -358,7 +359,7 @@ export function ChemicalForm({
                     key={code}
                     type='button'
                     onClick={() => toggleHazard(code)}
-                    title={GHS_LABELS[code]}
+                    title={tGhs(code)}
                     aria-pressed={active}
                     className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-xs transition ${
                       active
@@ -367,7 +368,7 @@ export function ChemicalForm({
                     }`}
                   >
                     <GhsPictogram code={code} />
-                    <span className='truncate'>{GHS_LABELS[code]}</span>
+                    <span className='truncate'>{tGhs(code)}</span>
                   </button>
                 );
               })}

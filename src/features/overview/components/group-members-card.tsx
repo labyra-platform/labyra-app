@@ -46,16 +46,21 @@ function byRank(a: GroupMember, b: GroupMember): number {
 }
 
 /**
- * Four roles printed in one muted grey told you nothing at a glance — the
- * whole point of showing a role is that some carry more weight than others,
- * and identical styling flattens exactly the difference you are scanning for.
- * Authority reads darker and heavier; a viewer stays quiet.
+ * R542: `member` wears no chip.
+ *
+ * Most people in a lab are members — that is what the word is for. Printing it
+ * beside every name says nothing and costs the two labels that do say
+ * something the contrast they need to be seen. A chip is for what is *not* the
+ * default; the default is the absence of one.
+ *
+ * admin keeps its chip even though the report only named superadmin and viewer:
+ * those were the two roles in the screenshot, but the rule underneath is
+ * "silence means member", and an admin is not a member.
  */
-const ROLE_STYLE: Record<string, string> = {
-  superadmin: 'text-foreground font-medium',
-  admin: 'text-foreground font-medium',
-  member: 'text-muted-foreground',
-  viewer: 'text-muted-foreground/70'
+const ROLE_CHIP: Record<string, string> = {
+  superadmin: 'border-primary/30 bg-primary/10 text-primary',
+  admin: 'border-primary/30 bg-primary/10 text-primary',
+  viewer: 'border-border bg-muted text-muted-foreground'
 };
 
 function initials(m: GroupMember): string {
@@ -129,21 +134,38 @@ export function GroupMembersCard() {
                     {t('members.lead')}
                   </span>
                 )}
-                <span className={cn('text-body shrink-0', ROLE_STYLE[m.role] ?? '')}>
-                  {tRoles(m.role)}
-                </span>
+                {ROLE_CHIP[m.role] && (
+                  <span
+                    className={cn(
+                      'text-meta shrink-0 rounded-full border px-2 py-0.5',
+                      ROLE_CHIP[m.role]
+                    )}
+                  >
+                    {tRoles(m.role)}
+                  </span>
+                )}
               </PanelRow>
             ))}
           </PanelList>
         )}
       </div>
       <PanelFooter>
-        <Button asChild size='sm' variant='outline' className='w-full rounded-lg'>
-          <Link href='/dashboard/members'>
-            <Icons.add className='size-4' aria-hidden='true' />
-            {t('members.invite')}
-          </Link>
-        </Button>
+        {/* Two verbs, not one. "See all" is where you go to read the list;
+            "Invite" is where you go to change it. They were one button doing
+            both, which meant every look at the roster started with a word about
+            adding to it. The count is on the link because a link that says how
+            many is a different sentence from one that does not. */}
+        <div className='flex items-center gap-2'>
+          <Button asChild size='sm' variant='ghost' className='flex-1 rounded-lg'>
+            <Link href='/dashboard/members'>{t('members.viewAll', { count: ranked.length })}</Link>
+          </Button>
+          <Button asChild size='sm' variant='outline' className='rounded-lg'>
+            <Link href='/dashboard/members'>
+              <Icons.add className='size-4' aria-hidden='true' />
+              {t('members.invite')}
+            </Link>
+          </Button>
+        </div>
       </PanelFooter>
     </Panel>
   );

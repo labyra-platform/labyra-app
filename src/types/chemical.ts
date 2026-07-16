@@ -23,6 +23,15 @@ export type GHSPictogram =
   | 'GHS08' // Health hazard (CMR, etc.)
   | 'GHS09'; // Environmental hazard
 
+/**
+ * English hazard-class names, for code and logs — **not for the screen**.
+ *
+ * R543: this Record was rendered directly in four places across three screens,
+ * which is why a Vietnamese dashboard showed "Compressed gas". A constant in a
+ * types file is somewhere i18n cannot reach, and no amount of translating a
+ * card fixes the other three callers. Use `t('common.ghs.GHS04')` for anything
+ * a person reads; keep this for keys, tests and English-only contexts.
+ */
 export const GHS_LABELS: Record<GHSPictogram, string> = {
   GHS01: 'Explosive',
   GHS02: 'Flammable',

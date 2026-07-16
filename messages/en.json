@@ -17,6 +17,17 @@
       "admin": "Admin",
       "member": "Member",
       "viewer": "Viewer"
+    },
+    "ghs": {
+      "GHS01": "Explosive",
+      "GHS02": "Flammable",
+      "GHS03": "Oxidizing",
+      "GHS04": "Compressed gas",
+      "GHS05": "Corrosive",
+      "GHS06": "Toxic",
+      "GHS07": "Harmful / Irritant",
+      "GHS08": "Health hazard",
+      "GHS09": "Environmental hazard"
     }
   },
   "nav": {
@@ -235,7 +246,8 @@
       "lead": "Group lead",
       "invite": "Invite member",
       "allGroups": "Select group",
-      "emptyTitle": "No one here yet"
+      "emptyTitle": "No one here yet",
+      "viewAll": "See all {count}"
     },
     "board": {
       "title": "Equipment · today",

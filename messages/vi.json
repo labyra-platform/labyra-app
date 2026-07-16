@@ -17,6 +17,17 @@
       "admin": "Quản trị viên",
       "member": "Thành viên",
       "viewer": "Người xem"
+    },
+    "ghs": {
+      "GHS01": "Chất nổ",
+      "GHS02": "Dễ cháy",
+      "GHS03": "Chất oxy hoá",
+      "GHS04": "Khí nén",
+      "GHS05": "Ăn mòn",
+      "GHS06": "Độc cấp tính",
+      "GHS07": "Có hại / Kích ứng",
+      "GHS08": "Nguy hại sức khoẻ",
+      "GHS09": "Nguy hại môi trường"
     }
   },
   "nav": {
@@ -235,7 +246,8 @@
       "lead": "Trưởng nhóm",
       "invite": "Mời thành viên",
       "allGroups": "Chọn nhóm",
-      "emptyTitle": "Chưa có ai ở đây"
+      "emptyTitle": "Chưa có ai ở đây",
+      "viewAll": "Xem tất cả {count}"
     },
     "board": {
       "title": "Lịch thiết bị · hôm nay",

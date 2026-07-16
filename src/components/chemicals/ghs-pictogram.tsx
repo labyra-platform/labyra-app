@@ -8,11 +8,22 @@
  *
  * @phase CHEM-3a / CHEM-3a-svg
  */
-import { GHS_LABELS, type GHSPictogram } from '@/types/chemical';
+import { useTranslations } from 'next-intl';
+import { type GHSPictogram } from '@/types/chemical';
 
-export function GhsPictogram({ code, size = 'sm' }: { code: GHSPictogram; size?: 'sm' | 'md' }) {
-  const label = GHS_LABELS[code];
-  const px = size === 'sm' ? 24 : 36;
+export function GhsPictogram({
+  code,
+  size = 'sm'
+}: {
+  code: GHSPictogram;
+  size?: 'sm' | 'md' | 'lg';
+}) {
+  const t = useTranslations('common.ghs');
+  const label = t(code);
+  // R543: 'lg' for the dashboard. A hazard diamond is a shape you are meant to
+  // recognise across a room, not read; at 24px the symbol inside the diamond is
+  // about six pixels and every one of the nine looks like a red outline.
+  const px = size === 'lg' ? 48 : size === 'md' ? 36 : 24;
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static SVG vector icon; next/image gives no benefit for inline SVG
     <img

@@ -332,6 +332,8 @@ export function PdfViewer({
   // from the cited chunk; the matching text on the jumped page is marked
   // (`.pcm`) for a few seconds, then cleared. Separate from Ctrl+F search.
   const [citeHighlight, setCiteHighlight] = useState<string | null>(null);
+  /** True while the pointer sits in the display-edge reveal strip (R545). */
+  const revealPinRef = useRef(false);
   const citeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -731,7 +733,18 @@ export function PdfViewer({
   useEffect(() => {
     const el = pagesContainerRef.current;
     if (!el) return;
-    const REVEAL_ZONE_PX = 64; // top strip that re-reveals the chrome
+    // R545: this listener only *hides* now. Revealing belongs to the strip at
+    // the display edge (below), because that is the one place this cannot see:
+    // the listener is bound to the scroll container, and the top of the screen
+    // is over the toolbar, not over the document.
+    //
+    // It used to reveal too, on `e.clientY - rect.top < 64` — a 64px band
+    // immediately under the toolbar. Reaching up from the page to press zoom or
+    // search entered it well before arriving, the tab strip came back, and the
+    // toolbar slid down out from under the pointer: the control being aimed at
+    // was the trigger for moving it. The band was harmless while the toolbar
+    // hid along with everything else — there was nothing up there to click —
+    // and R541 kept the toolbar and left the band behind.
     const HIDE_DELAY_MS = 3000;
     let hideTimer: ReturnType<typeof setTimeout> | null = null;
     const clear = () => {
@@ -740,12 +753,12 @@ export function PdfViewer({
         hideTimer = null;
       }
     };
-    const onMove = (e: MouseEvent) => {
-      const rect = el.getBoundingClientRect();
-      if (e.clientY - rect.top < REVEAL_ZONE_PX) {
+    const onMove = () => {
+      if (revealPinRef.current) {
         clear();
-        setChromeCollapsed(false);
-      } else if (!hideTimer) {
+        return;
+      }
+      if (!hideTimer) {
         hideTimer = setTimeout(() => {
           setChromeCollapsed(true);
           hideTimer = null;
@@ -1149,7 +1162,15 @@ export function PdfViewer({
           to anything. */}
       <div
         className='pointer-events-auto fixed inset-x-0 top-0 z-30 h-1'
-        onMouseEnter={() => setChromeCollapsed(false)}
+        onMouseEnter={() => {
+          // Pin while the pointer is at the edge, or the 3s timer would hide
+          // the chrome again under a pointer that is asking for it.
+          revealPinRef.current = true;
+          setChromeCollapsed(false);
+        }}
+        onMouseLeave={() => {
+          revealPinRef.current = false;
+        }}
       />
       {/* R541: the toolbar stays through the collapse; the tab strip does not.
           They answer different questions. The strip answers "which paper", and

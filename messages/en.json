@@ -738,7 +738,13 @@
     "filterGroupShared": "Group",
     "groupOtherBadge": "Other group",
     "quickFilters": "Filters",
-    "splitterLabel": "Resize the AI panel"
+    "splitterLabel": "Resize the AI panel",
+    "selectionAsk": "Ask AI about this",
+    "selectionCopy": "Copy",
+    "selectionTranslate": "Translate",
+    "selectionSearch": "Search the web",
+    "selectionHighlight": "Highlight",
+    "selectionHighlightColor": "Highlight {color}"
   },
   "collections": {
     "title": "Collections",

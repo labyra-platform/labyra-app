@@ -28,6 +28,7 @@ import {
 } from '@tabler/icons-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSelectionActionStore } from '@/features/papers/stores/selection-action-store';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { copyPapersRich, renderPapersAnswerHtml } from '@/features/papers/lib/copy-rich';
 import { formatSciNode } from '@/features/spectra/utils/format-units';
@@ -134,6 +135,22 @@ export function AskAiTab({
   const locale = useLocale();
   const [messages, setMessages] = useState<AskMessage[]>([]);
   const [input, setInput] = useState('');
+
+  /**
+   * R539: a selection sent from the reader's context menu lands in the box —
+   * it does not send itself. The person picked a sentence, not a question;
+   * firing a request on their behalf would spend a model call on an intent
+   * they have not finished expressing. Quoted so the question stays legible
+   * once they type around it.
+   */
+  const pendingSelection = useSelectionActionStore((s) => s.pending);
+  const consumeSelection = useSelectionActionStore((s) => s.consume);
+  useEffect(() => {
+    if (pendingSelection?.kind !== 'ask') return;
+    const intent = consumeSelection();
+    if (!intent) return;
+    setInput((prev) => `${prev ? `${prev}\n\n` : ''}"${intent.text.trim()}"\n\n`);
+  }, [pendingSelection, consumeSelection]);
   const [busy, setBusy] = useState(false);
   const [researchMode, setResearchMode] = useState(false);
   const [error, setError] = useState<string | null>(null);

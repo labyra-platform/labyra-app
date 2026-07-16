@@ -44,6 +44,7 @@ import {
 import { formatSciNode, formatSciText } from '@/features/spectra/utils/format-units';
 import { cn } from '@/lib/utils';
 import { PanelSplitter } from '@/features/papers/components/panel-splitter';
+import { useSelectionActionStore } from '@/features/papers/stores/selection-action-store';
 import {
   clampPanel,
   PANEL_DEFAULT,
@@ -209,6 +210,20 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
     },
     [panelTab, collapsed, setCollapsed]
   );
+
+  /**
+   * R539: a selection sent from the page opens the tab it was sent to.
+   *
+   * Read, not consumed — the tab that owns the intent consumes it. If this
+   * cleared it first, the panel would open on Ask AI with an empty box and the
+   * sentence would be gone, which is worse than not opening at all.
+   */
+  const pendingSelection = useSelectionActionStore((s) => s.pending);
+  useEffect(() => {
+    if (!pendingSelection) return;
+    setPanelTab(pendingSelection.kind === 'ask' ? 'ai' : 'translations');
+    setCollapsed(false);
+  }, [pendingSelection, setCollapsed]);
 
   // Tell PdfViewer to re-measure after a collapse/expand finishes (PdfViewer
   // listens to window.resize). The delay > the CSS transition duration.

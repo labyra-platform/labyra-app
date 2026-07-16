@@ -739,7 +739,13 @@
     "filterGroupShared": "Nhóm",
     "groupOtherBadge": "Nhóm khác",
     "quickFilters": "Lọc nhanh",
-    "splitterLabel": "Chỉnh chiều ngang panel AI"
+    "splitterLabel": "Chỉnh chiều ngang panel AI",
+    "selectionAsk": "Hỏi AI về đoạn này",
+    "selectionCopy": "Sao chép",
+    "selectionTranslate": "Dịch",
+    "selectionSearch": "Tìm trên web",
+    "selectionHighlight": "Tô màu",
+    "selectionHighlightColor": "Tô màu {color}"
   },
   "collections": {
     "title": "Bộ sưu tập",

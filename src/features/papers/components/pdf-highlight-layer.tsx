@@ -19,7 +19,9 @@ import { Icons } from '@/components/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AnnotationColor, HighlightAnnotation, NormRect } from '@/types/annotations';
 import { ANNOTATION_COLORS, HIGHLIGHT_FILL } from '@/types/annotations';
-import { cn } from '@/lib/utils';
+import { IconCopy, IconLanguage } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
+import { useSelectionActionStore } from '@/features/papers/stores/selection-action-store';
 
 interface PendingSelection {
   rects: NormRect[];
@@ -56,9 +58,13 @@ export function PdfHighlightLayer({
   onCreate: (rects: NormRect[], text: string, color: AnnotationColor) => void;
   onDelete: (id: string) => void;
 }) {
+  const t = useTranslations('papers');
   const layerRef = useRef<HTMLDivElement | null>(null);
   const [pending, setPending] = useState<PendingSelection | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  /** Where the right-click landed, relative to this page's layer. */
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const send = useSelectionActionStore((st) => st.send);
 
   // On mouseup, read the selection and convert its client rects into normalized
   // rects relative to THIS page's layer box. Ignore selections outside the page.
@@ -118,15 +124,54 @@ export function PdfHighlightLayer({
     });
   }, [pageNumber, width, height]);
 
-  // Global mouseup listener, only while enabled. Cleaned up on disable/unmount.
+  // R539: the selection is read whether or not the highlight tool is on.
+  //
+  // It used to be dropped the moment `enabled` was false, which was right when
+  // a selection could only become a highlight. Now it can also become a
+  // question, a translation, a copy or a search, and those are not a mode — you
+  // do not turn on a tool to copy a sentence.
   useEffect(() => {
-    if (!enabled) {
-      setPending(null);
-      return;
-    }
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, [enabled, handleMouseUp]);
+  }, [handleMouseUp]);
+
+  // Right-click over a live selection opens our menu instead of the browser's.
+  //
+  // Only over a selection, and only over this page. Elsewhere the browser's
+  // menu is left alone: it carries Inspect, Print and Chrome's own translate,
+  // and taking those away everywhere to add five items here would be a trade
+  // nobody asked for.
+  useEffect(() => {
+    const onContextMenu = (e: MouseEvent) => {
+      const layer = layerRef.current;
+      if (!layer) return;
+      const box = layer.getBoundingClientRect();
+      const inside =
+        e.clientX >= box.left &&
+        e.clientX <= box.right &&
+        e.clientY >= box.top &&
+        e.clientY <= box.bottom;
+      if (!inside) return;
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
+      e.preventDefault();
+      setMenuAt({ x: e.clientX - box.left, y: e.clientY - box.top });
+    };
+    document.addEventListener('contextmenu', onContextMenu);
+    return () => document.removeEventListener('contextmenu', onContextMenu);
+  }, []);
+
+  // A new drag replaces the old menu rather than leaving it pinned to text that
+  // is no longer selected.
+  useEffect(() => {
+    if (pending === null) setMenuAt(null);
+  }, [pending]);
+
+  const dismiss = useCallback(() => {
+    setMenuAt(null);
+    setPending(null);
+    window.getSelection()?.removeAllRanges();
+  }, []);
 
   const commit = (color: AnnotationColor) => {
     if (!pending) return;
@@ -194,8 +239,106 @@ export function PdfHighlightLayer({
           );
         })()}
 
-      {/* Color picker popup for a fresh selection. */}
-      {pending && (
+      {/* R539: the selection menu. Vertical, because it opens on right-click and
+          a context menu is a list — a horizontal strip under the cursor would be
+          a floating toolbar wearing a context menu's trigger.
+
+          Order is argued, not alphabetical:
+            Ask AI      alone at the top — the only item that makes something new
+            Copy · Translate · Search   things done *to* the sentence you picked
+            Highlight   last, because choosing a colour ends the gesture
+      */}
+      {pending && menuAt && (
+        <div
+          className='pointer-events-auto absolute z-30 min-w-44 rounded-lg border bg-popover p-1 shadow-lg'
+          style={{
+            left: Math.min(menuAt.x, Math.max(0, width - 180)),
+            top: Math.min(menuAt.y, Math.max(0, height - 200))
+          }}
+          role='menu'
+        >
+          <button
+            type='button'
+            role='menuitem'
+            onClick={() => {
+              send('ask', pending.text, pageNumber);
+              dismiss();
+            }}
+            className='text-body flex w-full items-center gap-2 rounded-md px-2 py-1.5 font-medium hover:bg-accent'
+          >
+            <Icons.sparkles className='size-4 shrink-0' aria-hidden />
+            {t('selectionAsk')}
+          </button>
+
+          <div className='bg-border my-1 h-px' />
+
+          <button
+            type='button'
+            role='menuitem'
+            onClick={() => {
+              void navigator.clipboard.writeText(pending.text);
+              dismiss();
+            }}
+            className='text-body flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent'
+          >
+            <IconCopy className='size-4 shrink-0' aria-hidden />
+            {t('selectionCopy')}
+          </button>
+          <button
+            type='button'
+            role='menuitem'
+            onClick={() => {
+              send('translate', pending.text, pageNumber);
+              dismiss();
+            }}
+            className='text-body flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent'
+          >
+            <IconLanguage className='size-4 shrink-0' aria-hidden />
+            {t('selectionTranslate')}
+          </button>
+          <button
+            type='button'
+            role='menuitem'
+            onClick={() => {
+              // noopener/noreferrer: a search engine has no business with a
+              // handle to the reader's window.
+              window.open(
+                `https://www.google.com/search?q=${encodeURIComponent(pending.text.slice(0, 300))}`,
+                '_blank',
+                'noopener,noreferrer'
+              );
+              dismiss();
+            }}
+            className='text-body flex w-full items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent'
+          >
+            <Icons.search className='size-4 shrink-0' aria-hidden />
+            {t('selectionSearch')}
+          </button>
+
+          <div className='bg-border my-1 h-px' />
+
+          <div className='px-2 py-1.5'>
+            <p className='text-muted-foreground text-meta mb-1.5'>{t('selectionHighlight')}</p>
+            <div className='flex items-center gap-1.5'>
+              {ANNOTATION_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type='button'
+                  role='menuitem'
+                  onClick={() => commit(c)}
+                  className='size-5 rounded-full border border-black/10 transition-transform hover:scale-110'
+                  style={{ backgroundColor: COLOR_SWATCH[c] }}
+                  aria-label={t('selectionHighlightColor', { color: c })}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Highlight-tool mode keeps its one-tap colour row: the tool is already
+          the answer to "what do you want to do", so asking again is a step. */}
+      {pending && enabled && !menuAt && (
         <div
           className='pointer-events-auto absolute z-30 flex items-center gap-1.5 rounded-full border bg-popover px-2 py-1.5 shadow-lg'
           style={{
@@ -208,11 +351,9 @@ export function PdfHighlightLayer({
               key={c}
               type='button'
               onClick={() => commit(c)}
-              className={cn(
-                'size-5 rounded-full border border-black/10 transition-transform hover:scale-110'
-              )}
+              className='size-5 rounded-full border border-black/10 transition-transform hover:scale-110'
               style={{ backgroundColor: COLOR_SWATCH[c] }}
-              aria-label={`Highlight ${c}`}
+              aria-label={t('selectionHighlightColor', { color: c })}
             />
           ))}
         </div>

@@ -721,7 +721,8 @@
     "filterLabShared": "Toàn lab",
     "filterGroupShared": "Nhóm",
     "groupOtherBadge": "Nhóm khác",
-    "quickFilters": "Lọc nhanh"
+    "quickFilters": "Lọc nhanh",
+    "splitterLabel": "Chỉnh chiều ngang panel AI"
   },
   "collections": {
     "title": "Bộ sưu tập",
@@ -2499,7 +2500,7 @@
     "emptyTitle": "Hỏi AI về tài liệu này",
     "emptyDesc": "Mỗi câu trả lời sẽ trích nguồn chính xác từ tài liệu. Bạn có thể bôi đen một đoạn để hỏi cụ thể về đoạn đó.",
     "searchingInPaper": "Đang tìm trong tài liệu…",
-    "inputFootnote": "Câu trả lời chỉ dựa vào nội dung tài liệu. Nếu không tìm thấy, tôi sẽ nói \"không tìm thấy\".",
+    "inputFootnote": "Câu trả lời chỉ dựa vào nội dung tài liệu. Nếu không có trong tài liệu, kết quả sẽ ghi rõ là không tìm thấy.",
     "copyTitle": "Copy (giữ định dạng cho Word)",
     "copyAria": "Sao chép câu trả lời",
     "noAnswerBadge": "Không có trong tài liệu",

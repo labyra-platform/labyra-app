@@ -720,7 +720,8 @@
     "filterLabShared": "Whole lab",
     "filterGroupShared": "Group",
     "groupOtherBadge": "Other group",
-    "quickFilters": "Filters"
+    "quickFilters": "Filters",
+    "splitterLabel": "Resize the AI panel"
   },
   "collections": {
     "title": "Collections",
@@ -2498,7 +2499,7 @@
     "emptyTitle": "Ask AI about this document",
     "emptyDesc": "Every answer cites exact sources from the document. Select a passage to ask about it specifically.",
     "searchingInPaper": "Searching the document…",
-    "inputFootnote": "Answers are based only on the document's content. If not found, I'll say \"not found\".",
+    "inputFootnote": "Answers come only from this document. If it is not in the document, the result says so.",
     "copyTitle": "Copy (keeps Word formatting)",
     "copyAria": "Copy answer",
     "noAnswerBadge": "Not in the document",

@@ -28,7 +28,7 @@ import {
   IconSparkles
 } from '@tabler/icons-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -43,6 +43,14 @@ import {
 } from '@/features/papers/stores/paper-translations-store';
 import { formatSciNode, formatSciText } from '@/features/spectra/utils/format-units';
 import { cn } from '@/lib/utils';
+import { PanelSplitter } from '@/features/papers/components/panel-splitter';
+import {
+  clampPanel,
+  PANEL_DEFAULT,
+  PANEL_MIN,
+  panelMax,
+  useReaderPanelStore
+} from '@/features/papers/stores/reader-panel-store';
 import type { AnnotationColor, HighlightAnnotation } from '@/types/annotations';
 import type { Paper } from '@/types/papers';
 import { AskAiTab } from './ask-ai-tab';
@@ -138,14 +146,48 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
     'info' | 'citations' | 'highlights' | 'translations' | 'figures' | 'ai'
   >('info');
 
-  const [panelOpen, setPanelOpen] = useState(false);
-  const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
+  // R530: width and collapse move to a persisted store. panelOpen used to be
+  // local useState(false), so the panel shut itself every time you navigated —
+  // the same class of fault as R529's tabs, one layer up.
+  const collapsed = useReaderPanelStore((s) => s.collapsed);
+  const width = useReaderPanelStore((s) => s.width);
+  const setCollapsed = useReaderPanelStore((s) => s.setCollapsed);
+  const setWidth = useReaderPanelStore((s) => s.setWidth);
+  const resetWidth = useReaderPanelStore((s) => s.reset);
+  const panelOpen = !collapsed;
+  const togglePanel = useCallback(() => setCollapsed(!collapsed), [collapsed, setCollapsed]);
+
+  // The splitter's bounds depend on how much room the split has, so the shell
+  // is measured rather than assumed. Re-measured on window resize because a
+  // laptop that gets plugged into a monitor changes the answer.
+  const shellRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const [shellWidth, setShellWidth] = useState(0);
+  useEffect(() => {
+    const measure = () => setShellWidth(shellRef.current?.parentElement?.clientWidth ?? 0);
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+  const max = shellWidth > 0 ? panelMax(shellWidth) : PANEL_DEFAULT;
+
+  // A width that was fine on a monitor can exceed the max on a laptop. Clamp on
+  // arrival rather than trusting what localStorage remembered.
+  const shown = shellWidth > 0 ? clampPanel(width, shellWidth) : width;
+
+  const commitWidth = useCallback(
+    (next: number) => {
+      setWidth(next);
+      if (panelRef.current) panelRef.current.style.width = '';
+    },
+    [setWidth]
+  );
   const switchPanelTab = useCallback(
     (next: 'info' | 'citations' | 'highlights' | 'translations' | 'figures' | 'ai') => {
       setPanelTab(next);
-      setPanelOpen(true);
+      setCollapsed(false);
     },
-    []
+    [setCollapsed]
   );
 
   // Tell PdfViewer to re-measure after a collapse/expand finishes (PdfViewer
@@ -155,49 +197,70 @@ export function ReaderSidePanel({ paperId, onJumpToPage }: ReaderSidePanelProps)
     return () => clearTimeout(id);
   }, [panelOpen]);
 
+  // Committed width changes need the same re-measure, but without the wait —
+  // the drag is already over and the width is already applied.
+  useEffect(() => {
+    window.dispatchEvent(new Event('resize'));
+  }, [width]);
+
   return (
     <>
-      {/* Collapse handle. When open it sits at the panel edge; when collapsed it
-          vanishes (transparent) and the chevron only fades in on hover, so reading
-          is uninterrupted but the panel is still one click away. */}
-      <button
-        type='button'
-        onClick={togglePanel}
-        aria-label={panelOpen ? t('panelCollapse') : t('panelExpand')}
-        title={panelOpen ? t('panelCollapse') : t('panelExpand')}
-        className={cn(
-          'group relative flex w-6 shrink-0 items-center justify-center transition-colors',
-          panelOpen ? 'border-l bg-muted/40 hover:bg-muted' : 'bg-transparent'
-        )}
-      >
-        <span
-          className={cn(
-            'flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-all duration-200 group-hover:scale-110 group-hover:border-primary group-hover:text-primary',
-            !panelOpen && 'opacity-0 group-hover:opacity-100'
-          )}
+      {/* R530: the splitter replaces the collapse handle when the panel is
+          open. A 24px button that only toggles was answering the wrong
+          question — people did not want the panel *on*, they wanted it a
+          particular width, and the only widths on offer were 384px and zero.
+          That is also where the rendering fault came from: the shell animated
+          to w-0 while the content inside it stayed pinned at w-[24rem], so the
+          panel did not shrink, it got cropped. One width, one place, no crop. */}
+      {panelOpen ? (
+        <PanelSplitter
+          width={shown}
+          min={PANEL_MIN}
+          max={max}
+          onCommit={commitWidth}
+          onReset={resetWidth}
+          panelRef={panelRef}
+        />
+      ) : (
+        <button
+          type='button'
+          onClick={togglePanel}
+          aria-label={t('panelExpand')}
+          title={t('panelExpand')}
+          className='group relative flex w-6 shrink-0 items-center justify-center bg-transparent transition-colors'
         >
-          <IconChevronRight
-            className={cn('size-3.5 transition-transform duration-300', !panelOpen && 'rotate-180')}
-          />
-        </span>
-      </button>
+          <span className='bg-background text-muted-foreground group-hover:border-primary group-hover:text-primary flex size-6 items-center justify-center rounded-full border opacity-0 shadow-sm transition-all duration-200 group-hover:scale-110 group-hover:opacity-100'>
+            <IconChevronRight className='size-4 rotate-180' />
+          </span>
+        </button>
+      )}
 
       {/* Panel column */}
       <aside
+        ref={panelRef}
+        style={panelOpen ? { width: shown } : undefined}
         className={cn(
-          'shrink-0 overflow-hidden border-l bg-background transition-[width] duration-300 ease-out',
-          panelOpen ? 'w-[24rem]' : 'w-0 border-l-0'
+          'bg-background shrink-0 overflow-hidden border-l',
+          panelOpen ? 'flex flex-col' : 'w-0 border-l-0'
         )}
       >
-        <div
-          className={cn(
-            'flex h-full w-[24rem] flex-col transition-opacity duration-200',
-            panelOpen ? 'opacity-100 delay-100' : 'opacity-0'
-          )}
-        >
-          {/* Tab strip — scrolls horizontally if the labels don't all fit. */}
-          <div className='shrink-0 px-2 pb-1 pt-2'>
-            <div className='flex items-center gap-0.5 rounded-lg bg-muted/60 p-1'>
+        <div className={cn('flex h-full min-w-0 flex-1 flex-col', !panelOpen && 'hidden')}>
+          {/* Tab strip — scrolls horizontally if the labels don't all fit.
+              R530: collapse lives here now. The splitter took the panel edge,
+              and a separator that also closed things would be two controls
+              wearing one hit area — drag it slightly and you would lose the
+              panel instead of resizing it. */}
+          <div className='flex shrink-0 items-center gap-1 px-2 pt-2 pb-1'>
+            <button
+              type='button'
+              onClick={togglePanel}
+              aria-label={t('panelCollapse')}
+              title={t('panelCollapse')}
+              className='text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 shrink-0 items-center justify-center rounded-md transition-colors'
+            >
+              <IconChevronRight className='size-4' />
+            </button>
+            <div className='bg-muted/60 flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-lg p-1'>
               <PanelTabButton
                 active={panelTab === 'info'}
                 onClick={() => switchPanelTab('info')}

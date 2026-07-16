@@ -725,7 +725,9 @@ export function PdfViewer({
   // reveal felt jittery). While the cursor sits in the reading area, collapse the
   // chrome after a 3 s dwell; move the cursor back into the top strip to reveal it.
   const setChromeCollapsed = useReaderChromeStore((s) => s.setCollapsed);
-  const chromeCollapsed = useReaderChromeStore((s) => s.collapsed);
+  // R541: the viewer drives the collapse from scroll direction; it no longer
+  // reads it back. Only the workspace consumes the flag now — the toolbar used
+  // to hide itself with it, and that was the one reader here.
   useEffect(() => {
     const el = pagesContainerRef.current;
     if (!el) return;
@@ -1137,14 +1139,17 @@ export function PdfViewer({
         className='absolute inset-x-0 top-0 z-20 h-2'
         onMouseEnter={() => setChromeCollapsed(false)}
       />
-      {/* Toolbar (auto-hides while reading) */}
-      <header
-        onMouseEnter={() => setChromeCollapsed(false)}
-        className={cn(
-          'flex items-center gap-1.5 overflow-hidden border-b bg-background px-3 transition-all duration-200 sm:gap-2 sm:px-4',
-          chromeCollapsed ? 'max-h-0 border-b-0 py-0 opacity-0' : 'max-h-16 py-2 opacity-100'
-        )}
-      >
+      {/* R541: the toolbar stays through the collapse; the tab strip does not.
+          They answer different questions. The strip answers "which paper", and
+          while you are reading one the answer does not change — hiding it buys
+          a row you were not using. The toolbar answers "where am I in this
+          paper and what am I doing to it": page, zoom, search, highlight. Those
+          are the things you reach for *while* reading, so collapsing took away
+          the tools in use and left the navigation you had finished with.
+
+          The scroll-driven collapse still fires and the strip still goes; this
+          just stops it taking the toolbar with it. */}
+      <header className='flex items-center gap-1.5 overflow-hidden border-b bg-background px-3 py-2 sm:gap-2 sm:px-4'>
         {/* R237n: navigation sidebar toggle (thumbnails + outline). */}
         <Button
           variant={sidebarOpen ? 'secondary' : 'ghost'}

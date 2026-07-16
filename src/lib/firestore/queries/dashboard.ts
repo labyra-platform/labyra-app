@@ -431,14 +431,24 @@ export interface ActivityDay {
   samples: number;
 }
 
-/** Per-day counts of the three things a lab produces. */
-export function useActivityDaily(days = 30): { data: ActivityDay[]; isLoading: boolean } {
+/**
+ * Per-day counts of the three things a lab produces.
+ *
+ * R546: `endMs` moves the window. It used to end today, always, which is fine
+ * for a card that only ever shows "recently" and useless for one you can pan.
+ * Passing the end as a timestamp rather than a Date keeps the memo honest — a
+ * fresh Date object every render is a new dependency every render.
+ */
+export function useActivityDaily(
+  days = 30,
+  endMs?: number
+): { data: ActivityDay[]; isLoading: boolean } {
   const experiments = useTenantCollection<ExperimentDoc>({ collection: 'experiments' });
   const samples = useTenantCollection<{ createdAt?: unknown }>({ collection: 'samples' });
   const dft = useTenantCollection<DftWorkflowDoc>({ collection: 'dftWorkflows' });
 
   return useMemo(() => {
-    const dayStart = new Date();
+    const dayStart = endMs === undefined ? new Date() : new Date(endMs);
     dayStart.setHours(0, 0, 0, 0);
     const buckets = new Map<string, ActivityDay>();
     for (let i = days - 1; i >= 0; i -= 1) {
@@ -484,7 +494,8 @@ export function useActivityDaily(days = 30): { data: ActivityDay[]; isLoading: b
     samples.isLoading,
     dft.data,
     dft.isLoading,
-    days
+    days,
+    endMs
   ]);
 }
 

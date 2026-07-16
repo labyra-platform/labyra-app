@@ -266,7 +266,6 @@
       "samples": "Samples",
       "empty": "Experiments, DFT runs and samples will chart here as you record them.",
       "emptyTitle": "Nothing logged yet",
-      "subtitle": "Last {weeks} weeks",
       "total": "{count} in total",
       "breakdown": "{experiments} experiments · {dft} DFT · {samples} samples",
       "nothing": "Nothing logged",
@@ -276,7 +275,16 @@
         "0": "Mon",
         "2": "Wed",
         "4": "Fri"
-      }
+      },
+      "range": {
+        "2w": "Last 2 weeks",
+        "1m": "Last month",
+        "3m": "Last 3 months",
+        "6m": "Last 6 months",
+        "12m": "Last 12 months"
+      },
+      "periodNow": "Now",
+      "wheelHint": "Scroll to change the range"
     },
     "ghs": {
       "title": "GHS hazards",

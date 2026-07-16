@@ -91,9 +91,21 @@ function cleanSnippet(s: string): string {
  * R268: a slightly longer preview of the cited chunk for the hover popover
  * (§11 L2). Capped at 15 words so it stays a glance, not a wall of text.
  */
+/**
+ * R540: no word cap.
+ *
+ * This cut every snippet at fifteen words, into a tooltip that is
+ * `line-clamp-4` — a box with room for four lines was being handed one and a
+ * half, and the cut landed mid-clause: "using an M1 M1 M2 k -point mesh,…".
+ * Fifteen words is rarely enough to check a claim, and checking the claim is
+ * the only reason the chip exists.
+ *
+ * The clamp does the truncating now. It cuts at the line the box actually ends
+ * on rather than at a number picked in advance, and it cuts visually — the
+ * text underneath stays whole for anyone who selects or reads it aloud.
+ */
 function citationExcerpt(snippet: string): string {
-  const words = cleanSnippet(snippet).split(' ');
-  return words.length <= 15 ? words.join(' ') : `${words.slice(0, 15).join(' ')}…`;
+  return cleanSnippet(snippet);
 }
 
 function TrustChip({
@@ -664,7 +676,11 @@ function AssistantBubble({
           idx: n,
           excerpt: citationExcerpt(cite.snippet),
           page: cite.page,
-          section: cite.section,
+          // R540: cleaned, like the excerpt beside it. Section headings come
+          // out of the same OCR and carry the same markup — this one printed
+          // "4.3 CHOOSING $k$ POINTS FOR SURFACE CALCULATIONS" at the reader,
+          // because only the snippet was ever cleaned.
+          section: cleanSnippet(cite.section ?? ''),
           top: rect.bottom + 6,
           left: Math.max(8, Math.min(rect.left, window.innerWidth - 288))
         };

@@ -77,13 +77,91 @@ function normForMatch(x: string): string {
     .trim();
 }
 
+/**
+ * Normalize like normForMatch, but keep the way back.
+ *
+ * `map[i]` is the index in `x` that produced `norm[i]`, so a span found in the
+ * normalized text can be marked in the original — punctuation, casing and
+ * runs of whitespace intact.
+ */
+function normWithMap(x: string): { norm: string; map: number[] } {
+  const out: string[] = [];
+  const map: number[] = [];
+  let space = false;
+  for (let i = 0; i < x.length; i += 1) {
+    const ch = x[i];
+    if (/[\p{L}\p{N}]/u.test(ch)) {
+      out.push(ch.toLowerCase());
+      map.push(i);
+      space = false;
+    } else if (!space && out.length > 0) {
+      out.push(' ');
+      map.push(i);
+      space = true;
+    }
+  }
+  while (out.length > 0 && out[out.length - 1] === ' ') {
+    out.pop();
+    map.pop();
+  }
+  return { norm: out.join(''), map };
+}
+
+/** Longest suffix of `a` that is also a prefix of `b`. */
+function overlapLen(a: string, b: string, min: number): number {
+  const max = Math.min(a.length, b.length);
+  for (let n = max; n >= min; n -= 1) {
+    if (a.endsWith(b.slice(0, n))) return n;
+  }
+  return 0;
+}
+
+/**
+ * Mark the part of this text item that the cited phrase actually covers.
+ *
+ * R540: this used to be all-or-nothing —
+ *
+ *     if (np.includes(ns) || ns.includes(np)) mark the whole item; else mark nothing
+ *
+ * PDF.js hands text out in items of roughly a line, so a quote of any length
+ * spans several. The items *inside* the quote matched and were marked; the
+ * first item starts before the quote and the last runs past its end, so
+ * neither was contained either way and neither was marked. The highlight came
+ * out clipped at both ends — every time, by construction, and worst on exactly
+ * the long quotes that most need checking.
+ *
+ * The two edge cases are the fix: an item whose tail begins the phrase, and an
+ * item whose head finishes it. Both are marked from where the overlap starts
+ * to where it ends, which is why the normalized indices have to map back.
+ */
 export function citeMarkItem(str: string, phrase: string): string {
   if (!phrase) return escapeHtml(str);
-  const ns = normForMatch(str);
+  const { norm: ns, map } = normWithMap(str);
   const np = normForMatch(phrase);
   if (ns.length < 4 || np.length < 4) return escapeHtml(str);
-  if (np.includes(ns) || ns.includes(np)) {
-    return `<mark class="pcm">${escapeHtml(str)}</mark>`;
+
+  const wrap = (from: number, to: number) =>
+    escapeHtml(str.slice(0, from)) +
+    `<mark class="pcm">${escapeHtml(str.slice(from, to))}</mark>` +
+    escapeHtml(str.slice(to));
+
+  // Whole item lies inside the quote.
+  if (np.includes(ns)) return `<mark class="pcm">${escapeHtml(str)}</mark>`;
+
+  // Quote lies inside this item.
+  const inner = ns.indexOf(np);
+  if (inner !== -1) {
+    return wrap(map[inner], (map[inner + np.length - 1] ?? map[map.length - 1]) + 1);
   }
+
+  // Item's tail starts the quote — the first line of the passage.
+  const MIN = 8;
+  const tail = overlapLen(ns, np, MIN);
+  if (tail > 0) return wrap(map[ns.length - tail], str.length);
+
+  // Item's head finishes the quote — the last line of the passage.
+  const head = overlapLen(np, ns, MIN);
+  if (head > 0) return wrap(0, (map[head - 1] ?? map[map.length - 1]) + 1);
+
   return escapeHtml(str);
 }

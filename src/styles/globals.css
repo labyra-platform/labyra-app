@@ -449,25 +449,34 @@ html {
    (`.psm`, default yellow); it auto-clears after ~4.5s (see pdf-viewer). */
 mark.pcm {
   /* R501: the react-pdf text layer is transparent glyphs over the canvas.
-     Painting an opaque/semi-opaque background on the <mark> makes those hidden
-     glyphs read as a block sitting on top of the rendered text (the "overlay"
-     bug). mix-blend-mode:multiply tints the canvas underneath exactly like the
-     saved-highlight layer (pdf-highlight-layer) does — clean yellow highlight,
-     the underlying page text stays crisp. Color matched to the yellow the user
-     asked for (parity with a real highlight). */
+     Painting an opaque background on the <mark> makes those hidden glyphs read
+     as a block sitting on top of the rendered text (the "overlay" bug).
+     mix-blend-mode:multiply tints the canvas underneath exactly like the
+     saved-highlight layer does — clean highlight, page text stays crisp.
+
+     R554: no animation.
+
+     `animation: pcm-flash 0.5s` faded each mark from 0.7 alpha to 0.45 — timed
+     from the moment *that mark* was created. The text layer renders in waves
+     (measured: 1 mark, then 4), so for the first half second the earlier marks
+     had already settled while the later ones were still bright, and one
+     continuous passage came out mottled: light here, dark there. Then it
+     evened out on its own, which is what made it look like a rendering bug
+     rather than a fade.
+
+     A per-element animation cannot express "flash this passage" when the
+     passage arrives in pieces — each piece only knows its own birthday. The
+     honest options were a shared clock on a parent or no clock at all, and the
+     fade was buying very little: the viewer already scrolls the cited line to
+     the top, and the colour appearing at all is the flash. Removed rather than
+     rebuilt.
+
+     Verified in the browser: 0.7 → (0.57, 0.518) → 0.45 across three snapshots
+     of one click. Two alphas at 300ms is the mottling. */
   background-color: hsl(48 96% 53% / 0.45);
   color: inherit;
   mix-blend-mode: multiply;
   border-radius: 2px;
-  animation: pcm-flash 0.5s ease-out;
-}
-@keyframes pcm-flash {
-  from {
-    background-color: hsl(48 96% 53% / 0.7);
-  }
-  to {
-    background-color: hsl(48 96% 53% / 0.45);
-  }
 }
 
 /* PDF text selection. The react-pdf text layer is transparent text painted over

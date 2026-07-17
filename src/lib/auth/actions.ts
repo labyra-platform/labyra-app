@@ -68,6 +68,33 @@ export async function resendVerificationEmail(): Promise<void> {
 export async function signOut(): Promise<void> {
   const auth = getFirebaseAuth();
   await firebaseSignOut(auth);
+
+  /**
+   * R563: clear the server session *before* returning.
+   *
+   * The provider does clear it — onIdTokenChanged fires with a null user and
+   * DELETEs the cookie. I first wrote that nobody called the route and was
+   * wrong; the caller exists. The bug is that it races.
+   *
+   * signOut resolved as soon as firebaseSignOut did, and the listener ran
+   * afterwards, asynchronously. Callers await signOut and navigate straight
+   * away (app-sidebar, nav-user), so the DELETE is still in flight when the
+   * page changes — and may die with it. The Firebase session ends; the
+   * HttpOnly cookie that src/proxy.ts actually reads survives. Sign-out ends
+   * the session the client can see and leaves the one the server acts on.
+   *
+   * Awaiting it here makes the guarantee the callers already assume. The
+   * listener's DELETE stays as the path for sign-outs this function does not
+   * originate (token revoked, another tab); a second DELETE is harmless.
+   *
+   * Nam found it from the right clue: incognito was unaffected, because
+   * incognito had no cookie to inherit.
+   *
+   * Failure throws rather than being swallowed. A logout that reports success
+   * while the server session stands is precisely the bug being fixed.
+   */
+  const res = await fetch('/api/auth/session', { method: 'DELETE' });
+  if (!res.ok) throw new Error('signout_session_clear_failed');
 }
 
 /** Send password reset email */

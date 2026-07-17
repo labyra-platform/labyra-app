@@ -14,7 +14,9 @@ import {
   type AskStreamMeta,
   splitFollowups
 } from '@/features/papers/ask/types';
+import type { AiCostBreakdown } from '@/types/ai';
 import { estimateCost } from '@/lib/ai/cost/estimator';
+import { recordCost } from '@/lib/ai/cost/telemetry';
 import { checkCostGuard } from '@/lib/ai/governance/cost-guard';
 import { selectProvider } from '@/lib/ai/providers';
 import { searchPapers } from '@/lib/ai/rag/search';
@@ -40,7 +42,17 @@ function jsonError(status: number, error: string, extra?: Record<string, unknown
 }
 
 /** Decompose the research question into focused sub-questions (cheap T2 call). */
-async function decompose(question: string, paperTitle: string): Promise<string[]> {
+/**
+ * R567: returns its usage rather than reporting it through a shared variable.
+ *
+ * This is module scope — a `let spentUsd` up here is shared by every concurrent
+ * request, so two researchers pressing the button at once would bill each other.
+ * Trading a bookkeeping bug for a race is not a fix.
+ */
+async function decompose(
+  question: string,
+  paperTitle: string
+): Promise<{ questions: string[]; usage: AiCostBreakdown }> {
   const { provider, config } = selectProvider(2);
   try {
     const res = await provider.complete({
@@ -57,16 +69,24 @@ async function decompose(question: string, paperTitle: string): Promise<string[]
         { role: 'user', content: `Paper: "${paperTitle}"\nResearch question: ${question}` }
       ]
     });
+    // R567: every path carries the usage the provider already reported. The
+    // call spent the money whether or not its JSON parsed — falling back to
+    // the raw question is a recovery, not a refund.
+    const usage = res.usage;
     const match = /\[[\s\S]*\]/.exec(res.text);
-    if (!match) return [question];
+    if (!match) return { questions: [question], usage };
     const parsed = JSON.parse(match[0]) as unknown;
-    if (!Array.isArray(parsed)) return [question];
+    if (!Array.isArray(parsed)) return { questions: [question], usage };
     const qs = parsed
       .filter((x): x is string => typeof x === 'string' && x.trim().length > 3)
       .slice(0, SUBQ_COUNT);
-    return qs.length > 0 ? qs : [question];
+    return { questions: qs.length > 0 ? qs : [question], usage };
   } catch {
-    return [question];
+    // Threw before or during the call — nothing measurable was billed here.
+    return {
+      questions: [question],
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, usd: 0 }
+    };
   }
 }
 
@@ -105,6 +125,7 @@ ${sourceBlocks}`;
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const startedAt = Date.now();
   const { id: paperId } = await params;
 
   const authHeader = request.headers.get('authorization');
@@ -163,7 +184,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     async start(controller) {
       try {
         // 1. Decompose into sub-questions.
-        const subQuestions = await decompose(question, paperTitle);
+        const { questions: subQuestions, usage: decomposeUsage } = await decompose(
+          question,
+          paperTitle
+        );
+        // Request-local, not module-level: concurrent researchers must not bill
+        // each other.
+        let spentUsd = decomposeUsage.usd;
+        let spentIn = decomposeUsage.inputTokens;
+        let spentOut = decomposeUsage.outputTokens;
 
         // 2. Stream the plan first so the user sees the research approach.
         const planMd = `**Kế hoạch nghiên cứu**\n${subQuestions.map((q) => `- ${q}`).join('\n')}\n\n---\n\n`;
@@ -223,8 +252,45 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           if (event.type === 'text_delta') {
             full += event.delta;
             controller.enqueue(encoder.encode(event.delta));
+          } else if (event.type === 'message_complete') {
+            // R567: the stream reports what it cost, in the event this loop
+            // was throwing away. Tier 3 is the expensive call in this route.
+            spentUsd += event.usage.usd;
+            spentIn += event.usage.inputTokens;
+            spentOut += event.usage.outputTokens;
           }
         }
+
+        /**
+         * R567: write the ledger.
+         *
+         * This route called checkCostGuard and estimateCost and never recorded
+         * a thing. Two model calls — tier 2 to decompose, tier 3 to synthesise —
+         * spent real money that the telemetry never saw, so the guard on the
+         * *next* request read a total that was missing every research run ever
+         * made. A guard that reads its own blind spot is not a guard; it is a
+         * number that agrees with you.
+         *
+         * Recorded after the stream, so it books what was actually spent rather
+         * than what was estimated before the work began.
+         *
+         * void + catch, matching translate: a telemetry failure must not fail a
+         * report the user already has on screen.
+         */
+        void recordCost({
+          tenantId,
+          tier: 3,
+          capability: 'rag-balanced',
+          // paper_qa, matching the checkCostGuard call at the top of this
+          // handler. The guard reads a bucket; the ledger must write the same
+          // one, or the guard keeps reading a bucket nothing pays into — which
+          // is the bug this round is fixing, one layer down.
+          feature: 'paper_qa',
+          costUsd: spentUsd,
+          inputTokens: spentIn,
+          outputTokens: spentOut,
+          latencyMs: Date.now() - startedAt
+        }).catch(() => {});
 
         // 5. Trailing meta — citations + verification (on the report only).
         const { answer: report, questions } = splitFollowups(full);

@@ -266,25 +266,27 @@
       "samples": "Mẫu",
       "empty": "Thí nghiệm, DFT run và mẫu sẽ lên biểu đồ này khi bạn ghi lại.",
       "emptyTitle": "Chưa ghi nhận gì",
-      "total": "tổng {count}",
       "breakdown": "{experiments} thí nghiệm · {dft} DFT · {samples} mẫu",
       "nothing": "Không có gì được ghi",
       "less": "Ít",
       "more": "Nhiều",
-      "weekday": {
-        "0": "T2",
-        "2": "T4",
-        "4": "T6"
-      },
       "range": {
-        "2w": "2 tuần gần nhất",
-        "1m": "1 tháng gần nhất",
-        "3m": "3 tháng gần nhất",
-        "6m": "6 tháng gần nhất",
-        "12m": "12 tháng gần nhất"
+        "1m": "1 tháng",
+        "3m": "3 tháng",
+        "6m": "6 tháng",
+        "12m": "12 tháng"
       },
-      "periodNow": "Hiện tại",
-      "wheelHint": "Lăn chuột để đổi khoảng thời gian"
+      "by": {
+        "day": "theo ngày",
+        "week": "theo tuần",
+        "month": "theo tháng"
+      },
+      "events": "{count} hoạt động",
+      "modeBar": "Biểu đồ cột",
+      "modeHeatmap": "Bản đồ nhiệt",
+      "heatmapNeedsRange": "Bản đồ nhiệt cần từ 6 tháng trở lên",
+      "year": "Năm",
+      "rangeLabel": "Khoảng"
     },
     "ghs": {
       "title": "Nguy hại GHS",

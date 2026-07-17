@@ -8,7 +8,7 @@
  * order, so the same priority survives on a phone.
  */
 import PageContainer from '@/components/layout/page-container';
-import { ActivityHeatmap } from '@/features/overview/components/activity-heatmap';
+import { ActivityCard } from '@/features/overview/components/activity-card';
 import { AttentionCard } from '@/features/overview/components/attention-card';
 import { DashboardHeader } from '@/features/overview/components/dashboard-header';
 import { DftRunsCard } from '@/features/overview/components/dft-runs-card';
@@ -65,7 +65,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ local
           </div>
 
           <div className='lg:col-span-3'>
-            <ActivityHeatmap />
+            <ActivityCard />
           </div>
           <div className='lg:col-span-3'>
             <DftRunsCard />

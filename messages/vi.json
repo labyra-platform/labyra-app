@@ -771,7 +771,9 @@
     "selectionHighlightColor": "Tô màu {color}",
     "translateAbstract": "Dịch",
     "translating": "Đang dịch…",
-    "translateFailed": "Không dịch được — thử lại"
+    "translateFailed": "Không dịch được — thử lại",
+    "noteAdd": "+ Thêm ghi chú",
+    "notePlaceholder": "Ghi chú của bạn…"
   },
   "collections": {
     "title": "Bộ sưu tập",

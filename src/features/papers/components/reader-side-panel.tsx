@@ -34,7 +34,11 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AXIS_COLOR, getAxis } from '@/features/papers/lib/taxonomy';
 import { useTenantId } from '@/lib/auth/use-claims';
-import { deleteAnnotation, subscribeAnnotations } from '@/lib/firestore/queries/annotations';
+import {
+  deleteAnnotation,
+  subscribeAnnotations,
+  updateAnnotation
+} from '@/lib/firestore/queries/annotations';
 import { usePaper, usePretranslation, type Pretranslation } from '@/lib/firestore/queries/papers';
 import { sanitizeFormatting } from '@/features/papers/lib/sanitize-formatting';
 import {
@@ -669,6 +673,34 @@ function HighlightsTab({
     [tenantId, paperId]
   );
 
+  /**
+   * R558: notes.
+   *
+   * `note?: string` has been on AnnotationHighlight, and `updateAnnotation` has
+   * accepted `{ note }`, since they were written. Nothing ever read or wrote it:
+   * the field, the type and the write path all existed and there was no way to
+   * reach any of them. This is the way in.
+   *
+   * Saved on blur, not behind a button. A note is a thought you had while
+   * reading — asking for a second click to keep it is asking you to stop
+   * reading, and the failure it guards against (losing a note) is exactly what
+   * a forgotten Save button causes.
+   */
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+
+  const saveNote = useCallback(
+    (id: string, current: string) => {
+      setEditing(null);
+      const next = draft.trim();
+      // No write when nothing changed — an unchanged note should not bump
+      // updatedAt and reorder somebody's list.
+      if (!tenantId || next === (current ?? '').trim()) return;
+      void updateAnnotation(tenantId, paperId, id, { note: next });
+    },
+    [tenantId, paperId, draft]
+  );
+
   if (!loaded) {
     return (
       <div className='min-h-0 flex-1 overflow-y-auto p-4 text-sm text-muted-foreground'>
@@ -696,39 +728,94 @@ function HighlightsTab({
           return (
             <div
               key={hl.id}
-              className='group flex items-start gap-2 rounded-md border border-border bg-card p-2 transition-colors hover:bg-muted/50'
+              className='group rounded-md border border-border bg-card p-2 transition-colors hover:bg-muted/50'
             >
-              <button
-                type='button'
-                onClick={() => onJumpToPage(page, first?.y)}
-                className='flex min-w-0 flex-1 items-start gap-2 text-left'
-                aria-label={`${t('page')} ${page}: ${hl.text}`}
-                title={`${t('page')} ${page}`}
-              >
-                <span
-                  className='mt-0.5 h-4 w-1 shrink-0 rounded-full'
-                  style={{ backgroundColor: HIGHLIGHT_SWATCH[hl.color] }}
-                  aria-hidden
+              <div className='flex items-start gap-2'>
+                <button
+                  type='button'
+                  onClick={() => onJumpToPage(page, first?.y)}
+                  className='flex min-w-0 flex-1 items-start gap-2 text-left'
+                  aria-label={`${t('page')} ${page}: ${hl.text}`}
+                  title={`${t('page')} ${page}`}
+                >
+                  <span
+                    className='mt-0.5 h-4 w-1 shrink-0 rounded-full'
+                    style={{ backgroundColor: HIGHLIGHT_SWATCH[hl.color] }}
+                    aria-hidden
+                  />
+                  <span className='min-w-0 flex-1'>
+                    <span className='line-clamp-3 text-xs leading-relaxed text-foreground'>
+                      {formatSciText(normalizeHighlightText(hl.text))}
+                    </span>
+                    <span className='mt-0.5 block text-[10.5px] text-muted-foreground'>
+                      {t('page')} {page}
+                    </span>
+                  </span>
+                </button>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={() => remove(hl.id)}
+                  className='size-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100'
+                  aria-label={t('highlightDelete')}
+                  title={t('highlightDelete')}
+                >
+                  <Icons.trash className='size-3.5' />
+                </Button>
+              </div>
+
+              {/* Outside the jump button on purpose: a textarea inside a button
+                  is not a textarea, and clicking to type would jump the page out
+                  from under you. */}
+              {editing === hl.id ? (
+                <textarea
+                  // Focus by ref, not autoFocus: the focus is a response to the
+                  // click that opened this box, not something that happens to a
+                  // reader who never asked for it. oxlint is right that the
+                  // attribute is a usability problem; the behaviour here is not.
+                  ref={(el) => el?.focus()}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={() => saveNote(hl.id, hl.note ?? '')}
+                  onKeyDown={(e) => {
+                    // Escape abandons; Enter saves. Shift+Enter keeps the
+                    // newline, because a note about a method is often a list.
+                    if (e.key === 'Escape') setEditing(null);
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  rows={2}
+                  placeholder={t('notePlaceholder')}
+                  aria-label={t('noteAdd')}
+                  className='text-caption mt-1.5 w-full resize-none rounded border border-border bg-background p-1.5 outline-none focus:border-primary'
                 />
-                <span className='min-w-0 flex-1'>
-                  <span className='line-clamp-3 text-xs leading-relaxed text-foreground'>
-                    {formatSciText(normalizeHighlightText(hl.text))}
-                  </span>
-                  <span className='mt-0.5 block text-[10.5px] text-muted-foreground'>
-                    {t('page')} {page}
-                  </span>
-                </span>
-              </button>
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={() => remove(hl.id)}
-                className='size-7 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100'
-                aria-label={t('highlightDelete')}
-                title={t('highlightDelete')}
-              >
-                <Icons.trash className='size-3.5' />
-              </Button>
+              ) : hl.note ? (
+                <button
+                  type='button'
+                  onClick={() => {
+                    setDraft(hl.note ?? '');
+                    setEditing(hl.id);
+                  }}
+                  className='text-caption border-border/60 mt-1.5 block w-full border-l-2 pl-2 text-left text-muted-foreground hover:text-foreground'
+                >
+                  {formatSciText(hl.note)}
+                </button>
+              ) : (
+                // Only on hover: an "add note" affordance on every row would
+                // shout louder than the highlights themselves.
+                <button
+                  type='button'
+                  onClick={() => {
+                    setDraft('');
+                    setEditing(hl.id);
+                  }}
+                  className='text-meta mt-1 text-primary opacity-0 transition-opacity group-hover:opacity-100'
+                >
+                  {t('noteAdd')}
+                </button>
+              )}
             </div>
           );
         })}

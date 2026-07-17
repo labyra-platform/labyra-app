@@ -770,7 +770,9 @@
     "selectionHighlightColor": "Highlight {color}",
     "translateAbstract": "Translate",
     "translating": "Translating…",
-    "translateFailed": "Couldn't translate — try again"
+    "translateFailed": "Couldn't translate — try again",
+    "noteAdd": "+ Add note",
+    "notePlaceholder": "Your note…"
   },
   "collections": {
     "title": "Collections",

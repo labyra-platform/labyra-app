@@ -15,6 +15,7 @@ import { Icons } from '@/components/icons';
 import { Panel, PanelEmpty, PanelFooter, PanelList, PanelRow } from '@/components/ui-extra/panel';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useIsAdmin } from '@/lib/auth/use-claims';
 import {
   Select,
   SelectContent,
@@ -73,6 +74,8 @@ function initials(m: GroupMember): string {
 export function GroupMembersCard() {
   const t = useTranslations('dashboard');
   const tRoles = useTranslations('common.roles');
+  // Before any early return — this component has one for loading.
+  const isAdmin = useIsAdmin();
   const [groupId, setGroupId] = useState<string | null>(null);
   const { group, members, groups, canSwitchGroup, isLoading } = useGroupRoster(groupId);
   const ranked = useMemo(() => members.toSorted(byRank), [members]);
@@ -159,12 +162,22 @@ export function GroupMembersCard() {
           <Button asChild size='sm' variant='ghost' className='flex-1 rounded-lg'>
             <Link href='/dashboard/members'>{t('members.viewAll', { count: ranked.length })}</Link>
           </Button>
-          <Button asChild size='sm' variant='outline' className='rounded-lg'>
-            <Link href='/dashboard/members'>
-              <Icons.add className='size-4' aria-hidden='true' />
-              {t('members.invite')}
-            </Link>
-          </Button>
+          {/* R565: admin only, because that is who can actually do it.
+              firestore.rules gates /invites on isAdmin(), so this button offered
+              a member an action the database refuses. R487 taught the sidebar to
+              hide what you cannot reach and never told the dashboard, so the
+              nav hid the members page while this card kept advertising it —
+              click, and Firestore says no. A control the backend will reject is
+              worse than no control: it reads as the app being broken rather
+              than as permission being withheld. */}
+          {isAdmin && (
+            <Button asChild size='sm' variant='outline' className='rounded-lg'>
+              <Link href='/dashboard/members'>
+                <Icons.add className='size-4' aria-hidden='true' />
+                {t('members.invite')}
+              </Link>
+            </Button>
+          )}
         </div>
       </PanelFooter>
     </Panel>

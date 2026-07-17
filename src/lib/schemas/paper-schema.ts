@@ -38,6 +38,11 @@ const PaperPatchFields = {
   // a successful "Resolve from DOI", clearing the amber unverified-DOI triangle
   // without a full worker reprocess. The editor only ever sends `true`.
   doiVerified: z.boolean().optional(),
+  // R568: clears the worker's "this DOI belongs to another paper" flag. Zod
+  // strips unknown keys, so without a line here the editor's `false` would be
+  // dropped in silence and the warning would never go away — the field would be
+  // dead on the write side exactly as it was on the read side.
+  doiTitleMismatch: z.boolean().optional(),
   // R282: DOI provenance. The editor sets 'manual' when the user corrects the
   // DOI so the worker preserves it across reprocess instead of re-extracting.
   doiSource: z.literal('manual').optional(),

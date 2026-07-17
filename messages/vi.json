@@ -773,7 +773,9 @@
     "translating": "Đang dịch…",
     "translateFailed": "Không dịch được — thử lại",
     "noteAdd": "+ Thêm ghi chú",
-    "notePlaceholder": "Ghi chú của bạn…"
+    "notePlaceholder": "Ghi chú của bạn…",
+    "doiMismatch": "DOI có thể thuộc về bài khác",
+    "doiMismatchHint": "DOI này dẫn tới một tiêu đề khác. Tiêu đề OCR được giữ nguyên. Mở bài và xác nhận DOI trước khi trích dẫn."
   },
   "collections": {
     "title": "Bộ sưu tập",

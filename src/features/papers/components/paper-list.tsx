@@ -39,6 +39,7 @@ import {
 } from '@/features/papers/components/paper-filter-panel';
 import { PaperJournalInfoCard } from '@/features/papers/components/paper-journal-info-card';
 import { UploadSheet } from '@/features/papers/components/upload-sheet';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Icons } from '@/components/icons';
@@ -819,6 +820,24 @@ function PaperRow({
                       className='size-3 text-amber-600 dark:text-amber-400'
                       title={t('doiUnverified')}
                     />
+                  )}
+                  {/* R568: a different warning from doiVerified, and a louder
+                      one. Unverified means nobody checked; mismatch means the
+                      worker checked, found this DOI belongs to another paper,
+                      and asked for a human — then had nowhere to ask. Red, not
+                      amber: amber is "unconfirmed", this is "probably wrong". */}
+                  {paper.doiTitleMismatch === true && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <IconAlertTriangle
+                          className='size-3 text-destructive'
+                          aria-label={t('doiMismatch')}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side='top' className='max-w-64'>
+                        {t('doiMismatchHint')}
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </>
               )}

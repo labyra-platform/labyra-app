@@ -105,6 +105,20 @@ export interface Paper extends ProvBase {
   /** R237cc: false when the DOI didn't resolve at Crossref/OpenAlex (likely an
    * OCR error). undefined for papers processed before this check existed. */
   doiVerified?: boolean;
+  /**
+   * R568: the DOI resolved to a *different paper's* title.
+   *
+   * The worker sets this when the DOI it found leads to a title that does not
+   * match the OCR'd one closely enough to override it (Jaccard < 0.35, so not a
+   * misread — a different work). It keeps the OCR title and, in its own words,
+   * "flag[s] for manual confirmation (Trust > Coverage)". It has been flagging
+   * into silence: nothing in the app declared this field, let alone read it.
+   *
+   * This is the one dead field that can damage a manuscript. A paper carrying
+   * another paper's DOI cites correctly on screen and wrongly in the
+   * bibliography, and the reviewer finds it, not you.
+   */
+  doiTitleMismatch?: boolean;
   /** R282: 'manual' = user-corrected (worker preserves it across reprocess). */
   doiSource?: 'manual' | 'extracted';
   /** R283: id of the original paper when this one is a duplicate-DOI. */

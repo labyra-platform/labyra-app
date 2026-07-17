@@ -772,7 +772,9 @@
     "translating": "Translating…",
     "translateFailed": "Couldn't translate — try again",
     "noteAdd": "+ Add note",
-    "notePlaceholder": "Your note…"
+    "notePlaceholder": "Your note…",
+    "doiMismatch": "DOI may belong to a different paper",
+    "doiMismatchHint": "This DOI resolves to a different title. The OCR title was kept. Open the paper and confirm the DOI before citing it."
   },
   "collections": {
     "title": "Collections",

@@ -130,7 +130,11 @@ export function PaperMetadataEditor({
         ? {
             doi: d,
             ...(d !== (paper.doi ?? '') ? { doiSource: 'manual' as const } : {}),
-            ...(verified ? { doiVerified: true } : {})
+            // R568: confirming the DOI also clears the mismatch flag. The
+            // worker raises it and asks for a human; this is the human saying
+            // so. A warning with no way to answer it is noise, and noise is how
+            // a real warning gets ignored.
+            ...(verified ? { doiVerified: true, doiTitleMismatch: false } : {})
           }
         : {})
     };

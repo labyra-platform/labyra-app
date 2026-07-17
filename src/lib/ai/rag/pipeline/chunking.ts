@@ -130,7 +130,18 @@ export function chunkPaper(ocrResult: OcrResult): Chunk[] {
 
   while (start < chars.length) {
     const rawEnd = Math.min(start + TARGET_CHARS, chars.length);
-    const end = rawEnd >= chars.length ? rawEnd : snapBack(rawEnd);
+    let end = rawEnd >= chars.length ? rawEnd : snapBack(rawEnd);
+    // R556: snapping must never eat the window. A long run with no whitespace
+    // makes snapBack walk back to `start`, the window empties, `start` never
+    // advances, and the loop spins forever. SNAP_LIMIT does not catch it — it
+    // measures distance, and the distance is under the limit. Progress is
+    // guaranteed where progress is decided.
+    //
+    // R547 shipped without this. My probe printed the array length and 1 meant
+    // ['!! infinite loop'] — I wrote the alarm and then read it as a pass. This
+    // file is dead code (the live chunker is the worker's chunking.py), so it
+    // hung nothing; the same bug in the Python would have.
+    if (end <= start) end = rawEnd;
     const slice = chars.slice(start, end);
     const text = slice
       .map((c) => c.ch)

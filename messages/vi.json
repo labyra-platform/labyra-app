@@ -1739,7 +1739,11 @@
       "save": "Lưu bối cảnh lab",
       "saved": "Đã lưu bối cảnh lab",
       "defaultLanguage": "Ngôn ngữ dịch mặc định",
-      "defaultLanguageDesc": "Paper sẽ được dịch sẵn sang ngôn ngữ này. Đặt theo ngôn ngữ đọc của lab."
+      "defaultLanguageDesc": "Paper sẽ được dịch sẵn sang ngôn ngữ này. Đặt theo ngôn ngữ đọc của lab.",
+      "groupDomain": "Lab làm việc với gì",
+      "groupDomainDesc": "Kỹ thuật, vật liệu, thiết bị và thuật ngữ mà AI nên biết sẵn.",
+      "groupVoice": "AI viết thế nào",
+      "groupVoiceDesc": "Quy ước và ngôn ngữ được thêm vào mọi yêu cầu AI trong lab này."
     },
     "memory": {
       "title": "Thông tin đã ghi nhớ",

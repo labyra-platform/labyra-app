@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import {
   Form,
   FormControl,
@@ -178,23 +178,27 @@ export function LabContextForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className='py-10'>
-          <div className='bg-muted h-40 w-full animate-pulse rounded' />
-        </CardContent>
-      </Card>
+      <Panel title={t('title')} description={t('subtitle')}>
+        <div className='bg-muted h-40 w-full animate-pulse rounded' />
+      </Panel>
     );
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-2xl space-y-6'>
-        <Card>
-          {/* R524: was `pt-6` on top of Card's own py-6 — 48px of blank above
-              the first label. §1 names Card's py-6 as the anti-pattern; adding
-              a second helping of it is how 48px happens without anyone
-              choosing 48. */}
-          <CardContent className='space-y-4'>
+        {/* R560: three panels, not one card holding eight fields.
+            
+            Grouped by the question each answers rather than by how they happened
+            to be declared. The boundary that needed deciding was `glossary`, and
+            the field settled it: it is "Thuật ngữ", it takes
+            `GCD: galvanostatic charge-discharge`, and it is a lexicon of the
+            lab's domain — not a rule about writing. `houseStyle` says of itself
+            that it is "thêm vào system prompt", which is what a voice setting
+            actually is. The original author had already put glossary on the
+            domain side of that line; the labels agree. */}
+        <Panel title={t('title')} description={t('subtitle')}>
+          <div className='space-y-4'>
             <FormField
               control={form.control}
               name='labName'
@@ -222,6 +226,11 @@ export function LabContextForm() {
                 </FormItem>
               )}
             />
+          </div>
+        </Panel>
+
+        <Panel title={t('groupDomain')} description={t('groupDomainDesc')}>
+          <div className='space-y-4'>
             <FormField
               control={form.control}
               name='commonTechniques'
@@ -282,7 +291,11 @@ export function LabContextForm() {
                 </FormItem>
               )}
             />
+          </div>
+        </Panel>
 
+        <Panel title={t('groupVoice')} description={t('groupVoiceDesc')}>
+          <div className='space-y-4'>
             <FormField
               control={form.control}
               name='houseStyle'
@@ -322,8 +335,8 @@ export function LabContextForm() {
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         <Button type='submit' disabled={submitting}>
           {submitting ? '…' : t('save')}

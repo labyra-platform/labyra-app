@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Panel } from '@/components/ui-extra/panel';
 import {
   Form,
   FormControl,
@@ -82,21 +82,24 @@ export function AiPreferencesForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className='py-10'>
-          <div className='bg-muted h-40 w-full animate-pulse rounded' />
-        </CardContent>
-      </Card>
+      <Panel title={t('title')} description={t('subtitle')}>
+        <div className='bg-muted h-40 w-full animate-pulse rounded' />
+      </Panel>
     );
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-2xl space-y-6'>
-        <Card>
-          {/* Same doubled padding as lab-context-form: pt-6 on top of Card's
-              own py-6. Nam only saw one of them; they were always both. */}
-          <CardContent className='space-y-6'>
+        {/* R560: one panel, not three.
+            
+            language, verbosity, mathNotation and tone all answer the same
+            question — how the AI talks to *me* — so splitting them would be
+            splitting for the sake of it. lab-context-form got three panels
+            because it genuinely asks three questions; the number of panels
+            should follow the number of questions, not a house style. */}
+        <Panel title={t('title')} description={t('subtitle')}>
+          <div className='space-y-6'>
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
               <FormField
                 control={form.control}
@@ -218,8 +221,8 @@ export function AiPreferencesForm() {
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         <Button type='submit' disabled={submitting}>
           {submitting ? '…' : t('save')}

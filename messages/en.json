@@ -13,7 +13,7 @@
     "actions": "Actions",
     "notificationView": "View",
     "roles": {
-      "superadmin": "Superadmin",
+      "superadmin": "Senior admin",
       "admin": "Admin",
       "member": "Member",
       "viewer": "Viewer"
@@ -286,7 +286,8 @@
       "modeHeatmap": "Heatmap",
       "heatmapNeedsRange": "Heatmap needs 6 months or more",
       "year": "Year",
-      "rangeLabel": "Range"
+      "rangeLabel": "Range",
+      "hoverHint": "Hover for details"
     },
     "ghs": {
       "title": "GHS hazards",

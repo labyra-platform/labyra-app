@@ -13,7 +13,7 @@
     "actions": "Tác vụ",
     "notificationView": "Xem",
     "roles": {
-      "superadmin": "Siêu quản trị",
+      "superadmin": "Quản trị cấp cao",
       "admin": "Quản trị viên",
       "member": "Thành viên",
       "viewer": "Người xem"
@@ -286,7 +286,8 @@
       "modeHeatmap": "Bản đồ nhiệt",
       "heatmapNeedsRange": "Bản đồ nhiệt cần từ 6 tháng trở lên",
       "year": "Năm",
-      "rangeLabel": "Khoảng"
+      "rangeLabel": "Khoảng",
+      "hoverHint": "Di chuột để xem chi tiết"
     },
     "ghs": {
       "title": "Nguy hại GHS",

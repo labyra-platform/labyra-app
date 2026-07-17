@@ -236,59 +236,72 @@ export function ActivityCard() {
         </div>
       }
     >
-      {isLoading ? (
-        // §7: exactly the plot height, so loading does not jump the card.
-        <Skeleton style={{ height: PLOT_H }} className='w-full' />
-      ) : total === 0 ? (
-        // §7: no axes, no gridlines. An empty 26-column frame is not information.
-        <PanelEmpty title={t('activity.emptyTitle')} description={t('activity.empty')} />
-      ) : effectiveMode === 'bar' ? (
-        <>
-          <ChartContainer config={chartConfig} style={{ height: PLOT_H }} className='w-full'>
-            <BarChart data={columns} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <CartesianGrid vertical={false} strokeDasharray='3 3' />
-              <XAxis dataKey='label' tickLine={false} axisLine={false} tick={false} />
-              <YAxis domain={[0, yMax]} tickLine={false} axisLine={false} width={28} />
-              {/* §3: zero is the reading anchor; the gridlines are just a ruler. */}
-              <ReferenceLine y={0} stroke='var(--border)' strokeWidth={1.5} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              {/* §3: stack order is fixed. Sorting by value per column would make
+      {/* R557: the content centres in whatever height the row gives this card.
+          It was pinned to the top with the leftover falling out of the bottom,
+          because the grid stretches every card to the tallest in its row (R537)
+          and this one only needs 150px of plot. Top-aligned it read as a card
+          that had lost something; centred it reads as a card that is the size
+          it is. */}
+      <div className='flex h-full min-h-0 flex-col justify-center gap-3'>
+        {isLoading ? (
+          // §7: exactly the plot height, so loading does not jump the card.
+          <Skeleton style={{ height: PLOT_H }} className='w-full' />
+        ) : total === 0 ? (
+          // §7: no axes, no gridlines. An empty 26-column frame is not information.
+          <PanelEmpty title={t('activity.emptyTitle')} description={t('activity.empty')} />
+        ) : effectiveMode === 'bar' ? (
+          <>
+            <ChartContainer config={chartConfig} style={{ height: PLOT_H }} className='w-full'>
+              <BarChart data={columns} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <CartesianGrid vertical={false} strokeDasharray='3 3' />
+                <XAxis dataKey='label' tickLine={false} axisLine={false} tick={false} />
+                <YAxis domain={[0, yMax]} tickLine={false} axisLine={false} width={28} />
+                {/* §3: zero is the reading anchor; the gridlines are just a ruler. */}
+                <ReferenceLine y={0} stroke='var(--border)' strokeWidth={1.5} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                {/* §3: stack order is fixed. Sorting by value per column would make
                   the tiers uncomparable across columns. */}
-              {TIERS.map((tier) => (
-                <Bar
-                  key={tier.key}
-                  dataKey={tier.key}
-                  stackId='a'
-                  fill={tier.fill}
-                  stroke={tier.stroke}
-                  radius={tier.key === 'experiments' ? [2, 2, 0, 0] : 0}
-                />
-              ))}
-            </BarChart>
-          </ChartContainer>
+                {TIERS.map((tier) => (
+                  <Bar
+                    key={tier.key}
+                    dataKey={tier.key}
+                    stackId='a'
+                    fill={tier.fill}
+                    stroke={tier.stroke}
+                    // R557: 4, matching the publisher bars on the papers overview.
+                    // Only the top tier rounds — rounding every tier in a stack
+                    // puts a notch between segments and turns one column into
+                    // three floating pills.
+                    radius={tier.key === TIERS[TIERS.length - 1].key ? [4, 4, 0, 0] : 0}
+                  />
+                ))}
+              </BarChart>
+            </ChartContainer>
 
-          {/* §3: the legend doubles as the stats table — a colour key with no
+            {/* §3: the legend doubles as the stats table — a colour key with no
               numbers wastes a row. */}
-          <div className='text-meta flex items-center justify-center gap-3'>
-            {TIERS.map((tier) => (
-              <span key={tier.key} className='flex items-center gap-1.5'>
-                <span
-                  className='size-2.5 rounded-[2px]'
-                  style={{
-                    backgroundColor: tier.fill,
-                    boxShadow: tier.stroke ? `inset 0 0 0 1px ${tier.stroke}` : undefined
-                  }}
-                  aria-hidden='true'
-                />
-                {t(`activity.${tier.key}`)}
-                <span className='text-muted-foreground tabular-nums'>{totals[tier.key]}</span>
-              </span>
-            ))}
-          </div>
-        </>
-      ) : (
-        <HeatGrid cells={cells} start={start} format={format} t={t} />
-      )}
+            <div className='text-meta flex flex-wrap items-center justify-center gap-x-3 gap-y-1'>
+              {TIERS.map((tier) => (
+                <span key={tier.key} className='flex items-center gap-1.5'>
+                  <span
+                    className='size-2.5 rounded-[2px]'
+                    style={{
+                      backgroundColor: tier.fill,
+                      boxShadow: tier.stroke ? `inset 0 0 0 1px ${tier.stroke}` : undefined
+                    }}
+                    aria-hidden='true'
+                  />
+                  {t(`activity.${tier.key}`)}
+                  <span className='text-muted-foreground tabular-nums'>{totals[tier.key]}</span>
+                </span>
+              ))}
+              <span className='text-muted-foreground'>{t('activity.hoverHint')}</span>
+            </div>
+          </>
+        ) : (
+          <HeatGrid cells={cells} start={start} format={format} t={t} />
+        )}
+      </div>
     </Panel>
   );
 }
@@ -335,19 +348,66 @@ function HeatGrid({
 
   return (
     <div className='flex items-center justify-center' style={{ height: PLOT_H }}>
-      <div className='grid grid-flow-col grid-rows-7 gap-[3px]'>
-        {padded.map((d, i) =>
-          d === null ? (
-            <div key={`pad-${i}`} style={{ width: cell, height: cell }} aria-hidden='true' />
-          ) : (
-            <div
-              key={d.iso}
-              style={{ width: cell, height: cell }}
-              className={cn('rounded-[2px]', FILL[level(d.dft + d.samples + d.experiments)])}
-              title={`${format.dateTime(new Date(`${d.iso}T00:00:00`), { day: '2-digit', month: '2-digit' })} · ${t('activity.breakdown', { experiments: d.experiments, dft: d.dft, samples: d.samples })}`}
-            />
-          )
-        )}
+      <div className='flex flex-col items-center gap-2'>
+        <div className='grid grid-flow-col grid-rows-7 gap-[3px]'>
+          {padded.map((d, i) =>
+            d === null ? (
+              <div key={`pad-${i}`} style={{ width: cell, height: cell }} aria-hidden='true' />
+            ) : (
+              <Tooltip key={d.iso}>
+                <TooltipTrigger asChild>
+                  <div
+                    style={{ width: cell, height: cell }}
+                    className={cn(
+                      'rounded-[2px] transition-transform hover:scale-125',
+                      FILL[level(d.dft + d.samples + d.experiments)]
+                    )}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side='top'>
+                  <p className='font-medium'>
+                    {format.dateTime(new Date(`${d.iso}T00:00:00`), {
+                      weekday: 'short',
+                      day: '2-digit',
+                      month: '2-digit'
+                    })}
+                  </p>
+                  {/* Same three rows, same order, same alignment as the bar
+                    chart's tooltip. Two hover languages in one card asks the
+                    reader to learn the card twice. */}
+                  <div className='mt-1 space-y-0.5'>
+                    {TIERS.map((tier) => (
+                      <p key={tier.key} className='flex items-center gap-2'>
+                        <span
+                          className='size-2.5 shrink-0 rounded-[2px]'
+                          style={{
+                            backgroundColor: tier.fill,
+                            boxShadow: tier.stroke ? `inset 0 0 0 1px ${tier.stroke}` : undefined
+                          }}
+                          aria-hidden='true'
+                        />
+                        <span className='flex-1'>{t(`activity.${tier.key}`)}</span>
+                        <span className='font-medium tabular-nums'>{d[tier.key]}</span>
+                      </p>
+                    ))}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )
+          )}
+        </div>
+
+        {/* The heatmap's colour is a rank, and a rank with no key is a colour.
+          The bar chart's legend doubles as its stats table; this is the same
+          job for a scale that has no numbers on it. */}
+        <div className='text-muted-foreground text-meta flex items-center gap-1.5'>
+          <span>{t('activity.less')}</span>
+          {FILL.map((f) => (
+            <span key={f} className={cn('size-2.5 rounded-[2px]', f)} aria-hidden='true' />
+          ))}
+          <span>{t('activity.more')}</span>
+          <span className='ml-2'>{t('activity.hoverHint')}</span>
+        </div>
       </div>
     </div>
   );

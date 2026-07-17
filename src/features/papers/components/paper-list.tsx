@@ -305,9 +305,19 @@ export function PaperList({
 
   if (mainView === 'overview') {
     return (
-      <div className='space-y-3'>
-        {toggleRow}
-        <PapersLandscape papers={papers} />
+      // R557: overview owns its scroll, same as the list does.
+      //
+      // R536 gave /papers overflow-hidden so the list could scroll under a
+      // toolbar that holds still. This branch returns before that container, so
+      // the overview inherited the fixed height and nothing to scroll with —
+      // the year chart was cut off at the fold with no way down. I took the
+      // page's scroll away and only gave it back to one of the two views on the
+      // route.
+      <div className='flex min-h-0 flex-1 flex-col'>
+        <div className='shrink-0'>{toggleRow}</div>
+        <div className='lb-viewport min-h-0 flex-1 overflow-y-auto pt-3'>
+          <PapersLandscape papers={papers} />
+        </div>
       </div>
     );
   }

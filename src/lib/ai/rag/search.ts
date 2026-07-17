@@ -148,8 +148,29 @@ export async function searchPapers(req: SearchRequest): Promise<SearchResponse> 
     filterClauses.push(req.filter);
   }
   // ADR-034 TEAM-5: group scope. Privileged viewers see all groups.
-  if (!req.isPrivileged && req.viewerGroupId !== undefined) {
-    filterClauses.push({ groupId: { $in: [req.viewerGroupId, 'lab-shared'] } });
+  //
+  // R566: guard on `== null`, not `!== undefined`. getGroupIdFromToken returns
+  // string | null and never undefined, so the old test admitted null as a
+  // "defined" value and pushed { groupId: { $in: [null, ...] } } — scoping a
+  // claimless viewer to null-group chunks. Not a leak today: every caller goes
+  // through getGroupIdFromToken. But it guarded against a shape none of them
+  // produce and ignored the one they all do. The day a fifth caller passes
+  // undefined, or the helper starts returning it, this clause drops silently
+  // and that viewer sees every group. The filter should defend itself rather
+  // than trust a promise about callers.
+  // R566: fail closed on a missing group.
+  //
+  // getGroupIdFromToken returns null when the claim is absent, and `null` is
+  // exactly the value that made this filter disappear: `null != null` is false,
+  // the clause was never pushed, and the query ran unscoped — every group's
+  // chunks, to anyone without a groupId claim. The comment here said "not a
+  // leak today" because it expected callers to pass undefined; the helper
+  // passes null, which is worse, because it reads as "no filter" instead of
+  // "empty filter". A viewer with no group must see the least, not the most.
+  if (!req.isPrivileged) {
+    filterClauses.push({
+      groupId: { $in: [req.viewerGroupId ?? '__none__', 'lab-shared'] }
+    });
   }
   // R-collection-2: restrict to the collection's member papers.
   if (collectionPaperIds) {
@@ -414,8 +435,12 @@ async function retrieveBM25(
 
   const scoped = corpus.filter((e) => {
     // ADR-034 group scope (in-memory, mirrors the previous Firestore filter).
-    if (!isPrivileged && viewerGroupId !== undefined) {
-      if (e.groupId !== viewerGroupId && e.groupId !== 'lab-shared') return false;
+    // R566: same fail-closed rule as the dense path. `viewerGroupId !== undefined`
+    // let a null group through unfiltered here too; a missing group now matches
+    // nothing but lab-shared rather than everything.
+    if (!isPrivileged) {
+      const g = viewerGroupId ?? '__none__';
+      if (e.groupId !== g && e.groupId !== 'lab-shared') return false;
     }
     // R-collection-2 collection scope.
     if (collectionPaperIds != null && !collectionPaperIds.has(e.paperId)) return false;

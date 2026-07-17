@@ -3,7 +3,11 @@
 > Mô hình phân quyền (RBAC) và luồng onboarding B2B cho Labyra: ai đăng ký thành admin, mời thành viên thế nào, quyền enforce ở đâu.
 > Chốt giai đoạn 1 (RBAC thuần) đủ cho commercial launch; ABAC ownership defer giai đoạn 2.
 
-**Status**: Proposed
+**Status**: Accepted — shipped, status corrected R564
+
+> Said "Proposed" while `authenticateWriter` was returning a real 403 on 37 API
+> routes. The four-role model is in production and the label said it was still
+> an idea. Reading this ADR today would have told you RBAC was unbuilt.
 **Date**: 2026-05-20
 **Round**: R186+ (RBAC enforcement + onboarding backend)
 **Related**: ADR-028 (Architecture Upgrade & Security), ADR-029 (Graduated Security Testing), securityaudit20260520.md (C1 Firestore rules), AI_ARCHITECTURE.md (tenant isolation)

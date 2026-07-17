@@ -4,7 +4,11 @@
 > cap **1000 paper/cá nhân**. Thay BM25 quét-toàn-corpus trên Firestore bằng
 > sparse vectors trong Pinecone (managed), loại bottleneck scan-all tận gốc.
 
-**Status**: Proposed (chờ duyệt + số liệu T-7)
+**Status**: Accepted — shipped, status corrected R564
+>
+> Sparse/BM25 retrieval spans 10 files under src/lib/ai.
+>
+> Original header: Proposed (chờ duyệt + số liệu T-7)
 **Date**: 2026-05-30
 **Round**: dự kiến R237br+
 **Related**: ADR-033 (RAG retrieval scaling — Phase 2/3 mà ADR này thay thế một phần),

@@ -1,6 +1,15 @@
 # ADR-034 — Group Hierarchy, 2-Axis RBAC & Per-Group Data Scoping
 
-**Status**: Proposed (R192, 2026-05-22) — **DESIGN ONLY. Implementation deferred to post-launch.**
+**Status**: Accepted — shipped, status corrected R564
+
+> Said "Proposed — DESIGN ONLY. Implementation deferred to post-launch." while
+> `groupId` is a live custom claim (a real account carries
+> `groupId: qndyvIFfkt3kIK72i8on`) and firestore.rules references isAdmin/groupId
+> in 24 places. This was the most dangerous of the five: a reader trusting the
+> label would conclude group isolation does not exist yet and write code that
+> ignores it.
+>
+> Original header, for the record: Proposed (R192, 2026-05-22) — **DESIGN ONLY. Implementation deferred to post-launch.**
 Không code track này trước launch blockers (xem ROADMAP "Commercial launch track").
 **Extends**: ADR-030 (RBAC phẳng) — KHÔNG thay thế, mở rộng thêm trục thứ 2.
 **Cross-ref**: ADR-033 (RAG retrieval scaling — trục *performance*, ADR này là trục *scoping*),

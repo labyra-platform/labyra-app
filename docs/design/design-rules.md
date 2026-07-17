@@ -356,6 +356,11 @@ Developers stop choosing spacing and start choosing components. This is the only
 Three enforcement layers. Two of them were written as fiction and are corrected here:
 
 1. **`ADR-044-design-tokens.md`** — same family as ADR-016 / 030 / 034 / 042 / 043. Still unwritten.
+   **Number is contested (R564):** `docs/round-r237-handoff.md` §167 also claims 044, for
+   Legal/Copyright (PDF ToS, DMCA takedown, safe harbor). Two decisions, one number, neither
+   written — which is exactly how ADR-041 ended up held by two files at once, and that one only
+   surfaced because someone listed the directory. Whoever writes first should take 044 and the
+   other should take 050; the free slots are 044 (once) and 050 onward.
 
 2. ~~**Lock the Tailwind scale.** Delete the default spacing scale.~~ **Ratchet it.** Deleting the scale does not fail a wrong class — it unstyles the application: `gap-1`, `gap-1.5`, `px-2` and `py-1` are 1100+ live classes and none are among the five. Spacing has to be migrated before it can be locked, and migrating it in bulk is a bet against a reviewer who cannot verify the result. Freeze the count instead, and let it fall.
 

@@ -1,4 +1,13 @@
-# ADR-041: Electrochemistry & PEC measurement support
+# ADR-047: Electrochemistry & PEC measurement support
+
+> **Renumbered R564.** Filed as ADR-041, which
+> `ADR-041-ai-science-pipeline.md` already held — two decisions, one number,
+> both dated 2026-05-26, so the date could not settle it. References did:
+> everything citing "ADR-041" (ADR-042 twice, two handoffs) means AI Science.
+> Nothing cited this one, so this one moved. 047 was the only genuinely free
+> slot — 044 is claimed twice over (Legal/Copyright in round-r237-handoff,
+> design tokens in design-rules), which is the same collision waiting to
+> happen the moment somebody writes the file.
 
 **Status**: Accepted
 **Date**: 2026-05-26

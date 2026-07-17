@@ -5,7 +5,12 @@
 > Chandra (free, dính ngưỡng $2M OpenRAIL) để dành làm đường thoát. Đổi giữa các
 > engine phải là **config / 1-file**, không phải đại phẫu.
 
-**Status**: Proposed (chờ duyệt)
+**Status**: Accepted — shipped, status corrected R564
+>
+> worker/src/papers/ocr.py documents itself as "engine-agnostic since R221" in
+> four places.
+>
+> Original header: Proposed (chờ duyệt)
 **Date**: 2026-05-31
 **Round**: R257 (layer) + R258 (Datalab hosted adapter)
 **Related**: ADR-018 (async paper pipeline), ADR-033/046 (RAG retrieval), strategy

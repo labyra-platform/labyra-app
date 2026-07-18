@@ -23,6 +23,58 @@ import { IconCopy, IconLanguage } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useSelectionActionStore } from '@/features/papers/stores/selection-action-store';
 
+/**
+ * R570: merge per-fragment rects into one bar per line.
+ *
+ * range.getClientRects() returns a rect for every inline box, not every line.
+ * A line dense with formulae — subscripts, superscripts, charge labels — is
+ * dozens of spans at slightly different heights, so it comes back as dozens of
+ * short, misaligned rectangles that overlap and leave gaps. That is the ragged
+ * look; the browser is describing fragments and we were drawing them raw. Edge's
+ * PDF viewer coalesces them per line before painting, and this does the same.
+ *
+ * Done at render, not on the stored data: highlights already saved as shattered
+ * rects redraw as clean bars with no migration.
+ *
+ * Rects on the same visual line share a y that differs only by sub/superscript
+ * offset. Group by y within a tolerance (half a line height), then for each
+ * group take the outermost top/bottom and span left→right across the whole line.
+ */
+function mergeRectsByLine(rects: NormRect[]): NormRect[] {
+  if (rects.length <= 1) return rects;
+  const sorted = rects.toSorted((a, b) => a.y - b.y || a.x - b.x);
+  // Tolerance from the median rect height — a real line break exceeds it, a
+  // superscript does not. Median resists the odd tall rect from a bracket.
+  const heights = sorted.map((r) => r.h).toSorted((a, b) => a - b);
+  const medianH = heights[Math.floor(heights.length / 2)] || 0.02;
+  const tol = medianH * 0.6;
+
+  const lines: NormRect[][] = [];
+  for (const r of sorted) {
+    const line = lines.at(-1);
+    // Same line if this rect's vertical centre sits within tolerance of the
+    // line's centre. Centre, not top: a superscript shares the line but has a
+    // higher top.
+    if (line) {
+      const lc = line[0].y + line[0].h / 2;
+      const rc = r.y + r.h / 2;
+      if (Math.abs(rc - lc) <= tol) {
+        line.push(r);
+        continue;
+      }
+    }
+    lines.push([r]);
+  }
+
+  return lines.map((line) => {
+    const top = Math.min(...line.map((r) => r.y));
+    const bottom = Math.max(...line.map((r) => r.y + r.h));
+    const left = Math.min(...line.map((r) => r.x));
+    const right = Math.max(...line.map((r) => r.x + r.w));
+    return { page: line[0].page, x: left, y: top, w: right - left, h: bottom - top };
+  });
+}
+
 interface PendingSelection {
   rects: NormRect[];
   text: string;
@@ -114,10 +166,14 @@ export function PdfHighlightLayer({
       setPending(null);
       return;
     }
+    // R570: store the merged bars, not the fragments. Render merges too, so old
+    // data looks right either way — but new highlights save clean, and the
+    // popup anchors to a real line instead of the first shard.
+    const merged = mergeRectsByLine(norm);
     // Anchor the popup just above the first rect.
-    const first = norm[0];
+    const first = merged[0];
     setPending({
-      rects: norm,
+      rects: merged,
       text,
       anchorX: first.x * width,
       anchorY: first.y * height
@@ -155,11 +211,19 @@ export function PdfHighlightLayer({
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
       e.preventDefault();
+      // R571: the menu renders on `pending && menuAt`, and every item reads
+      // pending.text. A drag sets pending; a right-click set only menuAt, so
+      // pending stayed null, the condition never held, and the menu never
+      // appeared on right-click — translate included. Build pending from the
+      // current selection first, exactly as a drag would, then open the menu.
+      // handleMouseUp already does that conversion (getClientRects → merge);
+      // reusing it means right-click and drag can never diverge.
+      handleMouseUp();
       setMenuAt({ x: e.clientX - box.left, y: e.clientY - box.top });
     };
     document.addEventListener('contextmenu', onContextMenu);
     return () => document.removeEventListener('contextmenu', onContextMenu);
-  }, []);
+  }, [handleMouseUp]);
 
   // A new drag replaces the old menu rather than leaving it pinned to text that
   // is no longer selected.
@@ -189,25 +253,23 @@ export function PdfHighlightLayer({
       {/* Saved highlights — pointer-events on the rects so they're clickable;
           the container stays none so selection works elsewhere. */}
       {highlights.map((hl) =>
-        hl.rects
-          .filter((r) => r.page === pageNumber)
-          .map((r, i) => (
-            <button
-              key={`${hl.id}-${i}`}
-              type='button'
-              onClick={() => setActiveId(activeId === hl.id ? null : hl.id)}
-              className='pointer-events-auto absolute cursor-pointer'
-              style={{
-                left: r.x * width,
-                top: r.y * height,
-                width: r.w * width,
-                height: r.h * height,
-                backgroundColor: HIGHLIGHT_FILL[hl.color],
-                mixBlendMode: 'multiply'
-              }}
-              aria-label={hl.text}
-            />
-          ))
+        mergeRectsByLine(hl.rects.filter((r) => r.page === pageNumber)).map((r, i) => (
+          <button
+            key={`${hl.id}-${i}`}
+            type='button'
+            onClick={() => setActiveId(activeId === hl.id ? null : hl.id)}
+            className='pointer-events-auto absolute cursor-pointer'
+            style={{
+              left: r.x * width,
+              top: r.y * height,
+              width: r.w * width,
+              height: r.h * height,
+              backgroundColor: HIGHLIGHT_FILL[hl.color],
+              mixBlendMode: 'multiply'
+            }}
+            aria-label={hl.text}
+          />
+        ))
       )}
 
       {/* Per-highlight mini toolbar (delete) when one is active. */}

@@ -1964,7 +1964,11 @@
     "noLinked": "Chưa có liên kết.",
     "paperCount": "{count, plural, other {# bài}}",
     "notFound": "Không tìm thấy đề tài",
-    "notFoundHint": "Có thể đã bị xóa, hoặc bạn không có quyền truy cập."
+    "notFoundHint": "Có thể đã bị xóa, hoặc bạn không có quyền truy cập.",
+    "loadError": "Không tải được đề tài",
+    "loadErrorHint": "Có lỗi khi tải. Thử lại hoặc quay về danh sách.",
+    "retry": "Thử lại",
+    "backToList": "Về danh sách đề tài"
   },
   "protocolTemplates": {
     "title": "Quy trình mẫu",

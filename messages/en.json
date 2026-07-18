@@ -1963,7 +1963,11 @@
     "noLinked": "Nothing linked yet.",
     "paperCount": "{count, plural, one {# paper} other {# papers}}",
     "notFound": "Project not found",
-    "notFoundHint": "It may have been deleted, or you may not have access."
+    "notFoundHint": "It may have been deleted, or you may not have access.",
+    "loadError": "Could not load project",
+    "loadErrorHint": "Something went wrong loading it. Try again, or return to the list.",
+    "retry": "Try again",
+    "backToList": "Back to projects"
   },
   "protocolTemplates": {
     "title": "Protocol Templates",

@@ -22,6 +22,10 @@ import { ANNOTATION_COLORS, HIGHLIGHT_FILL } from '@/types/annotations';
 import { IconCopy, IconLanguage } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useSelectionActionStore } from '@/features/papers/stores/selection-action-store';
+import {
+  reconstructFormula,
+  type FormulaFragment
+} from '@/features/papers/lib/reconstruct-formula';
 
 /**
  * R570: merge per-fragment rects into one bar per line.
@@ -73,6 +77,56 @@ function mergeRectsByLine(rects: NormRect[]): NormRect[] {
     const right = Math.max(...line.map((r) => r.x + r.w));
     return { page: line[0].page, x: left, y: top, w: right - left, h: bottom - top };
   });
+}
+
+/**
+ * R572: gather the text fragments a selection covers, with their screen rects.
+ *
+ * The pdf.js text layer renders each fragment as an element; a selection over it
+ * spans some of those elements and parts of their text nodes. We collect one
+ * FormulaFragment per contiguous run of covered text, reading rects from
+ * Range.getClientRects so a fragment split across the selection edge still
+ * measures correctly. reconstructFormula turns these back into ordered text with
+ * sub/superscripts.
+ */
+function collectFragments(range: Range): FormulaFragment[] {
+  const root = range.commonAncestorContainer;
+  const doc = root.ownerDocument ?? document;
+  const walker = doc.createTreeWalker(
+    root.nodeType === Node.ELEMENT_NODE ? root : (root.parentNode ?? root),
+    NodeFilter.SHOW_TEXT
+  );
+  const frags: FormulaFragment[] = [];
+
+  let node = walker.nextNode();
+  while (node) {
+    const textNode = node as Text;
+    if (range.intersectsNode(textNode) && textNode.textContent && textNode.textContent.trim()) {
+      // Clip a sub-range to the part of this node inside the selection, so the
+      // first and last nodes contribute only their selected portion.
+      const r = doc.createRange();
+      r.selectNodeContents(textNode);
+      if (range.compareBoundaryPoints(Range.START_TO_START, r) > 0) {
+        r.setStart(range.startContainer, range.startOffset);
+      }
+      if (range.compareBoundaryPoints(Range.END_TO_END, r) < 0) {
+        r.setEnd(range.endContainer, range.endOffset);
+      }
+      const rect = r.getBoundingClientRect();
+      const str = r.toString();
+      if (str.trim() && rect.width > 0 && rect.height > 0) {
+        frags.push({
+          text: str,
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom
+        });
+      }
+    }
+    node = walker.nextNode();
+  }
+  return frags;
 }
 
 interface PendingSelection {
@@ -134,13 +188,21 @@ export function PdfHighlightLayer({
       setPending(null);
       return;
     }
-    const text = sel.toString().trim();
+    // R572: rebuild the text from fragment geometry instead of sel.toString().
+    // toString() flattens sub/superscripts — a formula's "18" under "W" lands on
+    // the baseline — so for chemical and POM notation the stored text was wrong.
+    // Walk the fragments the selection actually covers and reconstruct order and
+    // sub/superscripts from their rects. Fall back to toString() if the DOM walk
+    // yields nothing (e.g. a selection with no element spans).
+    const range = sel.getRangeAt(0);
+    const frags = collectFragments(range);
+    const rebuilt = reconstructFormula(frags);
+    const text = (rebuilt || sel.toString()).trim();
     if (!text) {
       setPending(null);
       return;
     }
     const box = layer.getBoundingClientRect();
-    const range = sel.getRangeAt(0);
     const clientRects = Array.from(range.getClientRects());
     const norm: NormRect[] = [];
     for (const r of clientRects) {

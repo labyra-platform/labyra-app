@@ -13,6 +13,7 @@
  */
 import 'server-only';
 import type { GHSPictogram } from '@/types/chemical';
+import { toChemistryConvention } from '@/lib/chemicals/formula-convention';
 
 const PUG_REST = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug';
 const PUG_VIEW = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug_view';
@@ -81,7 +82,14 @@ async function lookupCid(
   const json = (await fetchJson(url)) as PugRestProps | null;
   const p = json?.PropertyTable?.Properties?.[0];
   if (!p?.CID) return null;
-  return { cid: p.CID, formula: p.MolecularFormula, name: p.Title ?? p.IUPACName };
+  // R576: PubChem gives Hill notation, which writes salts anion-first (NaCl as
+  // ClNa). Normalise the binary-salt case to chemistry convention; everything
+  // else passes through unchanged, and the user can override in the form.
+  return {
+    cid: p.CID,
+    formula: toChemistryConvention(p.MolecularFormula),
+    name: p.Title ?? p.IUPACName
+  };
 }
 
 interface PugViewNode {

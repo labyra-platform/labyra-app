@@ -19,6 +19,10 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { IconCalendar } from '@tabler/icons-react';
+import { format } from 'date-fns';
 import {
   Select,
   SelectContent,
@@ -120,6 +124,7 @@ export function ChemicalForm({
       unit: defaultValues?.unit ?? 'g',
       state: defaultValues?.state ?? 'solid',
       reorderThreshold: defaultValues?.reorderThreshold,
+      reorderMode: defaultValues?.reorderMode ?? 'absolute',
       location: defaultValues?.location ?? '',
       storageConditions: defaultValues?.storageConditions ?? '',
       expiryAt: defaultValues?.expiryAt
@@ -127,6 +132,9 @@ export function ChemicalForm({
   });
 
   const selectedHazards = form.watch('ghsHazards') ?? [];
+  // R577: the reorder-threshold unit toggle shows the live quantity unit, so
+  // "absolute" always means the same unit the amount is entered in.
+  const selectedUnit = form.watch('unit') ?? 'g';
 
   function toggleHazard(code: GHSPictogram) {
     const current = form.getValues('ghsHazards') ?? [];
@@ -430,16 +438,42 @@ export function ChemicalForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('reorderThreshold')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type='number'
-                      step='any'
-                      value={field.value ?? ''}
-                      onChange={(e) =>
-                        field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)
-                      }
+                  {/* R577: number + a unit toggle. The threshold is read either
+                      in the chemical's own unit ("reorder at 5 g") or as a
+                      percent ("reorder at 10%"). The absolute option shows the
+                      unit the quantity field currently uses, read live from the
+                      form, so the two never disagree. */}
+                  <div className='flex gap-2'>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        step='any'
+                        className='flex-1'
+                        value={field.value ?? ''}
+                        onChange={(e) =>
+                          field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)
+                        }
+                      />
+                    </FormControl>
+                    <FormField
+                      control={form.control}
+                      name='reorderMode'
+                      render={({ field: modeField }) => (
+                        <Select
+                          value={modeField.value ?? 'absolute'}
+                          onValueChange={modeField.onChange}
+                        >
+                          <SelectTrigger className='w-24 shrink-0'>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value='absolute'>{selectedUnit}</SelectItem>
+                            <SelectItem value='percent'>%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     />
-                  </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -468,6 +502,53 @@ export function ChemicalForm({
                   <FormControl>
                     <Textarea rows={1} placeholder={t('storagePlaceholder')} {...field} />
                   </FormControl>
+                </FormItem>
+              )}
+            />
+            {/* R577: expiry date. The field existed in the schema and type
+                (expiryAt, epoch ms) but had no control, so a user could never
+                actually set it. Calendar + popover, mirroring the bookings
+                date-picker. Cleared to undefined, not 0, so "no expiry" stays
+                distinct from "1970" — the chemicals-table spec's expiryKind
+                distinction of none-vs-date lives at that boundary. */}
+            <FormField
+              control={form.control}
+              name='expiryAt'
+              render={({ field }) => (
+                <FormItem className='flex flex-col'>
+                  <FormLabel>{t('expiryAt')}</FormLabel>
+                  <div className='flex gap-2'>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          className='flex-1 justify-start text-left font-normal'
+                        >
+                          <IconCalendar className='mr-2 size-4' aria-hidden='true' />
+                          {field.value ? format(new Date(field.value), 'PP') : t('expiryPick')}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className='w-auto p-0' align='start'>
+                        <Calendar
+                          mode='single'
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(d) => field.onChange(d ? d.getTime() : undefined)}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {field.value != null && (
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => field.onChange(undefined)}
+                      >
+                        {t('expiryClear')}
+                      </Button>
+                    )}
+                  </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />

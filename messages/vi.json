@@ -1678,7 +1678,9 @@
         "solid": "Rắn",
         "liquid": "Lỏng",
         "gas": "Khí"
-      }
+      },
+      "expiryPick": "Chọn ngày",
+      "expiryClear": "Xóa"
     },
     "detail": {
       "consume": "Tiêu hao",

@@ -18,14 +18,40 @@ function chemCol(tenantId: string) {
   return getAdminFirestoreService().collection(`tenants/${tenantId}/chemicals`);
 }
 
+/**
+ * R577: the reorder threshold can be absolute or a percentage.
+ *
+ * Absolute is unchanged: reorder when quantity <= reorderThreshold, in the
+ * chemical's unit. Percent needs a baseline — 10% of what? — and the honest
+ * baseline is the amount on hand when the threshold was set, captured as
+ * reorderReference. So a 10% threshold on a 500 g stock fires at 50 g. Percent
+ * with no reference cannot be evaluated and is treated as no threshold rather
+ * than guessed, so it never silently mis-fires.
+ */
+function effectiveThreshold(
+  reorderThreshold: number | undefined,
+  reorderMode: 'absolute' | 'percent' | undefined,
+  reorderReference: number | undefined
+): number | undefined {
+  if (reorderThreshold === undefined) return undefined;
+  if (reorderMode === 'percent') {
+    if (reorderReference === undefined || reorderReference <= 0) return undefined;
+    return (reorderReference * reorderThreshold) / 100;
+  }
+  return reorderThreshold;
+}
+
 function deriveStatus(
   quantity: number,
   reorderThreshold: number | undefined,
-  expiryAt: number | undefined
+  expiryAt: number | undefined,
+  reorderMode?: 'absolute' | 'percent',
+  reorderReference?: number
 ): ChemicalStatus {
   if (expiryAt && expiryAt < Date.now()) return 'expired';
   if (quantity <= 0) return 'empty';
-  if (reorderThreshold !== undefined && quantity <= reorderThreshold) return 'low';
+  const threshold = effectiveThreshold(reorderThreshold, reorderMode, reorderReference);
+  if (threshold !== undefined && quantity <= threshold) return 'low';
   return 'available';
 }
 
@@ -46,6 +72,7 @@ export interface CreateChemicalInput {
   unit: ChemicalUnit;
   state: Chemical['state'];
   reorderThreshold?: number;
+  reorderMode?: 'absolute' | 'percent';
   location?: string;
   storageConditions?: string;
   expiryAt?: number;
@@ -80,10 +107,22 @@ export async function createChemical(
     unit: input.unit,
     state: input.state,
     reorderThreshold: input.reorderThreshold,
+    reorderMode: input.reorderMode ?? 'absolute',
+    // R577: for a percent threshold, the baseline is the amount on hand at
+    // creation. Stored once here so the status check has a fixed reference
+    // rather than a moving one — a percentage that re-based on current quantity
+    // could never trigger, since quantity is always 100% of itself.
+    reorderReference: input.reorderMode === 'percent' ? input.quantity : undefined,
     location: input.location,
     storageConditions: input.storageConditions,
     expiryAt: input.expiryAt,
-    status: deriveStatus(input.quantity, input.reorderThreshold, input.expiryAt),
+    status: deriveStatus(
+      input.quantity,
+      input.reorderThreshold,
+      input.expiryAt,
+      input.reorderMode ?? 'absolute',
+      input.reorderMode === 'percent' ? input.quantity : undefined
+    ),
     lifecycleStatus: 'active',
     createdBy,
     createdAt: now,
@@ -137,11 +176,31 @@ export async function updateChemical(
   const current = snap.data() as Chemical;
 
   const updated: Record<string, unknown> = { ...patch, updatedAt: Date.now() };
-  // Recompute status if threshold/expiry change (quantity unchanged here).
+
+  // R577: resolve the effective reorder mode + reference for this update.
+  const nextMode = patch.reorderMode ?? current.reorderMode ?? 'absolute';
+  // If the edit switches to percent, re-baseline on the current quantity — the
+  // stored reference from a prior percent setting (or none) would otherwise be
+  // stale. Staying in percent keeps the existing reference; absolute drops it.
+  let nextReference = current.reorderReference;
+  if (nextMode === 'percent') {
+    const switchingToPercent = current.reorderMode !== 'percent';
+    if (switchingToPercent || current.reorderReference === undefined) {
+      nextReference = current.quantity;
+    }
+  } else {
+    nextReference = undefined;
+  }
+  updated.reorderMode = nextMode;
+  updated.reorderReference = nextReference;
+
+  // Recompute status if threshold/expiry/mode change (quantity unchanged here).
   updated.status = deriveStatus(
     current.quantity,
     patch.reorderThreshold ?? current.reorderThreshold,
-    patch.expiryAt ?? current.expiryAt
+    patch.expiryAt ?? current.expiryAt,
+    nextMode,
+    nextReference
   );
   const clean = JSON.parse(JSON.stringify(updated));
   await ref.update(clean);
@@ -188,7 +247,16 @@ export async function applyTransaction(
     const newQuantity = Number((chem.quantity + delta).toFixed(6));
     if (newQuantity < 0) throw new Error('insufficient_quantity');
 
-    const newStatus = deriveStatus(newQuantity, chem.reorderThreshold, chem.expiryAt);
+    // R577: percent thresholds matter most here — this is where a consume drops
+    // stock below the reference-derived level. Pass the stored mode + reference
+    // so a percent threshold actually fires on depletion.
+    const newStatus = deriveStatus(
+      newQuantity,
+      chem.reorderThreshold,
+      chem.expiryAt,
+      chem.reorderMode,
+      chem.reorderReference
+    );
 
     const txRef = ref.collection('transactions').doc();
     const txDoc: ChemicalTransaction = {

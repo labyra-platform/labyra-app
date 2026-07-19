@@ -1677,7 +1677,9 @@
         "solid": "Solid",
         "liquid": "Liquid",
         "gas": "Gas"
-      }
+      },
+      "expiryPick": "Pick a date",
+      "expiryClear": "Clear"
     },
     "detail": {
       "consume": "Consume",

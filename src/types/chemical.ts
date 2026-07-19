@@ -81,6 +81,21 @@ export interface Chemical {
   unit: ChemicalUnit;
   state: ChemicalState;
   reorderThreshold?: number;
+  /**
+   * R577: unit of reorderThreshold.
+   *  - 'absolute' (default when unset): the threshold is in `unit` — reorder
+   *    when quantity <= reorderThreshold.
+   *  - 'percent': the threshold is a percentage; reorder when quantity falls
+   *    below that percent of the reference amount. The reference is the
+   *    largest quantity seen (a restock high-water mark), since a percentage
+   *    of nothing is meaningless — a bottle at 100%% of a 500 g purchase warns
+   *    at 10%% = 50 g. Absence of a stored mode reads as absolute so no
+   *    existing chemical changes behaviour.
+   */
+  reorderMode?: 'absolute' | 'percent';
+  /** R577: baseline amount for a percent reorderMode — the quantity on hand
+   *  when the threshold was set. Absent for absolute mode. */
+  reorderReference?: number;
 
   // Storage + expiry
   location?: string;

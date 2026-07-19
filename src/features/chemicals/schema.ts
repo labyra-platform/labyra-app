@@ -33,6 +33,11 @@ export const chemicalFormSchema = z.object({
   unit: z.enum(['g', 'kg', 'mg', 'mL', 'L', 'mol', 'mmol', 'piece']),
   state: z.enum(['solid', 'liquid', 'gas']),
   reorderThreshold: z.number().min(0).optional(),
+  // R577: how reorderThreshold is read. 'absolute' means the number is in the
+  // chemical's own unit (5 g); 'percent' means it is a fraction of… nothing on
+  // its own — percent needs a baseline, see the type comment. Default absolute,
+  // which is how every existing chemical (no mode stored) already behaves.
+  reorderMode: z.enum(['absolute', 'percent']).optional(),
   location: z.string().max(100).optional(),
   storageConditions: z.string().max(200).optional(),
   expiryAt: z.number().optional()

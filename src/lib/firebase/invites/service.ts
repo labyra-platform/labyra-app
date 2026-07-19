@@ -13,6 +13,7 @@
  */
 import 'server-only';
 import { getAdminAuthService, getAdminFirestoreService } from '@/lib/firebase/admin';
+import { listTenantMembers } from '@/lib/firebase/members/service';
 import type { CreateInviteInput, Invite, InviteRole } from '@/lib/schemas/invite-schema';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -123,5 +124,50 @@ export async function acceptInvite(
     ...(result.groupId ? { groupId: result.groupId } : {})
   });
 
+  // R575: tell the admins a member has joined. Fired here, after the claims are
+  // actually set — not on invite-send, which is a promise, but on accept, which
+  // is the fact. Best-effort: a notification failure must not fail the join the
+  // user just completed, so it is caught and swallowed with the claims already
+  // committed above.
+  void notifyAdminsOfNewMember(result.tenantId, uid, tokenEmail).catch(() => {});
+
   return result;
+}
+
+/**
+ * Notify every admin/superadmin of the tenant that a new member has joined.
+ *
+ * Server-side, so it writes through the Admin SDK (getAdminFirestoreService),
+ * which bypasses the userNotifications rule that otherwise restricts writes to
+ * `uid == request.auth.uid` — this is the one legitimate cross-user write, and
+ * it only runs inside an already-authorised accept.
+ *
+ * The new member is not notified — they just clicked accept, they know. The
+ * people who need to hear it are the admins who invited them.
+ */
+async function notifyAdminsOfNewMember(
+  tenantId: string,
+  newUid: string,
+  newEmail: string
+): Promise<void> {
+  const members = await listTenantMembers(tenantId);
+  const admins = members.filter(
+    (m) => (m.role === 'admin' || m.role === 'superadmin') && m.uid !== newUid
+  );
+  if (admins.length === 0) return;
+
+  const db = getAdminFirestoreService();
+  const createdAt = new Date().toISOString();
+  await Promise.all(
+    admins.map((admin) =>
+      db.collection(`tenants/${tenantId}/userNotifications/${admin.uid}/items`).add({
+        title: 'Thành viên mới',
+        body: `${newEmail} đã tham gia nhóm.`,
+        status: 'unread',
+        type: 'member_joined',
+        href: '/dashboard/members',
+        createdAt
+      })
+    )
+  );
 }

@@ -207,6 +207,40 @@ export function ChemicalForm({
           page alike. */}
       <form onSubmit={form.handleSubmit(onSubmit)} className='@container max-w-3xl space-y-6'>
         <FormSection title={t('sectionIdentity')}>
+          {/* R578: CAS first. It is the entry point — type a CAS, hit lookup,
+              and name, formula, GHS and hazards fill themselves. Putting it at
+              the top matches the order you actually fill the form: identify by
+              CAS, then let the rest autofill, then correct. Full-width so the
+              lookup button has room beside the input. */}
+          <FormField
+            control={form.control}
+            name='casNumber'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('cas')}</FormLabel>
+                <div className='flex gap-2'>
+                  <FormControl>
+                    <Input
+                      placeholder='7732-18-5'
+                      inputMode='numeric'
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value.replace(CAS_ALLOWED_RE, ''))}
+                    />
+                  </FormControl>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={() => void handleLookup()}
+                    disabled={looking || !CAS_VALID_RE.test(field.value ?? '')}
+                  >
+                    <IconSearch className='size-4' />
+                    {looking ? t('looking') : t('lookup')}
+                  </Button>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <div className='grid grid-cols-1 gap-4 @sm:grid-cols-2'>
             <FormField
               control={form.control}
@@ -237,38 +271,6 @@ export function ChemicalForm({
           </div>
 
           <div className='grid grid-cols-1 gap-4 @sm:grid-cols-2'>
-            <FormField
-              control={form.control}
-              name='casNumber'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('cas')}</FormLabel>
-                  <div className='flex gap-2'>
-                    <FormControl>
-                      <Input
-                        placeholder='7732-18-5'
-                        inputMode='numeric'
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value.replace(CAS_ALLOWED_RE, ''))}
-                      />
-                    </FormControl>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      onClick={() => void handleLookup()}
-                      // R504: gate on a well-formed CAS. The lookup API rejects
-                      // anything else with 400, which surfaced as a misleading
-                      // "not found" toast — as if the chemical didn't exist.
-                      disabled={looking || !CAS_VALID_RE.test(field.value ?? '')}
-                    >
-                      <IconSearch className='size-4' />
-                      {looking ? t('looking') : t('lookup')}
-                    </Button>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name='formula'
@@ -432,48 +434,48 @@ export function ChemicalForm({
                 </FormItem>
               )}
             />
+            {/* R578: threshold number and its unit toggle are two sibling
+                grid cells now, so they line up column-for-column with Số lượng
+                and Đơn vị in the row above. The previous flex-inside-one-cell
+                made a cramped number box beside a w-24 select that matched
+                neither column. */}
             <FormField
               control={form.control}
               name='reorderThreshold'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('reorderThreshold')}</FormLabel>
-                  {/* R577: number + a unit toggle. The threshold is read either
-                      in the chemical's own unit ("reorder at 5 g") or as a
-                      percent ("reorder at 10%"). The absolute option shows the
-                      unit the quantity field currently uses, read live from the
-                      form, so the two never disagree. */}
-                  <div className='flex gap-2'>
-                    <FormControl>
-                      <Input
-                        type='number'
-                        step='any'
-                        className='flex-1'
-                        value={field.value ?? ''}
-                        onChange={(e) =>
-                          field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)
-                        }
-                      />
-                    </FormControl>
-                    <FormField
-                      control={form.control}
-                      name='reorderMode'
-                      render={({ field: modeField }) => (
-                        <Select
-                          value={modeField.value ?? 'absolute'}
-                          onValueChange={modeField.onChange}
-                        >
-                          <SelectTrigger className='w-24 shrink-0'>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value='absolute'>{selectedUnit}</SelectItem>
-                            <SelectItem value='percent'>%</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
+                  <FormControl>
+                    <Input
+                      type='number'
+                      step='any'
+                      value={field.value ?? ''}
+                      onChange={(e) =>
+                        field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)
+                      }
                     />
-                  </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='reorderMode'
+              render={({ field: modeField }) => (
+                <FormItem>
+                  <FormLabel>{t('reorderUnit')}</FormLabel>
+                  <Select value={modeField.value ?? 'absolute'} onValueChange={modeField.onChange}>
+                    <FormControl>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className='w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)]'>
+                      <SelectItem value='absolute'>{selectedUnit}</SelectItem>
+                      <SelectItem value='percent'>%</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

@@ -1680,7 +1680,8 @@
         "gas": "Khí"
       },
       "expiryPick": "Chọn ngày",
-      "expiryClear": "Xóa"
+      "expiryClear": "Xóa",
+      "reorderUnit": "Đơn vị ngưỡng"
     },
     "detail": {
       "consume": "Tiêu hao",

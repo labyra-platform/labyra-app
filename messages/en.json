@@ -1679,7 +1679,8 @@
         "gas": "Gas"
       },
       "expiryPick": "Pick a date",
-      "expiryClear": "Clear"
+      "expiryClear": "Clear",
+      "reorderUnit": "Threshold unit"
     },
     "detail": {
       "consume": "Consume",

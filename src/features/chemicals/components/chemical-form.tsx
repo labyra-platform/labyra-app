@@ -20,9 +20,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { IconCalendar } from '@tabler/icons-react';
-import { format } from 'date-fns';
 import {
   Select,
   SelectContent,
@@ -33,6 +33,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { type Chemical, type GHSPictogram } from '@/types/chemical';
 import { type ChemicalFormValues, chemicalFormSchema } from '../schema';
+import { formatDateVN } from '@/lib/format';
 
 const ALL_GHS: GHSPictogram[] = [
   'GHS01',
@@ -127,7 +128,8 @@ export function ChemicalForm({
       reorderMode: defaultValues?.reorderMode ?? 'absolute',
       location: defaultValues?.location ?? '',
       storageConditions: defaultValues?.storageConditions ?? '',
-      expiryAt: defaultValues?.expiryAt
+      expiryAt: defaultValues?.expiryAt,
+      expiryKind: defaultValues?.expiryKind ?? (defaultValues?.expiryAt ? 'expiry' : 'none')
     }
   });
 
@@ -135,6 +137,9 @@ export function ChemicalForm({
   // R577: the reorder-threshold unit toggle shows the live quantity unit, so
   // "absolute" always means the same unit the amount is entered in.
   const selectedUnit = form.watch('unit') ?? 'g';
+  // R579: which expiry kind is chosen — drives whether the picker shows and how
+  // its bounds are set.
+  const expiryKind = form.watch('expiryKind') ?? 'none';
 
   function toggleHazard(code: GHSPictogram) {
     const current = form.getValues('ghsHazards') ?? [];
@@ -507,53 +512,90 @@ export function ChemicalForm({
                 </FormItem>
               )}
             />
-            {/* R577: expiry date. The field existed in the schema and type
-                (expiryAt, epoch ms) but had no control, so a user could never
-                actually set it. Calendar + popover, mirroring the bookings
-                date-picker. Cleared to undefined, not 0, so "no expiry" stays
-                distinct from "1970" — the chemicals-table spec's expiryKind
-                distinction of none-vs-date lives at that boundary. */}
+            {/* R579 (datepicker-grid.md §7): expiry has three kinds, not one
+                date. A segmented control sits above the picker; "Không hạn"
+                hides the date entirely, because forcing a date on a stable
+                inorganic (Na2WO4, glassware) makes the user invent one — the
+                no-fabrication rule. The bounds follow the kind (§7.1): an
+                expiry cannot be in the past (no expired-on-entry), a retest can
+                (an overdue retest is the signal). */}
             <FormField
               control={form.control}
-              name='expiryAt'
+              name='expiryKind'
               render={({ field }) => (
-                <FormItem className='flex flex-col'>
-                  <FormLabel>{t('expiryAt')}</FormLabel>
-                  <div className='flex gap-2'>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type='button'
-                          variant='outline'
-                          className='flex-1 justify-start text-left font-normal'
-                        >
-                          <IconCalendar className='mr-2 size-4' aria-hidden='true' />
-                          {field.value ? format(new Date(field.value), 'PP') : t('expiryPick')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className='w-auto p-0' align='start'>
-                        <Calendar
-                          mode='single'
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(d) => field.onChange(d ? d.getTime() : undefined)}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {field.value != null && (
-                      <Button
-                        type='button'
-                        variant='ghost'
-                        size='sm'
-                        onClick={() => field.onChange(undefined)}
-                      >
-                        {t('expiryClear')}
-                      </Button>
-                    )}
-                  </div>
+                <FormItem className='@lg:col-span-2'>
+                  <FormLabel>{t('expiryLabel')}</FormLabel>
+                  <FormControl>
+                    <ToggleGroup
+                      type='single'
+                      value={field.value ?? 'none'}
+                      onValueChange={(v) => {
+                        if (!v) return;
+                        field.onChange(v);
+                        // Clearing to 'none' drops any date so the two never
+                        // disagree — a chemical marked no-expiry must not carry a
+                        // ghost date underneath.
+                        if (v === 'none') form.setValue('expiryAt', undefined);
+                      }}
+                      className='justify-start'
+                    >
+                      <ToggleGroupItem value='expiry'>{t('expiryKindExpiry')}</ToggleGroupItem>
+                      <ToggleGroupItem value='retest'>{t('expiryKindRetest')}</ToggleGroupItem>
+                      <ToggleGroupItem value='none'>{t('expiryKindNone')}</ToggleGroupItem>
+                    </ToggleGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {expiryKind !== 'none' && (
+              <FormField
+                control={form.control}
+                name='expiryAt'
+                render={({ field }) => (
+                  <FormItem className='flex flex-col @lg:col-span-2'>
+                    <FormLabel>
+                      {expiryKind === 'retest' ? t('retestDate') : t('expiryAt')}
+                    </FormLabel>
+                    <div className='flex gap-2'>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            className='flex-1 justify-start text-left font-normal'
+                          >
+                            <IconCalendar className='mr-2 size-4' aria-hidden='true' />
+                            {field.value ? formatDateVN(field.value) : t('expiryPick')}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className='w-auto p-0' align='start'>
+                          <Calendar
+                            mode='single'
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(d) => field.onChange(d ? d.getTime() : undefined)}
+                            // §7.1: an expiry cannot be entered already expired;
+                            // a retest can be overdue on purpose.
+                            disabled={expiryKind === 'expiry' ? { before: new Date() } : undefined}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {field.value != null && (
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='sm'
+                          onClick={() => field.onChange(undefined)}
+                        >
+                          {t('expiryClear')}
+                        </Button>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
         </FormSection>
 

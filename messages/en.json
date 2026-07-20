@@ -1680,7 +1680,12 @@
       },
       "expiryPick": "Pick a date",
       "expiryClear": "Clear",
-      "reorderUnit": "Threshold unit"
+      "reorderUnit": "Threshold unit",
+      "expiryLabel": "Expiry",
+      "expiryKindExpiry": "Expiry",
+      "expiryKindRetest": "Retest",
+      "expiryKindNone": "No expiry",
+      "retestDate": "Retest date"
     },
     "detail": {
       "consume": "Consume",

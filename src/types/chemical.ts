@@ -102,6 +102,18 @@ export interface Chemical {
   storageConditions?: string;
   openedAt?: number;
   expiryAt?: number;
+  /**
+   * R579 (datepicker-grid.md §7 / chemicals-table.md §4): what the date means,
+   * or that there is none.
+   *  - 'expiry': a real expiry date (amber when passed).
+   *  - 'retest': a retest/re-assay date, still usable past it — an overdue
+   *    retest is the signal, not a block.
+   *  - 'none': stable inorganics, glassware, metals. No date; forcing one makes
+   *    the user invent it, which the no-fabrication rule forbids.
+   * Absent reads as 'expiry' if expiryAt is set, else 'none', so existing rows
+   * need no backfill.
+   */
+  expiryKind?: 'expiry' | 'retest' | 'none';
 
   // Lifecycle
   status: ChemicalStatus;

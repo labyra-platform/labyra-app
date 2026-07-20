@@ -1,8 +1,8 @@
 import { IconPlus } from '@tabler/icons-react';
-import Link from 'next/link';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getTranslations } from 'next-intl/server';
 import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
+import { EquipmentFormSheet } from '@/features/equipment/components/equipment-form-sheet';
 import { EquipmentTable } from '@/features/equipment/components/equipment-table';
 
 export async function generateMetadata() {
@@ -12,18 +12,19 @@ export async function generateMetadata() {
 
 export default async function EquipmentListPage() {
   const t = await getTranslations('equipment');
-  const locale = await getLocale();
   return (
     <PageContainer
       pageTitle={t('title')}
       pageDescription={t('subtitle')}
       pageHeaderAction={
-        <Button asChild>
-          <Link href={`/${locale}/dashboard/equipment/new`}>
-            <IconPlus className='size-4' />
-            {t('addNew')}
-          </Link>
-        </Button>
+        <EquipmentFormSheet
+          trigger={
+            <Button>
+              <IconPlus className='size-4' />
+              {t('addNew')}
+            </Button>
+          }
+        />
       }
     >
       <EquipmentTable />

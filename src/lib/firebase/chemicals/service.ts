@@ -46,9 +46,15 @@ function deriveStatus(
   reorderThreshold: number | undefined,
   expiryAt: number | undefined,
   reorderMode?: 'absolute' | 'percent',
-  reorderReference?: number
+  reorderReference?: number,
+  expiryKind?: 'expiry' | 'retest' | 'none'
 ): ChemicalStatus {
-  if (expiryAt && expiryAt < Date.now()) return 'expired';
+  // R579 (datepicker-grid.md §7): only a real expiry marks the chemical expired.
+  // A retest date past due does not — the material is still usable, the overdue
+  // retest is a prompt, not a block. 'none' has no date to check.
+  if (expiryKind !== 'retest' && expiryKind !== 'none' && expiryAt && expiryAt < Date.now()) {
+    return 'expired';
+  }
   if (quantity <= 0) return 'empty';
   const threshold = effectiveThreshold(reorderThreshold, reorderMode, reorderReference);
   if (threshold !== undefined && quantity <= threshold) return 'low';
@@ -76,6 +82,7 @@ export interface CreateChemicalInput {
   location?: string;
   storageConditions?: string;
   expiryAt?: number;
+  expiryKind?: 'expiry' | 'retest' | 'none';
 }
 
 export async function createChemical(
@@ -116,12 +123,14 @@ export async function createChemical(
     location: input.location,
     storageConditions: input.storageConditions,
     expiryAt: input.expiryAt,
+    expiryKind: input.expiryKind ?? (input.expiryAt ? 'expiry' : 'none'),
     status: deriveStatus(
       input.quantity,
       input.reorderThreshold,
       input.expiryAt,
       input.reorderMode ?? 'absolute',
-      input.reorderMode === 'percent' ? input.quantity : undefined
+      input.reorderMode === 'percent' ? input.quantity : undefined,
+      input.expiryKind ?? (input.expiryAt ? 'expiry' : 'none')
     ),
     lifecycleStatus: 'active',
     createdBy,
@@ -200,7 +209,8 @@ export async function updateChemical(
     patch.reorderThreshold ?? current.reorderThreshold,
     patch.expiryAt ?? current.expiryAt,
     nextMode,
-    nextReference
+    nextReference,
+    patch.expiryKind ?? current.expiryKind
   );
   const clean = JSON.parse(JSON.stringify(updated));
   await ref.update(clean);
@@ -255,7 +265,8 @@ export async function applyTransaction(
       chem.reorderThreshold,
       chem.expiryAt,
       chem.reorderMode,
-      chem.reorderReference
+      chem.reorderReference,
+      chem.expiryKind
     );
 
     const txRef = ref.collection('transactions').doc();

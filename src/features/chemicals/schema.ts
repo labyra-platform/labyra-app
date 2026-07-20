@@ -40,7 +40,8 @@ export const chemicalFormSchema = z.object({
   reorderMode: z.enum(['absolute', 'percent']).optional(),
   location: z.string().max(100).optional(),
   storageConditions: z.string().max(200).optional(),
-  expiryAt: z.number().optional()
+  expiryAt: z.number().optional(),
+  expiryKind: z.enum(['expiry', 'retest', 'none']).optional()
 });
 
 export type ChemicalFormValues = z.infer<typeof chemicalFormSchema>;

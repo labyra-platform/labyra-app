@@ -1681,7 +1681,12 @@
       },
       "expiryPick": "Chọn ngày",
       "expiryClear": "Xóa",
-      "reorderUnit": "Đơn vị ngưỡng"
+      "reorderUnit": "Đơn vị ngưỡng",
+      "expiryLabel": "Hạn sử dụng",
+      "expiryKindExpiry": "Hạn dùng",
+      "expiryKindRetest": "Kiểm lại",
+      "expiryKindNone": "Không hạn",
+      "retestDate": "Ngày kiểm lại"
     },
     "detail": {
       "consume": "Tiêu hao",

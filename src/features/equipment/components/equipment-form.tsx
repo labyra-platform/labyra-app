@@ -30,6 +30,11 @@ import { type EquipmentFormValues, equipmentFormSchema } from '../schema';
 interface EquipmentFormProps {
   defaultValues?: Partial<Equipment>;
   equipmentId?: string;
+  // R579: when rendered in a Sheet, the sheet closes on these instead of the
+  // form navigating. Absent (the /equipment/new + /[id] routes) keeps the
+  // original router behaviour, so both entry points work.
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 const CATEGORIES = [
@@ -43,7 +48,12 @@ const CATEGORIES = [
 ] as const;
 const STATUSES = ['available', 'in_use', 'maintenance', 'broken', 'retired'] as const;
 
-export function EquipmentForm({ defaultValues, equipmentId }: EquipmentFormProps) {
+export function EquipmentForm({
+  defaultValues,
+  equipmentId,
+  onSuccess,
+  onCancel
+}: EquipmentFormProps) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('equipment.form');
@@ -86,7 +96,11 @@ export function EquipmentForm({ defaultValues, equipmentId }: EquipmentFormProps
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success(equipmentId ? t('update') : t('create'));
-      router.push(`/${locale}/dashboard/equipment`);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/${locale}/dashboard/equipment`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -262,7 +276,11 @@ export function EquipmentForm({ defaultValues, equipmentId }: EquipmentFormProps
         />
 
         <div className='flex justify-end gap-2'>
-          <Button type='button' variant='outline' onClick={() => router.back()}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => (onCancel ? onCancel() : router.back())}
+          >
             {t('cancel')}
           </Button>
           <Button type='submit' disabled={submitting}>

@@ -432,7 +432,25 @@ export class GeminiProvider implements LLMProvider {
       }
     });
 
-    const text = response.text ?? '';
+    // R580: build the answer from non-thought parts, not response.text.
+    //
+    // response.text is the SDK helper that concatenates every part — including
+    // the ones flagged thought:true. Gemini 3 is a reasoning model, so with no
+    // thinkingBudget set it thinks, and complete() was handing that thinking
+    // back as the answer: passage translations came out as "Wait, the prompt
+    // says…", "I will translate…". streamChat already filters thought parts
+    // (that is why streaming was clean and complete() was not); this brings
+    // complete() to the same rule — forward only parts where thought is falsy.
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    const answerParts = parts.filter(
+      (part) => (part as { thought?: boolean }).thought !== true && typeof part.text === 'string'
+    );
+    // Fall back to response.text only if there were no structured parts at all,
+    // so a provider shape without the parts array still returns something.
+    const text =
+      answerParts.length > 0
+        ? answerParts.map((part) => part.text).join('')
+        : (response.text ?? '');
     const meta = response.usageMetadata;
     // R189-2 (G-3+G-4): subtract cached from input (Gemini prompt INCLUDES cached),
     // add thoughts to output (charged at output rate).

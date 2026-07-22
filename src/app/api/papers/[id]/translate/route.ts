@@ -395,6 +395,11 @@ PARTIAL SELECTION: this text was cut by a drag selection${
         model: config.model,
         maxTokens,
         temperature: 0.2,
+        // R580: translation does not need reasoning — turn thinking off so the
+        // model cannot spend the budget narrating the prompt back. Belt and
+        // braces with the part-filter in complete(): the filter drops any
+        // thought that does appear, this stops it appearing.
+        thinkingBudget: 0,
         system: [{ text: system, cache: false }],
         messages: [{ role: 'user', content: missPrompt }]
       });
@@ -433,6 +438,7 @@ Improve the DRAFT: fix mistranslated technical terms, awkward or unnatural phras
           model: config.model,
           maxTokens,
           temperature: 0.3,
+          thinkingBudget: 0, // R580: reflection is rewriting, not reasoning
           system: [{ text: system, cache: false }],
           messages: [{ role: 'user', content: reflectPrompt }]
         });

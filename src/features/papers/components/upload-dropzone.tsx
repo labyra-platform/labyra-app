@@ -158,6 +158,7 @@ interface PaperItem {
 
 export function UploadDropzone({
   onUploaded,
+  onUploadedAll,
   onUploadingChange
 }: {
   /** R237ap: when provided (e.g. inside the upload Sheet), called with the new
@@ -165,6 +166,17 @@ export function UploadDropzone({
    *  the paper). When omitted, falls back to navigating to the paper page so
    *  the standalone /papers/upload route still works. */
   onUploaded?: (paperId: string) => void;
+  /**
+   * R581: every id from this batch, in upload order. onUploaded only ever
+   * carried the last one, which is fine for "open the paper I just added" but
+   * loses the rest — and filing a 5-file drop into a collection needs all five.
+   *
+   * May return a promise; it is awaited before onUploaded navigates. Filing is
+   * a network write and onUploaded changes the route, so without the await the
+   * write races the navigation and can die with the page — the same race that
+   * left a session cookie standing in R563.
+   */
+  onUploadedAll?: (paperIds: string[]) => void | Promise<void>;
   /** R259: report active-upload state so the host (Sheet) can block accidental
    *  dismiss during the actual byte transfer. */
   onUploadingChange?: (uploading: boolean) => void;
@@ -209,12 +221,14 @@ export function UploadDropzone({
     const toastId = toast.loading(t('uploading'), { description: `0/${queued.length}` });
     let done = 0;
     let lastPaperId: string | null = null;
+    const uploadedIds: string[] = [];
     for (const it of queued) {
       patchItem(it.id, { status: 'uploading', progress: 0, error: undefined });
       try {
         const result = await uploadPaper(it.file, (pct) => patchItem(it.id, { progress: pct }));
         patchItem(it.id, { status: result.duplicate ? 'duplicate' : 'done', progress: 100 });
         lastPaperId = result.paperId;
+        uploadedIds.push(result.paperId);
         done += 1;
         toast.loading(t('uploading'), { id: toastId, description: `${done}/${queued.length}` });
       } catch (e) {
@@ -227,12 +241,22 @@ export function UploadDropzone({
     setUploading(false);
     onUploadingChange?.(false);
     toast.success(t('uploadStarted'), { id: toastId, description: `${done}/${queued.length}` });
+    // Awaited before onUploaded, which navigates away: filing must complete
+    // while this component is still mounted, not race the route change.
+    if (uploadedIds.length > 0 && onUploadedAll) {
+      try {
+        await onUploadedAll(uploadedIds);
+      } catch {
+        // Filing failed and has reported itself; the upload still succeeded, so
+        // carry on to open the paper rather than stranding the user here.
+      }
+    }
     if (lastPaperId && onUploaded) {
       onUploaded(lastPaperId);
     } else if (lastPaperId) {
       router.push(`/${locale}/dashboard/papers/${lastPaperId}`);
     }
-  }, [items, t, router, locale, onUploaded, onUploadingChange, patchItem]);
+  }, [items, t, router, locale, onUploaded, onUploadedAll, onUploadingChange, patchItem]);
 
   const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
     onDrop,

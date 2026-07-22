@@ -812,7 +812,10 @@
     "exporting": "Exporting…",
     "exportEmpty": "This collection has no downloadable papers.",
     "exportFailed": "Export failed. Please try again.",
-    "favorites": "Favorites"
+    "favorites": "Favorites",
+    "addToCollectionLabel": "Add to collection",
+    "noCollection": "None — library only",
+    "addToCollectionHint": "The paper also stays in All documents."
   },
   "materials": {
     "title": "Materials",

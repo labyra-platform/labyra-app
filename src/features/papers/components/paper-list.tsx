@@ -131,9 +131,12 @@ function formatAuthors(authors: string[] | undefined): string | null {
 
 export function PaperList({
   collectionFilter = null,
+  activeCollectionId = null,
   headerAction
 }: {
   collectionFilter?: CollectionPaperFilter | null;
+  /** R581: collection currently open in the sidebar, so upload defaults to it. */
+  activeCollectionId?: string | null;
   headerAction?: React.ReactNode;
 }) {
   const t = useTranslations('papers');
@@ -251,6 +254,7 @@ export function PaperList({
           <p className='text-muted-foreground text-sm'>{t('uploadToStart')}</p>
         </div>
         <UploadSheet
+          defaultCollectionId={activeCollectionId}
           trigger={
             <Button className='inline-flex items-center gap-2'>
               <IconUpload className='size-4' />

@@ -813,7 +813,10 @@
     "exporting": "Đang xuất…",
     "exportEmpty": "Collection này chưa có paper nào để tải.",
     "exportFailed": "Xuất thất bại. Thử lại nhé.",
-    "favorites": "Yêu thích"
+    "favorites": "Yêu thích",
+    "addToCollectionLabel": "Thêm vào bộ sưu tập",
+    "noCollection": "Không — chỉ vào thư viện",
+    "addToCollectionHint": "Tài liệu vẫn nằm trong Tất cả tài liệu."
   },
   "materials": {
     "title": "Vật liệu",

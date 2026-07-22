@@ -54,7 +54,14 @@ export function PapersLibraryView({ action }: { action?: React.ReactNode }) {
         </div>
       </aside>
       <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
-        <PaperList collectionFilter={collectionFilter} headerAction={action} />
+        {/* R581: pass which collection is open so an upload started from inside
+            it defaults to filing there. 'unfiled'/'favorites' are views, not
+            collections, so they contribute no id. */}
+        <PaperList
+          collectionFilter={collectionFilter}
+          activeCollectionId={selection.kind === 'collection' ? selection.collectionId : null}
+          headerAction={action}
+        />
       </div>
     </div>
   );
